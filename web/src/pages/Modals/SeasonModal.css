@@ -25,7 +25,7 @@
     object-fit: cover;
     background-size: cover;
     background-repeat: no-repeat;
-    /* background-image: url("../../../public/landscape-placeholder.jpg"); */
+    background-image: url("../../../public/landscape-placeholder.jpg");
     min-height: 160px;
 }
 

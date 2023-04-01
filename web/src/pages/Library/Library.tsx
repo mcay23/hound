@@ -1,6 +1,6 @@
 import "./Library.css";
 import { ImageList } from "@mui/material";
-import ItemCard from "./ItemCard";
+import ItemCard2 from "./ItemCard";
 
 function Library(props: any) {
   let libraryCols = 6;
@@ -20,7 +20,7 @@ function Library(props: any) {
               thumbnail_url: string | undefined;
               media_title: string | undefined;
             }) => (
-              <ItemCard
+              <ItemCard2
                 item={item}
                 showTitle={props.showTitle}
                 itemType="collectionImageList"

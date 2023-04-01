@@ -25,7 +25,7 @@ func SetupRoutes(r *gin.Engine) {
 	 */
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
 	privateRoutes.GET("/tv/trending", GetTrendingTVShowsHandler)
-	privateRoutes.GET("/tv/:id", GetTVShowHandlerFromID)
+	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
 	privateRoutes.POST("/tv/lib", AddTVShowToLibraryHandler)
 	privateRoutes.GET("/tv/lib", GetUserTVShowLibraryHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
@@ -35,7 +35,11 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/trending", GetTrendingMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
-
+	/*
+		Games Routes
+	 */
+	privateRoutes.GET("/game/search", SearchGamesHandler)
+	privateRoutes.GET("/game/:id", GetGameFromIDHandler)
 	//err := database.CreateCollection(database.CollectionRecord{
 	//	CollectionTitle: "my new collection",
 	//	Description:     []byte("this is a description"),

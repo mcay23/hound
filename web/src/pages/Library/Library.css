@@ -10,7 +10,7 @@
 }
 
 .paginator-container {
-    background-color: rgba(var(--hound-primary) 0.9 );
+    background-color: rgba(var(--hound-primary) 0.9) !important;
     padding: 0.5em;
     border-radius: 1.5em;
     width: fit-content;

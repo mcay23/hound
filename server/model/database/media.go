@@ -22,6 +22,7 @@ const (
 	commentTable             = "comments"
 	MediaTypeTVShow          = "tvshow"
 	MediaTypeMovie           = "movie"
+	MediaTypeGame            = "game"
 )
 
 // stores watch/read history for media types by user

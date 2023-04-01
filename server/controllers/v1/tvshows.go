@@ -28,7 +28,7 @@ func SearchTVShowHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, results, 200)
 }
 
-func GetTVShowHandlerFromID(c *gin.Context) {
+func GetTVShowFromIDHandler(c *gin.Context) {
 	param := c.Param("id")
 	split := strings.Split(param, "-")
 	if len(split) != 2 {

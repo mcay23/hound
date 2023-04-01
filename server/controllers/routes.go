@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"fmt"
-	"github.com/Open-pi/gol"
 	"github.com/gin-gonic/gin"
 	v1 "hound/controllers/v1"
 	"os"
@@ -15,9 +13,4 @@ func SetupRoutes() {
 	if err != nil {
 		panic(err)
 	}
-	// Construct the SearchUrl
-	url := gol.SearchUrl().All("the selfish gene").Author("Richard Dawkins").Construct()
-	// search
-	search, err := gol.Search(url)
-	fmt.Println(search.)
 }
