@@ -1,0 +1,43 @@
+.library-container {
+    margin: auto;
+    width: 78%;
+}
+
+@media only screen and (max-width:1200px) {
+    .library-container {
+        width: 90%;
+    }
+}
+
+.paginator-container {
+    background-color: rgba(var(--hound-primary) 0.9 );
+    padding: 0.5em;
+    border-radius: 1.5em;
+    width: fit-content;
+}
+
+.MuiPagination-root .MuiPaginationItem-root {
+    color: rgba(var(--hound-secondary), 1) !important;
+    font-family: 'Cabin', sans-serif !important;
+    font-weight: 400 !important;
+}
+
+.MuiPagination-root .MuiButtonBase-root:hover {
+    background-color: rgba(255, 255, 0, 0.3) !important;
+    transition: "all 0.5s ease",
+}
+
+.MuiPagination-root .Mui-selected {
+    color: rgba(var(--hound-primary), 1) !important;
+    background-color: rgba(var(--hound-secondary), 1) !important;
+}
+
+.MuiPagination-root .Mui-selected {
+    color: rgba(var(--hound-primary), 1) !important;
+    background-color: rgba(var(--hound-secondary), 1) !important;
+}
+
+.MuiPagination-root .Mui-selected:hover {
+    color: rgba(var(--hound-primary), 1) !important;
+    background-color: rgba(var(--hound-secondary), 1) !important;
+}

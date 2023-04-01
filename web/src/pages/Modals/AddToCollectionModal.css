@@ -1,0 +1,28 @@
+.add-to-collection-dialog {
+    max-height: 500px;
+}
+
+.add-to-collection-dialog-content {
+    max-width: 300px;
+}
+
+.add-to-collection-dialog-header {
+    margin-top: 10px;
+    text-align: center;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 500;
+    font-size: larger;
+    user-select: none;
+}
+
+.add-to-collection-dialog-choice .MuiTypography-root {
+    margin-left: 10px;
+    margin-right: 10px;
+    font-family: 'Cabin', sans-serif !important;    
+}
+
+.add-to-collection-dialog-button .MuiTypography-root {
+    font-family: 'Cabin', sans-serif !important;
+    margin-left: 5px;
+    margin-right: 10px;
+}

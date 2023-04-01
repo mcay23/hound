@@ -1,0 +1,36 @@
+#top-navbar {
+    background-color: rgba(var(--hound-primary), 1);
+}
+
+#top-navbar-brand {
+    pointer-events: none;
+    user-select: none;
+    margin-left: 0.5em;
+    font-size: 1.7em;
+    color: rgba(var(--hound-secondary), 1);
+    font-family: 'Cabin', sans-serif;
+    font-weight: 500;
+}
+
+.navbar.center .navbar-inner {
+    text-align: center;
+}
+
+.navbar.center .navbar-inner .nav {
+    display:inline-block;
+    float: none;
+    vertical-align: top;
+}
+
+.top-navbar-item {
+    font-size: large;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+    color: white;
+    margin-left: 0.2em;
+    margin-right: 0.2em;
+}
+
+.top-navbar-item:hover {
+    color: gold;
+}

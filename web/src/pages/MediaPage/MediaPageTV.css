@@ -1,0 +1,146 @@
+.media-page-tv-header {
+    padding-bottom: 40px;
+    min-height: 400px;
+    font-size: large;
+    display: flex;
+    flex-direction: column;
+}
+
+.media-page-tv-inline-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.media-page-tv-header-container {
+    margin-top: 50px;
+    margin-bottom: 20px;
+    margin-left: 100px;
+    color: white;
+    display: inline-block;
+}
+
+.media-page-tv-poster-container {
+    display: inline-flex;
+}
+
+.media-page-tv-poster {
+    width: 200px;
+    height: 300px;
+    display: inline-flex;
+    border-radius: 6px;
+    border: solid rgba(255, 255, 255, 0.8) 2px;
+    font-family: 'Cabin', sans-serif;
+    font-size: 24px;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.media-page-tv-header-info {
+    margin-left: 40px;
+    margin-top: 25px;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+}
+
+.media-page-tv-header-title {
+    font-size: 40px;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+}
+
+.media-page-tv-header-year {
+    margin-left: 5px;
+    font-size: 26px;
+    color: rgba(255, 255, 255, 0.65);
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+}
+
+.media-page-tv-header-genres {
+    font-size: 15px;
+    color: rgba(255, 255, 0, 0.8);
+}
+
+.media-page-tv-header-credits {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+.media-page-tv-header-overview {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Cabin', sans-serif;
+    margin-top: 5px;
+    width: 65%;
+}
+
+.media-page-tv-overview {
+    margin-top: 10px;
+    margin-left: 70px;
+    margin-right: 70px;
+    color: rgb(195, 195, 195);
+    font-size: medium;
+    overflow: hidden;
+    white-space: break-spaces;
+    text-overflow: ellipsis;
+}
+
+.media-page-tv-brief {
+    height: 150px;
+    color: white;
+    display: inline-block;
+    /* background-color: rgba(255, 255, 255, 0.4); */
+    width: 100%;
+}
+
+.media-page-tv-header-button-container {
+    margin-top: 10px;
+}
+
+.media-page-tv-header-button-container .MuiSvgIcon-root {
+    font-size: 42px;
+    padding: 9px;
+    border-radius: 50%;
+    margin-right: 0px;
+    background-color: rgba(var(--hound-secondary), 0.85);
+    color: rgba(var(--hound-primary), 1);
+}
+
+#media-page-tv-header-track-button {
+    padding: 11px;
+}
+
+.media-page-tv-header-button-container .MuiButtonBase-root :hover {
+    background-color: rgba(var(--hound-secondary), 0.55);
+    /* background-color:     rgba(var(--hound-primary), 0.85);
+    color: rgba(var(--hound-secondary), 0.85); */
+    transition: all 0.4s ease,
+}
+
+.media-page-tv-header-button-tooltip-title {
+    color: white;
+    font-family: 'Cabin', sans-serif;
+    font-size: 14px;
+}
+
+.media-page-tv-main {
+    padding-bottom: 70px;
+    /* background-color: rgba(255, 255, 255); */
+}
+
+.media-page-tv-footer {
+    height: 800px;
+}
+
+.media-page-tv-main-videos-section {
+    margin-bottom: 150px;
+    padding-left: 3%;
+    padding-right: 3%;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: row;
+}

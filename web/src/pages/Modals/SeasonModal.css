@@ -1,0 +1,74 @@
+.season-dialog {
+}
+
+.episode-card-container {
+    display: flex;
+    flex-direction: row;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    min-width: 800px;
+    max-width: 1000px;
+    max-height: 200px;
+    border-radius: 5px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+    background-color: white;
+}
+
+.episode-card-img {
+    min-width: 304px;
+    width: 304px;
+    max-height: 171px;
+    height: 171px;
+    border-radius: 5px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+    object-fit: cover;
+    background-size: cover;
+    background-repeat: no-repeat;
+    /* background-image: url("../../../public/landscape-placeholder.jpg"); */
+    min-height: 160px;
+}
+
+.episode-card-content {
+    width: 100%;
+    margin-top: 10px;
+    padding-left: 20px;
+    padding-right: 5px;
+    padding-bottom: 10px;
+    color: black;
+}
+
+.episode-card-title {
+    font-size: 22px;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.episode-card-date {
+    font-family: 'Cabin', sans-serif;
+    font-size: 16px;
+    color: darkslategray
+}
+
+.episode-card-description {
+    margin-top: 8px;
+    font-family: 'Cabin', sans-serif;
+    font-size: 17px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.episode-card-actions {
+    margin-top: 10px;
+    margin-right: 10px;
+    display: flex;
+    flex-direction: column;
+}

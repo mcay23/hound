@@ -1,0 +1,20 @@
+.search-page-search-section {
+    height: 350px;
+    /* background: url('https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg') no-repeat; */
+    background: url('https://image.tmdb.org/t/p/original/xuJ0F9RfKvVSJNDg2usurQ9WvY5.jpg') no-repeat;
+    background-size: cover;
+    animation: backgroundScroll 150s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .search-page-main-section {
+    margin-bottom: 70px;
+  }
+  
+  @media only screen and (max-width:600px) {
+    .search-page-search-section {
+      height: 200px;
+    }
+  }

@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans&display=swap');
+
+.login-main {
+  width: 22em;
+  margin: auto;
+  margin-top: 10%;
+}
+
+.login-card {
+  padding: 1em;
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+.login-card h2 {
+  font-family: 'Nunito Sans', sans-serif;
+  font-weight: 600;
+}
+
+html {
+  min-height: 100%;
+}
+
+.full-screen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.bg-home {
+  background-image: url("../../../public/login-bg.jpg");
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.alert-incorrect-password {
+  font-size: medium;
+  color: red;
+  padding: 0;
+}
