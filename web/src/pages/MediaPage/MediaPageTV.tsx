@@ -1,4 +1,4 @@
-import "./MediaPageTV.css";
+import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import {
@@ -156,7 +156,9 @@ function MediaPageTV(props: any) {
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview}
+                {props.data.overview
+                  ? props.data.overview
+                  : "No description available."}
               </div>
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}

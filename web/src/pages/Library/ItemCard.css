@@ -27,6 +27,7 @@
 .itemcard-img-poster {
     width: 200px;
     height: 300px;
+    background-color: rgba(149,187,223, 1);
     object-fit: cover;
     margin-right: 1em;
     box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
@@ -38,9 +39,6 @@
     object-fit: cover;
     margin-right: 1em;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-}
-
-.itemcard-img-cast-no-thumbnail {
     background-color: rgba(149,187,223, 1);
     background-image: url("../../../public/avatar-placeholder.png");
     background-size: contain;

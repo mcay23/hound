@@ -1,5 +1,7 @@
 package view
 
+import "hound/model/sources"
+
 type LibraryView struct {
 	Results      *[]LibraryItem `json:"results"`
 	TotalRecords int64          `json:"total_records"`
@@ -21,6 +23,7 @@ type LibraryItem struct {
 }
 
 type GeneralSearchResponse struct {
-	TVShowSearchResults *[]TMDBSearchResultObject `json:"tv_results"`
-	MovieSearchResults  *[]TMDBSearchResultObject `json:"movie_results"`
+	TVShowSearchResults *[]TMDBSearchResultObject         `json:"tv_results"`
+	MovieSearchResults  *[]TMDBSearchResultObject         `json:"movie_results"`
+	GameSearchResults   *sources.IGDBSearchResultObject `json:"game_results"`
 }

@@ -1,4 +1,4 @@
-import "./MediaPageTV.css";
+import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import {
@@ -12,6 +12,7 @@ import { useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
+import convertDateToReadable from "../../helpers/helpers";
 
 const offsetFix = {
   modifiers: [
@@ -78,6 +79,10 @@ function MediaPageMovie(props: any) {
     .join(", ");
   var runtime = "";
   var creators = "";
+  var isComingSoon = false;
+  if (props.data.release_date) {
+    isComingSoon = new Date(props.data.release_date) > new Date();
+  }
   // get creators (directors)
   try {
     const lf = new Intl.ListFormat("en");
@@ -148,16 +153,25 @@ function MediaPageMovie(props: any) {
                 </span>
               </div>
               <div className="media-page-tv-header-genres">
-                {props.data.status === "Ended"
-                  ? "Finished Airing"
-                  : props.data.status}
+                {props.data.status === "Released" ? (
+                  "Released"
+                ) : (
+                  <>
+                    {props.data.release_date
+                      ? "Releases " +
+                        convertDateToReadable(props.data.release_date)
+                      : ""}
+                  </>
+                )}
                 {props.data.status && (runtime || genres) ? "     ⸱     " : ""}
                 {runtime}
                 {runtime && genres ? "     ⸱     " : ""}
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview}
+                {props.data.overview
+                  ? props.data.overview
+                  : "No description available."}
               </div>
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}

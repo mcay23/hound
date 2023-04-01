@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    container_name: hound-db
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      - MYSQL_DATABASE=hound
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - '9207:3306'
+    volumes:
+      - db:/var/lib/mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: hound-pma
+    links:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    restart: always
+    ports:
+      - 8081:80
+  app:
+    build:
+      context: ./server
+    volumes:
+      - "./server:/go/src/app"
+    container_name: hound-server
+    ports:
+      - "8080:8080"
+    tty: true
+    depends_on:
+      - db
+volumes:
+  db:
+    driver: local

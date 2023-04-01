@@ -12,11 +12,10 @@ function SearchPage(props: any) {
   const [data, setData] = useState({
     tv_results: {},
     movie_results: {},
+    game_results: {},
   });
   const [isLoaded, setIsLoaded] = useState(false);
   var query = searchParams.get("q");
-
-  console.log(searchParams);
   useEffect(() => {
     axios
       .get(`/api/v1/search?q=${query}`)
@@ -49,6 +48,12 @@ function SearchPage(props: any) {
             <HorizontalSection
               items={data.movie_results}
               header={"Movies"}
+              itemType={"search"}
+              itemOnClick={undefined}
+            />
+            <HorizontalSection
+              items={data.game_results}
+              header={"Games"}
               itemType={"search"}
               itemOnClick={undefined}
             />

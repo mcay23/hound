@@ -1,28 +1,303 @@
 package sources
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/Henry-Sarabia/igdb/v2"
+	"hound/model"
+	"hound/model/database"
+	"io"
+	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
 
 const (
-	SourceIGDB string = "igdb"
+	SourceIGDB              = "igdb"
+	OAuthPath               = "https://id.twitch.tv/oauth2/token?client_id=%s&client_secret=%s&grant_type=client_credentials"
+	IGDBGamesAPIPath        = "https://api.igdb.com/v4/games"
+	IGDBImagePath           = "https://images.igdb.com/igdb/image/upload/t_%s/%s.jpg"
+	YoutubePath             = "https://www.youtube.com/watch?v=%s"
+	IGDBAccessTokenCacheKey = "IGDB-access-token"
 )
 
-var igdbClient *igdb.Client
+const (
+	IGDBImageCover      = "cover_big"
+	IGDBImage1080p      = "1080p"
+	IGDBImageScreenshot = "screenshot_huge"
+	IGDBImageOriginal   = "original"
+)
 
-func InitializeIGDB() {
-	fmt.Println(os.Getenv("IGDB_CLIENT_ID"), os.Getenv("IGDB_CLIENT_SECRET"))
-	igdbClient = igdb.NewClient(os.Getenv("IGDB_CLIENT_ID"), os.Getenv("IGDB_CLIENT_SECRET"), nil)
-	tmdbClient.SetClientAutoRetry()
-	games, err := igdbClient.Games.Search("zelda")
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		for _, item := range games {
-			fmt.Println(item.Name)
-		}
-		fmt.Println(games)
+type IGDBAuthenticateResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+}
+
+type IGDBSearchObject struct {
+	ID         int    `json:"id"`
+	MediaTitle string `json:"media_title"`
+	MediaType  string `json:"media_type"`
+	SourceID   int    `json:"source_id"`
+	PosterURL  string `json:"poster_url"`
+	Cover      struct {
+		ID       int    `json:"id"`
+		ImageURL string `json:"image_url"`
+		ImageID  string `json:"image_id"`
+	} `json:"cover"`
+	FirstReleaseDate int `json:"first_release_date"`
+	Genres           []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"genres"`
+	Name      string `json:"name"`
+	Platforms []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"platforms"`
+}
+
+type IGDBGameObject struct {
+	ID       int `json:"id"`
+	MediaTitle string `json:"media_title"`
+	MediaType  string `json:"media_type"`
+	SourceID   int    `json:"source_id"`
+	Artworks []struct {
+		ID       int    `json:"id"`
+		Animated bool   `json:"animated"`
+		Height   int    `json:"height"`
+		ImageID  string `json:"image_id"`
+		ImageURL string `json:"image_url"`
+		Width    int    `json:"width"`
+	} `json:"artworks"`
+	PosterURL string `json:"poster_url"`
+	Cover     struct {
+		ID       int    `json:"id"`
+		ImageID  string `json:"image_id"`
+		ImageURL string `json:"image_url"`
+	} `json:"cover"`
+	DLCs []struct {
+		ID    int `json:"id"`
+		Cover struct {
+			ID       int    `json:"id"`
+			ImageID  string `json:"image_id"`
+			ImageURL string `json:"image_url"`
+		} `json:"cover"`
+		Name         string `json:"name"`
+		Summary      string `json:"summary"`
+		ReleaseDates []struct {
+			ID       int    `json:"id"`
+			Date     int    `json:"date"`
+			Human    string `json:"human"`
+			Platform struct {
+				ID   int    `json:"id"`
+				Name string `json:"name"`
+			} `json:"platform"`
+		} `json:"release_dates"`
+	} `json:"dlcs"`
+	FirstReleaseDate int `json:"first_release_date"`
+	GameModes        []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"game_modes"`
+	Genres []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"genres"`
+	InvolvedCompanies []struct {
+		ID      int `json:"id"`
+		Company struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"company"`
+		Developer bool `json:"developer"`
+		Publisher bool `json:"publisher"`
+	} `json:"involved_companies"`
+	Name      string `json:"name"`
+	Platforms []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"platforms"`
+	ReleaseDates []struct {
+		ID       int    `json:"id"`
+		Date     int    `json:"date"`
+		Human    string `json:"human"`
+		Platform struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"platform"`
+	} `json:"release_dates"`
+	Screenshots []struct {
+		ID       int    `json:"id"`
+		Height   int    `json:"height"`
+		ImageID  string `json:"image_id"`
+		ImageURL string `json:"image_url"`
+		Width    int    `json:"width"`
+	} `json:"screenshots"`
+	SimilarGames []struct {
+		ID    int `json:"id"`
+		Cover struct {
+			ID       int    `json:"id"`
+			ImageID  string `json:"image_id"`
+			ImageURL string `json:"image_url"`
+		} `json:"cover"`
+		Name string `json:"name"`
+	} `json:"similar_games"`
+	Storyline string `json:"storyline"`
+	Summary   string `json:"summary"`
+	Themes    []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"themes"`
+	Videos []struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		VideoID  string `json:"video_id"`
+		VideoURL string `json:"video_url"`
+	} `json:"videos"`
+	Websites []struct {
+		ID       int    `json:"id"`
+		Category int    `json:"category"`
+		URL      string `json:"url"`
+	} `json:"websites"`
+}
+
+type IGDBGamesResultsResponseObject []IGDBGameObject
+
+type IGDBSearchResultObject []IGDBSearchObject
+
+var igdbClient = &http.Client{Timeout: 10 * time.Second}
+
+func getAccessToken(forceRefresh bool) string {
+	// get from ttl cache, return if it exists
+	// if force refresh is true, refresh token
+	token, ok := model.GetCache(IGDBAccessTokenCacheKey)
+	if ok && !forceRefresh {
+		return token.(string)
 	}
+	// if token not in cache, request a new one
+	url := fmt.Sprintf(OAuthPath, os.Getenv("IGDB_CLIENT_ID"),
+		os.Getenv("IGDB_CLIENT_SECRET"))
+	r, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		panic(err)
+	}
+	res, err := igdbClient.Do(r)
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode == 200 {
+		resp := &IGDBAuthenticateResponse{}
+		err := json.NewDecoder(res.Body).Decode(resp)
+		if err != nil {
+			panic(err)
+		}
+		// expire 1 min earlier
+		err = model.UpdateOrSetCache(IGDBAccessTokenCacheKey, resp.AccessToken, time.Second*time.Duration(resp.ExpiresIn-60))
+		if err != nil {
+			panic(err)
+		}
+		return resp.AccessToken
+	}
+	panic(errors.New("non-200 response received from igdb oauth flow"))
+}
+
+func queryIGDBGames(body string) ([]byte, error) {
+	r, err := http.NewRequest("POST", IGDBGamesAPIPath, bytes.NewBufferString(body))
+	if err != nil {
+		panic(err)
+	}
+	r.Header.Set("Client-ID", os.Getenv("IGDB_CLIENT_ID"))
+	// call getAccessToken
+	r.Header.Set("Authorization", "Bearer "+getAccessToken(false))
+	res, err := igdbClient.Do(r)
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		fmt.Println(res.StatusCode)
+		return nil, errors.New("panic querying igdb")
+	}
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	// let functions unmarshal themselves
+	return b, nil
+}
+
+func SearchGameIGDB(query string) (IGDBSearchResultObject, error) {
+	// construct query string
+	requestBody := `search "` + query + `"; fields name, platforms.name, cover.image_id, status, genres.name, first_release_date; limit 20; where version_parent = null & category=(0,3,4,8,9,10);`
+	b, err := queryIGDBGames(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	// unmarshal response
+	var games IGDBSearchResultObject
+	err = json.Unmarshal(b, &games)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	// get image urls, set response params
+	for num, game := range games {
+		games[num].MediaTitle = game.Name
+		games[num].MediaType = database.MediaTypeGame
+		games[num].SourceID = game.ID
+		games[num].Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+		games[num].PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+	}
+	return games, nil
+}
+
+func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
+	// construct query string
+	requestBody := `where id=` + strconv.Itoa(igdbID) + `; fields name, platforms.name, screenshots.animated, first_release_date, screenshots.image_id, screenshots.height, screenshots.width, cover.image_id, similar_games.name, similar_games.cover.image_id, storyline, summary, websites.url, websites.category, videos.name, videos.video_id, game_modes.name, involved_companies.developer, involved_companies.publisher, involved_companies.company.name, genres.name, artworks.animated, artworks.image_id, artworks.height, artworks.width, dlcs.name, dlcs.summary, dlcs.release_dates.human, dlcs.release_dates.platform.name, dlcs.release_dates.date, dlcs.cover.image_id, release_dates.human, release_dates.platform.name, release_dates.date, artworks.*; limit 20;`
+	b, err := queryIGDBGames(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	// unmarshal response
+	var response IGDBGamesResultsResponseObject
+	err = json.Unmarshal(b, &response)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	if len(response) == 0 {
+		return nil, errors.New("no game found with this ID in IGDB")
+	}
+	game := response[0]
+	// get image urls
+	game.Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+	game.PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+	game.MediaTitle = game.Name
+	game.MediaType = database.MediaTypeGame
+	game.SourceID = game.ID
+	for num, artwork := range game.Artworks {
+		game.Artworks[num].ImageURL = getIGDBImageURL(artwork.ImageID, IGDBImageOriginal)
+	}
+	for num, screenshot := range game.Screenshots {
+		game.Screenshots[num].ImageURL = getIGDBImageURL(screenshot.ImageID, IGDBImageOriginal)
+	}
+	for num, dlc := range game.DLCs {
+		game.DLCs[num].Cover.ImageURL = getIGDBImageURL(dlc.Cover.ImageID, IGDBImageCover)
+	}
+	for num, similarGame := range game.SimilarGames {
+		game.SimilarGames[num].Cover.ImageURL = getIGDBImageURL(similarGame.Cover.ImageID, IGDBImageCover)
+	}
+	for num, videos := range game.Videos {
+		game.Videos[num].VideoURL = fmt.Sprintf(YoutubePath, videos.VideoID)
+	}
+	return &game, nil
+}
+
+func getIGDBImageURL(imageID string, imageType string) string {
+	if imageID == "" {
+		return ""
+	}
+	return fmt.Sprintf(IGDBImagePath, imageType, imageID)
 }
