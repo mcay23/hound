@@ -195,12 +195,13 @@ function ItemCard(props: {
   // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
   var mediaType = props.item.media_type;
   var releaseYearText = "";
+  // console.log(props.item);
   if (mediaType === "tvshow") {
     mediaType = "tv";
     if (props.item.first_air_date) {
       releaseYearText = ` (${props.item.first_air_date.slice(0, 4)})`;
     }
-  } else if (mediaType === "movie") {
+  } else if (mediaType === "movie" || mediaType === "game") {
     if (props.item.release_date) {
       releaseYearText = ` (${props.item.release_date.slice(0, 4)})`;
     }
