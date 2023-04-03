@@ -10,9 +10,10 @@ function ItemCard(props: {
     | "collectionImageList"
     | "poster"
     | "cast"
-    | "videos"
+    | "video"
     | "seasons"
-    | "search";
+    | "search"
+    | "image";
   showTitle: any;
   itemOnClick: any;
 }) {

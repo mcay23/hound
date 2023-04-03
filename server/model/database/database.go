@@ -6,6 +6,12 @@ import (
 	"xorm.io/xorm"
 )
 
+const (
+	MediaTypeTVShow          = "tvshow"
+	MediaTypeMovie           = "movie"
+	MediaTypeGame            = "game"
+)
+
 var databaseEngine *xorm.Engine
 
 func InstantiateDB() {
@@ -19,6 +25,10 @@ func InstantiateDB() {
 		panic(err)
 	}
 	err = instantiateMediaTables()
+	if err != nil {
+		panic(err)
+	}
+	err = instantiateCommentTable()
 	if err != nil {
 		panic(err)
 	}

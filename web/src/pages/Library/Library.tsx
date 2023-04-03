@@ -1,34 +1,42 @@
 import "./Library.css";
-import { ImageList } from "@mui/material";
-import ItemCard2 from "./ItemCard";
+import Topnav from "../Topnav";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import CollectionCard from "./CollectionCard";
 
 function Library(props: any) {
-  let libraryCols = 6;
-  if (props.breakpoint === "md") {
-    libraryCols = 5;
-  } else if (props.breakpoint === "sm") {
-    libraryCols = 3;
-  } else if (props.breakpoint === "xs") {
-    libraryCols = 2;
-  }
+  const [collections, setCollections] = useState([]);
+  const [isCollectionsLoaded, setIsCollectionsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isCollectionsLoaded) {
+      axios
+        .get(`/api/v1/collection/all`)
+        .then((res) => {
+          setCollections(res.data);
+          setIsCollectionsLoaded(true);
+          console.log(res.data);
+        })
+        .catch((err) => {
+          if (err.response.status === 500) {
+            alert("500");
+          }
+        });
+    }
+  });
   return (
     <>
+      <Topnav />
       <div className="library-container">
-        <ImageList cols={libraryCols} gap={10}>
-          {props.library.map(
-            (item: {
-              thumbnail_url: string | undefined;
-              media_title: string | undefined;
-            }) => (
-              <ItemCard2
-                item={item}
-                showTitle={props.showTitle}
-                itemType="collectionImageList"
-                itemOnClick={undefined}
-              />
-            )
-          )}
-        </ImageList>
+        {isCollectionsLoaded ? (
+          <>
+            {collections.map((item) => (
+              <CollectionCard data={item} />
+            ))}
+          </>
+        ) : (
+          ""
+        )}
       </div>
       <br />
     </>

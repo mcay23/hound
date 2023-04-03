@@ -13,8 +13,8 @@ import (
 )
 
 type AddLibraryRequest struct {
-	Source   string `json:"source" binding:"required,gt=0"`
-	SourceID string `json:"source_id" binding:"required,gt=0"`
+	MediaSource string `json:"media_source" binding:"required,gt=0"`
+	SourceID    string `json:"source_id" binding:"required,gt=0"`
 }
 
 func SearchTVShowHandler(c *gin.Context) {
@@ -117,11 +117,11 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 	}
 	//results.Results = append(results.Results, results2.Results...)
 	// convert url results
-	var viewArray []view.LibraryItem
+	var viewArray []view.LibraryObject
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryItem{
+		viewObject := view.LibraryObject{
 			MediaType:    database.MediaTypeTVShow,
 			MediaSource:  sources.SourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
@@ -137,93 +137,60 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, viewArray, 200)
 }
 
-func AddTVShowToLibraryHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	userPayload := AddLibraryRequest{}
-	if err := c.ShouldBindJSON(&userPayload); err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to bind registration body")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	if userPayload.Source != sources.SourceTMDB {
-		_ = helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Only tmdb is supported at this time")
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	tmdbID, err := strconv.Atoi(userPayload.SourceID)
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to convert string to tmdb id (int)")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	err = sources.AddTVShowToCollectionTMDB(username, userPayload.Source, tmdbID, nil)
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to add tv show to library")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
-}
-
-func GetUserTVShowLibraryHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	limitQuery := c.Query("limit")
-	offsetQuery := c.Query("offset")
-	limit := 0
-	offset := 0
-	if limitQuery != "" && offsetQuery != "" {
-		var err error
-		limit, err = strconv.Atoi(limitQuery)
-		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Invalid limit query param")
-			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-			return
-		}
-		offset, err = strconv.Atoi(offsetQuery)
-		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Invalid offset query param")
-			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-			return
-		}
-	}
-	if username == "" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	records, totalRecords, err := database.GetCollectionFromLibrary(userID, database.MediaTypeTVShow, nil, limit, offset)
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error retrieving user library")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	var viewArray []view.LibraryItem
-	for _, item := range records {
-		viewObject := view.LibraryItem{
-			MediaType:    item.MediaType,
-			MediaSource:  item.MediaSource,
-			SourceID:     item.SourceID,
-			MediaTitle:   item.MediaTitle,
-			ReleaseDate:  item.ReleaseDate,
-			Description:  string(item.Description),
-			ThumbnailURL: item.ThumbnailURL,
-			Tags:         item.Tags,
-			UserTags:     item.UserTags,
-		}
-		viewArray = append(viewArray, viewObject)
-	}
-	returnObject := view.LibraryView{Results: &viewArray, TotalRecords: totalRecords, Limit: limit, Offset: offset}
-	helpers.SuccessResponse(c, returnObject, 200)
-}
+//func GetUserTVShowLibraryHandler(c *gin.Context) {
+//	username := c.GetHeader("X-Username")
+//	limitQuery := c.Query("limit")
+//	offsetQuery := c.Query("offset")
+//	limit := 0
+//	offset := 0
+//	if limitQuery != "" && offsetQuery != "" {
+//		var err error
+//		limit, err = strconv.Atoi(limitQuery)
+//		if err != nil {
+//			_ = helpers.LogErrorWithMessage(err, "Invalid limit query param")
+//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+//			return
+//		}
+//		offset, err = strconv.Atoi(offsetQuery)
+//		if err != nil {
+//			_ = helpers.LogErrorWithMessage(err, "Invalid offset query param")
+//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+//			return
+//		}
+//	}
+//	if username == "" {
+//		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+//		return
+//	}
+//	userID, err := database.GetUserIDFromUsername(username)
+//	if err != nil {
+//		helpers.ErrorResponse(c, err)
+//		return
+//	}
+//	records, totalRecords, err := database.GetCollectionRecords(userID, 3, limit, offset)
+//	if err != nil {
+//		_ = helpers.LogErrorWithMessage(err, "Error retrieving user library")
+//		helpers.ErrorResponse(c, err)
+//		return
+//	}
+//	var viewArray []view.LibraryObject
+//	for _, item := range records {
+//		viewObject := view.LibraryObject{
+//			MediaType:    item.MediaType,
+//			MediaSource:  item.MediaSource,
+//			SourceID:     item.SourceID,
+//			MediaTitle:   item.MediaTitle,
+//			ReleaseDate:  item.ReleaseDate,
+//			Description:  string(item.Description),
+//			ThumbnailURL: item.ThumbnailURL,
+//			Tags:         item.Tags,
+//			UserTags:     item.UserTags,
+//		}
+//		viewArray = append(viewArray, viewObject)
+//	}
+//	returnObject := view.CollectionContentsView{Results: &viewArray, TotalRecords: totalRecords, Limit: limit, Offset: offset}
+//	helpers.SuccessResponse(c, returnObject, 200)
+//}
 
 func GetTVSeasonHandler(c *gin.Context) {
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
@@ -269,7 +236,7 @@ func GetTMDBImageURL(path string, size string) string {
 	return tmdb.GetImageURL(path, size)
 }
 
-func SearchTVShowCore(queryString string) (*[]view.TMDBSearchResultObject, error){
+func SearchTVShowCore(queryString string) (*[]view.TMDBSearchResultObject, error) {
 	results, err := sources.SearchTVShowTMDB(queryString)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")

@@ -29,7 +29,6 @@ function SearchPage(props: any) {
         }
       });
   }, [query]);
-  console.log(data);
   return (
     <>
       <Topnav />

@@ -20,14 +20,18 @@ func SetupRoutes(r *gin.Engine) {
 		General Routes
 	 */
 	privateRoutes.GET("/search", GeneralSearchHandler)
+	privateRoutes.POST("/comment", PostComment)
+	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
+	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
+	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
+	privateRoutes.POST("/collection", CreateCollectionHandler)
+
 	/*
 		TV Show Routes
 	 */
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
 	privateRoutes.GET("/tv/trending", GetTrendingTVShowsHandler)
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
-	privateRoutes.POST("/tv/lib", AddTVShowToLibraryHandler)
-	privateRoutes.GET("/tv/lib", GetUserTVShowLibraryHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	/*
 		Movies Routes

@@ -1,18 +1,18 @@
-import "./MediaPage.css";
-import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
 import {
   IconButton,
-  styled,
   Tooltip,
-  tooltipClasses,
   TooltipProps,
+  styled,
+  tooltipClasses,
 } from "@mui/material";
-import { useState } from "react";
-import AddToCollectionModal from "../Modals/AddToCollectionModal";
-import HorizontalSection from "../Home/HorizontalSection";
-import VideoModal from "../Modals/VideoModal";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import React, { useState } from "react";
 import convertDateToReadable from "../../helpers/helpers";
+import HorizontalSection from "../Home/HorizontalSection";
+import AddToCollectionModal from "../Modals/AddToCollectionModal";
+import VideoModal from "../Modals/VideoModal";
+import ImageModal from "../Modals/ImageModal";
 
 const offsetFix = {
   modifiers: [
@@ -36,11 +36,33 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
-function MediaPageMovie(props: any) {
+function MediaPageGame(props: any) {
+  // get backdropURL from artwork or screenshots if available
+  var backdropURL = "";
+  if (props.data.artworks) {
+    backdropURL = props.data.artworks[0].image_url;
+  } else if (props.data.screenshots) {
+    backdropURL = props.data.screenshots[0].image_url;
+  }
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [videoKey, setVideoKey] = useState("");
-
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageURL, setImageURL] = useState("");
+  const handleVideoButtonClick = (key: string) => {
+    setIsVideoModalOpen(true);
+    setVideoKey(key);
+  };
+  const handleVideoButtonClose = () => {
+    setIsVideoModalOpen(false);
+  };
+  const handleImageButtonClick = (key: string) => {
+    setIsImageModalOpen(true);
+    setImageURL(key);
+  };
+  const handleImageButtonClose = () => {
+    setIsImageModalOpen(false);
+  };
   var styles = {
     noBackdrop: {
       background:
@@ -51,7 +73,7 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        props.data.backdrop_url +
+        backdropURL +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -61,75 +83,46 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        props.data.backdrop_url +
+        backdropURL +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
     },
   };
-  // handle variables for display
-  var releaseYear = "";
-  try {
-    releaseYear = props.data.release_date.slice(0, 4);
-  } catch {}
-  var genres = props.data.genres
-    .map((item: any) => {
-      return item.name;
-    })
-    .join(", ");
-  var runtime = "";
-  var creators = "";
-  var isComingSoon = false;
-  if (props.data.release_date) {
-    isComingSoon = new Date(props.data.release_date) > new Date();
+  var genres = "";
+  if (props.data.genres) {
+    genres = props.data.genres
+      .map((item: any) => {
+        return item.name;
+      })
+      .join(", ");
   }
-  // get creators (directors)
-  try {
-    const lf = new Intl.ListFormat("en");
-    creators = lf.format(
-      props.data.credits.crew
-        .filter((item: any) => item.job === "Director")
-        .map((item: any) => {
-          return item.name;
-        })
+  var platforms = "";
+  if (props.data.platforms) {
+    platforms = props.data.platforms
+      .map((item: any) => {
+        return item.name;
+      })
+      .join(", ");
+  }
+  const lf = new Intl.ListFormat("en");
+  var credits = "";
+  if (props.data.involved_companies) {
+    credits = lf.format(
+      props.data.involved_companies
+        .filter((item: any) => item.developer || item.publisher)
+        .map((item: any) => item.company.name)
     );
-  } catch {}
-  if (props.data.runtime > 0) {
-    runtime = props.data.runtime + "m";
   }
-  // handle actor profiles
-  var creditsList = props.data.credits.cast.map((item: any) => {
-    return {
-      thumbnail_url: item.profile_path,
-      credits: {
-        name: item.name,
-        character: item.character,
-        id: item.id,
-      },
-      id: item.credit_id,
-    };
-  });
-  // modal functions
-  const handleAddToCollectionButtonClick = () => {
-    setIsCollectionModalOpen(true);
-  };
-  const handleAddToCollectionClose = () => {
-    setIsCollectionModalOpen(false);
-  };
-  const handleVideoButtonClick = (key: string) => {
-    setIsVideoModalOpen(true);
-    setVideoKey(key);
-  };
-  const handleVideoButtonClose = () => {
-    setIsVideoModalOpen(false);
-  };
+  let images = [
+    ...(props.data.artworks ?? []),
+    ...(props.data.screenshots ?? []),
+  ];
   return (
     <>
       <div
         className="media-page-tv-header"
-        style={
-          props.data.backdrop_url ? styles.withBackdrop : styles.noBackdrop
-        }
+        style={backdropURL ? styles.withBackdrop : styles.noBackdrop}
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
@@ -149,10 +142,6 @@ function MediaPageMovie(props: any) {
             <div className="media-page-tv-header-info">
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
-                <span className="media-page-tv-header-year">
-                  {" "}
-                  {releaseYear.length !== 4 ? "" : "(" + releaseYear + ")"}
-                </span>
               </div>
               <div className="media-page-tv-header-genres">
                 {props.data.status === "Released" ? (
@@ -165,18 +154,15 @@ function MediaPageMovie(props: any) {
                       : ""}
                   </>
                 )}
-                {props.data.status && (runtime || genres) ? "     ⸱     " : ""}
-                {runtime}
-                {runtime && genres ? "     ⸱     " : ""}
-                {genres}
+                {platforms}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview
-                  ? props.data.overview
+                {props.data.summary
+                  ? props.data.summary
                   : "No description available."}
               </div>
               <div className="media-page-tv-header-credits">
-                {creators ? "by " + creators : ""}
+                {credits ? "by " + credits : ""}
               </div>
               <div className="media-page-tv-header-button-container">
                 <BootstrapTooltip
@@ -187,14 +173,14 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleAddToCollectionButtonClick}>
+                  <IconButton onClick={undefined}>
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
-                      Track Show
+                      Track Game
                     </span>
                   }
                   PopperProps={offsetFix}
@@ -209,31 +195,43 @@ function MediaPageMovie(props: any) {
         </div>
       </div>
       <div className="media-page-tv-main" style={styles.opacityBackdrop}>
+        {props.data.storyline ? (
+          <div className="media-page-storyline">
+            <div className="media-page-section-header">Storyline</div>
+            {props.data.storyline}
+          </div>
+        ) : (
+          ""
+        )}
         <HorizontalSection
-          items={creditsList}
-          header={"Cast"}
-          itemType="cast"
-          itemOnClick={undefined}
-        />
-        <HorizontalSection
-          items={props.data.videos.results}
+          items={props.data.videos}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
+        <HorizontalSection
+          items={images}
+          header={"Images"}
+          itemType="image"
+          itemOnClick={handleImageButtonClick}
+        />
       </div>
-      <div className="media-page-tv-footer" style={styles.withBackdrop} />
-      <AddToCollectionModal
+      {/* <AddToCollectionModal
         onClose={handleAddToCollectionClose}
         open={isCollectionModalOpen}
-      />
+      /> */}
       <VideoModal
         onClose={handleVideoButtonClose}
         open={isVideoModalOpen}
         videoKey={videoKey}
       />
+      <ImageModal
+        onClose={handleImageButtonClose}
+        open={isImageModalOpen}
+        imageURL={imageURL}
+      />
     </>
   );
 }
 
-export default MediaPageMovie;
+export default MediaPageGame;

@@ -9,6 +9,7 @@ import houndConfig from "./config.json";
 import axios from "axios";
 import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
 import SearchPage from "./pages/Search/SearchPage";
+import Library from "./pages/Library/Library";
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -72,11 +73,19 @@ function App() {
             element={<ProtectedRoute component={<TVShows />} />}
           />
           <Route
+            path="library"
+            element={<ProtectedRoute component={<Library />} />}
+          />
+          <Route
             path="/tv/:id"
             element={<ProtectedRoute component={<MediaPageLanding />} />}
           />
           <Route
             path="/movie/:id"
+            element={<ProtectedRoute component={<MediaPageLanding />} />}
+          />
+          <Route
+            path="/game/:id"
             element={<ProtectedRoute component={<MediaPageLanding />} />}
           />
           <Route

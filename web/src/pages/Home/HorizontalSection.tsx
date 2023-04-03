@@ -1,14 +1,13 @@
 import { ScrollMenu } from "react-horizontal-scrolling-menu";
-import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
 import "react-horizontal-scrolling-menu/dist/styles.css";
 import "./HorizontalSection.css";
 import { LeftArrow, RightArrow } from "./arrows";
-import ItemCard2 from "../Library/ItemCard";
+import ItemCard from "./ItemCard";
 
 function HorizontalSection(props: {
   items: any;
   header: string;
-  itemType: "poster" | "cast" | "videos" | "seasons" | "search";
+  itemType: "poster" | "cast" | "video" | "seasons" | "search" | "image";
   itemOnClick: any | undefined;
 }) {
   if (!props.items || props.items.length === 0) {
@@ -21,9 +20,9 @@ function HorizontalSection(props: {
         <div>
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>
             {props.items.map((item: any) => (
-              <ItemCard2
+              <ItemCard
                 item={item}
-                key={item.id}
+                key={item.id ? item.id : item.source_id}
                 showTitle={null}
                 itemType={props.itemType}
                 itemOnClick={props.itemOnClick}

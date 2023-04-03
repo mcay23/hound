@@ -1,5 +1,4 @@
 import {
-  CircularProgress,
   Dialog,
   styled,
   Tooltip,
@@ -68,7 +67,6 @@ function SeasonModal(props: any) {
         .then((res) => {
           setSeasonData(res.data);
           setIsSeasonDataLoaded(true);
-          console.log("seasondata", res.data);
         })
         .catch((err) => {
           if (err.response.status === 500) {

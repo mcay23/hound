@@ -11,9 +11,10 @@ function ItemCard(props: {
     | "collectionImageList"
     | "poster"
     | "cast"
-    | "videos"
+    | "video"
     | "seasons"
-    | "search";
+    | "search"
+    | "image";
   showTitle: any;
   itemOnClick: any;
 }) {
@@ -135,18 +136,25 @@ function ItemCard(props: {
     );
   }
   function itemTypeSearch() {
-    let mediaPagePath = `/${mediaType}/tmdb-${props.item.source_id}`;
+    let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
+    let gameAspectRatioClass =
+      mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
       <a href={mediaPagePath}>
         {props.item.poster_url ? (
           <img
-            className={"rounded itemcard-img-poster"}
+            className={"rounded itemcard-img-poster " + gameAspectRatioClass}
             src={props.item.poster_url}
             alt={props.item.media_title}
             loading="lazy"
           />
         ) : (
-          <div className={"rounded itemcard-img-poster item-card-no-thumbnail"}>
+          <div
+            className={
+              "rounded itemcard-img-poster item-card-no-thumbnail " +
+              gameAspectRatioClass
+            }
+          >
             {props.item.media_title + releaseYearText}
           </div>
         )}
@@ -159,7 +167,6 @@ function ItemCard(props: {
         className="video-button-trigger"
         key={props.item.key}
         onClick={() => {
-          console.log("test");
           props.itemOnClick(props.item.key);
         }}
         style={{
@@ -171,16 +178,29 @@ function ItemCard(props: {
       </div>
     );
   }
+  function itemTypeImage() {
+    return (
+      <div
+        className="video-button-trigger"
+        key={props.item.image_url}
+        onClick={() => {
+          props.itemOnClick(props.item.image_url);
+        }}
+        style={{
+          backgroundImage: `url('${props.item.image_url}')`,
+        }}
+      ></div>
+    );
+  }
   // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
-  var mediaType = "";
+  var mediaType = props.item.media_type;
   var releaseYearText = "";
-  if (props.item.media_type === "tvshow") {
+  if (mediaType === "tvshow") {
     mediaType = "tv";
     if (props.item.first_air_date) {
       releaseYearText = ` (${props.item.first_air_date.slice(0, 4)})`;
     }
-  } else if (props.item.media_type === "movie") {
-    mediaType = "movie";
+  } else if (mediaType === "movie") {
     if (props.item.release_date) {
       releaseYearText = ` (${props.item.release_date.slice(0, 4)})`;
     }
@@ -197,8 +217,10 @@ function ItemCard(props: {
       return itemTypeCollectionImageList();
     case "search":
       return itemTypeSearch();
-    case "videos":
+    case "video":
       return itemTypeVideo();
+    case "image":
+      return itemTypeImage();
   }
 }
 

@@ -34,7 +34,9 @@ func JWTMiddleware(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	// set headers from auth token
+	// set headers from auth token, overwrite current headers
+	//c.Request.Header.Del("X-Username")
+	//c.Request.Header.Del("X-Client")
 	c.Request.Header.Add("X-Username", claims.Username)
 	c.Request.Header.Add("X-Client", claims.Client)
 	c.Next()

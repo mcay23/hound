@@ -94,40 +94,17 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 	if source != SourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
-	show, err := GetTVShowFromIDTMDB(sourceID, nil)
+	entry, err := GetLibraryObjectTMDB(database.MediaTypeTVShow, sourceID)
 	if err != nil {
 		return err
 	}
-	showJson, err := json.Marshal(show)
+	// insert record to internal library if not exists
+	libraryID, err := database.AddRecordToLibrary(entry)
 	if err != nil {
 		return err
 	}
-	// import tmdb genres
-	var tagsArray []database.TagObject
-	for _, genre := range show.Genres {
-		tagsArray = append(tagsArray, database.TagObject{
-			TagID:   genre.ID,
-			TagName: genre.Name,
-		})
-	}
-	// weird but works
-	temp := tmdb.GetImageURL(show.PosterPath, tmdb.W300)
-	thumbnailURL := &temp
-	if show.PosterPath == "" {
-		thumbnailURL = nil
-	}
-	entry := database.LibraryRecord{
-		MediaType:    database.MediaTypeTVShow,
-		MediaSource:  SourceTMDB,
-		SourceID:     strconv.Itoa(sourceID),
-		MediaTitle:   show.Name,
-		ReleaseDate:  show.FirstAirDate,
-		Tags:         &tagsArray,
-		Description:  []byte(show.Overview),
-		FullData: 	  showJson,
-		ThumbnailURL: thumbnailURL,
-	}
-	err = database.AddItemToCollection(userID, collectionID, &entry)
+	// insert collection relation to collections table
+	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
 	if err != nil {
 		return err
 	}
@@ -164,6 +141,31 @@ func GetMovieFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.MovieDetai
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
 	}
 	return movie, nil
+}
+
+func AddMovieToCollectionTMDB(username string, source string, sourceID int, collectionID *int64) error {
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		return err
+	}
+	if source != SourceTMDB {
+		panic("Only tmdb source is allowed for now")
+	}
+	entry, err := GetLibraryObjectTMDB(database.MediaTypeMovie, sourceID)
+	if err != nil {
+		return err
+	}
+	// insert record to internal library if not exists
+	libraryID, err := database.AddRecordToLibrary(entry)
+	if err != nil {
+		return err
+	}
+	// insert collection relation to collections table
+	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 
@@ -228,4 +230,80 @@ func GetGenresMap(genreIds []int64, mediaType string) *[]GenreObject {
 		ret = append(ret, insert)
 	}
 	return &ret
+}
+
+func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryRecord, error) {
+	var entry database.LibraryRecord
+	if mediaType == database.MediaTypeTVShow {
+		show, err := GetTVShowFromIDTMDB(sourceID, nil)
+		if err != nil {
+			return nil, err
+		}
+		showJson, err := json.Marshal(show)
+		if err != nil {
+			return nil, err
+		}
+		// import tmdb genres
+		var tagsArray []database.TagObject
+		for _, genre := range show.Genres {
+			tagsArray = append(tagsArray, database.TagObject{
+				TagID:   genre.ID,
+				TagName: genre.Name,
+			})
+		}
+		// weird but works
+		temp := tmdb.GetImageURL(show.PosterPath, tmdb.W300)
+		thumbnailURL := &temp
+		if show.PosterPath == "" {
+			thumbnailURL = nil
+		}
+		entry = database.LibraryRecord{
+			MediaType:    database.MediaTypeTVShow,
+			MediaSource:  SourceTMDB,
+			SourceID:     strconv.Itoa(sourceID),
+			MediaTitle:   show.Name,
+			ReleaseDate:  show.FirstAirDate,
+			Tags:         &tagsArray,
+			Description:  []byte(show.Overview),
+			FullData: 	  showJson,
+			ThumbnailURL: thumbnailURL,
+		}
+		return &entry, nil
+	} else if mediaType == database.MediaTypeMovie {
+		movie, err := GetMovieFromIDTMDB(sourceID, nil)
+		if err != nil {
+			return nil, err
+		}
+		movieJson, err := json.Marshal(movie)
+		if err != nil {
+			return nil, err
+		}
+		// import tmdb genres
+		var tagsArray []database.TagObject
+		for _, genre := range movie.Genres {
+			tagsArray = append(tagsArray, database.TagObject{
+				TagID:   genre.ID,
+				TagName: genre.Name,
+			})
+		}
+		// weird but works
+		temp := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
+		thumbnailURL := &temp
+		if movie.PosterPath == "" {
+			thumbnailURL = nil
+		}
+		entry = database.LibraryRecord{
+			MediaType:    database.MediaTypeMovie,
+			MediaSource:  SourceTMDB,
+			SourceID:     strconv.Itoa(sourceID),
+			MediaTitle:   movie.Title,
+			ReleaseDate:  movie.ReleaseDate,
+			Tags:         &tagsArray,
+			Description:  []byte(movie.Overview),
+			FullData: 	  movieJson,
+			ThumbnailURL: thumbnailURL,
+		}
+		return &entry, nil
+	}
+	return nil, errors.New("invalid media type in call to GetLibraryObjectTMDB()")
 }

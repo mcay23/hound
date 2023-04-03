@@ -32,11 +32,11 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 		return
 	}
 	// convert url results
-	var viewArray []view.LibraryItem
+	var viewArray []view.LibraryObject
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryItem{
+		viewObject := view.LibraryObject{
 			MediaType:    database.MediaTypeMovie,
 			MediaSource:  sources.SourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),

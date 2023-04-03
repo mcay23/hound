@@ -2,8 +2,6 @@
     padding-bottom: 40px;
     min-height: 400px;
     font-size: large;
-    display: flex;
-    flex-direction: column;
 }
 
 .media-page-tv-inline-container {
@@ -132,6 +130,20 @@
     /* background-color: rgba(255, 255, 255); */
 }
 
+.media-page-section-header {
+    font-size: 30px;
+    margin-bottom: 5px;
+    font-family: 'Cabin', sans-serif;
+}
+
+.media-page-storyline {
+    padding-top: 30px;
+    margin-left: 85px;
+    margin-bottom: 15px;
+    width: 70%;
+    font-family: 'Cabin', sans-serif;
+}
+
 .media-page-tv-footer {
     height: 800px;
 }
@@ -143,4 +155,34 @@
     margin-left: 40px;
     display: flex;
     flex-direction: row;
+}
+
+@media only screen and (max-width:900px) {
+    .media-page-tv-inline-container {
+        display: flex;
+        flex-direction: column;
+        margin-top: 20px;
+    }
+    .media-page-tv-poster-container {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .media-page-tv-header {
+        display: flex;
+        justify-content: center;
+    }
+    .media-page-tv-header-title {
+        font-size: 32px;
+    }
+    .media-page-tv-header-overview {
+        width: 100%;
+    }
+    .media-page-tv-header-container {
+        margin: auto;
+        width: 80%;
+    }
+    .media-page-tv-header-info {
+        margin-left: 0;
+    }
 }

@@ -1,4 +1,4 @@
-package v1
+	package v1
 
 import (
 	"errors"
@@ -49,8 +49,4 @@ func LoginHandler(c *gin.Context) {
 	}
 	c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
-}
-
-func TestHandler(c *gin.Context) {
-	helpers.SuccessResponse(c, gin.H{"status": "success", "msg": "itssuccesful"}, 200)
 }
