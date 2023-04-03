@@ -20,9 +20,8 @@
 
 .horizontal-section-header {
     user-select: none; /* Standard syntax */
-    font-size: 2em;
-    font-family: 'Cabin Condensed', sans-serif;
-    font-weight: 500;
+    font-size: 30px;
+    font-family: 'Cabin', sans-serif;
     color: black;
     /* background-color: rgb(24, 11, 111); */
     /* background-color: black; */

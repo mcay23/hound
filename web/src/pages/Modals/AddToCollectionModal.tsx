@@ -8,24 +8,55 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import "./AddToCollectionModal.css";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 function AddToCollectionModal(props: any) {
-  const { onClose, selectedValue, open } = props;
+  const { onClose, open, item } = props;
 
   const handleClose = () => {
-    onClose(selectedValue);
+    onClose();
   };
 
-  const handleListItemClick = (value: string) => {
-    onClose(value);
+  const handleListItemClick = (collectionID: number) => {
+    // add item to collection
+    if (item && item["source_id"]) {
+      var payload = {
+        media_type: item["media_type"],
+        media_source: item["media_source"],
+        source_id: item["source_id"].toString(),
+      };
+      axios
+        .post(`/api/v1/collection/${collectionID}`, payload)
+        .then((res) => {
+          console.log("add item success");
+        })
+        .catch((err) => {
+          console.log("AXIOS ERROR: ", err);
+        });
+    }
+    onClose();
   };
 
-  const emails = [
-    "My library",
-    "top 10 movies of all time",
-    "hey123",
-    "favorite movies",
-  ];
+  const handleCreateNewCollection = () => {
+    onClose();
+  };
+
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`/api/v1/collection/all`)
+      .then((res) => {
+        console.log(res.data);
+        setData(res.data);
+      })
+      .catch((err) => {
+        if (err.response.status === 500) {
+          alert("500");
+        }
+      });
+  }, [props.open]);
 
   return (
     <Dialog
@@ -36,35 +67,43 @@ function AddToCollectionModal(props: any) {
       <div className="add-to-collection-dialog-content">
         <div className="add-to-collection-dialog-header">Add To Collection</div>
         <Divider variant="middle">⸱</Divider>
-        <List sx={{ pt: 0 }}>
-          {emails.map((item) => (
-            <ListItem disableGutters className="pt-0 pb-0" key={item}>
-              <ListItemButton
-                onClick={() => handleListItemClick(item)}
-                key={item}
+        {data ? (
+          <List sx={{ pt: 0 }}>
+            {data.map((item) => (
+              <ListItem
+                disableGutters
+                className="pt-0 pb-0"
+                key={item["collection_id"]}
               >
-                <ListItemText
-                  className="add-to-collection-dialog-choice"
-                  primary={item}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-          <ListItem disableGutters className="pt-0 pb-0">
-            <ListItemButton onClick={() => handleListItemClick("addAccount")}>
-              {/* <ListItemAvatar>
+                <ListItemButton
+                  onClick={() => handleListItemClick(item["collection_id"])}
+                  key={item}
+                >
+                  <ListItemText
+                    className="add-to-collection-dialog-choice"
+                    primary={item["collection_title"]}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+            <ListItem disableGutters className="pt-0 pb-0">
+              <ListItemButton onClick={() => handleCreateNewCollection()}>
+                {/* <ListItemAvatar>
               <Avatar>
                 <AddIcon />
               </Avatar>
             </ListItemAvatar> */}
-              <AddIcon />
-              <ListItemText
-                className="add-to-collection-dialog-button"
-                primary="New Collection"
-              />
-            </ListItemButton>
-          </ListItem>
-        </List>
+                <AddIcon />
+                <ListItemText
+                  className="add-to-collection-dialog-button"
+                  primary="New Collection"
+                />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        ) : (
+          ""
+        )}
       </div>
     </Dialog>
   );

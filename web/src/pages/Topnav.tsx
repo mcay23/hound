@@ -1,5 +1,6 @@
 import { Container, Nav, Navbar } from "react-bootstrap";
 import "./Topnav.css";
+import SearchBar from "./Home/SearchBar";
 
 function Topnav() {
   return (
@@ -17,6 +18,9 @@ function Topnav() {
             <Nav.Link className="top-navbar-item" href="/">
               Home
             </Nav.Link>
+            <Nav.Link className="top-navbar-item" href="/library">
+              My Library
+            </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/tvshows">
               TV Shows
             </Nav.Link>
@@ -30,6 +34,7 @@ function Topnav() {
               Games
             </Nav.Link>
           </Nav>
+          <SearchBar />
           <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/logout">
             Logout
           </Nav.Link>

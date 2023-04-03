@@ -45,6 +45,8 @@ function MediaPageTV(props: any) {
 
   var styles = {
     noBackdrop: {
+      background:
+        "linear-gradient(rgba(24, 11, 111, 1) 5%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%)",
       backgroundColor: "black",
     },
     withBackdrop: {
@@ -91,9 +93,15 @@ function MediaPageTV(props: any) {
       credits: {
         name: item.name,
         character: item.character,
+        id: item.id,
       },
+      id: item.credit_id,
     };
   });
+  // if specials exist (season number 0), move to end of array for displaying
+  // if (props.data.seasons && props.data.seasons[0].season_number === 0) {
+  //   props.data.seasons.push(props.data.seasons.shift());
+  // }
   // modal functions
   const handleAddToCollectionButtonClick = () => {
     setIsCollectionModalOpen(true);
@@ -203,7 +211,7 @@ function MediaPageTV(props: any) {
         <HorizontalSection
           items={props.data.videos.results}
           header={"Videos"}
-          itemType="videos"
+          itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
         <HorizontalSection
@@ -217,6 +225,7 @@ function MediaPageTV(props: any) {
       <AddToCollectionModal
         onClose={handleAddToCollectionClose}
         open={isCollectionModalOpen}
+        item={props.data}
       />
       <VideoModal
         onClose={handleVideoButtonClose}

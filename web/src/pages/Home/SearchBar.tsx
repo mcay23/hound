@@ -6,7 +6,6 @@ function SearchBar() {
   const navigate = useNavigate();
   const submitHandler = (event: any) => {
     event.preventDefault();
-    console.log(searchQuery, "query");
     if (searchQuery !== "") {
       navigate("/search?q=" + searchQuery);
       window.location.reload();
@@ -14,7 +13,6 @@ function SearchBar() {
   };
   const [searchQuery, setSearchQuery] = useState("");
   const onKeyChange = (event: any) => {
-    console.log(event.target.value);
     setSearchQuery(event.target.value);
   };
   return (

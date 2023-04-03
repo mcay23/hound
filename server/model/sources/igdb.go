@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hound/helpers"
 	"hound/model"
 	"hound/model/database"
 	"io"
@@ -24,10 +25,8 @@ const (
 )
 
 const (
-	IGDBImageCover      = "cover_big"
-	IGDBImage1080p      = "1080p"
-	IGDBImageScreenshot = "screenshot_huge"
-	IGDBImageOriginal   = "original"
+	IGDBImageCover    = "cover_big"
+	IGDBImageOriginal = "original"
 )
 
 type IGDBAuthenticateResponse struct {
@@ -37,12 +36,13 @@ type IGDBAuthenticateResponse struct {
 }
 
 type IGDBSearchObject struct {
-	ID         int    `json:"id"`
-	MediaTitle string `json:"media_title"`
-	MediaType  string `json:"media_type"`
-	SourceID   int    `json:"source_id"`
-	PosterURL  string `json:"poster_url"`
-	Cover      struct {
+	ID          int    `json:"id"`
+	MediaTitle  string `json:"media_title"`
+	MediaType   string `json:"media_type"`
+	MediaSource string `json:"media_source"`
+	SourceID    int    `json:"source_id"`
+	PosterURL   string `json:"poster_url"`
+	Cover       struct {
 		ID       int    `json:"id"`
 		ImageURL string `json:"image_url"`
 		ImageID  string `json:"image_id"`
@@ -60,11 +60,12 @@ type IGDBSearchObject struct {
 }
 
 type IGDBGameObject struct {
-	ID       int `json:"id"`
-	MediaTitle string `json:"media_title"`
-	MediaType  string `json:"media_type"`
-	SourceID   int    `json:"source_id"`
-	Artworks []struct {
+	ID          int    `json:"id"`
+	MediaTitle  string `json:"media_title"`
+	MediaType   string `json:"media_type"`
+	MediaSource string `json:"media_source"`
+	SourceID    int    `json:"source_id"`
+	Artworks    []struct {
 		ID       int    `json:"id"`
 		Animated bool   `json:"animated"`
 		Height   int    `json:"height"`
@@ -152,10 +153,10 @@ type IGDBGameObject struct {
 		Name string `json:"name"`
 	} `json:"themes"`
 	Videos []struct {
-		ID       int    `json:"id"`
-		Name     string `json:"name"`
-		VideoID  string `json:"video_id"`
-		VideoURL string `json:"video_url"`
+		ID      int    `json:"id"`
+		Name    string `json:"name"`
+		VideoID string `json:"video_id"`
+		Key     string `json:"key"`
 	} `json:"videos"`
 	Websites []struct {
 		ID       int    `json:"id"`
@@ -202,6 +203,7 @@ func getAccessToken(forceRefresh bool) string {
 		}
 		return resp.AccessToken
 	}
+	fmt.Println("error withs status", res.StatusCode)
 	panic(errors.New("non-200 response received from igdb oauth flow"))
 }
 
@@ -247,6 +249,7 @@ func SearchGameIGDB(query string) (IGDBSearchResultObject, error) {
 	for num, game := range games {
 		games[num].MediaTitle = game.Name
 		games[num].MediaType = database.MediaTypeGame
+		games[num].MediaSource = SourceIGDB
 		games[num].SourceID = game.ID
 		games[num].Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 		games[num].PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
@@ -265,10 +268,10 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	var response IGDBGamesResultsResponseObject
 	err = json.Unmarshal(b, &response)
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 	if len(response) == 0 {
-		return nil, errors.New("no game found with this ID in IGDB")
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No game found with this igdbID")
 	}
 	game := response[0]
 	// get image urls
@@ -276,6 +279,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	game.PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 	game.MediaTitle = game.Name
 	game.MediaType = database.MediaTypeGame
+	game.MediaSource = SourceIGDB
 	game.SourceID = game.ID
 	for num, artwork := range game.Artworks {
 		game.Artworks[num].ImageURL = getIGDBImageURL(artwork.ImageID, IGDBImageOriginal)
@@ -290,9 +294,68 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 		game.SimilarGames[num].Cover.ImageURL = getIGDBImageURL(similarGame.Cover.ImageID, IGDBImageCover)
 	}
 	for num, videos := range game.Videos {
-		game.Videos[num].VideoURL = fmt.Sprintf(YoutubePath, videos.VideoID)
+		game.Videos[num].Key = videos.VideoID
 	}
 	return &game, nil
+}
+
+func AddGameToCollectionIGDB(username string, source string, sourceID int, collectionID *int64) error {
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		return err
+	}
+	if source != SourceIGDB {
+		panic("Only igdb source is allowed for now")
+	}
+	entry, err := GetLibraryObjectIGDB(sourceID)
+	if err != nil {
+		return err
+	}
+	// insert record to internal library if not exists
+	libraryID, err := database.AddRecordToLibrary(entry)
+	if err != nil {
+		return err
+	}
+	// insert collection relation to collections table
+	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
+	game, err := GetGameFromIDIGDB(igdbID)
+	if err != nil {
+		return nil, err
+	}
+	// add item to internal library if not there
+	releaseTime := time.UnixMilli(int64(game.FirstReleaseDate))
+	gameJson, err := json.Marshal(game)
+	if err != nil {
+		return nil, err
+	}
+	// import igdb genres
+	var tagsArray []database.TagObject
+	for _, genre := range game.Genres {
+		tagsArray = append(tagsArray, database.TagObject{
+			TagID:   int64(genre.ID),
+			TagName: genre.Name,
+		})
+	}
+	record := database.LibraryRecord{
+		MediaType:    database.MediaTypeGame,
+		MediaSource:  SourceIGDB,
+		SourceID:     strconv.Itoa(game.SourceID),
+		MediaTitle:   game.MediaTitle,
+		ReleaseDate:  releaseTime.Format("2006-02-01"),
+		Description:  []byte(game.Summary),
+		FullData:     gameJson,
+		ThumbnailURL: &game.Cover.ImageURL,
+		Tags:         &tagsArray,
+		UserTags:     nil,
+	}
+	return &record, nil
 }
 
 func getIGDBImageURL(imageID string, imageType string) string {

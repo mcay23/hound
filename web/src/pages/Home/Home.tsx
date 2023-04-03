@@ -42,7 +42,6 @@ function Home() {
         });
     }
   });
-  console.log(trendingMovies);
 
   return (
     <>

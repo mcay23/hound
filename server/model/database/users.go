@@ -93,7 +93,19 @@ func GetUser(username string) (*User, error) {
 func GetUserIDFromUsername(username string) (int64, error) {
 	user, err := GetUser(username)
 	if err != nil {
-		return -1, err
+		return -1, helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
 	}
 	return user.Id, nil
+}
+
+func GetUsernameFromID(userID int64) (string, error) {
+	var userXorm UserXorm
+	found, err := databaseEngine.Table(usersTable).ID(userID).Get(&userXorm)
+	if !found {
+		return "", errors.New(helpers.BadRequest)
+	}
+	if err != nil {
+		return "", err
+	}
+	return userXorm.Username, nil
 }
