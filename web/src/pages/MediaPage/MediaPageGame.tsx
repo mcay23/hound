@@ -97,6 +97,7 @@ function MediaPageGame(props: any) {
       })
       .join(", ");
   }
+  console.log(props.data);
   var platforms = "";
   if (props.data.platforms) {
     platforms = props.data.platforms
@@ -142,20 +143,14 @@ function MediaPageGame(props: any) {
             <div className="media-page-tv-header-info">
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
+                <span className="media-page-tv-header-year">
+                  {" "}
+                  {props.data.release_date
+                    ? "(" + props.data.release_date.slice(0, 4) + ")"
+                    : ""}
+                </span>
               </div>
-              <div className="media-page-tv-header-genres">
-                {props.data.status === "Released" ? (
-                  "Released"
-                ) : (
-                  <>
-                    {props.data.release_date
-                      ? "Releases " +
-                        convertDateToReadable(props.data.release_date)
-                      : ""}
-                  </>
-                )}
-                {platforms}
-              </div>
+              <div className="media-page-tv-header-genres">{platforms}</div>
               <div className="media-page-tv-header-overview">
                 {props.data.summary
                   ? props.data.summary

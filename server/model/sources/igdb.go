@@ -47,7 +47,8 @@ type IGDBSearchObject struct {
 		ImageURL string `json:"image_url"`
 		ImageID  string `json:"image_id"`
 	} `json:"cover"`
-	FirstReleaseDate int `json:"first_release_date"`
+	FirstReleaseDate int    `json:"first_release_date"`
+	ReleaseDate      string `json:"release_date"`
 	Genres           []struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -98,7 +99,8 @@ type IGDBGameObject struct {
 			} `json:"platform"`
 		} `json:"release_dates"`
 	} `json:"dlcs"`
-	FirstReleaseDate int `json:"first_release_date"`
+	FirstReleaseDate int    `json:"first_release_date"`
+	ReleaseDate      string `json:"release_date"`
 	GameModes        []struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -253,6 +255,9 @@ func SearchGameIGDB(query string) (IGDBSearchResultObject, error) {
 		games[num].SourceID = game.ID
 		games[num].Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 		games[num].PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+		if game.FirstReleaseDate != 0 {
+			games[num].ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+		}
 	}
 	return games, nil
 }
@@ -281,6 +286,9 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	game.MediaType = database.MediaTypeGame
 	game.MediaSource = SourceIGDB
 	game.SourceID = game.ID
+	if game.FirstReleaseDate != 0 {
+		game.ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+	}
 	for num, artwork := range game.Artworks {
 		game.Artworks[num].ImageURL = getIGDBImageURL(artwork.ImageID, IGDBImageOriginal)
 	}
@@ -330,7 +338,10 @@ func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
 		return nil, err
 	}
 	// add item to internal library if not there
-	releaseTime := time.UnixMilli(int64(game.FirstReleaseDate))
+	releaseDate := ""
+	if game.FirstReleaseDate != 0 {
+		releaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+	}
 	gameJson, err := json.Marshal(game)
 	if err != nil {
 		return nil, err
@@ -348,7 +359,7 @@ func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
 		MediaSource:  SourceIGDB,
 		SourceID:     strconv.Itoa(game.SourceID),
 		MediaTitle:   game.MediaTitle,
-		ReleaseDate:  releaseTime.Format("2006-02-01"),
+		ReleaseDate:  releaseDate,
 		Description:  []byte(game.Summary),
 		FullData:     gameJson,
 		ThumbnailURL: &game.Cover.ImageURL,
