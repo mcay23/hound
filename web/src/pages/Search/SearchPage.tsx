@@ -35,34 +35,30 @@ function SearchPage(props: any) {
       <div className="search-page-search-section">
         <SearchBar />
       </div>
-      <div className="search-page-main-section">
-        {isLoaded ? (
-          <div>
-            <HorizontalSection
-              items={data.tv_results}
-              header={"TV Shows"}
-              itemType={"search"}
-              itemOnClick={undefined}
-            />
-            <HorizontalSection
-              items={data.movie_results}
-              header={"Movies"}
-              itemType={"search"}
-              itemOnClick={undefined}
-            />
-            <HorizontalSection
-              items={data.game_results}
-              header={"Games"}
-              itemType={"search"}
-              itemOnClick={undefined}
-            />
-          </div>
-        ) : (
-          <div>
-            <LinearProgress />
-          </div>
-        )}
-      </div>
+      {isLoaded ? (
+        <div className="search-page-main-section">
+          <HorizontalSection
+            items={data.tv_results}
+            header={"TV Shows"}
+            itemType={"search"}
+            itemOnClick={undefined}
+          />
+          <HorizontalSection
+            items={data.movie_results}
+            header={"Movies"}
+            itemType={"search"}
+            itemOnClick={undefined}
+          />
+          <HorizontalSection
+            items={data.game_results}
+            header={"Games"}
+            itemType={"search"}
+            itemOnClick={undefined}
+          />
+        </div>
+      ) : (
+        <LinearProgress />
+      )}
     </>
   );
 }

@@ -94,6 +94,44 @@ func AddToCollectionHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
+func DeleteFromCollectionHandler(c *gin.Context)  {
+	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		return
+	}
+	body := AddToCollectionRequest{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
+		return
+	}
+	idParam := c.Param("id")
+	collectionID, err := strconv.Atoi(idParam)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
+		return
+	}
+	temp := int64(collectionID)
+	body.CollectionID = &temp
+	// check valid mediaType and source
+	err = ValidateMediaParams(body.MediaType, body.MediaSource)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	libraryID, err := database.GetInternalLibraryID(body.MediaType, body.MediaSource, body.SourceID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		return
+	}
+	err = database.DeleteCollectionRelation(userID, *libraryID, *body.CollectionID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete collection record"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+}
+
 func GetUserCollectionsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
@@ -262,7 +300,7 @@ func PostComment(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
 		}
 		// add item to internal library if not there
-		libraryID, err := database.AddRecordToLibrary(record)
+		libraryID, err := database.AddRecordToInternalLibrary(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 		}
@@ -281,7 +319,7 @@ func PostComment(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
 		}
 		// add item to internal library if not there
-		libraryID, err := database.AddRecordToLibrary(record)
+		libraryID, err := database.AddRecordToInternalLibrary(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 		}
@@ -300,7 +338,7 @@ func PostComment(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
 		}
 		// add item to internal library if not there
-		libraryID, err := database.AddRecordToLibrary(record)
+		libraryID, err := database.AddRecordToInternalLibrary(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 		}

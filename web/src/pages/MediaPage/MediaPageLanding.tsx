@@ -7,8 +7,6 @@ import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
 import MediaPageGame from "./MediaPageGame";
 
-const valid_sources = ["tmdb"];
-
 function MediaPageLanding() {
   const [data, setData] = useState<any[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);

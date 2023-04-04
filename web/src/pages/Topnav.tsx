@@ -19,12 +19,12 @@ function Topnav() {
               Home
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/library">
-              My Library
+              My Collections
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/tvshows">
               TV Shows
             </Nav.Link>
-            <Nav.Link className="top-navbar-item" href="/movies">
+            {/* <Nav.Link className="top-navbar-item" href="/movies">
               Movies
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/books">
@@ -32,7 +32,7 @@ function Topnav() {
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/games">
               Games
-            </Nav.Link>
+            </Nav.Link> */}
           </Nav>
           <SearchBar />
           <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/logout">

@@ -51,12 +51,14 @@ function Home() {
       </div>
       <div className="home-page-main-section">
         {isTrendingTVShowsLoaded ? (
-          <HorizontalSection
-            items={trendingTVShows}
-            header="Trending TV Shows"
-            itemType="poster"
-            itemOnClick={undefined}
-          />
+          <div className="home-page-primary-background">
+            <HorizontalSection
+              items={trendingTVShows}
+              header="Trending TV Shows"
+              itemType="poster"
+              itemOnClick={undefined}
+            />
+          </div>
         ) : (
           ""
         )}

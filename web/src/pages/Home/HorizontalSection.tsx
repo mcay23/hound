@@ -17,7 +17,7 @@ function HorizontalSection(props: {
     <>
       <div className="horizontal-section horizontal-section-menu">
         <div className="horizontal-section-header">{props.header}</div>
-        <div>
+        <div className="horizontal-scroll-container">
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>
             {props.items.map((item: any) => (
               <ItemCard

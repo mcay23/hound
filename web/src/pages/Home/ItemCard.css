@@ -1,7 +1,4 @@
-.itemcard-img-poster {
-    cursor: pointer;
-    transition: all 0.5s ease,
-}
+
 
 .itemcard-img-poster:hover {
     filter: brightness(67%);
@@ -25,11 +22,14 @@
 }
 
 .itemcard-img-poster {
+    cursor: pointer;
+    transition: all 0.5s ease;
     width: 200px;
     height: 300px;
     background-color: rgba(149,187,223, 1);
     object-fit: cover;
-    margin-right: 1em;
+    margin-right: 15px;
+    margin-bottom: 15px;
     box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 }
 
@@ -42,7 +42,7 @@
     width: 160px;
     height: 240px;
     object-fit: cover;
-    margin-right: 1em;
+    margin-right: 15px;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
     background-color: rgba(149,187,223, 1);
     background-image: url("../../../public/avatar-placeholder.png");
@@ -52,10 +52,11 @@
 }
 
 .item-card-no-thumbnail {
-    font-family: 'Cabin', sans-serif;
+    padding: 10px;
+    font-family: 'Roboto Condensed', sans-serif;
     color: rgba(var(--hound-secondary), 1);
     background-color: rgba(var(--hound-primary), 1);
-    font-size: 25px;
+    font-size: 35px;
     display: flex;
     justify-content: center;
     text-align: center;

@@ -63,6 +63,13 @@ function MediaPageGame(props: any) {
   const handleImageButtonClose = () => {
     setIsImageModalOpen(false);
   };
+  // modal functions
+  const handleAddToCollectionButtonClick = () => {
+    setIsCollectionModalOpen(true);
+  };
+  const handleAddToCollectionClose = () => {
+    setIsCollectionModalOpen(false);
+  };
   var styles = {
     noBackdrop: {
       background:
@@ -168,7 +175,7 @@ function MediaPageGame(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={undefined}>
+                  <IconButton onClick={handleAddToCollectionButtonClick}>
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -211,10 +218,11 @@ function MediaPageGame(props: any) {
           itemOnClick={handleImageButtonClick}
         />
       </div>
-      {/* <AddToCollectionModal
+      <AddToCollectionModal
         onClose={handleAddToCollectionClose}
         open={isCollectionModalOpen}
-      /> */}
+        item={props.data}
+      />
       <VideoModal
         onClose={handleVideoButtonClose}
         open={isVideoModalOpen}

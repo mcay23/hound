@@ -99,7 +99,7 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToLibrary(entry)
+	libraryID, err := database.AddRecordToInternalLibrary(entry)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToLibrary(entry)
+	libraryID, err := database.AddRecordToInternalLibrary(entry)
 	if err != nil {
 		return err
 	}
