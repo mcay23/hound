@@ -9,9 +9,8 @@
 }
   
 .horizontal-section {
-    padding-left: 3%;
-    padding-right: 3%;
-    padding-top: 30px;
+    margin-left: 50px;
+    margin-right: 50px;
 }
 
 /* .react-horizontal-scrolling-menu--scroll-container {
@@ -19,16 +18,13 @@
 } */
 
 .horizontal-section-header {
-    user-select: none; /* Standard syntax */
-    font-size: 30px;
-    font-family: 'Cabin', sans-serif;
-    color: black;
-    /* background-color: rgb(24, 11, 111); */
-    /* background-color: black; */
+    user-select: none;
+    font-size: 35px;
+    font-family: 'Cabin Condensed', sans-serif;
+    color: inherit;
     width: fit-content;
     margin-left: 40px;
-    border-radius: 0.3em;
-    margin-bottom: 0.3em;
+    margin-bottom: 15px;
 }
 
 @media only screen and (max-width:600px) {

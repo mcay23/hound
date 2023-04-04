@@ -23,6 +23,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/comment", PostComment)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
+	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
 	privateRoutes.POST("/collection", CreateCollectionHandler)
 

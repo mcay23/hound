@@ -6,6 +6,7 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
+import toast, { Toaster } from "react-hot-toast";
 import AddIcon from "@mui/icons-material/Add";
 import "./AddToCollectionModal.css";
 import { useEffect, useState } from "react";
@@ -13,11 +14,9 @@ import axios from "axios";
 
 function AddToCollectionModal(props: any) {
   const { onClose, open, item } = props;
-
   const handleClose = () => {
     onClose();
   };
-
   const handleListItemClick = (collectionID: number) => {
     // add item to collection
     if (item && item["source_id"]) {
@@ -29,9 +28,14 @@ function AddToCollectionModal(props: any) {
       axios
         .post(`/api/v1/collection/${collectionID}`, payload)
         .then((res) => {
-          console.log("add item success");
+          toast.success("Added item to collection");
         })
         .catch((err) => {
+          if (err.response.status === 400) {
+            toast.error("Item already in collection");
+          } else {
+            toast.error("Failed to add item to collection");
+          }
           console.log("AXIOS ERROR: ", err);
         });
     }
@@ -59,53 +63,62 @@ function AddToCollectionModal(props: any) {
   }, [props.open]);
 
   return (
-    <Dialog
-      onClose={handleClose}
-      open={open}
-      className="add-to-collection-dialog"
-    >
-      <div className="add-to-collection-dialog-content">
-        <div className="add-to-collection-dialog-header">Add To Collection</div>
-        <Divider variant="middle">⸱</Divider>
-        {data ? (
-          <List sx={{ pt: 0 }}>
-            {data.map((item) => (
-              <ListItem
-                disableGutters
-                className="pt-0 pb-0"
-                key={item["collection_id"]}
-              >
-                <ListItemButton
-                  onClick={() => handleListItemClick(item["collection_id"])}
-                  key={item}
+    <>
+      <Dialog
+        onClose={handleClose}
+        open={open}
+        className="add-to-collection-dialog"
+      >
+        <div className="add-to-collection-dialog-content">
+          <div className="add-to-collection-dialog-header">
+            Add To Collection
+          </div>
+          <Divider variant="middle">⸱</Divider>
+          {data ? (
+            <List sx={{ pt: 0 }}>
+              {data.map((item) => (
+                <ListItem
+                  disableGutters
+                  className="pt-0 pb-0"
+                  key={item["collection_id"]}
                 >
-                  <ListItemText
-                    className="add-to-collection-dialog-choice"
-                    primary={item["collection_title"]}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-            <ListItem disableGutters className="pt-0 pb-0">
-              <ListItemButton onClick={() => handleCreateNewCollection()}>
-                {/* <ListItemAvatar>
+                  <ListItemButton
+                    onClick={() => handleListItemClick(item["collection_id"])}
+                    key={item}
+                  >
+                    <ListItemText
+                      className="add-to-collection-dialog-choice"
+                      primary={item["collection_title"]}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+              <ListItem disableGutters className="pt-0 pb-0">
+                <ListItemButton onClick={() => handleCreateNewCollection()}>
+                  {/* <ListItemAvatar>
               <Avatar>
                 <AddIcon />
               </Avatar>
             </ListItemAvatar> */}
-                <AddIcon />
-                <ListItemText
-                  className="add-to-collection-dialog-button"
-                  primary="New Collection"
-                />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        ) : (
-          ""
-        )}
-      </div>
-    </Dialog>
+                  <AddIcon />
+                  <ListItemText
+                    className="add-to-collection-dialog-button"
+                    primary="New Collection"
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          ) : (
+            ""
+          )}
+        </div>
+      </Dialog>
+      <Toaster
+        toastOptions={{
+          duration: 5000,
+        }}
+      />
+    </>
   );
 }
 

@@ -256,7 +256,7 @@ func SearchGameIGDB(query string) (IGDBSearchResultObject, error) {
 		games[num].Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 		games[num].PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 		if game.FirstReleaseDate != 0 {
-			games[num].ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+			games[num].ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-01-02")
 		}
 	}
 	return games, nil
@@ -287,7 +287,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	game.MediaSource = SourceIGDB
 	game.SourceID = game.ID
 	if game.FirstReleaseDate != 0 {
-		game.ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+		game.ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-01-02")
 	}
 	for num, artwork := range game.Artworks {
 		game.Artworks[num].ImageURL = getIGDBImageURL(artwork.ImageID, IGDBImageOriginal)
@@ -320,7 +320,7 @@ func AddGameToCollectionIGDB(username string, source string, sourceID int, colle
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToLibrary(entry)
+	libraryID, err := database.AddRecordToInternalLibrary(entry)
 	if err != nil {
 		return err
 	}
@@ -340,7 +340,7 @@ func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
 	// add item to internal library if not there
 	releaseDate := ""
 	if game.FirstReleaseDate != 0 {
-		releaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-02-01")
+		releaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-01-02")
 	}
 	gameJson, err := json.Marshal(game)
 	if err != nil {

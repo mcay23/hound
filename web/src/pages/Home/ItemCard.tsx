@@ -20,6 +20,15 @@ function ItemCard(props: {
 }) {
   function itemTypePoster() {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
+    if (!props.item.thumbnail_url) {
+      return (
+        <a href={mediaPagePath}>
+          <div className={"rounded itemcard-img-poster item-card-no-thumbnail"}>
+            {props.item.media_title + releaseYearText}
+          </div>
+        </a>
+      );
+    }
     return (
       <a href={mediaPagePath}>
         <img
@@ -104,7 +113,7 @@ function ItemCard(props: {
         {props.item.thumbnail_url ? (
           <ImageListItem key={props.item.source_id}>
             <img
-              className="rounded itemcard-item itemcard-img-poster"
+              className="rounded itemcard-img-poster"
               src={props.item.thumbnail_url}
               alt={props.item.media_title}
               onClick={() => navigate(mediaPagePath)}
@@ -115,7 +124,7 @@ function ItemCard(props: {
           <ImageListItem key={props.item.media_title}>
             <a
               href={mediaPagePath}
-              className="itemcard-item itemcard-img-poster d-flex w-100 h-100 justify-content-center align-items-center text-center text-wrap bg-light rounded border border-dark"
+              className="itemcard-img-poster d-flex w-100 h-100 justify-content-center align-items-center text-center text-wrap bg-light rounded border border-dark"
             >
               <h3>
                 {props.item.media_title ? (

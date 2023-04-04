@@ -10,6 +10,7 @@ import axios from "axios";
 import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
 import SearchPage from "./pages/Search/SearchPage";
 import Library from "./pages/Library/Library";
+import Collection from "./pages/Collection/Collection";
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -91,6 +92,10 @@ function App() {
           <Route
             path="/search"
             element={<ProtectedRoute component={<SearchPage />} />}
+          />
+          <Route
+            path="/collection/:id"
+            element={<ProtectedRoute component={<Collection />} />}
           />
         </Routes>
       </BrowserRouter>

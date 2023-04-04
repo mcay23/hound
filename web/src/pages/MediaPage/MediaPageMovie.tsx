@@ -226,6 +226,7 @@ function MediaPageMovie(props: any) {
       <AddToCollectionModal
         onClose={handleAddToCollectionClose}
         open={isCollectionModalOpen}
+        item={props.data}
       />
       <VideoModal
         onClose={handleVideoButtonClose}
