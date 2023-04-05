@@ -13,6 +13,7 @@ import HorizontalSection from "../Home/HorizontalSection";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import VideoModal from "../Modals/VideoModal";
 import ImageModal from "../Modals/ImageModal";
+import Reviews from "../Comments/Reviews";
 
 const offsetFix = {
   modifiers: [
@@ -216,6 +217,7 @@ function MediaPageGame(props: any) {
           itemType="image"
           itemOnClick={handleImageButtonClick}
         />
+        <Reviews data={props.data.comments} />
       </div>
       <AddToCollectionModal
         onClose={handleAddToCollectionClose}

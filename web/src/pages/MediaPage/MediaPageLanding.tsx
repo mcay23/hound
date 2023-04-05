@@ -6,7 +6,6 @@ import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
 import MediaPageGame from "./MediaPageGame";
-import Reviews from "../Comments/Reviews";
 
 function MediaPageLanding() {
   const [data, setData] = useState<any[]>([]);

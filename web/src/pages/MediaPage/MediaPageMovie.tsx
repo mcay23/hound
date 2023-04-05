@@ -13,6 +13,7 @@ import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import convertDateToReadable from "../../helpers/helpers";
+import Reviews from "../Comments/Reviews";
 
 const offsetFix = {
   modifiers: [
@@ -221,6 +222,7 @@ function MediaPageMovie(props: any) {
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
+        <Reviews data={props.data.comments} />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
