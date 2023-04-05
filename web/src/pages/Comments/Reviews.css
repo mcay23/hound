@@ -1,0 +1,41 @@
+.reviews-main-container {
+    padding-left: 90px;
+    padding-right: 90px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.reviews-header-container {
+    user-select: none;
+    margin-bottom: 20px;
+    font-size: 35px;
+    font-family: 'Cabin Condensed', sans-serif;
+    color: inherit;
+    width: fit-content;
+}
+
+.MuiButton-contained {
+    font-size: 18px !important;
+    background-color: rgba(var(--hound-primary), 0.95) !important;
+    color: rgba(var(--hound-secondary), 1) !important;
+    font-family: 'Cabin', sans-serif !important;
+}
+
+.reviews-create-dialog-header {
+    padding-left: 24px;
+    padding-top: 24px;
+    font-size: 24px;
+    font-family: 'Cabin', sans-serif !important;
+}
+
+.reviews-create-dialog-content {
+    width: 500px;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+@media only screen and (max-width:600px) {
+    .reviews-header-container {
+        font-size: 1.3em;
+    }
+}

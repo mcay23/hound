@@ -22,9 +22,6 @@ function Collection(props: any) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
-  const handleReload = () => {
-    window.location.reload();
-  };
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
     value: number
@@ -32,6 +29,13 @@ function Collection(props: any) {
     setPage(value);
   };
   const collectionID = useParams().id;
+  var showDeleteButton = false;
+  if (
+    isCollectionDataLoaded &&
+    collectionData.collection.owner_user_id === localStorage.getItem("username")
+  ) {
+    showDeleteButton = true;
+  }
   useEffect(() => {
     axios
       .get(
@@ -50,7 +54,6 @@ function Collection(props: any) {
         }
       });
   }, [collectionID, page]);
-  window.scrollTo(0, 0);
   return (
     <>
       <Topnav />
@@ -84,8 +87,8 @@ function Collection(props: any) {
                   <MediaItem
                     item={item}
                     collectionID={collectionID}
-                    handleReload={handleReload}
                     key={item["media_title"]}
+                    showDeleteButton={showDeleteButton}
                   />
                 ))
               ) : (

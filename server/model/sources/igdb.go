@@ -165,6 +165,7 @@ type IGDBGameObject struct {
 		Category int    `json:"category"`
 		URL      string `json:"url"`
 	} `json:"websites"`
+
 }
 
 type IGDBGamesResultsResponseObject []IGDBGameObject

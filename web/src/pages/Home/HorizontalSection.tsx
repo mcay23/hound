@@ -7,7 +7,14 @@ import ItemCard from "./ItemCard";
 function HorizontalSection(props: {
   items: any;
   header: string;
-  itemType: "poster" | "cast" | "video" | "seasons" | "search" | "image";
+  itemType:
+    | "poster"
+    | "cast"
+    | "video"
+    | "seasons"
+    | "search"
+    | "image"
+    | "comment";
   itemOnClick: any | undefined;
 }) {
   if (!props.items || props.items.length === 0) {

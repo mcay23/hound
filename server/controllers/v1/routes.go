@@ -20,12 +20,12 @@ func SetupRoutes(r *gin.Engine) {
 		General Routes
 	 */
 	privateRoutes.GET("/search", GeneralSearchHandler)
-	privateRoutes.POST("/comment", PostComment)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
 	privateRoutes.POST("/collection", CreateCollectionHandler)
+	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)
 
 	/*
 		TV Show Routes
@@ -34,40 +34,22 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/trending", GetTrendingTVShowsHandler)
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
+	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
+	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	/*
 		Movies Routes
 	 */
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/trending", GetTrendingMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
+	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
+	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
+
 	/*
 		Games Routes
 	 */
 	privateRoutes.GET("/game/search", SearchGamesHandler)
 	privateRoutes.GET("/game/:id", GetGameFromIDHandler)
-	//err := database.CreateCollection(database.CollectionRecord{
-	//	CollectionTitle: "my new collection",
-	//	Description:     []byte("this is a description"),
-	//	OwnerID:         1,
-	//	IsPrimary:       true,
-	//	IsPublic:        true,
-	//	Tags:            nil,
-	//	ThumbnailURL:    nil,
-	//})
-	//if err != nil {
-	//	helpers.LogErrorWithMessage(err, "err")
-	//}
-	//id := int64(1)
-	//rec, num, err := database.SearchCollection(database.CollectionRecordQuery{
-	//	CollectionID: &id,
-	//	OwnerID:      nil,
-	//	IsPrimary:    nil,
-	//	IsPublic:     nil,
-	//	Tags:         nil,
-	//}, 10, 0)
-	//if err != nil {
-	//	helpers.LogErrorWithMessage(err, "err")
-	//} else {
-	//	fmt.Println(rec, num)
-	//}
+	privateRoutes.POST("/game/:id/comments", PostCommentHandler)
+	privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
 }

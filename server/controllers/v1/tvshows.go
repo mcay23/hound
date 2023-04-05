@@ -103,6 +103,15 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		TVCredits:        showDetails.Credits.TVCredits,
 		Recommendations:  showDetails.Recommendations,
 	}
+	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
+	if err == nil {
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
+			return
+		}
+		returnObject.Comments = comments
+	}
 	helpers.SuccessResponse(c, returnObject, 200)
 }
 

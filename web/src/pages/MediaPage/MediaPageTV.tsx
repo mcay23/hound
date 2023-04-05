@@ -13,6 +13,7 @@ import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
+import Reviews from "../Comments/Reviews";
 
 const offsetFix = {
   modifiers: [
@@ -220,6 +221,7 @@ function MediaPageTV(props: any) {
           itemType="seasons"
           itemOnClick={handleSeasonButtonClick}
         />
+        <Reviews data={props.data.comments} />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
@@ -237,6 +239,7 @@ function MediaPageTV(props: any) {
         open={isSeasonModalOpen}
         sourceID={props.data ? props.data.source_id : undefined}
         seasonNumber={seasonModal}
+        mediaTitle={props.data.media_title}
       />
     </>
   );

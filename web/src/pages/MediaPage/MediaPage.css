@@ -108,15 +108,15 @@
     color: rgba(var(--hound-primary), 1);
 }
 
-#media-page-tv-header-track-button {
-    padding: 11px;
-}
-
 .media-page-tv-header-button-container .MuiButtonBase-root :hover {
     background-color: rgba(var(--hound-secondary), 0.55);
     /* background-color:     rgba(var(--hound-primary), 0.85);
     color: rgba(var(--hound-secondary), 0.85); */
     transition: all 0.4s ease,
+}
+
+#media-page-tv-header-track-button {
+    padding: 11px;
 }
 
 .media-page-tv-header-button-tooltip-title {

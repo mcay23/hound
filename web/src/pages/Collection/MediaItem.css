@@ -32,7 +32,6 @@
 }
 
 .media-item-date {
-    padding-left: 8px;
     font-family: 'Cabin', sans-serif;
     font-size: 20px;
     color: darkslategray
@@ -40,6 +39,7 @@
 
 .media-item-separator {
     padding-left: 8px;
+    padding-right: 8px;
     color: lightgray;
     font-size: 24px;
 }
