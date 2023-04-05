@@ -41,7 +41,7 @@ function MediaItem(props: any) {
         .delete(`/api/v1/collection/${props.collectionID}`, { data: payload })
         .then((res) => {
           setIsDeleteDialogOpen(false);
-          props.handleReload();
+          window.location.reload();
         })
         .catch((err) => {
           console.log(err);
@@ -50,7 +50,6 @@ function MediaItem(props: any) {
         });
     }
   };
-
   return (
     <>
       <div className="media-item-container">
@@ -100,9 +99,13 @@ function MediaItem(props: any) {
           </div>
         </div>
         <div className="media-item-actions-container">
-          <IconButton onClick={handleDeleteClickOpen}>
-            <ClearIcon />
-          </IconButton>
+          {props.showDeleteButton ? (
+            <IconButton onClick={handleDeleteClickOpen}>
+              <ClearIcon />
+            </IconButton>
+          ) : (
+            ""
+          )}
         </div>
       </div>
       <Dialog
@@ -119,9 +122,7 @@ function MediaItem(props: any) {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteDialogClose}>Cancel</Button>
-          <Button onClick={handleDeleteItem} autoFocus>
-            Delete
-          </Button>
+          <Button onClick={handleDeleteItem}>Delete</Button>
         </DialogActions>
       </Dialog>
       <Toaster

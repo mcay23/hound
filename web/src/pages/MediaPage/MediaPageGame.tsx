@@ -104,7 +104,6 @@ function MediaPageGame(props: any) {
       })
       .join(", ");
   }
-  console.log(props.data);
   var platforms = "";
   if (props.data.platforms) {
     platforms = props.data.platforms

@@ -23,6 +23,7 @@ function Login() {
       .post("/api/v1/auth/login", data)
       .then((res) => {
         console.log("RESPONSE RECEIVED: ", res.data);
+        localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
         window.location.reload();
         setAlertVisible(false);

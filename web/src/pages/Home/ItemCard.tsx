@@ -2,6 +2,7 @@ import { ImageListItem, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./ItemCard.css";
 import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
+import CommentCard from "../Comments/CommentCard";
 
 const maxTitleLength = 30;
 
@@ -14,7 +15,8 @@ function ItemCard(props: {
     | "video"
     | "seasons"
     | "search"
-    | "image";
+    | "image"
+    | "comment";
   showTitle: any;
   itemOnClick: any;
 }) {
@@ -201,10 +203,12 @@ function ItemCard(props: {
       ></div>
     );
   }
+  function itemTypeComment() {
+    return <CommentCard item={props.item} />;
+  }
   // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
   var mediaType = props.item.media_type;
   var releaseYearText = "";
-  // console.log(props.item);
   if (mediaType === "tvshow") {
     mediaType = "tv";
     if (props.item.first_air_date) {
@@ -231,6 +235,8 @@ function ItemCard(props: {
       return itemTypeVideo();
     case "image":
       return itemTypeImage();
+    case "comment":
+      return itemTypeComment();
   }
 }
 

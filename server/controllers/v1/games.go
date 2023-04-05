@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"hound/helpers"
+	"hound/model/database"
 	"hound/model/sources"
+	"hound/view"
 	"strconv"
 	"strings"
 )
@@ -27,16 +29,28 @@ func GetGameFromIDHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
 		return
 	}
-	id, err := strconv.Atoi(split[1])
+	sourceID, err := strconv.Atoi(split[1])
 	// only accept tmdb ids for now
 	if err != nil || split[0] != "igdb" {
 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
 		return
 	}
-	results, err := sources.GetGameFromIDIGDB(id)
+	result, err := sources.GetGameFromIDIGDB(sourceID)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	resultView := view.GameFullObject{
+		IGDBGameObject: result,
+	}
+	libraryID, err := database.GetInternalLibraryID(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
+	if err == nil {
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
+			return
+		}
+		resultView.Comments = comments
+	}
+	helpers.SuccessResponse(c, resultView, 200)
 }

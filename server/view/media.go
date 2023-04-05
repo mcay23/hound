@@ -45,3 +45,17 @@ type CollectionRecordView struct {
 	CreatedAt       time.Time             `json:"created_at"`
 	UpdatedAt       time.Time             `json:"updated_at"`
 }
+
+type CommentObject struct {
+	CommentTitle string    `json:"title"`
+	CommentID    int64     `json:"comment_id"`
+	CommentType  string    `json:"comment_type"`
+	UserID       string    `json:"user_id"`
+	LibraryID    int64     `json:"library_id"`
+	IsPrivate    bool      `json:"is_private"`
+	Comment      string    `json:"comment"`  // actual content of comment, review
+	TagData      string    `json:"tag_data"` // extra tag info, eg. season, episode
+	Score        int       `json:"score"`
+	CreatedAt    time.Time `xorm:"created" json:"created_at"`
+	UpdatedAt    time.Time `xorm:"updated" json:"updated_at"`
+}

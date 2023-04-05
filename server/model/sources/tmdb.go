@@ -138,7 +138,7 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 func GetMovieFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.MovieDetails, error) {
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
+		return nil, helpers.LogErrorWithMessage(err, "Failed to get movie details from tmdb")
 	}
 	return movie, nil
 }

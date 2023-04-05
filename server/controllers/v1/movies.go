@@ -108,6 +108,15 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		Recommendations:     movieDetails.Recommendations,
 		WatchProviders:      movieDetails.WatchProviders,
 	}
+	libraryID, err := database.GetInternalLibraryID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
+	if err == nil {
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
+			return
+		}
+		returnObject.Comments = comments
+	}
 	helpers.SuccessResponse(c, returnObject, 200)
 }
 

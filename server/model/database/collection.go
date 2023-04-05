@@ -167,7 +167,7 @@ func InsertCollectionRelation(userID int64, libraryID int64, collectionID *int64
 		}
 		// check if user is authorized to add to collection
 		if collectionRecord.OwnerID != userID {
-			return helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Collection - owner mismatch, unauthorized")
+			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
 		}
 	}
 	// insert record to db
@@ -196,7 +196,7 @@ func DeleteCollectionRelation(userID int64, libraryID int64, collectionID int64)
 	}
 	// check if user is authorized to add to collection
 	if collectionRecord.OwnerID != userID {
-		return helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Collection - owner mismatch, unauthorized")
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
 	}
 	// if user authenticated, remove
 	affected, err := databaseEngine.Table(collectionRelationsTable).Delete(&CollectionRelation{

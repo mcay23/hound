@@ -52,7 +52,6 @@ function AddToCollectionModal(props: any) {
     axios
       .get(`/api/v1/collection/all`)
       .then((res) => {
-        console.log(res.data);
         setData(res.data);
       })
       .catch((err) => {

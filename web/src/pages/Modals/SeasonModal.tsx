@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import "./SeasonModal.css";
 import convertDateToReadable from "../../helpers/helpers";
 import ChatIcon from "@mui/icons-material/Chat";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   IconButton,
   // styled,
@@ -55,9 +56,17 @@ function SeasonModal(props: any) {
       name: "",
       poster_path: "",
       season_number: -1,
+      overview: "",
     },
   });
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
+  var seasonOverviewPlaceholder = "No description available.";
+  if (isSeasonDataLoaded) {
+    seasonOverviewPlaceholder = `Season ${seasonData.season.season_number} of ${props.mediaTitle}`;
+    if (seasonData.season.season_number === 0) {
+      seasonOverviewPlaceholder = "Special Episodes";
+    }
+  }
   useEffect(() => {
     setIsSeasonDataLoaded(false);
     // check data is loaded
@@ -87,12 +96,77 @@ function SeasonModal(props: any) {
     <Dialog
       onClose={handleClose}
       open={open}
-      className="season-dialog"
+      className="season-modal-dialog"
       maxWidth={false}
     >
       {isSeasonDataLoaded ? (
         <>
-          {seasonData.season.name}
+          <div className="season-modal-info-container">
+            {seasonData.season.poster_path ? (
+              <img
+                className="rounded season-modal-poster"
+                src={seasonData.season.poster_path}
+                alt={seasonData.season.name}
+              />
+            ) : (
+              <div
+                className={"rounded season-modal-poster item-card-no-thumbnail"}
+              >
+                {seasonData.season.name}
+              </div>
+            )}
+            <div className="season-modal-info-inner">
+              <div className="season-modal-info-title">
+                {seasonData.season.name}
+                {seasonData.season.air_date ? (
+                  <>
+                    <span className="media-item-separator">|</span>
+                    <span className="season-modal-info-date">
+                      {seasonData.season.air_date.slice(0, 4)}
+                    </span>
+                  </>
+                ) : (
+                  ""
+                )}
+              </div>
+              <hr />
+              <div className="season-modal-info-description">
+                {seasonData.season.overview
+                  ? seasonData.season.overview
+                  : seasonOverviewPlaceholder}
+              </div>
+              <div className="season-modal-actions-container">
+                <span className="season-modal-info-button">
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        Mark Season As Watched
+                      </span>
+                    }
+                    PopperProps={offsetFix}
+                  >
+                    <IconButton>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </BootstrapTooltip>
+                </span>
+                <span className="season-modal-info-button">
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        Add Review
+                      </span>
+                    }
+                    PopperProps={offsetFix}
+                  >
+                    <IconButton>
+                      <ChatIcon />
+                    </IconButton>
+                  </BootstrapTooltip>
+                </span>
+              </div>
+            </div>
+          </div>
           {seasonData.season.episodes.map((episode) => {
             return EpisodeCard(episode);
           })}
