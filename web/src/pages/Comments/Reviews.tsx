@@ -58,22 +58,21 @@ function Reviews(props: any) {
         toast.error("Error posting review");
       });
   };
-  if (!props.data) {
-    return <></>;
-  }
   var your_reviews: any[] = [];
   var other_reviews: any[] = [];
-  props.data.map((item: any) => {
-    // get reviews, sort user's reviews first
-    if (item.comment_type === "review") {
-      if (item.user_id === localStorage.getItem("username")) {
-        your_reviews.push(item);
-      } else {
-        other_reviews.push(item);
+  if (props.data) {
+    props.data.map((item: any) => {
+      // get reviews, sort user's reviews first
+      if (item.comment_type === "review") {
+        if (item.user_id === localStorage.getItem("username")) {
+          your_reviews.push(item);
+        } else {
+          other_reviews.push(item);
+        }
       }
-    }
-    return null;
-  });
+      return null;
+    });
+  }
   var all_reviews = your_reviews.concat(other_reviews);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +93,9 @@ function Reviews(props: any) {
     <>
       <div className="reviews-main-container">
         <div className="reviews-header-container">Reviews</div>
+        {all_reviews.length === 0 && (
+          <div className="collection-empty-message mb-3">No reviews yet.</div>
+        )}
         <ResponsiveMasonry columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}>
           <Masonry>
             {all_reviews.map((item: any) => (

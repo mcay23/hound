@@ -27,6 +27,7 @@ function CommentCard(props: any) {
         .delete(`/api/v1/comments/${props.item.comment_id}`)
         .then((res) => {
           setIsDeleteDialogOpen(false);
+          window.scrollTo(0, 0);
           window.location.reload();
         })
         .catch((err) => {
