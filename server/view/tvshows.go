@@ -28,9 +28,10 @@ type TMDBSearchResultObject struct {
 }
 
 type TVSeasonResponseObject struct {
-	MediaSource string                `json:"media_source"` // tmdb, openlibrary, etc
-	SourceID    int64                 `json:"source_id"`
-	SeasonData  *tmdb.TVSeasonDetails `json:"season"`
+	MediaSource     string                `json:"media_source"` // tmdb, openlibrary, etc
+	SourceID        int64                 `json:"source_id"`
+	SeasonData      *tmdb.TVSeasonDetails `json:"season"`
+	SeasonWatchInfo *[]CommentObject        `json:"watch_info"`
 }
 
 type TVShowResults struct {
@@ -107,5 +108,5 @@ type TVShowFullObject struct {
 	Videos           *tmdb.TVVideos          `json:"videos"`
 	Recommendations  *tmdb.TVRecommendations `json:"recommendations"`
 	WatchProviders   *tmdb.TVWatchProviders  `json:"watch_providers"`
-	Comments         *[]CommentObject         `json:"comments"`
+	Comments         *[]CommentObject        `json:"comments"`
 }

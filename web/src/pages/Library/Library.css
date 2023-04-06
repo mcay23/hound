@@ -13,6 +13,11 @@
     color: white;
 }
 
+#library-collection-create-cover {
+    background-color: white;
+    color: rgba(var(--hound-primary), 1);;
+}
+
 .library-top-section-container {
     /* background-color: #10229D; */
 }

@@ -3,7 +3,6 @@ import Login from "./pages/Login/Login";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./pages/Home/Home";
-import TVShows from "./pages/TVShows/TVShows";
 import Logout from "./pages/Logout";
 import houndConfig from "./config.json";
 import axios from "axios";
@@ -11,6 +10,8 @@ import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
 import SearchPage from "./pages/Search/SearchPage";
 import Library from "./pages/Library/Library";
 import Collection from "./pages/Collection/Collection";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -60,7 +61,7 @@ function App() {
     }
   }
   return (
-    <>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ProtectedRoute component={<Home />} />} />
@@ -68,10 +69,6 @@ function App() {
           <Route
             path="logout"
             element={<ProtectedRoute component={<Logout />} />}
-          />
-          <Route
-            path="tvshows"
-            element={<ProtectedRoute component={<TVShows />} />}
           />
           <Route
             path="library"
@@ -99,7 +96,7 @@ function App() {
           />
         </Routes>
       </BrowserRouter>
-    </>
+    </LocalizationProvider>
   );
 }
 

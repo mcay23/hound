@@ -17,6 +17,14 @@
     mask: linear-gradient(90deg,rgba(255,255,255,1) 85%, rgba(200, 200, 200, 0) 100%);
 } */
 
+.horizontal-section-header-separator {
+    padding-left: 10px;
+    padding-right: 10px;
+    color: rgba(var(--hound-primary), 1);
+    opacity: 65%;
+    font-size: 30px;
+}
+
 .horizontal-section-header {
     user-select: none;
     font-size: 35px;

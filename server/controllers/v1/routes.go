@@ -24,8 +24,9 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
-	privateRoutes.POST("/collection", CreateCollectionHandler)
-	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)
+	privateRoutes.POST("/collection/new", CreateCollectionHandler)
+	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler)
+	privateRoutes.DELETE("/comments", DeleteCommentHandler)
 
 	/*
 		TV Show Routes

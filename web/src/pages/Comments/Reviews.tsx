@@ -49,9 +49,9 @@ function Reviews(props: any) {
     axios
       .post(`/api/v1${window.location.pathname}/comments`, createReviewData)
       .then(() => {
+        handleReviewDialogClose();
         window.scrollTo(0, 0);
         window.location.reload();
-        handleReviewDialogClose();
       })
       .catch((err) => {
         console.log(err);
@@ -92,16 +92,18 @@ function Reviews(props: any) {
   return (
     <>
       <div className="reviews-main-container">
-        <div className="reviews-header-container">Reviews</div>
+        <div className="reviews-header-container">
+          Reviews<span className="horizontal-section-header-separator">|</span>
+        </div>
         {all_reviews.length === 0 && (
-          <div className="collection-empty-message mb-3">No reviews yet.</div>
+          <div className="collection-empty-message mb-4">No reviews yet.</div>
         )}
         <ResponsiveMasonry columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}>
           <Masonry>
             {all_reviews.map((item: any) => (
               <ItemCard
                 item={item}
-                key={item.id ? item.id : item.source_id}
+                key={item.comment_id}
                 showTitle={null}
                 itemType={"comment"}
                 itemOnClick={undefined}

@@ -8,9 +8,16 @@
   justify-content: center;
 }
 
+.home-page-primary-section {
+  color: black;
+  background-color: rgb(235, 235, 235);
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  margin-bottom: 30px;
+}
 
 .home-page-main-section {
-  padding-top: 30px;
   padding-bottom: 30px;
   /* background-color: rgba(var(--hound-primary), 1);
   color: white; */

@@ -10,9 +10,9 @@ import "./SearchPage.css";
 function SearchPage(props: any) {
   const [searchParams] = useSearchParams();
   const [data, setData] = useState({
-    tv_results: {},
-    movie_results: {},
-    game_results: {},
+    tv_results: [],
+    movie_results: [],
+    game_results: [],
   });
   const [isLoaded, setIsLoaded] = useState(false);
   var query = searchParams.get("q");
@@ -29,6 +29,9 @@ function SearchPage(props: any) {
         }
       });
   }, [query]);
+  if (isLoaded) {
+    document.title = query + " - Hound";
+  }
   return (
     <>
       <Topnav />
@@ -37,24 +40,34 @@ function SearchPage(props: any) {
       </div>
       {isLoaded ? (
         <div className="search-page-main-section">
-          <HorizontalSection
-            items={data.tv_results}
-            header={"TV Shows"}
-            itemType={"search"}
-            itemOnClick={undefined}
-          />
-          <HorizontalSection
-            items={data.movie_results}
-            header={"Movies"}
-            itemType={"search"}
-            itemOnClick={undefined}
-          />
-          <HorizontalSection
-            items={data.game_results}
-            header={"Games"}
-            itemType={"search"}
-            itemOnClick={undefined}
-          />
+          {data.tv_results ||
+          data.movie_results ||
+          data.game_results.length > 0 ? (
+            <>
+              <HorizontalSection
+                items={data.tv_results}
+                header={"TV Shows"}
+                itemType={"search"}
+                itemOnClick={undefined}
+              />
+              <HorizontalSection
+                items={data.movie_results}
+                header={"Movies"}
+                itemType={"search"}
+                itemOnClick={undefined}
+              />
+              <HorizontalSection
+                items={data.game_results}
+                header={"Games"}
+                itemType={"search"}
+                itemOnClick={undefined}
+              />
+            </>
+          ) : (
+            <div className="collection-empty-message search-page-no-results">
+              No results.
+            </div>
+          )}
         </div>
       ) : (
         <LinearProgress />

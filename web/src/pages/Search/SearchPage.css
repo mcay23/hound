@@ -13,6 +13,10 @@
     margin-top: 30px;
     margin-bottom: 70px;
   }
+
+  .search-page-no-results {
+    margin-left: 90px;
+  }
   
   @media only screen and (max-width:600px) {
     .search-page-search-section {
