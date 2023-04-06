@@ -17,6 +17,7 @@ import convertDateToReadable from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
+import Footer from "../Footer";
 
 const offsetFix = {
   modifiers: [

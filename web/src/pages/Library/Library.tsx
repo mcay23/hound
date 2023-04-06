@@ -13,6 +13,7 @@ import {
   LinearProgress,
   TextField,
 } from "@mui/material";
+import Footer from "../Footer";
 
 function Library(props: any) {
   const [collections, setCollections] = useState([]);
@@ -130,7 +131,7 @@ function Library(props: any) {
           }
         </div>
       ) : (
-        <LinearProgress />
+        <LinearProgress className="progress-margin" />
       )}
       <Dialog
         open={isCreateCollectionDialogOpen}
@@ -155,7 +156,7 @@ function Library(props: any) {
             <TextField
               id="outlined-multiline-static"
               className="mt-3"
-              label="Review"
+              label="Description"
               name="description"
               multiline
               rows={4}
@@ -166,7 +167,7 @@ function Library(props: any) {
         </div>
         <DialogActions>
           <Button onClick={handleCollectionDialogClose}>Cancel</Button>
-          <Button onClick={handleCreateCollection}>Post</Button>
+          <Button onClick={handleCreateCollection}>Create</Button>
         </DialogActions>
       </Dialog>
       <Toaster
@@ -174,6 +175,7 @@ function Library(props: any) {
           duration: 5000,
         }}
       />
+      <Footer />
     </>
   );
 }

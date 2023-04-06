@@ -4,12 +4,23 @@ import Topnav from "../Topnav";
 import HorizontalSection from "./HorizontalSection";
 import SearchBar from "./SearchBar";
 import "./Home.css";
+import Footer from "../Footer";
 
 function Home() {
   const [trendingTVShows, setTrendingTVShows] = useState<any[]>([]);
   const [isTrendingTVShowsLoaded, setIsTrendingTVShowsLoaded] = useState(false);
   const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
   const [isTrendingMoviesLoaded, setIsTrendingMoviesLoaded] = useState(false);
+  const [backdropURL, setBackdropURL] = useState("");
+
+  var styles = {
+    withBackdrop: {
+      // backgroundColor: "blue",
+      backgroundImage: "url(" + backdropURL + ")",
+      backgroundSize: "cover",
+      animation: "backgroundScroll 150s linear infinite",
+    },
+  };
 
   useEffect(() => {
     if (!isTrendingTVShowsLoaded) {
@@ -18,6 +29,23 @@ function Home() {
         .then((res) => {
           setTrendingTVShows(res.data);
           setIsTrendingTVShowsLoaded(true);
+        })
+        .catch((err) => {
+          if (err.response.status === 500) {
+            alert("500");
+          }
+        });
+    }
+    if (backdropURL === "") {
+      axios
+        .get("/api/v1/backdrops")
+        .then((res) => {
+          var randomBackdrop =
+            res.data.backdrop_urls[
+              Math.floor(Math.random() * res.data.backdrop_urls.length)
+            ];
+          console.log(randomBackdrop);
+          setBackdropURL(randomBackdrop);
         })
         .catch((err) => {
           if (err.response.status === 500) {
@@ -46,7 +74,10 @@ function Home() {
   return (
     <>
       <Topnav />
-      <div className="home-page-search-section">
+      <div
+        className="home-page-search-section"
+        style={backdropURL ? styles.withBackdrop : {}}
+      >
         <SearchBar />
       </div>
       <div className="home-page-main-section">
@@ -73,6 +104,7 @@ function Home() {
           ""
         )}
       </div>
+      <Footer />
     </>
   );
 }

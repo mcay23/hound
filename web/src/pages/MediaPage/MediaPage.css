@@ -146,7 +146,7 @@
 }
 
 .media-page-tv-footer {
-    height: 800px;
+    height: 0vh;
 }
 
 .media-page-tv-main-videos-section {
@@ -156,6 +156,10 @@
     margin-left: 40px;
     display: flex;
     flex-direction: row;
+}
+
+.progress-margin {
+    margin-bottom: 1000px;
 }
 
 @media only screen and (max-width:900px) {

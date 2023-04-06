@@ -4,10 +4,12 @@ import "./Login.css";
 import axios from "axios";
 import { Navigate } from "react-router-dom";
 
-function Login() {
+function Register() {
   const [data, setData] = useState({
     username: "",
     password: "",
+    first_name: "",
+    last_name: "",
   });
 
   const [alertVisible, setAlertVisible] = useState(false);
@@ -18,8 +20,11 @@ function Login() {
 
   const submitHandler = (event: React.FormEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    if (data.password.length < 8) {
+      alert("Password >8 chars required");
+    }
     axios
-      .post("/api/v1/auth/login", data)
+      .post("/api/v1/auth/register", data)
       .then((res) => {
         console.log("RESPONSE RECEIVED: ", res.data);
         localStorage.setItem("username", res.data.username);
@@ -39,28 +44,47 @@ function Login() {
     setData({ ...data, [event.target.name]: event.target.value });
   };
 
+  console.log(data);
+
   return (
     <div className="full-screen bg-home">
       <div className="login-main">
         <Card className="login-card shadow p-3 mb-5 bg-white rounded">
           <div className="login-card">
-            <h2 className="mb-4">Login</h2>
+            <h2 className="mb-4">Register</h2>
             <form>
+              <FormControl
+                type="first_name"
+                name="first_name"
+                placeholder="First Name"
+                className="mt-4"
+                value={data.first_name}
+                onChange={handleChange}
+              />
+              <FormControl
+                type="last_name"
+                name="last_name"
+                placeholder="Last Name"
+                className="mt-4"
+                value={data.last_name}
+                onChange={handleChange}
+              />
               <FormGroup controlId="username" className="mt-4">
                 <FormControl
-                  autoFocus
-                  type="username"
                   name="username"
                   placeholder="username"
+                  type="username"
                   value={data.username}
+                  autoComplete="off"
                   onChange={handleChange}
                 />
               </FormGroup>
               <FormGroup className="mt-4" controlId="password">
                 <FormControl
-                  type="password"
                   name="password"
                   placeholder="password"
+                  type="password"
+                  autoComplete="new-password"
                   value={data.password}
                   onChange={handleChange}
                 />
@@ -69,23 +93,23 @@ function Login() {
               {alertVisible ? (
                 <div className="d-flex mx-auto">
                   <p className="mx-auto mt-1 alert-incorrect-password">
-                    Incorrect username or password
+                    Registration is disabled by the administrator.
                   </p>
                 </div>
               ) : null}
               <div className="d-flex flex-row-reverse">
                 <Button type="submit" onClick={submitHandler}>
-                  Login
+                  Register
                 </Button>
               </div>
             </form>
             <div className="d-flex mx-auto mt-4">
               <a
-                href="../register"
+                href="../login"
                 className="mx-auto"
                 style={{ textDecoration: "underline" }}
               >
-                Don't have an account? Sign up here!
+                Already have an account? Login here!
               </a>
             </div>
           </div>
@@ -95,4 +119,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;

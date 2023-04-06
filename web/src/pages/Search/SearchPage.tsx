@@ -15,6 +15,15 @@ function SearchPage(props: any) {
     game_results: [],
   });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [backdropURL, setBackdropURL] = useState("");
+  var styles = {
+    withBackdrop: {
+      // backgroundColor: "blue",
+      backgroundImage: "url(" + backdropURL + ")",
+      backgroundSize: "cover",
+      animation: "backgroundScroll 150s linear infinite",
+    },
+  };
   var query = searchParams.get("q");
   useEffect(() => {
     axios
@@ -28,14 +37,34 @@ function SearchPage(props: any) {
           alert("500");
         }
       });
-  }, [query]);
+    if (backdropURL === "") {
+      axios
+        .get("/api/v1/backdrops")
+        .then((res) => {
+          var randomBackdrop =
+            res.data.backdrop_urls[
+              Math.floor(Math.random() * res.data.backdrop_urls.length)
+            ];
+          console.log(randomBackdrop);
+          setBackdropURL(randomBackdrop);
+        })
+        .catch((err) => {
+          if (err.response.status === 500) {
+            alert("500");
+          }
+        });
+    }
+  }, [backdropURL, query]);
   if (isLoaded) {
     document.title = query + " - Hound";
   }
   return (
     <>
       <Topnav />
-      <div className="search-page-search-section">
+      <div
+        className="search-page-search-section"
+        style={backdropURL ? styles.withBackdrop : {}}
+      >
         <SearchBar />
       </div>
       {isLoaded ? (
@@ -70,7 +99,7 @@ function SearchPage(props: any) {
           )}
         </div>
       ) : (
-        <LinearProgress />
+        <LinearProgress className="progress-margin" />
       )}
     </>
   );

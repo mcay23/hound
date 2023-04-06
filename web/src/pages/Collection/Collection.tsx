@@ -18,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import MediaItem from "./MediaItem";
 import CollectionCover from "../Library/CollectionCover";
 import toast, { Toaster } from "react-hot-toast";
+import Footer from "../Footer";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
@@ -139,6 +140,13 @@ function Collection(props: any) {
               ) : (
                 <span className="collection-empty-message">
                   This collection is empty.
+                  <br />
+                  <br />
+                  <br />
+                  <br />
+                  <br />
+                  <br />
+                  <br />
                 </span>
               )}
             </div>
@@ -185,8 +193,9 @@ function Collection(props: any) {
           />
         </>
       ) : (
-        <LinearProgress />
+        <LinearProgress className="progress-margin" />
       )}
+      <Footer />
     </>
   );
 }

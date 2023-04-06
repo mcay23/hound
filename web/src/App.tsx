@@ -12,6 +12,7 @@ import Library from "./pages/Library/Library";
 import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import Register from "./pages/Login/Register";
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -66,6 +67,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ProtectedRoute component={<Home />} />} />
           <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
           <Route
             path="logout"
             element={<ProtectedRoute component={<Logout />} />}
