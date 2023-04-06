@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"fmt"
+	tmdb "github.com/cyruzin/golang-tmdb"
 	"github.com/gin-gonic/gin"
 	"hound/helpers"
+	"hound/model"
 	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
@@ -12,6 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	backdropCacheKey = "server-backdrop-cache"
 )
 
 type AddToCollectionRequest struct {
@@ -45,6 +51,45 @@ func GeneralSearchHandler(c *gin.Context) {
 		MovieSearchResults:  movieResults,
 		GameSearchResults:   &gameResults,
 	}, 200)
+}
+
+func GetMediaBackdrops(c *gin.Context) {
+	// refresh backdrop every 24 hours, store data in cache
+	backdropsCache, exists := model.GetCache(backdropCacheKey)
+	if exists {
+		fmt.Println("getting from cache")
+		helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdropsCache}, 200)
+		return
+	}
+	shows, err := sources.GetTrendingTVShowsTMDB("1")
+	if err != nil {
+		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		return
+	}
+	var backdrops []string
+	if shows != nil {
+		for _, item := range shows.Results {
+			url := GetTMDBImageURL(item.BackdropPath, tmdb.Original)
+			if url != "" {
+				backdrops = append(backdrops, url)
+			}
+		}
+	}
+	movies, err := sources.GetTrendingMoviesTMDB("1")
+	if err != nil {
+		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		return
+	}
+	if movies != nil {
+		for _, item := range movies.Results {
+			url := GetTMDBImageURL(item.BackdropPath, tmdb.Original)
+			if url != "" {
+				backdrops = append(backdrops, url)
+			}
+		}
+	}
+	_ = model.UpdateOrSetCache(backdropCacheKey, backdrops, time.Hour*24)
+	helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdrops}, 200)
 }
 
 func AddToCollectionHandler(c *gin.Context) {
@@ -377,7 +422,7 @@ func PostCommentHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 			return
 		}
-		if mediaType == database.MediaTypeTVShow {
+		if mediaType == database.MediaTypeTVShow && body.CommentType == "history" {
 			if match, _ := regexp.MatchString(`S\d+$|S\d+E\d+$`, body.TagData); !match {
 				fmt.Println(body.TagData)
 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format, regex failed"))

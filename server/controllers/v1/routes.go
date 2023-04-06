@@ -20,6 +20,7 @@ func SetupRoutes(r *gin.Engine) {
 		General Routes
 	 */
 	privateRoutes.GET("/search", GeneralSearchHandler)
+	privateRoutes.GET("/backdrops", GetMediaBackdrops)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)

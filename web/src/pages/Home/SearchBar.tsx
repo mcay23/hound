@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./SearchBar.css";
 
-function SearchBar() {
+function SearchBar(props: any) {
   const navigate = useNavigate();
   const submitHandler = (event: any) => {
     event.preventDefault();
@@ -23,10 +23,7 @@ function SearchBar() {
         onChange={onKeyChange}
         placeholder="Search Anything..."
       />
-      <button type="submit">
-        {/* <SearchIcon fontSize="inherit" /> */}
-        GO
-      </button>
+      {props.type === "nav" ? "" : <button type="submit">GO</button>}
     </form>
   );
 }

@@ -35,6 +35,13 @@ function CreateHistoryModal(props: any) {
     setDate(dayjs());
     onClose();
   };
+  if (createHistoryData.start_date === "" && date) {
+    setCreateHistoryData({
+      ...createHistoryData,
+      start_date: date.toISOString(),
+      end_date: date.toISOString(),
+    });
+  }
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setCreateHistoryData({
       ...createHistoryData,
@@ -54,7 +61,7 @@ function CreateHistoryModal(props: any) {
     axios
       .post(`/api/v1${window.location.pathname}/comments`, payload)
       .then(() => {
-        toast.success("Added watch data");
+        toast.success("Added To Watch History");
         handleClose();
       })
       .catch((err) => {

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"hound/helpers"
 	"hound/model/database"
+	"os"
 	"time"
 )
 
@@ -41,16 +42,28 @@ func RegisterNewUser(user *RegistrationUser) error {
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
 	}
-	err = database.InsertUser(insertUser)
+	userID, err := database.InsertUser(insertUser)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert user to database")
+	}
+	// create primary collection for user
+	primaryCollection := database.CreateCollectionRequest{
+		OwnerID:         *userID,
+		CollectionTitle: "My Library",
+		Description:     "Your main collection",
+		IsPrimary:       true,
+		IsPublic:        false,
+	}
+	_, err = database.CreateCollection(primaryCollection)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 // GenerateAccessToken JWT access token
 func GenerateAccessToken(user LoginUser, client string) (string, error) {
-	jwtKey := []byte(viper.GetString("JWT_SECRET_KEY"))
+	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	dbUser, err := database.GetUser(user.Username)
 	if err != nil {
 		return "", helpers.LogErrorWithMessage(err, "Failed to fetch user from database")
@@ -78,7 +91,7 @@ func GenerateAccessToken(user LoginUser, client string) (string, error) {
 }
 
 func ParseAccessToken(token string) (*JWTClaims, error) {
-	jwtKey := []byte(viper.GetString("JWT_SECRET_KEY"))
+	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	claims := JWTClaims{}
 	tkn, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil

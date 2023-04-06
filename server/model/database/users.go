@@ -44,10 +44,10 @@ func instantiateUsersTable() error {
 	return nil
 }
 
-func InsertUser(user User) error {
+func InsertUser(user User) (*int64, error) {
 	userMetaBytes, err := json.Marshal(user.UserMeta)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	userXorm := UserXorm{
 		Username:       user.Username,
@@ -56,11 +56,11 @@ func InsertUser(user User) error {
 		HashedPassword: user.HashedPassword,
 		UserMeta:       userMetaBytes,
 	}
-	_, err = databaseEngine.Table(usersTable).Insert(userXorm)
+	_, err = databaseEngine.Table(usersTable).Insert(&userXorm)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &userXorm.Id, nil
 }
 
 func GetUser(username string) (*User, error) {

@@ -25,7 +25,18 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	client := c.GetHeader("X-Client")
+	tokenPayload := model.LoginUser{
+		Username: userPayload.Username,
+		Password: userPayload.Password,
+	}
+	token, err := model.GenerateAccessToken(tokenPayload, client)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
 }
 
 func LoginHandler(c *gin.Context) {

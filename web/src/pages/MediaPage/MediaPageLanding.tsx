@@ -6,6 +6,7 @@ import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
 import MediaPageGame from "./MediaPageGame";
+import Footer from "../Footer";
 
 function MediaPageLanding() {
   const [data, setData] = useState<any[]>([]);
@@ -45,7 +46,12 @@ function MediaPageLanding() {
   return (
     <>
       <Topnav />
-      {isDataLoaded ? <>{mediaComponent}</> : <LinearProgress />}
+      {isDataLoaded ? (
+        <>{mediaComponent}</>
+      ) : (
+        <LinearProgress className="progress-margin" />
+      )}
+      <Footer />
     </>
   );
 }

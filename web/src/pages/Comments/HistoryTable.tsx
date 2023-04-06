@@ -26,8 +26,8 @@ function HistoryTable(props: any) {
               var title = item.title ? item.title : props.data.media_title;
               temp.push([
                 title,
-                seasonEpisode[0].substring(1),
-                seasonEpisode[1],
+                parseInt(seasonEpisode[0].substring(1)),
+                parseInt(seasonEpisode[1]),
                 item.start_date.split("T")[0],
                 item.comment,
                 item.comment_id,
