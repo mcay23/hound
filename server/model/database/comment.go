@@ -41,16 +41,31 @@ func instantiateCommentTable() error {
 }
 
 func AddComment(comment *CommentRecord) error {
-	if comment.CommentType != commentTypeReview && comment.CommentType != commentTypeComment && comment.CommentType != commentTypeNote {
+	if comment.CommentType != commentTypeReview && comment.CommentType != commentTypeComment &&
+		comment.CommentType != commentTypeNote && comment.CommentType != commentTypeHistory {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid comment type")
 	}
 	_, err := databaseEngine.Table(commentsTable).Insert(comment)
 	return err
 }
 
-func GetComments(libraryID int64) (*[]CommentRecord, error) {
+func AddCommentsBatch(comments *[]CommentRecord) error {
+	_, err := databaseEngine.Table(commentsTable).Insert(comments)
+	return err
+}
+
+func GetComments(libraryID int64, commentType *string) (*[]CommentRecord, error) {
 	var comments []CommentRecord
-	err := databaseEngine.Table(commentsTable).Where("library_id = ?", libraryID).OrderBy("updated_at desc").Find(&comments)
+	sess := databaseEngine.Table(commentsTable).Where("library_id = ?", libraryID)
+	if *commentType == commentTypeHistory {
+		sess = sess.OrderBy("start_date desc")
+	} else {
+		sess = sess.OrderBy("updated_at desc")
+	}
+	if commentType != nil && *commentType != "" {
+		sess.Where("comment_type = ?", commentType)
+	}
+	err := sess.Find(&comments)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetComments(): Failed to get comments")
 	}
@@ -66,7 +81,22 @@ func DeleteComment(userID int64, commentID int64) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteComment(): Failed to delete comments")
 	}
 	if affected <= 0 {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetComments(): No comment found with this ID or invalid user")
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteComment(): No comment found with this ID or invalid user")
 	}
+	return nil
+}
+
+func DeleteCommentBatch(userID int64, commentIDs []int64) error {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	_ = session.Begin()
+	for _, item := range commentIDs {
+		affected, err := session.Table(commentsTable).Delete(&CommentRecord{UserID: userID, CommentID: item})
+		if err != nil || affected <= 0 {
+			_ = session.Rollback()
+			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCommentBatch(): No comment found with this ID or invalid user")
+		}
+	}
+	_ = session.Commit()
 	return nil
 }

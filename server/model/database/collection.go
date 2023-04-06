@@ -240,6 +240,38 @@ func CreateCollection(record CreateCollectionRequest) (*int64, error) {
 	return &insert.CollectionID, nil
 }
 
+func DeleteCollection(userID int64, collectionID int64) error {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	_ = session.Begin()
+	_, err := session.Table(collectionRelationsTable).Delete(&CollectionRelation{
+		CollectionID: collectionID,
+	})
+	if err != nil {
+		_ = session.Rollback()
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): Failed to delete collection IDs")
+	}
+	// primary collections can't be deleted
+	affected, err := session.Table(collectionsTable).Where("is_primary = ?", false).Delete(&CollectionRecord{
+		CollectionID: collectionID,
+		OwnerID: userID,
+	})
+	if err != nil {
+		_ = session.Rollback()
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): Failed to delete comments")
+	}
+	if affected <= 0 {
+		_ = session.Rollback()
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): No collection found with this ID or invalid user")
+	}
+	err = session.Commit()
+	if err != nil {
+		_ = session.Rollback()
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): error committing transaction")
+	}
+	return nil
+}
+
 func SearchForCollection(record CollectionRecordQuery, limit int, offset int) ([]CollectionRecord, int, error) {
 	var records []CollectionRecord
 	sess := databaseEngine.Table(collectionsTable)

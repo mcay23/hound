@@ -2,6 +2,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model/database"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type AddToCollectionRequest struct {
@@ -20,12 +22,14 @@ type AddToCollectionRequest struct {
 }
 
 type CommentRequest struct {
-	CommentType  string `json:"comment_type" binding:"required,gt=0"` // review, etc.
-	IsPrivate    bool   `json:"is_private"`
-	CommentTitle string `json:"title"`
-	Comment      string `json:"comment" binding:"required,gt=0"` // actual content of comment, review
-	TagData      string `json:"tag_data"`                        // extra tag info, eg. season, episode
-	Score        int    `json:"score"`                           // only for reviews
+	CommentType  string    `json:"comment_type" binding:"required,gt=0"` // review, etc.
+	IsPrivate    bool      `json:"is_private"`
+	CommentTitle string    `json:"title"`
+	Comment      string    `json:"comment"`    // actual content of comment, review
+	StartDate    time.Time `json:"start_date"` // for watch history
+	EndDate      time.Time `json:"end_date"`
+	TagData      string    `json:"tag_data"` // extra tag info, eg. season, episode
+	Score        int       `json:"score"`    // only for reviews
 }
 
 func GeneralSearchHandler(c *gin.Context) {
@@ -262,6 +266,29 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	}, 200)
 }
 
+func DeleteCollectionHandler(c *gin.Context) {
+	idParam := c.Param("id")
+	collectionID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Invalid collection_id query param")
+		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		return
+	}
+	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Invalid user")
+		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		return
+	}
+	err = database.DeleteCollection(userID, collectionID)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to delete collection")
+		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+}
+
 func GetCommentsHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	mediaSource, sourceID, err := ParseID(idParam)
@@ -283,7 +310,8 @@ func GetCommentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No internal library ID found"))
 		return
 	}
-	comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+	commentType := c.Query("type")
+	comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 		return
@@ -325,19 +353,14 @@ func PostCommentHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	// verify tag data format, format is S2E12, S2, show etc.
-	if body.TagData != "" {
-		if match, _ := regexp.MatchString(`S\d+$|S\d+E\d+$|show$`, body.TagData); !match {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format, regex failed"))
-			return
-		}
-	}
 	comment := database.CommentRecord{
 		UserID:       userID,
 		CommentTitle: body.CommentTitle,
 		IsPrivate:    body.IsPrivate,
 		CommentType:  body.CommentType,
 		Comment:      []byte(body.Comment),
+		StartDate:    body.StartDate,
+		EndDate:      body.EndDate,
 		TagData:      body.TagData,
 		Score:        body.Score,
 	}
@@ -347,11 +370,49 @@ func PostCommentHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
 			return
 		}
+		// TODO bound checking for tag data (season and episode)
 		// add item to internal library if not there
 		libraryID, err := database.AddRecordToInternalLibrary(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 			return
+		}
+		if mediaType == database.MediaTypeTVShow {
+			if match, _ := regexp.MatchString(`S\d+$|S\d+E\d+$`, body.TagData); !match {
+				fmt.Println(body.TagData)
+				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format, regex failed"))
+				return
+			}
+			// mark seasons as watch case, no episode data
+			if !strings.Contains(body.TagData, "E") {
+				seasonNumber, err := strconv.Atoi(strings.Split(body.TagData, "E")[0][1:])
+				if err != nil {
+					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format"))
+					return
+				}
+				season, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)
+				if err != nil {
+					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error retrieving season"))
+					return
+				}
+				minEpisode := season.Episodes[0].EpisodeNumber
+				maxEpisode := 0
+				for _, ep := range season.Episodes {
+					if ep.EpisodeNumber < minEpisode {
+						minEpisode = ep.EpisodeNumber
+					}
+					if ep.EpisodeNumber > maxEpisode {
+						maxEpisode = ep.EpisodeNumber
+					}
+				}
+				err = sources.MarkTVSeasonAsWatchedTMDB(userID, libraryID, seasonNumber, minEpisode, maxEpisode, body.StartDate)
+				if err != nil {
+					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error during batch insertion"))
+					return
+				}
+				helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+				return
+			}
 		}
 		comment.LibraryID = libraryID
 	} else if mediaType == database.MediaTypeGame {
@@ -380,22 +441,42 @@ func PostCommentHandler(c *gin.Context) {
 }
 
 func DeleteCommentHandler(c *gin.Context) {
-	idParam := c.Param("id")
-	commentID, err := strconv.Atoi(idParam)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
-		return
-	}
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	err = database.DeleteComment(userID, int64(commentID))
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
+	idParam := c.Query("ids")
+	idSplit := strings.Split(idParam, ",")
+	if len(idSplit) > 1 {
+		// batch delete case
+		var batchIDs []int64
+		for _, item := range idSplit {
+			tempID, err := strconv.Atoi(item)
+			if err != nil {
+				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
+				return
+			}
+			batchIDs = append(batchIDs, int64(tempID))
+		}
+		err = database.DeleteCommentBatch(userID, batchIDs)
+		if err != nil {
+			helpers.ErrorResponse(c, err)
+			return
+		}
+	} else {
+		// single delete case
+		commentID, err := strconv.Atoi(idParam)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
+			return
+		}
+		err = database.DeleteComment(userID, int64(commentID))
+		if err != nil {
+			helpers.ErrorResponse(c, err)
+			return
+		}
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
@@ -414,8 +495,8 @@ func ParseID(idParam string) (string, int, error) {
 	return mediaSource, sourceID, nil
 }
 
-func GetCommentsCore(username string, libraryID int64) (*[]view.CommentObject, error) {
-	comments, err := database.GetComments(libraryID)
+func GetCommentsCore(username string, libraryID int64, commentType *string) (*[]view.CommentObject, error) {
+	comments, err := database.GetComments(libraryID, commentType)
 	if err != nil {
 		return nil, err
 	}
@@ -435,6 +516,8 @@ func GetCommentsCore(username string, libraryID int64) (*[]view.CommentObject, e
 			Comment:      string(item.Comment),
 			TagData:      item.TagData,
 			Score:        item.Score,
+			StartDate:    item.StartDate,
+			EndDate:      item.EndDate,
 			CreatedAt:    item.CreatedAt,
 			UpdatedAt:    item.UpdatedAt,
 		}

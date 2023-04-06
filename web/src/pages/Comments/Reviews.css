@@ -17,7 +17,6 @@
 .MuiButton-contained {
     font-size: 18px !important;
     background-color: rgba(var(--hound-primary), 0.95) !important;
-    color: rgba(var(--hound-secondary), 1) !important;
     font-family: 'Cabin', sans-serif !important;
 }
 

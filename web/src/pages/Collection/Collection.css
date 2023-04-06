@@ -1,6 +1,25 @@
+.collection-top-section {
+    display: flex;
+    align-items: row;
+    margin-bottom: 30px;
+}
+
 .collection-main-section {
     padding-top: 30px;
 }
+
+.collection-top-section-actions {
+    margin-top: 10px;
+}
+
+/* .collection-top-section-actions .MuiSvgIcon-root {
+    font-size: 42px;
+    padding: 9px;
+    border-radius: 50%;
+    margin-right: 0px;
+    background-color: rgba(var(--hound-primary), 0.85);
+    color: rgba(var(--hound-secondary), 1);
+} */
 
 .collection-items-list-container {
     padding-top: 20px;
@@ -10,8 +29,8 @@
     min-width: 60%;
 }
 
-.collection-cover {
-    margin-bottom: 30px;
+.collection-cover-container {
+    width: 100%;
     display: flex;
 }
 
@@ -43,7 +62,7 @@
     color: darkslategray
 }
 
-.collection-cover .collection-card-cover {
+.collection-cover-container .collection-card-cover {
     background-color: rgba(var(--hound-primary), 1);
     color: rgba(var(--hound-secondary), 1);
 }

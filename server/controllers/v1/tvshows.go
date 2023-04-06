@@ -105,7 +105,8 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	}
 	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+		commentType := c.Query("type")
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return
@@ -230,10 +231,28 @@ func GetTVSeasonHandler(c *gin.Context) {
 		tvSeason.Episodes[num].StillPath = GetTMDBImageURL(item.StillPath, tmdb.W500)
 	}
 	tvSeason.PosterPath = GetTMDBImageURL(tvSeason.PosterPath, tmdb.W500)
+
 	response := view.TVSeasonResponseObject{
 		MediaSource: sources.SourceTMDB,
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
+	}
+	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
+	// if library id exists, retrieve watch history
+	if err == nil {
+		commentType := "history"
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+		if err != nil {
+			helpers.ErrorResponse(c, err)
+			return
+		}
+		var filteredComments []view.CommentObject
+		for _, item := range *comments {
+			if strings.HasPrefix(item.TagData, "S" + strconv.Itoa(seasonNumber)) {
+				filteredComments = append(filteredComments, item)
+			}
+		}
+		response.SeasonWatchInfo = &filteredComments
 	}
 	helpers.SuccessResponse(c, response, 200)
 }

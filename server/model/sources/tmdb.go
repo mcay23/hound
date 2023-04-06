@@ -8,6 +8,7 @@ import (
 	"hound/model/database"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
@@ -109,6 +110,25 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 		return err
 	}
 	return nil
+}
+
+func MarkTVSeasonAsWatchedTMDB(userID int64, libraryID int64, seasonNumber int, minEp int, maxEp int, date time.Time) error {
+	var records []database.CommentRecord
+	for i := minEp; i <= maxEp; i++ {
+		tagData := "S" + strconv.Itoa(seasonNumber) + "E" + strconv.Itoa(i)
+		records = append(records, database.CommentRecord{
+			CommentType:  "history",
+			UserID:       userID,
+			LibraryID:    libraryID,
+			IsPrivate:    true,
+			CommentTitle: "",
+			Comment:      nil,
+			TagData:      tagData,
+			StartDate:    date,
+			EndDate:      date,
+		})
+	}
+	return database.AddCommentsBatch(&records)
 }
 
 /*

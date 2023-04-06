@@ -126,6 +126,12 @@ function MediaPageGame(props: any) {
     ...(props.data.artworks ?? []),
     ...(props.data.screenshots ?? []),
   ];
+  if (props.data.media_title) {
+    var yearString = props.data.release_date
+      ? `(${props.data.release_date.slice(0, 4)})`
+      : "";
+    document.title = props.data.media_title + " " + yearString + " - Hound";
+  }
   return (
     <>
       <div
@@ -188,7 +194,7 @@ function MediaPageGame(props: any) {
                   PopperProps={offsetFix}
                 >
                   <IconButton>
-                    <BookmarkIcon id="media-page-tv-header-track-button" />
+                    <BookmarkIcon id="media-page-tv-header-history-button" />
                   </IconButton>
                 </BootstrapTooltip>
               </div>

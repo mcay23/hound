@@ -51,7 +51,7 @@ function Home() {
       </div>
       <div className="home-page-main-section">
         {isTrendingTVShowsLoaded ? (
-          <div className="home-page-primary-background">
+          <div className="home-page-primary-section">
             <HorizontalSection
               items={trendingTVShows}
               header="Trending TV Shows"

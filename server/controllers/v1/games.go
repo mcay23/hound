@@ -45,7 +45,8 @@ func GetGameFromIDHandler(c *gin.Context) {
 	}
 	libraryID, err := database.GetInternalLibraryID(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
 	if err == nil {
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID)
+		commentType := c.Query("type")
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return

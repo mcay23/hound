@@ -68,8 +68,8 @@ function AddToCollectionModal(props: any) {
         open={open}
         className="add-to-collection-dialog"
       >
-        <div className="add-to-collection-dialog-content">
-          <div className="add-to-collection-dialog-header">
+        <div className="add-to-collection-dialog-content pb-3">
+          <div className="add-to-collection-dialog-header ps-5 pe-5 pt-3">
             Add To Collection
           </div>
           <Divider variant="middle">⸱</Divider>
@@ -92,20 +92,15 @@ function AddToCollectionModal(props: any) {
                   </ListItemButton>
                 </ListItem>
               ))}
-              <ListItem disableGutters className="pt-0 pb-0">
+              {/* <ListItem disableGutters className="pt-0 pb-0">
                 <ListItemButton onClick={() => handleCreateNewCollection()}>
-                  {/* <ListItemAvatar>
-              <Avatar>
-                <AddIcon />
-              </Avatar>
-            </ListItemAvatar> */}
                   <AddIcon />
                   <ListItemText
                     className="add-to-collection-dialog-button"
                     primary="New Collection"
                   />
                 </ListItemButton>
-              </ListItem>
+              </ListItem> */}
             </List>
           ) : (
             ""

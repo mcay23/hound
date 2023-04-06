@@ -1,6 +1,7 @@
 import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import HistoryIcon from "@mui/icons-material/History";
 import {
   IconButton,
   styled,
@@ -14,6 +15,8 @@ import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import convertDateToReadable from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
+import CreateHistoryModal from "../Modals/CreateHistoryModal";
+import HistoryModal from "../Modals/HistoryModal";
 
 const offsetFix = {
   modifiers: [
@@ -40,6 +43,9 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
+    useState(false);
   const [videoKey, setVideoKey] = useState("");
 
   var styles = {
@@ -124,6 +130,24 @@ function MediaPageMovie(props: any) {
   const handleVideoButtonClose = () => {
     setIsVideoModalOpen(false);
   };
+  const handleHistoryModalButtonClick = () => {
+    setIsHistoryModalOpen(true);
+  };
+  const handleHistoryModalClose = () => {
+    setIsHistoryModalOpen(false);
+  };
+  const handleCreateHistoryButtonClick = () => {
+    setisCreateHistoryModalOpen(true);
+  };
+  const handleCreateHistoryModalClose = () => {
+    setisCreateHistoryModalOpen(false);
+  };
+  if (props.data.media_title) {
+    var yearString = props.data.release_date
+      ? `(${props.data.release_date.slice(0, 4)})`
+      : "";
+    document.title = props.data.media_title + " " + yearString + " - Hound";
+  }
   return (
     <>
       <div
@@ -195,6 +219,30 @@ function MediaPageMovie(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
+                      Mark as Watched
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton onClick={handleCreateHistoryButtonClick}>
+                    <VisibilityIcon />
+                  </IconButton>
+                </BootstrapTooltip>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
+                      View Watch History
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton onClick={handleHistoryModalButtonClick}>
+                    <HistoryIcon id="media-page-tv-header-track-button" />
+                  </IconButton>
+                </BootstrapTooltip>
+                {/* <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
                       Track Show
                     </span>
                   }
@@ -203,7 +251,7 @@ function MediaPageMovie(props: any) {
                   <IconButton>
                     <BookmarkIcon id="media-page-tv-header-track-button" />
                   </IconButton>
-                </BootstrapTooltip>
+                </BootstrapTooltip> */}
               </div>
             </div>
           </div>
@@ -234,6 +282,16 @@ function MediaPageMovie(props: any) {
         onClose={handleVideoButtonClose}
         open={isVideoModalOpen}
         videoKey={videoKey}
+      />
+      <HistoryModal
+        onClose={handleHistoryModalClose}
+        open={isHistoryModalOpen}
+        data={props.data}
+      />
+      <CreateHistoryModal
+        onClose={handleCreateHistoryModalClose}
+        open={isCreateHistoryModalOpen}
+        type={"movie"}
       />
     </>
   );

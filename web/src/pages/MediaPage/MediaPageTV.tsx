@@ -1,6 +1,6 @@
 import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
+import HistoryIcon from "@mui/icons-material/History";
 import {
   IconButton,
   styled,
@@ -14,6 +14,7 @@ import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
+import HistoryModal from "../Modals/HistoryModal";
 
 const offsetFix = {
   modifiers: [
@@ -43,6 +44,7 @@ function MediaPageTV(props: any) {
   const [videoKey, setVideoKey] = useState("");
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   var styles = {
     noBackdrop: {
@@ -124,6 +126,18 @@ function MediaPageTV(props: any) {
   const handleSeasonModalClose = () => {
     setIsSeasonModalOpen(false);
   };
+  const handleHistoryModalButtonClick = () => {
+    setIsHistoryModalOpen(true);
+  };
+  const handleHistoryModalClose = () => {
+    setIsHistoryModalOpen(false);
+  };
+  if (props.data.media_title) {
+    var yearString = props.data.first_air_date
+      ? `(${props.data.first_air_date.slice(0, 4)})`
+      : "";
+    document.title = props.data.media_title + " " + yearString + " - Hound";
+  }
   return (
     <>
       <div
@@ -188,13 +202,13 @@ function MediaPageTV(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
-                      Track Show
+                      View Watch History
                     </span>
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton>
-                    <BookmarkIcon id="media-page-tv-header-track-button" />
+                  <IconButton onClick={handleHistoryModalButtonClick}>
+                    <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
               </div>
@@ -240,6 +254,11 @@ function MediaPageTV(props: any) {
         sourceID={props.data ? props.data.source_id : undefined}
         seasonNumber={seasonModal}
         mediaTitle={props.data.media_title}
+      />
+      <HistoryModal
+        onClose={handleHistoryModalClose}
+        open={isHistoryModalOpen}
+        data={props.data}
       />
     </>
   );
