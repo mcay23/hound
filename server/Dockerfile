@@ -29,7 +29,6 @@ WORKDIR /root/
 # Copy the Pre-built binary file from the previous stage. Observe we also copied the .env file
 COPY --from=builder /app/config .
 COPY --from=builder /app/main .
-COPY --from=builder /app/config/config.yaml .
 
 # COPY --from=builder /app/.env .
 
