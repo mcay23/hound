@@ -1,14 +1,23 @@
 version: '3.8'
 services:
+  nginx:
+      depends_on:
+        - server
+        - web
+      restart: always
+      build:
+        dockerfile: Dockerfile
+        context: ./nginx
+      ports:
+        - "80:80"
   db:
     image: mysql:8.0
     container_name: hound-db
     cap_add:
       - SYS_NICE
     restart: always
-    environment:
-      - MYSQL_DATABASE=hound
-      - MYSQL_ROOT_PASSWORD=password
+    env_file:
+      - .env
     ports:
       - '9207:3306'
     volumes:
@@ -30,14 +39,8 @@ services:
       context: ./server
     volumes:
       - "./server:/go/src/app"
-    environment:
-      PORT: 8080
-      JWT_SECRET_KEY: 2gN-uNOr:Xqed+sr.,8O%]D")(p>Jnn-Z%E(,@rX~<CFDT}f7{M&N]p3D)=OZS3
-      DB_DRIVER: mysql
-      DB_CONNECTION_STRING: root:password@tcp(db:3306)/hound?charset=utf8
-      TMDB_API_KEY: <API KEY HERE>
-      IGDB_CLIENT_ID: <CLIENT ID HERE>
-      IGDB_CLIENT_SECRET: <CLIENT SECRET HERE>
+    env_file:
+      - .env
     container_name: hound-server
     ports:
       - "8080:8080"
