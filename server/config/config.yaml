@@ -1,0 +1,4 @@
+---
+auth:
+  allow-registration: true
+  jwt-access-token-expiration: 259200 # expressed in seconds
