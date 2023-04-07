@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"os"
 	"xorm.io/xorm"
@@ -16,6 +17,7 @@ var databaseEngine *xorm.Engine
 
 func InstantiateDB() {
 	var err error
+	fmt.Println("driver", os.Getenv("DB_DRIVER"))
 	databaseEngine, err = xorm.NewEngine(os.Getenv("DB_DRIVER"), os.Getenv("DB_CONNECTION_STRING"))
 	if err != nil {
 		panic(err)

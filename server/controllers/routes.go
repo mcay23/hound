@@ -9,7 +9,7 @@ import (
 func SetupRoutes() {
 	r := gin.Default()
 	v1.SetupRoutes(r)
-	err := r.Run(os.Getenv("PORT"))
+	err := r.Run(":" + os.Getenv("PORT"))
 	if err != nil {
 		panic(err)
 	}

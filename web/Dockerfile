@@ -1,12 +1,14 @@
 FROM node:18-alpine
-ENV NODE_ENV=production
+# Create app directory
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
-WORKDIR /app
+# Install app dependencies
+COPY package.json /usr/src/app/
+RUN npm install
 
-COPY ["package.json", "package-lock.json*", "./"]
+# Bundle app source
+COPY . /usr/src/app
 
-RUN npm install --production
-
-COPY . .
-
-CMD [ "node", "server.js" ]
+EXPOSE 3000
+CMD [ "npm", "start" ]
