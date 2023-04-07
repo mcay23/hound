@@ -10,7 +10,6 @@ import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useState } from "react";
-import { create } from "domain";
 
 function CreateHistoryModal(props: any) {
   const { onClose, open } = props;
@@ -68,7 +67,6 @@ function CreateHistoryModal(props: any) {
         console.log(err);
       });
   };
-  console.log(createHistoryData);
   return (
     <>
       <Dialog

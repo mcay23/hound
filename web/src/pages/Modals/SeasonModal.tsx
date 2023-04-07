@@ -1,5 +1,6 @@
 import {
   Dialog,
+  LinearProgress,
   styled,
   Tooltip,
   tooltipClasses,
@@ -100,7 +101,10 @@ function SeasonModal(props: any) {
     }
   }
   useEffect(() => {
-    console.log("calling");
+    // no need to call on close
+    if (open === false) {
+      return;
+    }
     // check data is loaded
     if (seasonNumber >= 0) {
       axios
@@ -126,13 +130,13 @@ function SeasonModal(props: any) {
     }
   }, [seasonNumber, sourceID, open]);
   // data is already loaded, useEffect not triggered (open and close same season modal)
-  if (
-    !isSeasonDataLoaded &&
-    seasonData &&
-    seasonData.season.season_number === seasonNumber
-  ) {
-    setIsSeasonDataLoaded(true);
-  }
+  // if (
+  //   !isSeasonDataLoaded &&
+  //   seasonData &&
+  //   seasonData.season.season_number === seasonNumber
+  // ) {
+  //   setIsSeasonDataLoaded(true);
+  // }
   return (
     <>
       <Dialog
@@ -220,7 +224,7 @@ function SeasonModal(props: any) {
             })}
           </>
         ) : (
-          ""
+          <LinearProgress />
         )}
       </Dialog>
       <CreateHistoryModal

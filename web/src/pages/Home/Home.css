@@ -9,8 +9,8 @@
 }
 
 .home-page-primary-section {
-  color: black;
-  background-color: rgb(235, 235, 235);
+  color: white;
+  background-color: rgba(var(--hound-primary), 1);
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   padding-top: 30px;
   padding-bottom: 30px;
