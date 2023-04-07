@@ -45,3 +45,4 @@ web/yarn-debug.log*
 web/yarn-error.log*
 
 server/.env
+.env
