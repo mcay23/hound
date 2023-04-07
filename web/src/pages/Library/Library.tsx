@@ -105,6 +105,13 @@ function Library(props: any) {
               itemType="poster"
               itemOnClick={undefined}
             />
+            {primaryCollection ? (
+              ""
+            ) : (
+              <div className="horizontal-section-header">
+                Your library is empty. Try adding some items!
+              </div>
+            )}
           </div>
           {
             <div className="library-collections-section">
