@@ -24,6 +24,10 @@ function Login() {
         console.log("RESPONSE RECEIVED: ", res.data);
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("token", res.data.token);
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${localStorage.getItem(res.data.token)}`;
         window.location.reload();
         setAlertVisible(false);
       })

@@ -17,13 +17,16 @@ import Register from "./pages/Login/Register";
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
   // axios defaults
-  axios.defaults.withCredentials = true;
+  // axios.defaults.withCredentials = true;
   axios.defaults.baseURL = houndConfig.server_host;
   // TODO REVISE LATER
   axios.defaults.headers.common["Content-Type"] =
     houndConfig.axios_config.headers["Content-Type"];
   axios.defaults.headers.common["X-Client"] =
     houndConfig.axios_config.headers["X-Client"];
+  axios.defaults.headers.common[
+    "Authorization"
+  ] = `Bearer ${localStorage.getItem("token")}`;
   // Add a request interceptor
   axios.interceptors.request.use(
     function (config) {

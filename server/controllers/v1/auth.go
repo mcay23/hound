@@ -58,6 +58,6 @@ func LoginHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
-	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
+	//c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username, "token": token}, 200)
 }
