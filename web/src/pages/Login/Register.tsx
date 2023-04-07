@@ -26,7 +26,6 @@ function Register() {
     axios
       .post("/api/v1/auth/register", data)
       .then((res) => {
-        console.log("RESPONSE RECEIVED: ", res.data);
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
         window.location.reload();
@@ -43,8 +42,6 @@ function Register() {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setData({ ...data, [event.target.name]: event.target.value });
   };
-
-  console.log(data);
 
   return (
     <div className="full-screen bg-home">

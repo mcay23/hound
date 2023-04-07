@@ -45,7 +45,6 @@ function SearchPage(props: any) {
             res.data.backdrop_urls[
               Math.floor(Math.random() * res.data.backdrop_urls.length)
             ];
-          console.log(randomBackdrop);
           setBackdropURL(randomBackdrop);
         })
         .catch((err) => {
