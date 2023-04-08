@@ -1,6 +1,6 @@
 .home-page-search-section {
   height: 350px;
-  background: url('https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg') no-repeat;
+  /* background: url('https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg') no-repeat; */
   background-size: cover;
   animation: backgroundScroll 150s linear infinite;
   display: flex;

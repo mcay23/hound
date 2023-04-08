@@ -83,7 +83,7 @@ function Login() {
                 </Button>
               </div>
             </form>
-            <div className="d-flex mx-auto mt-4">
+            {/* <div className="d-flex mx-auto mt-4">
               <a
                 href="../register"
                 className="mx-auto"
@@ -91,7 +91,7 @@ function Login() {
               >
                 Don't have an account? Sign up here!
               </a>
-            </div>
+            </div> */}
           </div>
         </Card>
       </div>
