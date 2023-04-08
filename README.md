@@ -1,5 +1,5 @@
 # Hound
- Track TV Shows, Movies, etc.
+ Track TV Shows, Movies, etc. Self-hosted version of Trakt, Simkl, etc.
  
 # Demo
 Access the demo [here](http://107.174.11.52/)
