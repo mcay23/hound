@@ -43,7 +43,7 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           #platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
-          platforms: linux/arm/v7,linux/arm64 # you can write just "all" if you prefer
+          platforms: linux/amd64,linux/arm/v7,linux/arm64 # you can write just "all" if you prefer
           pull: true
           push: true
           tags: |
