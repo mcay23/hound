@@ -33,7 +33,7 @@ Set your API keys in the `server/.env` file. If you change the database username
 go build
 ```
 
-# Disclaimer, Contributing
+# Contributing
 Project is still at a very early stage. Expect many bugs. Please report any you see. 
 This project needs contributors. Feel free to contact me if you're interested.
 
