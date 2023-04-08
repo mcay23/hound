@@ -17,7 +17,7 @@ services:
       - SYS_NICE
     restart: always
     env_file:
-      - .env
+      - compose.env
     ports:
       - '9207:3306'
     volumes:
@@ -40,7 +40,7 @@ services:
     volumes:
       - "./server:/go/src/app"
     env_file:
-      - .env
+      - compose.env
     container_name: hound-server
     ports:
       - "8080:8080"

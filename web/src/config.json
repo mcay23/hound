@@ -1,5 +1,5 @@
 {
-  "server_host": "http://localhost:8080",
+  "server_host": "http://localhost",
   "axios_config": {
       "withCredentials": true,
       "headers": {

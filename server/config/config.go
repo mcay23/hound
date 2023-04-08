@@ -9,7 +9,7 @@ import (
 
 var envFileName = ".env"
 var yamlFileName = "config.yaml"
-var configFilePath = "."
+var configFilePath = "./"
 
 func InitializeConfig() {
 	// read env config
