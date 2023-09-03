@@ -39,6 +39,7 @@ services:
       context: ./server
     volumes:
       - "./server:/go/src/app"
+    restart: always
     env_file:
       - compose.env
     container_name: hound-server
