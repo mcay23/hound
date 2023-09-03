@@ -54,6 +54,7 @@ services:
     volumes:
       - .:/usr/app/
       - /usr/app/node_modules
+    restart: always
     container_name: hound-web
     ports:
       - "3000:3000"
