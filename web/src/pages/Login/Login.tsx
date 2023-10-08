@@ -32,7 +32,7 @@ function Login() {
         setAlertVisible(false);
       })
       .catch((err) => {
-        if (err.response.status === 400) {
+        if (err.response.status[0] !== 2) {
           setAlertVisible(true);
         }
         console.log("AXIOS ERROR: ", err);
