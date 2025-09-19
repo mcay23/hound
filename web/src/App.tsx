@@ -13,6 +13,7 @@ import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
+import VideoPlayer from "./pages/VideoPlayer/VideoPlayer";
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -95,6 +96,28 @@ function App() {
           <Route
             path="/collection/:id"
             element={<ProtectedRoute component={<Collection />} />}
+          />
+          <Route
+            path="/player"
+            element={
+              <ProtectedRoute
+                component={
+                  <VideoPlayer
+                    option={{
+                      container: ".artplayer-app",
+                      // url: "https://sgp1-4.download.real-debrid.com/d/HYLCZOIEA2LDM20/Tastefully%20Yours%20S01E08%201080p%20NF%20WEB-DL%20AAC2%200%20H%20264-Kitsune.mkv",
+                      url: "http://localhost:8000/api/v1/stream",
+                      fullscreen: true,
+                      pip: true,
+                    }}
+                    style={{
+                      width: "500px",
+                      height: "300px",
+                    }}
+                  />
+                }
+              />
+            }
           />
         </Routes>
       </BrowserRouter>

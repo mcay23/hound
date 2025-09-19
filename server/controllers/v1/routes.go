@@ -54,4 +54,9 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/game/:id", GetGameFromIDHandler)
 	privateRoutes.POST("/game/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
+
+	/*
+		Video Streaming Routes
+	 */
+	privateRoutes.GET("/stream", StreamHandler)
 }
