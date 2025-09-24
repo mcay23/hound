@@ -16,6 +16,9 @@ const (
 	commentTypeHistory = "history"
 )
 
+/*
+	"Comments" include watch history, not just comments/reviews
+ */
 type CommentRecord struct {
 	CommentID    int64     `xorm:"pk autoincr 'comment_id'" json:"id"`
 	CommentType  string    `json:"comment_type"`

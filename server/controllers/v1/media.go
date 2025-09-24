@@ -364,6 +364,7 @@ func GetCommentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, comments, 200)
 }
 
+// Post comments and add watch history
 func PostCommentHandler(c *gin.Context) {
 	var body CommentRequest
 	err := c.ShouldBindJSON(&body)
@@ -463,7 +464,7 @@ func PostCommentHandler(c *gin.Context) {
 	} else if mediaType == database.MediaTypeGame {
 		record, err := sources.GetLibraryObjectIGDB(sourceID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object igdb"))
 			return
 		}
 		// add item to internal library if not there

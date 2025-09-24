@@ -72,6 +72,7 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 }
 
 func GetTVShowFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.TVDetails, error) {
+	// TODO cache result
 	tvShow, err := tmdbClient.GetTVDetails(tmdbID, options)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
