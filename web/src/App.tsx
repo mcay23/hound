@@ -102,19 +102,24 @@ function App() {
             element={
               <ProtectedRoute
                 component={
-                  <VideoPlayer
-                    option={{
-                      container: ".artplayer-app",
-                      // url: "https://sgp1-4.download.real-debrid.com/d/HYLCZOIEA2LDM20/Tastefully%20Yours%20S01E08%201080p%20NF%20WEB-DL%20AAC2%200%20H%20264-Kitsune.mkv",
-                      url: "http://localhost:8000/api/v1/stream",
-                      fullscreen: true,
-                      pip: true,
-                    }}
-                    style={{
-                      width: "500px",
-                      height: "300px",
-                    }}
-                  />
+                  <>
+                    <video controls>
+                      <source src="http://localhost:8000/api/v1/stream" />
+                    </video>
+                  </>
+                  // <VideoPlayer
+                  //   option={{
+                  //     container: ".artplayer-app",
+                  //     url: "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-15-mbps-hd-h264.mkv",
+                  //     // url: "http://localhost:8000/api/v1/stream",
+                  //     fullscreen: true,
+                  //     pip: true,
+                  //   }}
+                  //   style={{
+                  //     width: "500px",
+                  //     height: "300px",
+                  //   }}
+                  // />
                 }
               />
             }

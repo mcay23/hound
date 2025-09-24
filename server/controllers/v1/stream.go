@@ -9,8 +9,8 @@ import (
 )
 
 func StreamHandler(c *gin.Context) {
-	//videoURL := "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-15-mbps-hd-h264.mkv"
-	videoURL := "https://sgp1-4.download.real-debrid.com/d/UL2WN7D3LQ4BK40/Tastefully%20Yours%20S01E08%201080p%20NF%20WEB-DL%20AAC2%200%20H%20264-Kitsune.mkv"
+	videoURL := "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-25-mbps-hd-h264.mkv"
+	//videoURL := "https://test-videos.co.uk/vids/jellyfish/mkv/1080/Jellyfish_1080_10s_10MB.mkv"
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
@@ -21,7 +21,6 @@ func StreamHandler(c *gin.Context) {
 		return
 	}
 
-	// Forward the client's Range header to the remote request.
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
 		req.Header.Set("Range", rangeHeader)
 	}
@@ -46,9 +45,9 @@ func StreamHandler(c *gin.Context) {
 	}
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
-	c.Writer.Header().Set("Cache-Control", "no-store")
+	//c.Writer.Header().Set("Cache-Control", "no-store")
 	c.Status(resp.StatusCode)
-	// Stream the body of the remote response directly to the client.
+
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
 		log.Printf("io.Copy error: %v", err)

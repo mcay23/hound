@@ -11,7 +11,7 @@ import (
 func RegistrationHandler(c *gin.Context) {
 	if !viper.GetBool("auth.allow-registration") {
 		err := errors.New(helpers.BadRequest)
-		_ = helpers.LogErrorWithMessage(err, "Registration is currently disabled")
+		_ = helpers.LogErrorWithMessage(err, "Registration is currently disabled. Please contact your system admin.")
 		helpers.ErrorResponse(c, err)
 	}
 	userPayload := model.RegistrationUser{}
