@@ -335,10 +335,9 @@ func DeleteCollectionHandler(c *gin.Context) {
 }
 
 func GetCommentsHandler(c *gin.Context) {
-	idParam := c.Param("id")
-	mediaSource, sourceID, err := ParseID(idParam)
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
 		return
 	}
 	requestURL := strings.Split(c.Request.URL.Path, "/")
@@ -347,6 +346,7 @@ func GetCommentsHandler(c *gin.Context) {
 		return
 	}
 	mediaType := requestURL[3]
+	// tv vs. tvshow
 	if mediaType == "tv" {
 		mediaType = database.MediaTypeTVShow
 	}
@@ -376,8 +376,11 @@ func PostCommentHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
 		return
 	}
-	idParam := c.Param("id")
-	mediaSource, sourceID, err := ParseID(idParam)
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		return
+	}
 	requestURL := strings.Split(c.Request.URL.Path, "/")
 	if len(requestURL) <= 0 {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
@@ -525,20 +528,6 @@ func DeleteCommentHandler(c *gin.Context) {
 		}
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
-}
-
-func ParseID(idParam string) (string, int, error) {
-	split := strings.Split(idParam, "-")
-	if len(split) != 2 {
-		return "", -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid id in param")
-	}
-	// TODO sourceID is int only for all sources (tmdb, igdb) but might be different in other sources
-	sourceID, err := strconv.Atoi(split[1])
-	if err != nil {
-		return "", -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "cannot cast sourceid to string")
-	}
-	mediaSource := split[0]
-	return mediaSource, sourceID, nil
 }
 
 func GetCommentsCore(username string, libraryID int64, commentType *string) (*[]view.CommentObject, error) {

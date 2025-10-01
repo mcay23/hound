@@ -21,30 +21,22 @@ func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := SearchTVShowCore(queryString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to search for tv show")
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to search for tv show"))
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)
 }
 
 func GetTVShowFromIDHandler(c *gin.Context) {
-	param := c.Param("id")
-	split := strings.Split(param, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	id, err := strconv.ParseInt(split[1], 10, 64)
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.SourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
 		return
 	}
 	options := map[string]string{
 		"append_to_response": "videos,watch/providers,credits,recommendations",
 	}
-	showDetails, err := sources.GetTVShowFromIDTMDB(int(id), options)
+	showDetails, err := sources.GetTVShowFromIDTMDB(sourceID, options)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -98,7 +90,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		BackdropURL:      GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
 		Overview:         showDetails.Overview,
 		OriginCountry:    showDetails.OriginCountry,
-		Videos:           showDetails.Videos.TVVideos,
+		Videos:           showDetails.Videos,
 		WatchProviders:   showDetails.WatchProviders,
 		TVCredits:        showDetails.Credits.TVCredits,
 		Recommendations:  showDetails.Recommendations,
@@ -121,8 +113,7 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 	results, err := sources.GetTrendingTVShowsTMDB("1")
 	//results2, err := sources.GetTrendingTVShowsTMDB("2")
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting popular tv shows"))
 		return
 	}
 	//results.Results = append(results.Results, results2.Results...)
@@ -208,17 +199,9 @@ func GetTVSeasonHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
 		return
 	}
-	idParam := c.Param("id")
-	// idParam is in format tmdb-1234, grab id number
-	split := strings.Split(idParam, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	sourceID, err := strconv.Atoi(split[1])
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.SourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
 		return
 	}
 	tvSeason, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)

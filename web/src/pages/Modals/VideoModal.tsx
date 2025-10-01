@@ -10,7 +10,7 @@ function VideoModal(props: any) {
     <Dialog
       onClose={handleClose}
       open={open}
-      disableScrollLock={true}
+      disableScrollLock={false}
       className="video-dialog"
       maxWidth={false}
     >
