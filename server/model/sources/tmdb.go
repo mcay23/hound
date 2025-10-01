@@ -31,7 +31,7 @@ type GenreObject struct {
 
 func InitializeTMDB() {
 	var err error
-	tmdbClient, err = tmdb.Init(os.Getenv("TMDB_API_KEY"))
+	tmdbClient, err = tmdb.InitV4(os.Getenv("TMDB_API_KEY"))
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to initialize tmdb client")
 		panic(err)
@@ -56,7 +56,7 @@ func InitializeTMDB() {
 func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 	urlOptions := make(map[string]string)
 	urlOptions["page"] = page
-	shows, err := tmdbClient.GetTrending("tv", "week")
+	shows, err := tmdbClient.GetTrending("tv", "week", urlOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func MarkTVSeasonAsWatchedTMDB(userID int64, libraryID int64, seasonNumber int, 
 func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 	urlOptions := make(map[string]string)
 	urlOptions["page"] = page
-	movies, err := tmdbClient.GetTrending("movie", "week")
+	movies, err := tmdbClient.GetTrending("movie", "week", urlOptions)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"encoding/json"
 	"fmt"
 	"os/exec"
 )
@@ -26,20 +25,43 @@ func InitializeProviders() {
 
 }
 
-func SearchProviders(query *ProviderQueryObject) (*map[string]interface{}, error) {
-	if *query.IMDbID != "" {
+//func SearchProviders(query *ProviderQueryObject) (*map[string]interface{}, error) {
+//	if *query.IMDbID != "" {
+//
+//	}
+//	scriptList := []string{"script1.py", "script2.py", "script3.py"}
+//	resultChan := make(chan string, len(scriptList))
+//
+//	// Start a goroutine for each script
+//	for _, script := range scriptList {
+//		go runScript(script, resultChan)
+//	}
+//	channel := ""
+//	// Listen for results on the channel and stream them to the client
+//	for i := 0; i < len(scriptList); i++ {
+//		channel = <-resultChan
+//	}
+//
+//	//cmd := exec.Command("python", "providers/torrentio.py")
+//	//output, err := cmd.CombinedOutput()
+//	//if err != nil {
+//	//	fmt.Println("Error running script:", err)
+//	//	return nil, err
+//	//}
+//	//var result map[string]interface{}
+//	//if err := json.Unmarshal(result, &result); err != nil {
+//	//	fmt.Println("Error parsing JSON:", err)
+//	//	return nil, err
+//	//}
+//	return &result, nil
+//}
 
-	}
-	cmd := exec.Command("python", "providers/torrentio.py")
+func runScript(filepath string, resultChan chan<- string) {
+	cmd := exec.Command("python", filepath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error running script:", err)
-		return nil, err
+		resultChan <- fmt.Sprintf("Error running %s: %v", filepath, err)
+		return
 	}
-	var result map[string]interface{}
-	if err := json.Unmarshal(output, &result); err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		return nil, err
-	}
-	return &result, nil
+	resultChan <- fmt.Sprintf("Output from %s: %s", filepath, string(output))
 }

@@ -9,7 +9,6 @@ import (
 	"hound/model/sources"
 	"hound/view"
 	"strconv"
-	"strings"
 )
 
 func SearchMoviesHandler(c *gin.Context) {
@@ -53,22 +52,15 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 }
 
 func GetMovieFromIDHandler(c *gin.Context) {
-	param := c.Param("id")
-	split := strings.Split(param, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	id, err := strconv.ParseInt(split[1], 10, 64)
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.SourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
 		return
 	}
 	options := map[string]string{
 		"append_to_response": "videos,watch/providers,credits,recommendations",
 	}
-	movieDetails, err := sources.GetMovieFromIDTMDB(int(id), options)
+	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID, options)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -88,14 +80,14 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		BackdropURL:         GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
 		PosterURL:           GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
 		Budget:              movieDetails.Budget,
-		Genres:              movieDetails.Genres,
+		Genres:              &movieDetails.Genres,
 		Homepage:            movieDetails.Homepage,
 		IMDbID:              movieDetails.IMDbID,
 		OriginalLanguage:    movieDetails.OriginalLanguage,
 		OriginalTitle:       movieDetails.OriginalTitle,
 		Overview:            movieDetails.Overview,
 		Popularity:          movieDetails.Popularity,
-		ProductionCompanies: movieDetails.ProductionCompanies,
+		ProductionCompanies: &movieDetails.ProductionCompanies,
 		ReleaseDate:         movieDetails.ReleaseDate,
 		Revenue:             movieDetails.Revenue,
 		Runtime:             movieDetails.Runtime,
@@ -104,12 +96,12 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		VoteAverage:         movieDetails.VoteAverage,
 		VoteCount:           movieDetails.VoteCount,
 		MovieCredits:        movieDetails.Credits.MovieCredits,
-		Videos:              movieDetails.Videos.MovieVideos,
+		Videos:              movieDetails.MovieVideosAppend.Videos,
 		Recommendations:     movieDetails.Recommendations,
 		WatchProviders:      movieDetails.WatchProviders,
 	}
 	libraryID, err := database.GetInternalLibraryID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
-	if err == nil {
+	if err == nil && libraryID != nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
 		if err != nil {

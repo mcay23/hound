@@ -341,6 +341,7 @@ func AddRecordToInternalLibrary(libraryRecord *LibraryRecord) (int64, error) {
 }
 
 func GetInternalLibraryID(mediaType string, mediaSource string, sourceID string) (*int64, error) {
+	// using current handling, errors are usually ignored by the caller
 	var record LibraryRecord
 	has, err := databaseEngine.Table(libraryTable).Where("media_type = ?", mediaType).
 		Where("media_source = ?", mediaSource).
@@ -349,8 +350,8 @@ func GetInternalLibraryID(mediaType string, mediaSource string, sourceID string)
 		return nil, err
 	}
 	if !has {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"GetInternalLibraryID(): No matching record in internal library")
+		return nil, errors.New(helpers.BadRequest)
+		//	"GetInternalLibraryID(): No matching record in internal library")
 	}
 	return &record.LibraryID, nil
 }
