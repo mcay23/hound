@@ -8,6 +8,9 @@ import (
 	"net/http"
 )
 
+/*
+	Proxies links through the server
+ */
 func StreamHandler(c *gin.Context) {
 	videoURL := "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-25-mbps-hd-h264.mkv"
 	//videoURL := "https://test-videos.co.uk/vids/jellyfish/mkv/1080/Jellyfish_1080_10s_10MB.mkv"

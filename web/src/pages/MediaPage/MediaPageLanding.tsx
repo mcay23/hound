@@ -6,6 +6,7 @@ import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
 import MediaPageGame from "./MediaPageGame";
+import { Toaster } from "react-hot-toast";
 import Footer from "../Footer";
 
 function MediaPageLanding() {
@@ -51,6 +52,11 @@ function MediaPageLanding() {
       ) : (
         <LinearProgress className="progress-margin" />
       )}
+      <Toaster
+        toastOptions={{
+          duration: 5000,
+        }}
+      />
       <Footer />
     </>
   );

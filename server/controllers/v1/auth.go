@@ -35,7 +35,7 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
+	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
 	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
 }
 
@@ -58,6 +58,6 @@ func LoginHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	c.SetCookie("token", token, viper.GetInt("jwt-access-token-expiration"), "/", "", true, true)
+	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
 	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
 }

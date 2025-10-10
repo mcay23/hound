@@ -39,6 +39,7 @@ def get_args():
     parser.add_argument("--episode", type=int, help="(int) tv show episode (if applicable)")
     parser.add_argument("--languages", type=str, help="(string) comma separated ISO 639-1 language codes")
     parser.add_argument("--rd_api_key", type=str, help="(string) Real debrid api key, if available")
+    parser.add_argument("--connection_string", type=str, help="(string) For passing connection info such as host, username, pw, etc.")
     return parser.parse_args()
 
 # handle exiting with go_status
@@ -90,7 +91,6 @@ def request_with_retry(
                         "Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*"
         }
-    print(headers)
     response = http.request(
         method=method,
         url=url,
@@ -113,16 +113,16 @@ def is_valid_magnet_hash(h: str) -> bool:
 # settings for browsers, try to avoid transcoding
 browser_ranking = DefaultRanking(
     # prefer avc over hevc for performance
-    avc=1000,
-    hevc=600,
-    webdl=750,
+    avc=800,
+    hevc=400,
+    webdl=0,
     webmux=0,
     remux=0,
     # audio codecs, penalize ac3 for browsers
-    atmos=-200, 
-    dolby_digital=-200,
-    dolby_digital_plus=-200,
-    dts_lossless=-400,
+    atmos=-300, 
+    dolby_digital=-300,
+    dolby_digital_plus=-300,
+    dts_lossless=-300,
     dts_lossy=-500,
     # others
     bit_10=0,
@@ -130,42 +130,79 @@ browser_ranking = DefaultRanking(
     brrip=0,
     hdrip=0,
     uhdrip=0,
+    webrip=30,
     webdlrip=0,
     size=0
 )
 
 # Rank and parse torrent languages, codecs, etc.
-def rank_and_parse_torrents(torrents, provider):
+def rank_and_parse_torrents(torrents, addon, useDebrid=False):
     rtn = RTN(settings=SettingsModel(), ranking_model=browser_ranking)
     torrentsData = []
     for t in torrents:
         try:
             # use torrent name since quality and codec info is not always in each file
-            if provider == "torrentio" or provider == "prowlarr":
-                data = rtn.rank(t["torrent_name"], t["infohash"], correct_title=t["clean_title"])
+            if addon == "torrentio" or addon == "prowlarr":
+                data = rtn.rank(t["torrent_name"], t["info_hash"], correct_title=t["clean_title"])
+            elif addon == "aiostreams":
+                # parse name is concatenation of file and folder names
+                data = rtn.rank(t["file_name"], t["info_hash"], correct_title=t["title"])
+                # try parsing folder name if no resolution, since for some packs the data is only in the folder name
+                try:
+                    t_dict = data.model_dump()
+                    if t_dict["data"]["resolution"] == "unknown" and t["folder_name"] != "":
+                        data = rtn.rank(t["folder_name"], t["info_hash"], correct_title=t["title"])
+                except:
+                    pass
             else:
                 # might need to do some episode / season parsing to validate from other sources such as jackett, etc.
-                data = rtn.rank(t["filename"], t["infohash"])
-        except:
+                data = rtn.rank(t["file_name"], t["info_hash"])
+        except Exception:
             continue
+    
         t_dict = data.model_dump()
-        t_dict["provider"] = provider
-        t_dict["indexer"] = t.get("indexer", provider)
+        t_dict["addon"] = addon
+        t_dict["indexer"] = t.get("indexer", addon)
+        t_dict["url"] = t.get("url", "")
         t_dict["seeders"] = t.get("seeders", 0)
         t_dict["leechers"] = t.get("leechers", -1)
         t_dict["file_idx"] = t.get("file_idx", -1)
+        t_dict["file_size"] = t.get("file_size", -1)
+        t_dict["file_size_string"] = t.get("file_size_string", -1)
+        t_dict["duration"] = t.get("duration", -1)
+        t_dict["duration_string"] = t.get("duration_string", -1)
+        t_dict["service"] = t.get("service", "")
+        t_dict["resolution"] = t.get("resolution", "")
 
         # don't always know if torrent is cached
         t_dict["cached"] = t.get("cached", "unknown")
 
-        # this is the torrent title, which is different from filename
-        t_dict["torrent_name"] = t.get("torrent_name", "")
+        t_dict["file_name"] = t.get("file_name", "")
+        t_dict["folder_name"] = t.get("folder_name", "")
+        t_dict["p2p"] = t.get("p2p", "")
 
         # rename raw_title to filename
-        t_dict["filename"] = t.get("filename", "")
-        # t_dict.pop('raw_title', None)
+        # check if torrentio/prowlarr needs this
+        # t_dict["raw_title"] = t.get("file_name", "")
+        t_dict.pop('raw_title', None)
 
-        t_dict["data"]
+        # penalize unknown audio codecs, as this may disrupt browser playback 
+        if len(t_dict["data"]["audio"]) == 0:
+            t_dict["rank"] -= 300
+        # boost cached torrents for debrid
+        if useDebrid:
+            if t_dict["cached"] == "true":
+                t_dict["rank"] += 10000
+        else:
+            # if torrent streaming, boost ones with more seeders
+            seeders = t_dict["seeders"]
+            if seeders >= 50:
+                t_dict["rank"] += 500
+            elif seeders >= 25:
+                t_dict["rank"] += 250
+            elif seeders < 10:
+                t_dict["rank"] -= 200
+
         torrentsData.append(t_dict)
     return torrentsData
-    # return torrentsData
+

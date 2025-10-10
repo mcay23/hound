@@ -23,6 +23,10 @@
   color: white; */
 }
 
+.home-page-placeholder {
+  height: 1300px;
+}
+
 @media only screen and (max-width:600px) {
   .home-page-search-section {
     height: 200px;

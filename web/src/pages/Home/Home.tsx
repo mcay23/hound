@@ -91,7 +91,7 @@ function Home() {
             />
           </div>
         ) : (
-          ""
+          <div className="home-page-placeholder"></div>
         )}
         {isTrendingMoviesLoaded ? (
           <HorizontalSection

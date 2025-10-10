@@ -1,25 +1,41 @@
-import Artplayer from "artplayer";
-import type { Option } from "artplayer";
-import { useEffect, useRef } from "react";
+import * as React from "react";
+import videojs from "video.js";
 
-interface PlayerProps extends React.HTMLAttributes<HTMLDivElement> {
-  option: Option;
+// Styles
+import "video.js/dist/video-js.css";
+
+interface IVideoPlayerProps {
+  options: any;
 }
 
-export default function VideoPlayer({ option, ...rest }: PlayerProps) {
-  const $container = useRef<HTMLDivElement | null>(null);
+const initialOptions: any = {
+  controls: true,
+  fluid: true,
+  controlBar: {
+    volumePanel: {
+      inline: false,
+    },
+  },
+};
 
-  useEffect(() => {
-    if (!$container.current) return;
-
-    const art = new Artplayer({
-      ...option,
-      container: $container.current,
+function VideoPlayer({ options }: IVideoPlayerProps) {
+  const videoNode = React.useRef<HTMLVideoElement>(null);
+  const player = React.useRef<any>();
+  React.useEffect(() => {
+    if (!videoNode.current) return;
+    player.current = videojs(videoNode.current, {
+      ...initialOptions,
+      ...options,
+    }).ready(function () {
+      // console.log('onPlayerReady', this);
     });
-
     return () => {
-      art.destroy(false);
+      if (player.current) {
+        player.current.dispose();
+      }
     };
-  }, [option]);
-  return <div ref={$container} {...rest}></div>;
+  }, [options]);
+  return <video ref={videoNode} className="video-js" />;
 }
+
+export default VideoPlayer;

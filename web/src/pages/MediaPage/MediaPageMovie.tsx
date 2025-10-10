@@ -17,7 +17,11 @@ import convertDateToReadable from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
-import Footer from "../Footer";
+import StreamModal from "../Modals/StreamModal";
+import { PlayArrow } from "@mui/icons-material";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { Dropdown, SplitButton } from "react-bootstrap";
 
 const offsetFix = {
   modifiers: [
@@ -43,11 +47,14 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
   const [videoKey, setVideoKey] = useState("");
+  const [streams, setStreams] = useState<any>(null);
+  const [mainStream, setMainStream] = useState<any>(null);
 
   var styles = {
     noBackdrop: {
@@ -103,7 +110,15 @@ function MediaPageMovie(props: any) {
     );
   } catch {}
   if (props.data.runtime > 0) {
-    runtime = props.data.runtime + "m";
+    if (props.data.runtime >= 60) {
+      runtime =
+        Math.floor(props.data.runtime / 60) +
+        "h " +
+        (props.data.runtime % 60) +
+        "m";
+    } else {
+      runtime = props.data.runtime + "m";
+    }
   }
   // handle actor profiles
   var creditsList = props.data.credits.cast.map((item: any) => {
@@ -123,6 +138,29 @@ function MediaPageMovie(props: any) {
   };
   const handleAddToCollectionClose = () => {
     setIsCollectionModalOpen(false);
+  };
+  console.log(props.data);
+  const handleStreamButtonClick = () => {
+    if (!streams) {
+      axios
+        .get(
+          `/api/v1/movie/${props.data.media_source}-${props.data.source_id}/providers`
+        )
+        .then((res) => {
+          setStreams(res.data);
+          if (res.data.data.streams.length > 0) {
+            setMainStream(res.data.data.streams[0]);
+          } else {
+            toast.error("No streams found");
+          }
+        })
+        .catch((err) => {
+          if (err.response.status === 500) {
+            toast.error("Error getting streams");
+          }
+        });
+    }
+    setIsStreamModalOpen(true);
   };
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);
@@ -205,6 +243,14 @@ function MediaPageMovie(props: any) {
                 {creators ? "by " + creators : ""}
               </div>
               <div className="media-page-tv-header-button-container">
+                <SplitButton
+                  title="▶ Play Movie"
+                  className="stream-play-button"
+                  onClick={handleStreamButtonClick}
+                >
+                  <Dropdown.Item eventKey="1">Play Stream</Dropdown.Item>
+                  <Dropdown.Item eventKey="2">Select stream</Dropdown.Item>
+                </SplitButton>
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
@@ -278,6 +324,11 @@ function MediaPageMovie(props: any) {
         onClose={handleAddToCollectionClose}
         open={isCollectionModalOpen}
         item={props.data}
+      />
+      <StreamModal
+        setOpen={setIsStreamModalOpen}
+        open={isStreamModalOpen}
+        streamDetails={mainStream}
       />
       <VideoModal
         onClose={handleVideoButtonClose}
