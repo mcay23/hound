@@ -34,6 +34,8 @@ PROWLARR_URL = "http://localhost:9696/api/v1/search?query=%s&type=%s&limit=30" #
 
 response = {"go_status":"error"}
 
+# TODO REFACTOR FILENAMES AND RETEST
+
 # build query string
 try:
     year_str = ""
@@ -64,7 +66,7 @@ for torrent in json_data:
     #     continue
     torrents.append({
         "torrent_name": torrent.get("title", None),
-        "infohash": torrent.get("infoHash", None),
+        "info_hash": torrent.get("infoHash", None),
         "seeders": torrent.get("seeders", 0),
         "leechers": torrent.get("leechers", -1),
         "clean_title": args.title,
@@ -74,7 +76,7 @@ for torrent in json_data:
 
 print(torrents)
 ranked = rank_and_parse_torrents(torrents, PROVIDER_NAME)
-# remove bad matches\
+# remove bad matches
 filtered = []
 for t in ranked:
     # skip bad matches
@@ -98,7 +100,7 @@ for t in ranked:
     filtered.append(t)
 # sort list based on rank
 filtered = sorted(list(filtered), key=lambda x: x["rank"], reverse=True)
-response["provider"] = PROVIDER_NAME
+response["addon"] = PROVIDER_NAME
 response["streams"] = filtered
 
 with open("prowlarr.json", "w", encoding="utf-8") as f:

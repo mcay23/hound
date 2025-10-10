@@ -9,8 +9,8 @@ import (
 func SetupRoutes() {
 	r := gin.Default()
 	v1.SetupRoutes(r)
-	err := r.Run(":" + os.Getenv("PORT"))
+	err := r.Run(":" + os.Getenv("SERVER_PORT"))
 	if err != nil {
-		panic(err)
+		panic("Error parsing SERVER_PORT .env variable")
 	}
 }

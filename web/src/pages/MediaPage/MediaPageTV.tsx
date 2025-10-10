@@ -87,7 +87,15 @@ function MediaPageTV(props: any) {
     })
   );
   if (props.data.episode_run_time.length > 0) {
-    runtime = props.data.episode_run_time[0] + "m";
+    if (props.data.episode_run_time[0] >= 60) {
+      runtime =
+        Math.floor(props.data.episode_run_time[0] / 60) +
+        "h " +
+        (props.data.episode_run_time[0] % 60) +
+        "m";
+    } else {
+      runtime = props.data.episode_run_time[0] + "m";
+    }
   }
   // handle actor profiles
   var creditsList = props.data.credits.cast.map((item: any) => {

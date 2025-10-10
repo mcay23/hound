@@ -80,6 +80,14 @@ func GetTVShowFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.TVDetails
 	return tvShow, nil
 }
 
+func GetTVShowIMDBID(tmdbID int, options map[string]string) (string, error) {
+	externalIDs, err := tmdbClient.GetTVExternalIDs(tmdbID, options)
+	if err != nil {
+		return "", helpers.LogErrorWithMessage(err, "Failed to get tv show external ids from tmdb")
+	}
+	return externalIDs.IMDbID, nil
+}
+
 func GetTVSeasonTMDB(tmdbID int, seasonNumber int, options map[string]string) (*tmdb.TVSeasonDetails, error) {
 	tvShow, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, options)
 	if err != nil {

@@ -162,6 +162,38 @@
     margin-bottom: 1000px;
 }
 
+.stream-play-button {
+    margin-right: 16px;
+    color: rgba(var(--hound-primary), 1);
+}
+
+.stream-play-button > .btn,
+.stream-play-button > .dropdown-toggle {
+    height: 42px;
+    background-color: rgba(var(--hound-secondary), 0.85);
+    color: rgba(var(--hound-primary), 1);
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.stream-play-button > .dropdown-toggle {
+  margin-left: 0 !important;
+  border-left: none !important;
+}
+
+.stream-play-button > .dropdown-toggle::after {
+  margin-left: 0 !important;
+  padding-left: 0;
+}
+
+.stream-play-button > .btn:hover,
+.stream-play-button > .dropdown-toggle:hover {
+    color: rgba(var(--hound-primary), 1);
+    background-color: rgba(var(--hound-secondary), 0.55);
+    border-color: rgba(var(--hound-secondary), 0.55);
+    transition: all 0.4s ease,
+}
+
 @media only screen and (max-width:900px) {
     .media-page-tv-inline-container {
         display: flex;

@@ -105,7 +105,9 @@ function SeasonModal(props: any) {
     if (open === false) {
       return;
     }
+    // TODO try to cache the call, but watch info might change
     // check data is loaded
+    // season 0 is used for extras, specials sometimes
     if (seasonNumber >= 0) {
       axios
         .get(`/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}`)

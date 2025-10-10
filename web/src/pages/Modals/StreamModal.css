@@ -1,0 +1,17 @@
+.video-dialog-content {
+    padding: 0;
+    margin: 0;
+}
+
+.videojs-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: blue;
+  z-index: 9999;
+}
+
+.videojs-container video {
+
+}

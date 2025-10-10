@@ -58,11 +58,12 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Video Streaming Routes
 	 */
-	privateRoutes.GET("movie/:id/stream", StreamHandler)
-	privateRoutes.GET("tv/:id/stream", StreamHandler)
+	privateRoutes.GET("/movie/:id/stream", StreamHandler)
+	privateRoutes.GET("/tv/:id/stream", StreamHandler)
 
 	/*
 		Query Providers Routes
 	 */
-	privateRoutes.GET("/providers", SearchProvidersHandler)
+	privateRoutes.GET("/movie/:id/providers", SearchProvidersHandler)
+	privateRoutes.GET("/tv/:id/providers", SearchProvidersHandler)
 }

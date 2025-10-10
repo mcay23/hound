@@ -1,67 +1,72 @@
 package providers
 
 import (
+	"encoding/json"
 	"fmt"
+	"hound/helpers"
+	"hound/view"
 	"os/exec"
+	"strconv"
 )
 
 type ProviderQueryObject struct {
-	IMDbID              *string  `json:"imdb_id"`      // starts with 'tt'
+	MediaSource			string	 `json:"media_source"`			 // eg. tmdb
+	SourceID			   int	 `json:"source_id"`
+	IMDbID              string   `json:"imdb_id,omitempty"`      // starts with 'tt'
 	MediaType           string   `json:"media_type"`   // movies or tvshows, etc.
-	Season                 int   `json:"season"`
-	Episode                int   `json:"episode"`
-	Query				*string  `json:"search_query"`
+	Season                 int   `json:"season,omitempty"`
+	Episode                int   `json:"episode,omitempty"`
+	Query				string   `json:"search_query,omitempty"`
 	Params            []string   `json:"params"`
 }
 
 type ProviderQueryResponse struct {
-	Status              bool    `json:"go_status"`
-	IMDbID              string  `json:"imdb_id"`      // starts with 'tt'
-	MediaType           string  `json:"media_type"`   // movies or tvshows, etc.
-
+	Status            string                    `json:"go_status"`
+	Provider          string                    `json:"provider"`
+	IMDbID            string                    `json:"imdb_id"`      // starts with 'tt'
+	MediaType		  string                    `json:"media_type"`   // movies or tvshows, etc.
+	Season            int                       `json:"season,omitempty"`
+	Episode           int                       `json:"episode,omitempty"`
+	Streams           *[]map[string]interface{}   `json:"streams"`
 }
 
 func InitializeProviders() {
 
 }
 
-//func SearchProviders(query *ProviderQueryObject) (*map[string]interface{}, error) {
-//	if *query.IMDbID != "" {
-//
-//	}
-//	scriptList := []string{"script1.py", "script2.py", "script3.py"}
-//	resultChan := make(chan string, len(scriptList))
-//
-//	// Start a goroutine for each script
-//	for _, script := range scriptList {
-//		go runScript(script, resultChan)
-//	}
-//	channel := ""
-//	// Listen for results on the channel and stream them to the client
-//	for i := 0; i < len(scriptList); i++ {
-//		channel = <-resultChan
-//	}
-//
-//	//cmd := exec.Command("python", "providers/torrentio.py")
-//	//output, err := cmd.CombinedOutput()
-//	//if err != nil {
-//	//	fmt.Println("Error running script:", err)
-//	//	return nil, err
-//	//}
-//	//var result map[string]interface{}
-//	//if err := json.Unmarshal(result, &result); err != nil {
-//	//	fmt.Println("Error parsing JSON:", err)
-//	//	return nil, err
-//	//}
-//	return &result, nil
-//}
-
-func runScript(filepath string, resultChan chan<- string) {
-	cmd := exec.Command("python", filepath)
-	output, err := cmd.CombinedOutput()
+/*
+	For now, works with aiostreams, only one provider
+ */
+func SearchProviders(query ProviderQueryObject) (*view.ProvidersResponseObject, error) {
+	cmd := exec.Command("python", "providers/aiostreams.py",
+			"--connection_string", "http://localhost:3500|08f3f1c0-12ff-439d-81d1-962ac3dfe620|abcdef",
+			"--imdb_id", query.IMDbID,
+			"--media_type", query.MediaType,
+			"--season", strconv.Itoa(query.Season),
+			"--episode", strconv.Itoa(query.Episode),
+		)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		resultChan <- fmt.Sprintf("Error running %s: %v", filepath, err)
-		return
+		helpers.LogErrorWithMessage(err, fmt.Sprintf("error: %v\n%s", err, string(out)))
+		return nil, err
 	}
-	resultChan <- fmt.Sprintf("Output from %s: %s", filepath, string(output))
+	var obj view.ProviderObject
+	if err := json.Unmarshal(out, &obj); err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return nil, err
+	}
+	result := view.ProvidersResponseObject{
+		MediaSource: query.MediaSource,
+		SourceID:    query.SourceID,
+		MediaType:   query.MediaType,
+		IMDbID:      query.IMDbID,
+		Season:      query.Season,
+		Episode:     query.Episode,
+		Providers:   &[]view.ProviderObject{obj},
+	}
+	result.IMDbID = query.IMDbID
+	result.MediaType = query.MediaType
+	result.Season = query.Season
+	result.Episode = query.Episode
+	return &result, nil
 }
