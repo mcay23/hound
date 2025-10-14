@@ -113,7 +113,7 @@ def is_valid_magnet_hash(h: str) -> bool:
 # settings for browsers, try to avoid transcoding
 browser_ranking = DefaultRanking(
     # prefer avc over hevc for performance
-    avc=800,
+    avc=450,
     hevc=400,
     webdl=0,
     webmux=0,
@@ -130,21 +130,23 @@ browser_ranking = DefaultRanking(
     brrip=0,
     hdrip=0,
     uhdrip=0,
-    webrip=30,
+    webrip=0,
     webdlrip=0,
-    size=0
+    size=0,
+    # extras
+    dubbed=-100
 )
 
 # Rank and parse torrent languages, codecs, etc.
-def rank_and_parse_torrents(torrents, addon, useDebrid=False):
+def rank_and_parse_torrents(torrents, provider, useDebrid=False):
     rtn = RTN(settings=SettingsModel(), ranking_model=browser_ranking)
     torrentsData = []
     for t in torrents:
         try:
             # use torrent name since quality and codec info is not always in each file
-            if addon == "torrentio" or addon == "prowlarr":
+            if provider == "torrentio" or provider == "prowlarr":
                 data = rtn.rank(t["torrent_name"], t["info_hash"], correct_title=t["clean_title"])
-            elif addon == "aiostreams":
+            elif provider == "aiostreams":
                 # parse name is concatenation of file and folder names
                 data = rtn.rank(t["file_name"], t["info_hash"], correct_title=t["title"])
                 # try parsing folder name if no resolution, since for some packs the data is only in the folder name
@@ -161,8 +163,8 @@ def rank_and_parse_torrents(torrents, addon, useDebrid=False):
             continue
     
         t_dict = data.model_dump()
-        t_dict["addon"] = addon
-        t_dict["indexer"] = t.get("indexer", addon)
+        t_dict["addon"] = t.get("addon", "")
+        t_dict["indexer"] = t.get("indexer", "")
         t_dict["url"] = t.get("url", "")
         t_dict["seeders"] = t.get("seeders", 0)
         t_dict["leechers"] = t.get("leechers", -1)

@@ -4,12 +4,22 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"hound/helpers"
+	"hound/model"
 	"hound/model/database"
 	"hound/model/sources"
-	"hound/providers"
 	"strconv"
 	"strings"
 )
+
+func DecodeTestHandler(c *gin.Context) {
+	str := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoie1wibWVkaWFfc291cmNlXCI6XCJ0bWRiXCIsXCJzb3VyY2VfaWRcIjozNzIwNTgsXCJtZWRpYV90eXBlXCI6XCJtb3ZpZVwiLFwiaW1kYl9pZFwiOlwidHQ1MzExNTE0XCIsXCJzZWFzb25cIjowLFwiZXBpc29kZVwiOjAsXCJhZGRvblwiOlwiVG9ycmVudGlvXCIsXCJjYWNoZWRcIjpcInRydWVcIixcInNlcnZpY2VcIjpcIlJEXCIsXCJwMnBcIjpcImRlYnJpZFwiLFwiaW5mb2hhc2hcIjpcIjcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTVcIixcImluZGV4ZXJcIjpcIlRvcnJlbnRHYWxheHlcIixcImZpbGVfbmFtZVwiOlwiWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImZvbGRlcl9uYW1lXCI6XCJJTURCIFRvcCAyNTAgLSAyMDI0IEVkaXRpb24gLSAxMDgwcCBCbHVSYXkgZVN1YnMgalpRXCIsXCJyZXNvbHV0aW9uXCI6XCIxMDgwcFwiLFwiZmlsZV9pZHhcIjotMSxcImZpbGVfc2l6ZVwiOjIxNzk2OTU5MDMsXCJyYW5rXCI6MTExNTAsXCJzZWVkZXJzXCI6NTI4LFwibGVlY2hlcnNcIjotMSxcInVybFwiOlwiaHR0cHM6Ly90b3JyZW50aW8uc3RyZW0uZnVuL3Jlc29sdmUvcmVhbGRlYnJpZC80RkhDTlBJVEhNQ1VDUkVHRDNETkNMNDVNNUpPV1RHQ0pMVkJGR1JFNEVBNEtYM1hNVVRRLzcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTUvbnVsbC82NTkvWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImVuY29kZWRfZGF0YVwiOlwiXCIsXCJkYXRhXCI6e1wiY29kZWNcIjpcImF2Y1wiLFwiYXVkaW9cIjpbXCJBQUNcIl0sXCJjaGFubmVsc1wiOltdLFwiY29udGFpbmVyXCI6XCJtcDRcIixcImxhbmd1YWdlc1wiOltcImphXCJdLFwiYml0X2RlcHRoXCI6XCJcIixcImhkclwiOltdfX0ifQ.RqCPlPNTk2BRPto2vqPHvI8nHgItOW4kNR-lKfRyXg0"
+	obj, err := model.DecodeJsonStreamJWT(str)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": obj}, 200)
+}
 
 func SearchProvidersHandler(c *gin.Context) {
 	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
@@ -47,7 +57,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		}
 		imdbID = movie.IMDbID
 	}
-	query := providers.ProviderQueryObject{
+	query := model.ProviderQueryObject{
 		IMDbID:    		imdbID,
 		MediaType: 		mediaType,
 		MediaSource: 	sources.SourceTMDB,
@@ -68,7 +78,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		query.Season = season
 		query.Episode = episode
 	}
-	res, err := providers.SearchProviders(query)
+	res, err := model.SearchProviders(query)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to search providers")
 		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))

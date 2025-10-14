@@ -20,6 +20,9 @@ import {
   // TooltipProps,
 } from "@mui/material";
 import CreateHistoryModal from "./CreateHistoryModal";
+import StreamModal from "../Modals/StreamModal";
+import toast from "react-hot-toast";
+import { PlayArrow } from "@mui/icons-material";
 
 const offsetFix = {
   modifiers: [
@@ -66,6 +69,10 @@ function SeasonModal(props: any) {
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
+  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [streams, setStreams] = useState<any>(null);
+  const [mainStream, setMainStream] = useState<any>(null);
+
   const handleCreateHistoryButtonClick = () => {
     setisCreateHistoryModalOpen(true);
   };
@@ -91,6 +98,29 @@ function SeasonModal(props: any) {
       })
       .catch((err) => {
         console.log(err);
+      });
+  };
+  // right now, gets a new stream every time, probably best just to cache this in the backend
+  const handleStreamButtonClick = (season: number, episode: number) => {
+    axios
+      .get(
+        `/api/v1${window.location.pathname}/providers?season=${season}&episode=${episode}`
+      )
+      .then((res) => {
+        setStreams(res.data);
+        if (res.data.data.providers[0].streams.length > 0) {
+          setMainStream(res.data.data.providers[0].streams[0]);
+        } else {
+          toast.error("No streams found");
+        }
+      })
+      .then(() => {
+        setIsStreamModalOpen(true);
+      })
+      .catch((err) => {
+        if (err.response.status === 500) {
+          toast.error("Error getting streams");
+        }
       });
   };
   var seasonOverviewPlaceholder = "No description available.";
@@ -221,7 +251,8 @@ function SeasonModal(props: any) {
               return EpisodeCard(
                 episode,
                 watchedEpisodes.includes(episode["episode_number"]),
-                handleWatchEpisode
+                handleWatchEpisode,
+                handleStreamButtonClick
               );
             })}
           </>
@@ -235,11 +266,21 @@ function SeasonModal(props: any) {
         type={"season"}
         seasonNumber={seasonData.season.season_number}
       />
+      <StreamModal
+        setOpen={setIsStreamModalOpen}
+        open={isStreamModalOpen}
+        streamDetails={mainStream}
+      />
     </>
   );
 }
 
-function EpisodeCard(episode: any, watched: boolean, handleWatchEpisode: any) {
+function EpisodeCard(
+  episode: any,
+  watched: boolean,
+  handleWatchEpisode: any,
+  handleStreamButtonClick: any
+) {
   var episodeNumber =
     episode.season_number.toString() &&
     episode.episode_number.toString() &&
@@ -273,6 +314,25 @@ function EpisodeCard(episode: any, watched: boolean, handleWatchEpisode: any) {
         </div>
       </div>
       <div className="episode-card-actions">
+        <BootstrapTooltip
+          title={
+            <span className="media-page-tv-header-button-tooltip-title">
+              Play Episode
+            </span>
+          }
+          PopperProps={offsetFix}
+        >
+          <IconButton
+            onClick={() => {
+              handleStreamButtonClick(
+                episode.season_number,
+                episode.episode_number
+              );
+            }}
+          >
+            <PlayArrow />
+          </IconButton>
+        </BootstrapTooltip>
         {watched ? (
           <IconButton disabled>
             <DoneAllIcon />
