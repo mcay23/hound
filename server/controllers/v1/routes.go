@@ -7,10 +7,11 @@ import (
 
 func SetupRoutes(r *gin.Engine) {
 	r.Use(middlewares.CORSMiddleware)
+
 	// public routes, registration and login
-	publicRoutes := r.Group("/api/v1/auth")
-	publicRoutes.POST("/register", RegistrationHandler)
-	publicRoutes.POST("/login", LoginHandler)
+	publicRoutes := r.Group("/api/v1")
+	publicRoutes.POST("/auth/register", RegistrationHandler)
+	publicRoutes.POST("/auth/login", LoginHandler)
 
 	// private routes, auth required, everything else
 	privateRoutes := r.Group("/api/v1")
@@ -58,12 +59,14 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Video Streaming Routes
 	 */
-	privateRoutes.GET("/movie/:id/stream", StreamHandler)
-	privateRoutes.GET("/tv/:id/stream", StreamHandler)
+	publicRoutes.GET("/stream/:encodedString", StreamHandler)
+	//privateRoutes.GET("/tv/:id/stream/:encodedString", StreamHandler)
 
 	/*
 		Query Providers Routes
 	 */
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersHandler)
+
+	privateRoutes.GET("/decode", DecodeTestHandler)
 }

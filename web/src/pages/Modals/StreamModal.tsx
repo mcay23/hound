@@ -3,7 +3,7 @@ import "./StreamModal.css";
 import { CloseOutlined } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
-import { Col, Container, Row } from "react-bootstrap";
+import houndConfig from "./../../config.json";
 
 function StreamModal(props: any) {
   const { setOpen, open } = props;
@@ -13,12 +13,16 @@ function StreamModal(props: any) {
   if (props.streamDetails === null) {
     return <>Loading...</>;
   }
-  props.streamDetails.url =
-    "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
+  let videoURL =
+    houndConfig.server_host +
+    "/api/v1/stream/" +
+    props.streamDetails.encoded_data;
+  // videoURL =
+  //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
   const videoJsOptions = {
     sources: [
       {
-        src: props.streamDetails.url,
+        src: videoURL,
         type: "video/mp4",
       },
     ],
@@ -28,31 +32,23 @@ function StreamModal(props: any) {
       onClose={handleClose}
       open={open}
       disableScrollLock={false}
-      fullScreen
+      // fullScreen
     >
-      <Container>
-        <Row>
-          <Col sm={2}>
-            <IconButton
-              onClick={handleClose}
-              sx={{
-                position: "absolute",
-                top: 16,
-                left: 16,
-                color: "black",
-                zIndex: 10,
-              }}
-            >
-              <CloseOutlined />
-            </IconButton>
-            <div className="videojs-container">
-              <VideoPlayer options={videoJsOptions} />
-            </div>
-          </Col>
-          <Col>test</Col>
-        </Row>
-        <Row>abc</Row>
-      </Container>
+      <IconButton
+        onClick={handleClose}
+        sx={{
+          position: "absolute",
+          top: 16,
+          left: 16,
+          color: "black",
+          zIndex: 10,
+        }}
+      >
+        <CloseOutlined />
+      </IconButton>
+      <div className="videojs-container">
+        <VideoPlayer options={videoJsOptions} />
+      </div>
     </Dialog>
   );
 }

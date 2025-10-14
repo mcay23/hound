@@ -1,10 +1,11 @@
 package v1
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"hound/helpers"
+	"hound/model"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -12,18 +13,22 @@ import (
 	Proxies links through the server
  */
 func StreamHandler(c *gin.Context) {
-	videoURL := "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-25-mbps-hd-h264.mkv"
-	//videoURL := "https://test-videos.co.uk/vids/jellyfish/mkv/1080/Jellyfish_1080_10s_10MB.mkv"
+	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+	if err != nil || streamDetails == nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"Failed to parse encoded string:" + c.Param("encodedString")))
+	}
+	videoURL := streamDetails.URL
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
 	}
 	req, err := http.NewRequest("GET", videoURL, nil)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Error creating URL: " + err.Error()))
 		return
 	}
-
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
 		req.Header.Set("Range", rangeHeader)
 	}
@@ -35,7 +40,8 @@ func StreamHandler(c *gin.Context) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"HTTP error fetching URL: " + err.Error()))
 		return
 	}
 	defer resp.Body.Close()
@@ -53,7 +59,8 @@ func StreamHandler(c *gin.Context) {
 
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		log.Printf("io.Copy error: %v", err)
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"IO copy error: " + err.Error()))
 		return
 	}
 }

@@ -18,7 +18,6 @@ import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
 import StreamModal from "../Modals/StreamModal";
-import { PlayArrow } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, SplitButton } from "react-bootstrap";
@@ -139,7 +138,6 @@ function MediaPageMovie(props: any) {
   const handleAddToCollectionClose = () => {
     setIsCollectionModalOpen(false);
   };
-  console.log(props.data);
   const handleStreamButtonClick = () => {
     if (!streams) {
       axios
@@ -148,19 +146,23 @@ function MediaPageMovie(props: any) {
         )
         .then((res) => {
           setStreams(res.data);
-          if (res.data.data.streams.length > 0) {
-            setMainStream(res.data.data.streams[0]);
+          if (res.data.data.providers[0].streams.length > 0) {
+            setMainStream(res.data.data.providers[0].streams[0]);
           } else {
             toast.error("No streams found");
           }
+        })
+        .then(() => {
+          setIsStreamModalOpen(true);
         })
         .catch((err) => {
           if (err.response.status === 500) {
             toast.error("Error getting streams");
           }
         });
+    } else {
+      setIsStreamModalOpen(true);
     }
-    setIsStreamModalOpen(true);
   };
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);

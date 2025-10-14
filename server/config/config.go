@@ -31,10 +31,10 @@ func InitializeConfig() {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 	// load env file to os
-	_ = godotenv.Load(envFileName)
-	//if err != nil {
-	//	panic(fmt.Errorf("fatal error loading .env config file: %w", err))
-	//}
+	err = godotenv.Load(envFileName)
+	if err != nil {
+		panic(fmt.Errorf("fatal error loading .env config file: %w", err))
+	}
 	// hot reload functionality
 	viper.WatchConfig()
 }
