@@ -38,26 +38,27 @@ type CommentRequest struct {
 	Score        int       `json:"score"`    // only for reviews
 }
 
+// TODO IGDB search is disabled for now
 func GeneralSearchHandler(c *gin.Context) {
 	queryString := c.Query("q")
 	// search tmdb
 	tvResults, _ := SearchTVShowCore(queryString)
 	movieResults, _ := SearchMoviesCore(queryString)
 	// search igdb
-	gameResults, _ := sources.SearchGameIGDB(queryString)
+	//gameResults, _ := sources.SearchGameIGDB(queryString)
 
 	helpers.SuccessResponse(c, view.GeneralSearchResponse{
 		TVShowSearchResults: tvResults,
 		MovieSearchResults:  movieResults,
-		GameSearchResults:   &gameResults,
+		GameSearchResults:   nil,
 	}, 200)
 }
 
 func GetMediaBackdrops(c *gin.Context) {
 	// refresh backdrop every 24 hours, store data in cache
-	backdropsCache, exists := model.GetCache(backdropCacheKey)
-	if exists {
-		fmt.Println("getting from cache")
+	var backdropsCache []string
+	cacheExists, _ := model.GetCache(backdropCacheKey, &backdropsCache)
+	if cacheExists {
 		helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdropsCache}, 200)
 		return
 	}
@@ -88,7 +89,7 @@ func GetMediaBackdrops(c *gin.Context) {
 			}
 		}
 	}
-	_ = model.UpdateOrSetCache(backdropCacheKey, backdrops, time.Hour*24)
+	_, _ = model.SetCache(backdropCacheKey, backdrops, time.Hour*24)
 	helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdrops}, 200)
 }
 

@@ -1,9 +1,9 @@
 package database
 
 import (
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"hound/helpers"
+	"log/slog"
 	"os"
 	"xorm.io/xorm"
 )
@@ -18,7 +18,7 @@ var databaseEngine *xorm.Engine
 
 func InstantiateDB() {
 	var err error
-	fmt.Println("driver", os.Getenv("DB_DRIVER"))
+	slog.Info("DB loaded:", "driver", os.Getenv("DB_DRIVER"))
 	databaseEngine, err = xorm.NewEngine(os.Getenv("DB_DRIVER"), os.Getenv("DB_CONNECTION_STRING"))
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
@@ -39,4 +39,5 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate comment table")
 		panic(err)
 	}
+	slog.Info("DB tables initialized")
 }

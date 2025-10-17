@@ -1,8 +1,9 @@
 package v1
 
 import (
-	"github.com/gin-gonic/gin"
 	"hound/middlewares"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine) {
@@ -19,7 +20,7 @@ func SetupRoutes(r *gin.Engine) {
 
 	/*
 		General Routes
-	 */
+	*/
 	privateRoutes.GET("/search", GeneralSearchHandler)
 	privateRoutes.GET("/backdrops", GetMediaBackdrops)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
@@ -32,7 +33,7 @@ func SetupRoutes(r *gin.Engine) {
 
 	/*
 		TV Show Routes
-	 */
+	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
 	privateRoutes.GET("/tv/trending", GetTrendingTVShowsHandler)
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
@@ -41,7 +42,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	/*
 		Movies Routes
-	 */
+	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/trending", GetTrendingMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
@@ -50,7 +51,7 @@ func SetupRoutes(r *gin.Engine) {
 
 	/*
 		Games Routes
-	 */
+	*/
 	privateRoutes.GET("/game/search", SearchGamesHandler)
 	privateRoutes.GET("/game/:id", GetGameFromIDHandler)
 	privateRoutes.POST("/game/:id/comments", PostCommentHandler)
@@ -58,15 +59,19 @@ func SetupRoutes(r *gin.Engine) {
 
 	/*
 		Video Streaming Routes
-	 */
+	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	//privateRoutes.GET("/tv/:id/stream/:encodedString", StreamHandler)
 
 	/*
 		Query Providers Routes
-	 */
+	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersHandler)
 
+	/*
+		Testing purposes only
+	*/
 	privateRoutes.GET("/decode", DecodeTestHandler)
+	privateRoutes.GET("/clearcache", ClearCacheHandler)
 }

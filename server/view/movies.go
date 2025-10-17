@@ -29,5 +29,6 @@ type MovieFullObject struct {
 	Videos              *tmdb.VideoResults          `json:"videos"`
 	Recommendations     *tmdb.MovieRecommendations  `json:"recommendations"`
 	WatchProviders      *tmdb.WatchProviderResults  `json:"watch_providers"`
+	ExternalIDs		    *tmdb.MovieExternalIDs   	`json:"external_ids"`
 	Comments            *[]CommentObject            `json:"comments"`
 }

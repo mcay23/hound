@@ -177,9 +177,10 @@ var igdbClient = &http.Client{Timeout: 10 * time.Second}
 func getAccessToken(forceRefresh bool) string {
 	// get from ttl cache, return if it exists
 	// if force refresh is true, refresh token
-	token, ok := model.GetCache(IGDBAccessTokenCacheKey)
-	if ok && !forceRefresh {
-		return token.(string)
+	var token string
+	cacheExists, _ := model.GetCache(IGDBAccessTokenCacheKey, &token)
+	if cacheExists && !forceRefresh {
+		return token
 	}
 	// if token not in cache, request a new one
 	url := fmt.Sprintf(OAuthPath, os.Getenv("IGDB_CLIENT_ID"),
@@ -200,7 +201,7 @@ func getAccessToken(forceRefresh bool) string {
 			panic(err)
 		}
 		// expire 1 min earlier
-		err = model.UpdateOrSetCache(IGDBAccessTokenCacheKey, resp.AccessToken, time.Second*time.Duration(resp.ExpiresIn-60))
+		_, err = model.SetCache(IGDBAccessTokenCacheKey, resp.AccessToken, time.Second*time.Duration(resp.ExpiresIn-60))
 		if err != nil {
 			panic(err)
 		}
@@ -217,7 +218,7 @@ func queryIGDBGames(body string) ([]byte, error) {
 	}
 	r.Header.Set("Client-ID", os.Getenv("IGDB_CLIENT_ID"))
 	// call getAccessToken
-	r.Header.Set("Authorization", "Bearer "+getAccessToken(false))
+	r.Header.Set("Authorization", "Bearer "+ getAccessToken(false))
 	res, err := igdbClient.Do(r)
 	if err != nil {
 		panic(err)

@@ -21,6 +21,7 @@ import StreamModal from "../Modals/StreamModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, SplitButton } from "react-bootstrap";
+import SelectStreamModal from "../Modals/StreamSelectModal";
 
 const offsetFix = {
   modifiers: [
@@ -47,6 +48,7 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
@@ -138,7 +140,9 @@ function MediaPageMovie(props: any) {
   const handleAddToCollectionClose = () => {
     setIsCollectionModalOpen(false);
   };
-  const handleStreamButtonClick = () => {
+  // type is either "direct" or "select"
+  // direct plays the stream directly, select opens the stream selection modal
+  const handleStreamButtonClick = (type: string) => {
     if (!streams) {
       axios
         .get(
@@ -151,9 +155,14 @@ function MediaPageMovie(props: any) {
           } else {
             toast.error("No streams found");
           }
-        })
-        .then(() => {
-          setIsStreamModalOpen(true);
+          if (
+            res.data.data.providers[0].streams.length > 5 &&
+            type === "direct"
+          ) {
+            setIsStreamModalOpen(true);
+          } else {
+            setIsSelectStreamModalOpen(true);
+          }
         })
         .catch((err) => {
           if (err.response.status === 500) {
@@ -161,7 +170,11 @@ function MediaPageMovie(props: any) {
           }
         });
     } else {
-      setIsStreamModalOpen(true);
+      if (type === "direct") {
+        setIsStreamModalOpen(true);
+      } else if (type === "select") {
+        setIsSelectStreamModalOpen(true);
+      }
     }
   };
   const handleVideoButtonClick = (key: string) => {
@@ -248,10 +261,26 @@ function MediaPageMovie(props: any) {
                 <SplitButton
                   title="▶ Play Movie"
                   className="stream-play-button"
-                  onClick={handleStreamButtonClick}
+                  onClick={() => {
+                    handleStreamButtonClick("direct");
+                  }}
                 >
-                  <Dropdown.Item eventKey="1">Play Stream</Dropdown.Item>
-                  <Dropdown.Item eventKey="2">Select stream</Dropdown.Item>
+                  <Dropdown.Item
+                    eventKey="1"
+                    onClick={() => {
+                      handleStreamButtonClick("direct");
+                    }}
+                  >
+                    Play Stream
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    eventKey="2"
+                    onClick={() => {
+                      handleStreamButtonClick("select");
+                    }}
+                  >
+                    Select stream
+                  </Dropdown.Item>
                 </SplitButton>
                 <BootstrapTooltip
                   title={
@@ -331,6 +360,10 @@ function MediaPageMovie(props: any) {
         setOpen={setIsStreamModalOpen}
         open={isStreamModalOpen}
         streamDetails={mainStream}
+      />
+      <SelectStreamModal
+        setOpen={setIsSelectStreamModalOpen}
+        open={isSelectStreamModalOpen}
       />
       <VideoModal
         onClose={handleVideoButtonClose}

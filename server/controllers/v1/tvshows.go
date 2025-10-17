@@ -34,7 +34,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		return
 	}
 	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations",
+		"append_to_response": "videos,watch/providers,credits,recommendations,external_ids",
 	}
 	showDetails, err := sources.GetTVShowFromIDTMDB(sourceID, options)
 	if err != nil {
@@ -94,6 +94,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		WatchProviders:   showDetails.WatchProviders,
 		TVCredits:        showDetails.Credits.TVCredits,
 		Recommendations:  showDetails.Recommendations,
+		ExternalIDs: 	  showDetails.TVExternalIDs,
 	}
 	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
