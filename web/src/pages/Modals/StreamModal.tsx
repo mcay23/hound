@@ -10,13 +10,13 @@ function StreamModal(props: any) {
   const handleClose = () => {
     setOpen(false);
   };
-  if (props.streamDetails === null) {
-    return <>Loading...</>;
+  let videoURL = "";
+  if (props.streamDetails != null) {
+    videoURL =
+      houndConfig.server_host +
+      "/api/v1/stream/" +
+      props.streamDetails.encoded_data;
   }
-  let videoURL =
-    houndConfig.server_host +
-    "/api/v1/stream/" +
-    props.streamDetails.encoded_data;
   // videoURL =
   //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
   const videoJsOptions = {

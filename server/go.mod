@@ -1,6 +1,6 @@
 module hound
 
-go 1.19
+go 1.24
 
 require (
 	github.com/cyruzin/golang-tmdb v1.8.2

@@ -13,45 +13,46 @@ import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import VideoPlayer from "./pages/VideoPlayer/VideoPlayer";
+
+// axios defaults
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = houndConfig.server_host;
+// TODO REVISE LATER
+axios.defaults.headers.common["Content-Type"] =
+  houndConfig.axios_config.headers["Content-Type"];
+axios.defaults.headers.common["X-Client"] =
+  houndConfig.axios_config.headers["X-Client"];
+// Add a request interceptor
+axios.interceptors.request.use(
+  function (config) {
+    return config;
+  },
+  function (error) {
+    return Promise.reject(error);
+  }
+);
+// Add a response interceptor
+axios.interceptors.response.use(
+  function (response) {
+    return response;
+  },
+  function (error) {
+    console.log(error);
+    const statusCode = error.response.status;
+    if (statusCode === 401) {
+      console.log("logging out");
+      const win: Window = window;
+      win.location = "/logout";
+    }
+    return Promise.reject(error);
+  }
+);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
-  // axios defaults
-  axios.defaults.withCredentials = true;
-  axios.defaults.baseURL = houndConfig.server_host;
-  // TODO REVISE LATER
-  axios.defaults.headers.common["Content-Type"] =
-    houndConfig.axios_config.headers["Content-Type"];
-  axios.defaults.headers.common["X-Client"] =
-    houndConfig.axios_config.headers["X-Client"];
-  // Add a request interceptor
-  axios.interceptors.request.use(
-    function (config) {
-      return config;
-    },
-    function (error) {
-      return Promise.reject(error);
-    }
-  );
-
-  // Add a response interceptor
-  axios.interceptors.response.use(
-    function (response) {
-      return response;
-    },
-    function (error) {
-      console.log(error);
-      const statusCode = error.response.status;
-      if (statusCode === 401) {
-        console.log("logging out");
-        const win: Window = window;
-        win.location = "/logout";
-      }
-      return Promise.reject(error);
-    }
-  );
-
   type ProtectedRouteProps = {
     component: JSX.Element;
   };

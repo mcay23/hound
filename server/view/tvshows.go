@@ -82,5 +82,6 @@ type TVShowFullObject struct {
 	Videos           *tmdb.VideoResults      	`json:"videos"`
 	Recommendations  *tmdb.TVRecommendations 	`json:"recommendations"`
 	WatchProviders   *tmdb.WatchProviderResults `json:"watch_providers"`
+	ExternalIDs      *tmdb.TVExternalIDs	    `json:"external_ids"`
 	Comments         *[]CommentObject        	`json:"comments"`
 }

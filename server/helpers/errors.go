@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -44,6 +45,6 @@ func GetErrorStatusCode(err error) int {
 
 // LogErrorWithMessage returns original error after logging for handling purposes
 func LogErrorWithMessage(err error, msg string) error {
-	fmt.Println(FatalMsg("{ERROR} [" + err.Error() + "] " + msg))
+	slog.Error(msg, "err", err)
 	return err
 }

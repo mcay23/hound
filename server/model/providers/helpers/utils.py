@@ -133,8 +133,17 @@ browser_ranking = DefaultRanking(
     webrip=0,
     webdlrip=0,
     size=0,
+    # hdr
+    bit10=0,
+    dolby_vision=0,
+    hdr=10,
     # extras
-    dubbed=-100
+    dubbed=-100,
+    network=0,
+    edition=0,
+    proper=0,
+    repack=0,
+    scene=0,
 )
 
 # Rank and parse torrent languages, codecs, etc.
@@ -204,7 +213,9 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
                 t_dict["rank"] += 250
             elif seeders < 10:
                 t_dict["rank"] -= 200
-
+        # penalize files below 50MB
+        if t_dict["file_size"] < 50000000:
+            t_dict["rank"] -= 2000
         torrentsData.append(t_dict)
     return torrentsData
 

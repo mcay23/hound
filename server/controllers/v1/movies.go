@@ -2,13 +2,14 @@ package v1
 
 import (
 	"errors"
-	tmdb "github.com/cyruzin/golang-tmdb"
-	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
 	"strconv"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
+	"github.com/gin-gonic/gin"
 )
 
 func SearchMoviesHandler(c *gin.Context) {
@@ -54,11 +55,11 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 func GetMovieFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.SourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
 	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations",
+		"append_to_response": "videos,watch/providers,credits,recommendations,external_ids",
 	}
 	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID, options)
 	if err != nil {
@@ -66,11 +67,13 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		return
 	}
 	// get profile, video urls
-	for num, item := range movieDetails.Credits.MovieCredits.Cast {
-		movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
-	}
-	for num, item := range movieDetails.Credits.MovieCredits.Crew {
-		movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+	if movieDetails.Credits.MovieCredits != nil {
+		for num, item := range movieDetails.Credits.MovieCredits.Cast {
+			movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+		}
+		for num, item := range movieDetails.Credits.MovieCredits.Crew {
+			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+		}
 	}
 	returnObject := view.MovieFullObject{
 		MediaSource:         sources.SourceTMDB,
@@ -99,6 +102,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		Videos:              movieDetails.MovieVideosAppend.Videos,
 		Recommendations:     movieDetails.Recommendations,
 		WatchProviders:      movieDetails.WatchProviders,
+		ExternalIDs:         movieDetails.MovieExternalIDs,
 	}
 	libraryID, err := database.GetInternalLibraryID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
 	if err == nil && libraryID != nil {
@@ -121,7 +125,7 @@ func SearchMoviesCore(queryString string) (*[]view.TMDBSearchResultObject, error
 	// convert url results
 	var convertedResults []view.TMDBSearchResultObject
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		resultObject := view.TMDBSearchResultObject{
 			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.SourceTMDB,

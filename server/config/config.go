@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"hound/helpers"
+	"log/slog"
 )
 
 var envFileName = ".env"
@@ -37,4 +38,5 @@ func InitializeConfig() {
 	}
 	// hot reload functionality
 	viper.WatchConfig()
+	slog.Info("Config Initialized")
 }
