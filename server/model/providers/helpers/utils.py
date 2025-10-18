@@ -118,6 +118,7 @@ browser_ranking = DefaultRanking(
     webdl=0,
     webmux=0,
     remux=0,
+    xvid=-150,
     # audio codecs, penalize ac3 for browsers
     atmos=-300, 
     dolby_digital=-300,
@@ -144,6 +145,8 @@ browser_ranking = DefaultRanking(
     proper=0,
     repack=0,
     scene=0,
+    site=0,
+    upscaled=0,
 )
 
 # Rank and parse torrent languages, codecs, etc.
@@ -197,6 +200,9 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
         # t_dict["raw_title"] = t.get("file_name", "")
         t_dict.pop('raw_title', None)
 
+        # penalize unknown resolutions
+        if t_dict["resolution"] == "":
+            t_dict["rank"] -= 2000
         # penalize unknown audio codecs, as this may disrupt browser playback 
         if len(t_dict["data"]["audio"]) == 0:
             t_dict["rank"] -= 300

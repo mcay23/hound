@@ -1,7 +1,65 @@
 .stream-select-modal-dialog {
-    /* min-width: 60vw;
-    max-width: 80vw; */
+    min-width: 60vw;
     margin-left: auto;
     margin-right: auto;
-    width: 1000px;
+}
+
+.stream-info-card-container {
+    padding-top: 20px;
+}
+
+.stream-info-card {
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    max-height: 200px;
+    border-radius: 5px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+    background-color: white;
+}
+
+.stream-info-card-title {
+    font-size: 22px;
+    font-family: 'Cabin', sans-serif;
+    font-weight: 400;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stream-info-top {
+    margin-bottom: 10px;
+}
+
+.stream-info-card-subtitle {
+    font-family: 'Cabin', sans-serif;
+    font-size: 16px;
+    color: darkslategray;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stream-info-chip {
+    margin-right: 7px;
+}
+
+.stream-info-chip .MuiChip-label {
+    font-family: 'Cabin', sans-serif;
+    font-size: 16px;
+}
+
+#stream-info-size {
+    background-color: rgba(var(--hound-primary), 0.2) !important;
+}
+
+#stream-info-cache-good {
+    background-color: rgb(181, 246, 181) !important;
 }

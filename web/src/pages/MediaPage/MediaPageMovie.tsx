@@ -364,6 +364,7 @@ function MediaPageMovie(props: any) {
       <SelectStreamModal
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
+        streamData={streams}
       />
       <VideoModal
         onClose={handleVideoButtonClose}
