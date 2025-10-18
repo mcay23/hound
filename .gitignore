@@ -46,3 +46,4 @@ web/yarn-error.log*
 
 server/.env
 .env
+server/cache_data
