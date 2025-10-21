@@ -54,13 +54,35 @@ function SelectStreamModal(props: any) {
                     ) : (
                       ""
                     )}
-
-                    <Chip
-                      size="small"
-                      className="stream-info-chip"
-                      id="stream-info-size"
-                      label={formatBytes(stream.file_size)}
-                    />
+                    {stream.file_size ? (
+                      <Chip
+                        size="small"
+                        className="stream-info-chip"
+                        id="stream-info-size"
+                        label={formatBytes(stream.file_size)}
+                      />
+                    ) : (
+                      ""
+                    )}
+                    {stream.data.codec ? (
+                      <Chip
+                        size="small"
+                        className="stream-info-chip"
+                        id={
+                          stream.data.codec === "hevc"
+                            ? "stream-info-codec-hevc"
+                            : stream.data.codec === "avc"
+                            ? "stream-info-codec-avc"
+                            : "stream-info-codec-generic"
+                        }
+                        label={stream.data.codec
+                          .toUpperCase()
+                          .replace("HEVC", "x265")
+                          .replace("AVC", "x264")}
+                      />
+                    ) : (
+                      ""
+                    )}
                   </div>
                   <div className="stream-info-card-title">
                     {stream.file_name}

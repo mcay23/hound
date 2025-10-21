@@ -167,6 +167,18 @@
     color: rgba(var(--hound-primary), 1);
 }
 
+.stream-play-button-spinner {
+    margin-left: 15px;
+}
+
+.stream-play-button .btn {
+    width: 120px;
+}
+
+.stream-play-button .dropdown-toggle {
+    width: 30px;
+}
+
 .stream-play-button > .btn,
 .stream-play-button > .dropdown-toggle {
     height: 42px;
@@ -184,6 +196,10 @@
 .stream-play-button > .dropdown-toggle::after {
   margin-left: 0 !important;
   padding-left: 0;
+}
+
+#stream-select-button-loading {
+    align-items: center;
 }
 
 .stream-play-button > .btn:hover,

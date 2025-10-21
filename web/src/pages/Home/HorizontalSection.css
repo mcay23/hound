@@ -20,8 +20,8 @@
 .horizontal-section-header-separator {
     padding-left: 10px;
     padding-right: 10px;
-    color: rgba(var(--hound-primary), 1);
-    opacity: 65%;
+    color: inherit;
+    opacity: 70%;
     font-size: 30px;
 }
 
