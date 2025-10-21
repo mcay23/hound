@@ -5,6 +5,9 @@ import {
   Tooltip,
   tooltipClasses,
   TooltipProps,
+  useMediaQuery,
+  IconButton,
+  useTheme,
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -12,13 +15,6 @@ import "./SeasonModal.css";
 import convertDateToReadable from "../../helpers/helpers";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
-import {
-  IconButton,
-  // styled,
-  // Tooltip,
-  // tooltipClasses,
-  // TooltipProps,
-} from "@mui/material";
 import CreateHistoryModal from "./CreateHistoryModal";
 import StreamModal from "../Modals/StreamModal";
 import toast from "react-hot-toast";
@@ -45,6 +41,7 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
     backgroundColor: theme.palette.common.black,
   },
 }));
+
 function SeasonModal(props: any) {
   const { onClose, open, sourceID, seasonNumber } = props;
   const handleClose = () => {
@@ -130,6 +127,8 @@ function SeasonModal(props: any) {
       seasonOverviewPlaceholder = "Special Episodes";
     }
   }
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   useEffect(() => {
     // no need to call on close
     if (open === false) {
@@ -176,6 +175,7 @@ function SeasonModal(props: any) {
         open={open}
         className="season-modal-dialog"
         maxWidth={false}
+        fullScreen={fullScreen}
       >
         {isSeasonDataLoaded ? (
           <>

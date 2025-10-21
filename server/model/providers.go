@@ -85,6 +85,8 @@ type StreamObject struct {
 	ParsedData  *ParsedData `json:"data"`
 }
 
+var providersCacheDuration time.Duration = 2 * time.Hour
+
 func InitializeProviders() {
 
 }
@@ -150,7 +152,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 		Providers:          &providersArray,
 	}
 	// TODO revert TTL
-	_, err = SetCache(providersCacheKey, result, 1*time.Second)
+	_, err = SetCache(providersCacheKey, result, providersCacheDuration)
 	if err != nil {
 		// just log error, no failed return
 		_ = helpers.LogErrorWithMessage(err, "Failed to set cache")

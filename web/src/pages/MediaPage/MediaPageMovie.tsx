@@ -20,7 +20,7 @@ import HistoryModal from "../Modals/HistoryModal";
 import StreamModal from "../Modals/StreamModal";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Dropdown, SplitButton } from "react-bootstrap";
+import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
 
 const offsetFix = {
@@ -56,6 +56,9 @@ function MediaPageMovie(props: any) {
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
+  const [streamButtonLoading, setStreamButtonLoading] = useState(false);
+  const [streamSelectButtonLoading, setStreamSelectButtonLoading] =
+    useState(false);
 
   var styles = {
     noBackdrop: {
@@ -143,6 +146,11 @@ function MediaPageMovie(props: any) {
   // type is either "direct" or "select"
   // direct plays the stream directly, select opens the stream selection modal
   const handleStreamButtonClick = (type: string) => {
+    if (type === "direct") {
+      setStreamButtonLoading(true);
+    } else if (type === "select") {
+      setStreamSelectButtonLoading(true);
+    }
     if (!streams) {
       axios
         .get(
@@ -168,12 +176,21 @@ function MediaPageMovie(props: any) {
           if (err.response.status === 500) {
             toast.error("Error getting streams");
           }
+        })
+        .finally(() => {
+          if (type === "direct") {
+            setStreamButtonLoading(false);
+          } else if (type === "select") {
+            setStreamSelectButtonLoading(false);
+          }
         });
     } else {
       if (type === "direct") {
         setIsStreamModalOpen(true);
+        setStreamButtonLoading(false);
       } else if (type === "select") {
         setIsSelectStreamModalOpen(true);
+        setStreamSelectButtonLoading(false);
       }
     }
   };
@@ -259,7 +276,19 @@ function MediaPageMovie(props: any) {
               </div>
               <div className="media-page-tv-header-button-container">
                 <SplitButton
-                  title="▶ Play Movie"
+                  title={
+                    streamButtonLoading ? (
+                      <Spinner
+                        animation="grow"
+                        size="sm"
+                        role="status"
+                        className="stream-play-button-spinner"
+                      />
+                    ) : (
+                      "▶ Play Movie"
+                    )
+                  }
+                  autoClose="outside"
                   className="stream-play-button"
                   onClick={() => {
                     handleStreamButtonClick("direct");
@@ -279,7 +308,20 @@ function MediaPageMovie(props: any) {
                       handleStreamButtonClick("select");
                     }}
                   >
-                    Select stream
+                    {streamSelectButtonLoading ? (
+                      <div className="d-flex justify-content-center">
+                        <Spinner
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          id="stream-select-button-loading"
+                        >
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                      </div>
+                    ) : (
+                      "Select Stream..."
+                    )}
                   </Dropdown.Item>
                 </SplitButton>
                 <BootstrapTooltip

@@ -57,9 +57,21 @@
 }
 
 #stream-info-size {
-    background-color: rgba(var(--hound-primary), 0.2) !important;
+    background-color: rgba(var(--hound-primary), 0.2);
 }
 
 #stream-info-cache-good {
-    background-color: rgb(181, 246, 181) !important;
+    background-color: rgb(181, 246, 181);
+}
+
+#stream-info-codec-hevc {
+    background-color: rgb(232, 192, 192);
+}
+
+#stream-info-codec-avc {
+    background-color: rgb(232, 192, 192);
+}
+
+#stream-info-codec-generic {
+    background-color: rgb(232, 192, 192);
 }
