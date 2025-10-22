@@ -297,14 +297,6 @@ function MediaPageMovie(props: any) {
                   <Dropdown.Item
                     eventKey="1"
                     onClick={() => {
-                      handleStreamButtonClick("direct");
-                    }}
-                  >
-                    Play Stream
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    eventKey="2"
-                    onClick={() => {
                       handleStreamButtonClick("select");
                     }}
                   >

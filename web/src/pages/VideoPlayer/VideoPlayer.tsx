@@ -1,7 +1,5 @@
 import * as React from "react";
 import videojs from "video.js";
-
-// Styles
 import "video.js/dist/video-js.css";
 
 interface IVideoPlayerProps {
@@ -10,7 +8,6 @@ interface IVideoPlayerProps {
 
 const initialOptions: any = {
   controls: true,
-  fluid: true,
   controlBar: {
     volumePanel: {
       inline: false,
@@ -35,7 +32,7 @@ function VideoPlayer({ options }: IVideoPlayerProps) {
       }
     };
   }, [options]);
-  return <video ref={videoNode} className="video-js" />;
+  return <video ref={videoNode} className="video-js vjs-fill" />;
 }
 
 export default VideoPlayer;

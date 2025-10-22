@@ -8,6 +8,7 @@ import {
   useMediaQuery,
   IconButton,
   useTheme,
+  Fade,
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -19,6 +20,8 @@ import CreateHistoryModal from "./CreateHistoryModal";
 import StreamModal from "../Modals/StreamModal";
 import toast from "react-hot-toast";
 import { PlayArrow } from "@mui/icons-material";
+import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
+import { fontGrid } from "@mui/material/styles/cssUtils";
 
 const offsetFix = {
   modifiers: [
@@ -176,22 +179,22 @@ function SeasonModal(props: any) {
         className="season-modal-dialog"
         maxWidth={false}
         fullScreen={fullScreen}
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 0 }}
+        slotProps={slotPropsGlass}
+        PaperProps={paperPropsGlass}
       >
         {isSeasonDataLoaded ? (
-          <>
+          <div className="season-modal-container">
             <div className="season-modal-info-container">
               {seasonData.season.poster_path ? (
                 <img
-                  className="rounded season-modal-poster"
+                  className="season-modal-poster"
                   src={seasonData.season.poster_path}
                   alt={seasonData.season.name}
                 />
               ) : (
-                <div
-                  className={
-                    "rounded season-modal-poster item-card-no-thumbnail"
-                  }
-                >
+                <div className={"season-modal-poster item-card-no-thumbnail"}>
                   {seasonData.season.name}
                 </div>
               )}
@@ -200,7 +203,12 @@ function SeasonModal(props: any) {
                   {seasonData.season.name}
                   {seasonData.season.air_date ? (
                     <>
-                      <span className="media-item-separator">|</span>
+                      <span
+                        className="media-item-separator"
+                        style={{ color: "gray" }}
+                      >
+                        |
+                      </span>
                       <span className="season-modal-info-date">
                         {seasonData.season.air_date.slice(0, 4)}
                       </span>
@@ -209,7 +217,7 @@ function SeasonModal(props: any) {
                     ""
                   )}
                 </div>
-                <hr />
+                <hr className="" />
                 <div className="season-modal-info-description">
                   {seasonData.season.overview
                     ? seasonData.season.overview
@@ -247,15 +255,17 @@ function SeasonModal(props: any) {
                 </div>
               </div>
             </div>
-            {seasonData.season.episodes.map((episode) => {
-              return EpisodeCard(
-                episode,
-                watchedEpisodes.includes(episode["episode_number"]),
-                handleWatchEpisode,
-                handleStreamButtonClick
-              );
-            })}
-          </>
+            <div className="season-episode-card-container">
+              {seasonData.season.episodes.map((episode) => {
+                return EpisodeCard(
+                  episode,
+                  watchedEpisodes.includes(episode["episode_number"]),
+                  handleWatchEpisode,
+                  handleStreamButtonClick
+                );
+              })}
+            </div>
+          </div>
         ) : (
           <LinearProgress />
         )}

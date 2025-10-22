@@ -1,6 +1,6 @@
 import { Dialog, IconButton } from "@mui/material";
 import "./StreamModal.css";
-import { CloseOutlined } from "@mui/icons-material";
+import { ArrowBack } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import houndConfig from "./../../config.json";
@@ -17,8 +17,8 @@ function StreamModal(props: any) {
       "/api/v1/stream/" +
       props.streamDetails.encoded_data;
   }
-  // videoURL =
-  //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
+  videoURL =
+    "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
   const videoJsOptions = {
     sources: [
       {
@@ -32,7 +32,15 @@ function StreamModal(props: any) {
       onClose={handleClose}
       open={open}
       disableScrollLock={false}
-      // fullScreen
+      fullScreen
+      PaperProps={{
+        sx: {
+          margin: 0,
+          backgroundColor: "black",
+          maxHeight: "100vh",
+          width: "100vw",
+        },
+      }}
     >
       <IconButton
         onClick={handleClose}
@@ -40,15 +48,13 @@ function StreamModal(props: any) {
           position: "absolute",
           top: 16,
           left: 16,
-          color: "black",
+          color: "white",
           zIndex: 10,
         }}
       >
-        <CloseOutlined />
+        <ArrowBack />
       </IconButton>
-      <div className="videojs-container">
-        <VideoPlayer options={videoJsOptions} />
-      </div>
+      <VideoPlayer options={videoJsOptions} />
     </Dialog>
   );
 }

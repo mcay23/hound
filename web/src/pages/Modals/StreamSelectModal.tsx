@@ -1,6 +1,7 @@
-import { Chip, Dialog, useMediaQuery, useTheme } from "@mui/material";
+import { Chip, Dialog, Fade, useMediaQuery, useTheme } from "@mui/material";
 import "./StreamSelectModal.css";
 import "video.js/dist/video-js.css";
+import { slotPropsGlass, paperPropsGlass } from "./modalStyles";
 
 function SelectStreamModal(props: any) {
   const { setOpen, open } = props;
@@ -19,6 +20,10 @@ function SelectStreamModal(props: any) {
       maxWidth="md"
       fullScreen={fullScreen}
       className="stream-select-modal-dialog"
+      TransitionComponent={Fade}
+      TransitionProps={{ timeout: 0 }}
+      slotProps={slotPropsGlass}
+      PaperProps={paperPropsGlass}
     >
       {props.streamData !== null ? (
         <div className="stream-info-card-container">
@@ -45,6 +50,7 @@ function SelectStreamModal(props: any) {
                       <Chip
                         size="small"
                         className="stream-info-chip"
+                        id="stream-info-resolution"
                         label={
                           stream.resolution === "2160p"
                             ? "4K"
@@ -83,6 +89,23 @@ function SelectStreamModal(props: any) {
                     ) : (
                       ""
                     )}
+                    {stream.data.audio.length > 0
+                      ? stream.data.audio.map((item: string) => {
+                          if (item === "Dolby Digital") {
+                            item = "DD";
+                          } else if (item === "Dolby Digital Plus") {
+                            item = "DD+";
+                          }
+                          return (
+                            <Chip
+                              size="small"
+                              className="stream-info-chip"
+                              id="stream-info-audio"
+                              label={item}
+                            />
+                          );
+                        })
+                      : ""}
                   </div>
                   <div className="stream-info-card-title">
                     {stream.file_name}

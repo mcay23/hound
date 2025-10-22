@@ -5,7 +5,25 @@
 }
 
 .stream-info-card-container {
-    padding-top: 20px;
+    padding-top: 23px;
+    padding-left: 3px;
+    padding-bottom: 3px;
+    overflow-y: auto;
+    border-right: solid 3px transparent;
+}
+
+.stream-info-card-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.stream-info-card-container::-webkit-scrollbar-track {
+    margin-top: 20px;
+    margin-bottom: 20px; 
+}
+
+.stream-info-card-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
 }
 
 .stream-info-card {
@@ -14,9 +32,9 @@
     margin-bottom: 20px;
     padding: 15px;
     max-height: 200px;
-    border-radius: 5px;
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-    background-color: white;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px;
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .stream-info-card-title {
@@ -24,8 +42,8 @@
     font-family: 'Cabin', sans-serif;
     font-weight: 400;
     display: -webkit-box;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -49,6 +67,7 @@
 
 .stream-info-chip {
     margin-right: 7px;
+    background-color: rgba(var(--hound-primary), 0.2) !important;
 }
 
 .stream-info-chip .MuiChip-label {
@@ -56,12 +75,16 @@
     font-size: 16px;
 }
 
+#stream-info-resolution {
+    background-color: rgba(201, 206, 201, 0.5);
+}
+
 #stream-info-size {
     background-color: rgba(var(--hound-primary), 0.2);
 }
 
 #stream-info-cache-good {
-    background-color: rgb(181, 246, 181);
+    background-color: rgba(181, 246, 181, 0.8);
 }
 
 #stream-info-codec-hevc {
@@ -74,4 +97,9 @@
 
 #stream-info-codec-generic {
     background-color: rgb(232, 192, 192);
+}
+
+
+#stream-info-audio {
+
 }
