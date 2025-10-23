@@ -173,18 +173,18 @@ function SeasonModal(props: any) {
   // }
   return (
     <>
-      <Dialog
-        onClose={handleClose}
-        open={open}
-        className="season-modal-dialog"
-        maxWidth={false}
-        fullScreen={fullScreen}
-        TransitionComponent={Fade}
-        TransitionProps={{ timeout: 0 }}
-        slotProps={slotPropsGlass}
-        PaperProps={paperPropsGlass}
-      >
-        {isSeasonDataLoaded ? (
+      {isSeasonDataLoaded ? (
+        <Dialog
+          onClose={handleClose}
+          open={open}
+          className="season-modal-dialog"
+          maxWidth={false}
+          fullScreen={fullScreen}
+          TransitionComponent={Fade}
+          TransitionProps={{ timeout: 0 }}
+          slotProps={slotPropsGlass}
+          PaperProps={paperPropsGlass}
+        >
           <div className="season-modal-container">
             <div className="season-modal-info-container">
               {seasonData.season.poster_path ? (
@@ -266,21 +266,21 @@ function SeasonModal(props: any) {
               })}
             </div>
           </div>
-        ) : (
-          <LinearProgress />
-        )}
-      </Dialog>
-      <CreateHistoryModal
-        onClose={handleCreateHistoryModalClose}
-        open={isCreateHistoryModalOpen}
-        type={"season"}
-        seasonNumber={seasonData.season.season_number}
-      />
-      <StreamModal
-        setOpen={setIsStreamModalOpen}
-        open={isStreamModalOpen}
-        streamDetails={mainStream}
-      />
+          <CreateHistoryModal
+            onClose={handleCreateHistoryModalClose}
+            open={isCreateHistoryModalOpen}
+            type={"season"}
+            seasonNumber={seasonData.season.season_number}
+          />
+          <StreamModal
+            setOpen={setIsStreamModalOpen}
+            open={isStreamModalOpen}
+            streamDetails={mainStream}
+          />
+        </Dialog>
+      ) : (
+        ""
+      )}
     </>
   );
 }

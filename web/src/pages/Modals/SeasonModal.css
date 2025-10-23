@@ -103,13 +103,12 @@
     max-height: 200px;
     border-radius: 12px;
     box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .episode-card-img {
     min-width: 304px;
     width: 304px;
-    max-height: 171px;
     height: 171px;
     border-radius: 12px;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
@@ -168,8 +167,13 @@
 
 @media only screen and (min-width:600px) and (max-width:1400px) {
     .season-modal-dialog {
-        min-width: 80vw;
-        max-width: 90vw;
+        min-width: 100vw;
+        max-width: 100vw;
+    }
+    .episode-card-img {
+        min-width: 25%;
+        width: 25%;
+        object-fit: cover;
     }
 }
 
@@ -184,41 +188,47 @@
         justify-content: center;
         margin: auto;
     }
+    .season-modal-actions-container {
+        /* display: flex;
+        width: fit-content;
+        flex-direction: column;
+        padding-top: 5px; */
+    }
     .episode-card-container {
-        width: 355px;
+        min-width: 100;
+        width: 100%;
         margin-left: 10px;
         margin-right: 10px;
         max-height: fit-content;
         flex-direction: column;
+        margin: auto;
+        margin-bottom: 20px;
         border-radius: 12px;
         box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-        background-color: white;
     }
     .episode-card-content {
-        width: 355px;
+        width: 100%;
         max-height: 200px;
-        padding-left: 10px;
-        padding-right: 10px;
+        padding-left: 15px;
+        padding-right: 15px;
     }
     .episode-card-img {
-        width: 355px;
-        max-height: 200px;
-        height: 200px;
+        width: 100%;
+        aspect-ratio: 16 / 5;
         border-radius: 12px;
         box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
         object-fit: cover;
         background-size: cover;
         background-repeat: no-repeat;
         background-image: url("../../../public/landscape-placeholder.jpg");
-        min-height: 160px;
     }
     .episode-card-title { 
-        font-size: 18px;
+        font-size: 24px;
     }
     .episode-card-date {
-        font-size: 13px;
+        font-size: 16px;
     }
     .episode-card-description {
-        font-size: 14px;
+        font-size: 18px;
     }
 }

@@ -13,117 +13,117 @@ function SelectStreamModal(props: any) {
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   console.log(props.streamData?.data?.providers?.[0]?.streams[1]);
   return (
-    <Dialog
-      onClose={handleClose}
-      open={open}
-      disableScrollLock={false}
-      maxWidth="md"
-      fullScreen={fullScreen}
-      className="stream-select-modal-dialog"
-      TransitionComponent={Fade}
-      TransitionProps={{ timeout: 0 }}
-      slotProps={slotPropsGlass}
-      PaperProps={paperPropsGlass}
-    >
+    <>
       {props.streamData !== null ? (
-        <div className="stream-info-card-container">
-          {props.streamData?.data?.providers?.[0]?.streams?.map(
-            (stream: any) => {
-              return (
-                <div className="stream-info-card" key={stream.infohash}>
-                  <div className="stream-info-top">
-                    {stream.cached === "true" ? (
-                      <Chip
-                        size="small"
-                        className="stream-info-chip"
-                        id="stream-info-cache-good"
-                        label={"Instant " + stream.service}
-                      />
-                    ) : (
-                      <Chip
-                        size="small"
-                        className="stream-info-chip"
-                        label={"P2P (Slow)"}
-                      />
-                    )}
-                    {stream.resolution ? (
-                      <Chip
-                        size="small"
-                        className="stream-info-chip"
-                        id="stream-info-resolution"
-                        label={
-                          stream.resolution === "2160p"
-                            ? "4K"
-                            : stream.resolution
-                        }
-                      />
-                    ) : (
-                      ""
-                    )}
-                    {stream.file_size ? (
-                      <Chip
-                        size="small"
-                        className="stream-info-chip"
-                        id="stream-info-size"
-                        label={formatBytes(stream.file_size)}
-                      />
-                    ) : (
-                      ""
-                    )}
-                    {stream.data.codec ? (
-                      <Chip
-                        size="small"
-                        className="stream-info-chip"
-                        id={
-                          stream.data.codec === "hevc"
-                            ? "stream-info-codec-hevc"
-                            : stream.data.codec === "avc"
-                            ? "stream-info-codec-avc"
-                            : "stream-info-codec-generic"
-                        }
-                        label={stream.data.codec
-                          .toUpperCase()
-                          .replace("HEVC", "x265")
-                          .replace("AVC", "x264")}
-                      />
-                    ) : (
-                      ""
-                    )}
-                    {stream.data.audio.length > 0
-                      ? stream.data.audio.map((item: string) => {
-                          if (item === "Dolby Digital") {
-                            item = "DD";
-                          } else if (item === "Dolby Digital Plus") {
-                            item = "DD+";
+        <Dialog
+          onClose={handleClose}
+          open={open}
+          disableScrollLock={false}
+          maxWidth="md"
+          fullScreen={fullScreen}
+          className="stream-select-modal-dialog"
+          slotProps={slotPropsGlass}
+          PaperProps={paperPropsGlass}
+        >
+          <div className="stream-info-card-container">
+            {props.streamData?.data?.providers?.[0]?.streams?.map(
+              (stream: any) => {
+                return (
+                  <div className="stream-info-card" key={stream.infohash}>
+                    <div className="stream-info-top">
+                      {stream.cached === "true" ? (
+                        <Chip
+                          size="small"
+                          className="stream-info-chip"
+                          id="stream-info-cache-good"
+                          label={"Instant " + stream.service}
+                        />
+                      ) : (
+                        <Chip
+                          size="small"
+                          className="stream-info-chip"
+                          label={"P2P (Slow)"}
+                        />
+                      )}
+                      {stream.resolution ? (
+                        <Chip
+                          size="small"
+                          className="stream-info-chip"
+                          id="stream-info-resolution"
+                          label={
+                            stream.resolution === "2160p"
+                              ? "4K"
+                              : stream.resolution
                           }
-                          return (
-                            <Chip
-                              size="small"
-                              className="stream-info-chip"
-                              id="stream-info-audio"
-                              label={item}
-                            />
-                          );
-                        })
-                      : ""}
+                        />
+                      ) : (
+                        ""
+                      )}
+                      {stream.file_size ? (
+                        <Chip
+                          size="small"
+                          className="stream-info-chip"
+                          id="stream-info-size"
+                          label={formatBytes(stream.file_size)}
+                        />
+                      ) : (
+                        ""
+                      )}
+                      {stream.data.codec ? (
+                        <Chip
+                          size="small"
+                          className="stream-info-chip"
+                          id={
+                            stream.data.codec === "hevc"
+                              ? "stream-info-codec-hevc"
+                              : stream.data.codec === "avc"
+                              ? "stream-info-codec-avc"
+                              : "stream-info-codec-generic"
+                          }
+                          label={stream.data.codec
+                            .toUpperCase()
+                            .replace("HEVC", "x265")
+                            .replace("AVC", "x264")}
+                        />
+                      ) : (
+                        ""
+                      )}
+                      {stream.data.audio.length > 0
+                        ? stream.data.audio.map((item: string) => {
+                            if (item === "Dolby Digital") {
+                              item = "DD";
+                            } else if (item === "Dolby Digital Plus") {
+                              item = "DD+";
+                            }
+                            return (
+                              <Chip
+                                size="small"
+                                className="stream-info-chip"
+                                id="stream-info-audio"
+                                label={item}
+                              />
+                            );
+                          })
+                        : ""}
+                    </div>
+                    <div className="stream-info-card-title">
+                      {stream.file_name}
+                    </div>
+                    <div className="stream-info-card-subtitle">
+                      {stream.addon}
+                      {stream.addon && stream.folder_name ? " ⸱ " : ""}
+                      {stream.folder_name}
+                    </div>
                   </div>
-                  <div className="stream-info-card-title">
-                    {stream.file_name}
-                  </div>
-                  <div className="stream-info-card-subtitle">
-                    {stream.addon}
-                    {stream.addon && stream.folder_name ? " ⸱ " : ""}
-                    {stream.folder_name}
-                  </div>
-                </div>
-              );
-            }
-          )}
-        </div>
+                );
+              }
+            )}
+          </div>
+        </Dialog>
       ) : (
-        <></>
+        ""
       )}
-    </Dialog>
+    </>
   );
 }
 
