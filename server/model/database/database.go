@@ -1,17 +1,18 @@
 package database
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"hound/helpers"
 	"log/slog"
 	"os"
+
+	_ "github.com/lib/pq"
 	"xorm.io/xorm"
 )
 
 const (
-	MediaTypeTVShow          = "tvshow"
-	MediaTypeMovie           = "movie"
-	MediaTypeGame            = "game"
+	MediaTypeTVShow = "tvshow"
+	MediaTypeMovie  = "movie"
+	MediaTypeGame   = "game"
 )
 
 var databaseEngine *xorm.Engine

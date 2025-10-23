@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"hound/helpers"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 /*
@@ -129,7 +130,7 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	err = sess.Where("collection_id = ?", collectionID).
 		Join("INNER", collectionRelationsTable,
 			fmt.Sprintf("%s.library_id = %s.library_id", libraryTable, collectionRelationsTable)).
-			OrderBy(fmt.Sprintf("%s.updated_at desc", collectionRelationsTable)).
+		OrderBy(fmt.Sprintf("%s.updated_at desc", collectionRelationsTable)).
 		Find(&libraryGroups)
 	if err != nil {
 		return nil, nil, -1, err
@@ -177,9 +178,12 @@ func InsertCollectionRelation(userID int64, libraryID int64, collectionID *int64
 		CollectionID: *collectionID,
 	})
 	if err != nil {
-		var mysqlErr *mysql.MySQLError
-		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Item already in collection")
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			// unique key failed
+			if pqErr.Code == "23505" {
+				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Record already exists in collection")
+			}
 		}
 	}
 	return err
@@ -254,7 +258,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	// primary collections can't be deleted
 	affected, err := session.Table(collectionsTable).Where("is_primary = ?", false).Delete(&CollectionRecord{
 		CollectionID: collectionID,
-		OwnerID: userID,
+		OwnerID:      userID,
 	})
 	if err != nil {
 		_ = session.Rollback()
