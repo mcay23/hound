@@ -187,6 +187,7 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
         t_dict["duration_string"] = t.get("duration_string", -1)
         t_dict["service"] = t.get("service", "")
         t_dict["resolution"] = t.get("resolution", "")
+        t_dict["sources"] = t.get("sources", [])
 
         # don't always know if torrent is cached
         t_dict["cached"] = t.get("cached", "unknown")

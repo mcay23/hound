@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hound/config"
 	"hound/controllers"
 	"hound/model"
 	"hound/model/database"
@@ -15,9 +14,10 @@ func main() {
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	slog.SetDefault(slog.New(handler))
 
-	config.InitializeConfig()
+	model.InitializeConfig()
 	database.InstantiateDB()
 	model.InitializeCache()
 	sources.InitializeSources()
+	model.InitializeP2P()
 	controllers.SetupRoutes()
 }

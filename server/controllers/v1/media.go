@@ -3,8 +3,6 @@ package v1
 import (
 	"errors"
 	"fmt"
-	tmdb "github.com/cyruzin/golang-tmdb"
-	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model"
 	"hound/model/database"
@@ -14,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -121,19 +122,20 @@ func AddToCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	if body.MediaType == database.MediaTypeTVShow {
+	switch body.MediaType {
+	case database.MediaTypeTVShow:
 		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add tv show to collection"))
 			return
 		}
-	} else if body.MediaType == database.MediaTypeMovie {
+	case database.MediaTypeMovie:
 		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add movie to collection"))
 			return
 		}
-	} else if body.MediaType == database.MediaTypeGame {
+	case database.MediaTypeGame:
 		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add game to collection"))
@@ -338,7 +340,7 @@ func DeleteCollectionHandler(c *gin.Context) {
 func GetCommentsHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
 	requestURL := strings.Split(c.Request.URL.Path, "/")
@@ -379,7 +381,7 @@ func PostCommentHandler(c *gin.Context) {
 	}
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
 	requestURL := strings.Split(c.Request.URL.Path, "/")
