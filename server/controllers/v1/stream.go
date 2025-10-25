@@ -2,22 +2,48 @@ package v1
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 /*
-	Proxies links through the server
- */
+Proxies links through the server
+*/
 func StreamHandler(c *gin.Context) {
 	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Failed to parse encoded string:" + c.Param("encodedString")))
+			"Failed to parse encoded string:"+c.Param("encodedString")))
+		return
 	}
+	// Torrent Streaming Case
+	if streamDetails.Cached == "false" && streamDetails.P2P == "p2p" {
+		file, err := model.GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex, streamDetails.Filename)
+		if err != nil {
+			helpers.ErrorResponse(c, err)
+			return
+		}
+		// GetTorrentFile could return nil
+		if file == nil {
+			helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find file in torrent"+streamDetails.InfoHash)
+			return
+		}
+		c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
+		reader := file.NewReader()
+		defer func() {
+			if closer, ok := reader.(io.Closer); ok {
+				closer.Close()
+			}
+		}()
+		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
+		return
+	}
+	// Direct stream case, just proxy url
 	videoURL := streamDetails.URL
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
@@ -26,13 +52,12 @@ func StreamHandler(c *gin.Context) {
 	req, err := http.NewRequest("GET", videoURL, nil)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Error creating URL: " + err.Error()))
+			"Error creating URL: "+err.Error()))
 		return
 	}
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
 		req.Header.Set("Range", rangeHeader)
 	}
-
 	if userAgent := c.GetHeader("User-Agent"); userAgent != "" {
 		req.Header.Set("User-Agent", userAgent)
 	}
@@ -41,7 +66,7 @@ func StreamHandler(c *gin.Context) {
 	resp, err := client.Do(req)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"HTTP error fetching URL: " + err.Error()))
+			"HTTP error fetching URL: "+err.Error()))
 		return
 	}
 	defer resp.Body.Close()
@@ -60,7 +85,26 @@ func StreamHandler(c *gin.Context) {
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"IO copy error: " + err.Error()))
+			"IO copy error: "+err.Error()))
 		return
 	}
+}
+
+func AddTorrentHandler(c *gin.Context) {
+	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+	if err != nil || streamDetails == nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"Failed to parse encoded string:"+c.Param("encodedString")))
+		return
+	}
+	if streamDetails.FileIndex == -1 && streamDetails.Filename == "" || streamDetails.InfoHash == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Torrent hash, File Index and/or File name not provided"))
+		return
+	}
+	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources, streamDetails.FileIndex, streamDetails.Filename)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }

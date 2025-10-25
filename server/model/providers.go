@@ -80,6 +80,7 @@ type StreamObject struct {
 	Rank        int         `json:"rank"`
 	Seeders     int         `json:"seeders"`
 	Leechers    int         `json:"leechers"`
+	Sources     []string    `json:"sources"` // trackers for p2p
 	URL         string      `json:"url"`
 	EncodedData string      `json:"encoded_data"` // data encoded in JWT for playing streams
 	ParsedData  *ParsedData `json:"data"`

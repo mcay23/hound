@@ -61,6 +61,7 @@ func SetupRoutes(r *gin.Engine) {
 		Video Streaming Routes
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
+	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
 	//privateRoutes.GET("/tv/:id/stream/:encodedString", StreamHandler)
 
 	/*

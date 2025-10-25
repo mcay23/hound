@@ -1,11 +1,12 @@
-package config
+package model
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/spf13/viper"
 	"hound/helpers"
 	"log/slog"
+
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 var envFileName = ".env"
