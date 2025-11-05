@@ -11,7 +11,6 @@ function SelectStreamModal(props: any) {
   // Only aiostreams for now
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
-  console.log(props.streamData?.data?.providers?.[0]?.streams[1]);
   return (
     <>
       {props.streamData !== null ? (

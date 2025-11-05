@@ -72,8 +72,8 @@ try:
 except requests.exceptions.RequestException as e:
     exit(PROVIDER_NAME, f"error during HTTP call - {e}")
 
-if "streams" not in json_data or len(json_data["streams"]) == 0:
-    exit(PROVIDER_NAME, "unexpected response body" + json_data)
+if "streams" not in json_data:
+    exit(PROVIDER_NAME, "unexpected response body" + json.dumps(json_data))
 
 # parse the descriptions from the response into dicts
 # descriptions have the form 

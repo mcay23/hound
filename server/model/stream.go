@@ -54,7 +54,6 @@ func InitializeP2P() {
 	if err != nil {
 		panic(err)
 	}
-	// defer client.Close()
 	go cleanupSessions()
 	slog.Info("Initialized P2P Client")
 }
@@ -205,7 +204,7 @@ func cleanupSessions() {
 			}
 			return true
 		})
-		// evaluate
+		// TODO evaluate
 		// runtime.GC()
 	}
 }

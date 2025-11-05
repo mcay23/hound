@@ -100,7 +100,6 @@ function SeasonModal(props: any) {
         console.log(err);
       });
   };
-  // right now, gets a new stream every time, probably best just to cache this in the backend
   const handleStreamButtonClick = (season: number, episode: number) => {
     axios
       .get(
@@ -110,12 +109,10 @@ function SeasonModal(props: any) {
         setStreams(res.data);
         if (res.data.data.providers[0].streams.length > 0) {
           setMainStream(res.data.data.providers[0].streams[0]);
+          setIsStreamModalOpen(true);
         } else {
           toast.error("No streams found");
         }
-      })
-      .then(() => {
-        setIsStreamModalOpen(true);
       })
       .catch((err) => {
         if (err.response.status === 500) {
