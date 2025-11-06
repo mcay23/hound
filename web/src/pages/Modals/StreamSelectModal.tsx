@@ -4,7 +4,7 @@ import "video.js/dist/video-js.css";
 import { slotPropsGlass, paperPropsGlass } from "./modalStyles";
 
 function SelectStreamModal(props: any) {
-  const { setOpen, open } = props;
+  const { setOpen, open, setMainStream, setIsStreamModalOpen } = props;
   const handleClose = () => {
     setOpen(false);
   };
@@ -88,25 +88,38 @@ function SelectStreamModal(props: any) {
                         ""
                       )}
                       {stream.data.audio.length > 0
-                        ? stream.data.audio.map((item: string) => {
-                            if (item === "Dolby Digital") {
-                              item = "DD";
-                            } else if (item === "Dolby Digital Plus") {
-                              item = "DD+";
+                        ? stream.data.audio.map(
+                            (item: string, index: number) => {
+                              if (item === "Dolby Digital") {
+                                item = "DD";
+                              } else if (item === "Dolby Digital Plus") {
+                                item = "DD+";
+                              }
+                              return (
+                                <Chip
+                                  key={index + "-" + item}
+                                  size="small"
+                                  className="stream-info-chip"
+                                  id="stream-info-audio"
+                                  label={item}
+                                />
+                              );
                             }
-                            return (
-                              <Chip
-                                size="small"
-                                className="stream-info-chip"
-                                id="stream-info-audio"
-                                label={item}
-                              />
-                            );
-                          })
+                          )
                         : ""}
                     </div>
-                    <div className="stream-info-card-title">
-                      {stream.file_name}
+                    <div
+                      className="stream-info-card-title"
+                      onClick={() => {
+                        if (stream) {
+                          setMainStream(stream);
+                          setIsStreamModalOpen(true);
+                        }
+                      }}
+                    >
+                      {stream.file_name
+                        ? stream.file_name
+                        : "Unknown File Name"}
                     </div>
                     <div className="stream-info-card-subtitle">
                       {stream.addon}

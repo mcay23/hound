@@ -259,6 +259,7 @@ function MediaPageTV(props: any) {
       <SeasonModal
         onClose={handleSeasonModalClose}
         open={isSeasonModalOpen}
+        mediaSource={props.data ? props.data.media_source : undefined}
         sourceID={props.data ? props.data.source_id : undefined}
         seasonNumber={seasonModal}
         mediaTitle={props.data.media_title}

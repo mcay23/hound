@@ -81,7 +81,14 @@ func SearchProvidersHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid episode query param"+err.Error()))
 		}
 		query.Season = season
+		// For TV Shows, episodes are sometimes offset, eg. for show A, Season 2 starts at episode 20 instead of 1
+		// Offset this negatively to normalize to S2E1
 		query.Episode = episode
+		seasonData, err := sources.GetTVSeasonTMDB(query.SourceID, query.Season, nil)
+		// no errors, continue set season
+		if err == nil && len(seasonData.Episodes) > 0 {
+			query.Episode = episode - seasonData.Episodes[0].EpisodeNumber + 1
+		}
 	}
 	res, err := model.SearchProviders(query)
 	if err != nil {

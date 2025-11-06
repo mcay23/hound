@@ -17,8 +17,8 @@ function StreamModal(props: any) {
       "/api/v1/stream/" +
       props.streamDetails.encoded_data;
   }
-  videoURL =
-    "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
+  // videoURL =
+  //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
   const videoJsOptions = {
     sources: [
       {

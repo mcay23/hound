@@ -56,8 +56,8 @@ function MediaPageMovie(props: any) {
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
-  const [streamButtonLoading, setStreamButtonLoading] = useState(false);
-  const [streamSelectButtonLoading, setStreamSelectButtonLoading] =
+  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
+  const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
 
   var styles = {
@@ -145,11 +145,11 @@ function MediaPageMovie(props: any) {
   };
   // type is either "direct" or "select"
   // direct plays the stream directly, select opens the stream selection modal
-  const handleStreamButtonClick = (type: string) => {
-    if (type === "direct") {
-      setStreamButtonLoading(true);
-    } else if (type === "select") {
-      setStreamSelectButtonLoading(true);
+  const handleStreamButtonClick = (mode: string) => {
+    if (mode === "direct") {
+      setIsStreamButtonLoading(true);
+    } else if (mode === "select") {
+      setIsStreamSelectButtonLoading(true);
     }
     if (!streams) {
       axios
@@ -158,15 +158,14 @@ function MediaPageMovie(props: any) {
         )
         .then((res) => {
           setStreams(res.data);
-          if (res.data.data.providers[0].streams.length > 0) {
+          let numStreams = res.data.data.providers[0].streams.length;
+          if (numStreams > 0) {
             setMainStream(res.data.data.providers[0].streams[0]);
           } else {
             toast.error("No streams found");
           }
-          if (
-            res.data.data.providers[0].streams.length > 5 &&
-            type === "direct"
-          ) {
+          // open stream select modal if only few streams
+          if (numStreams > 5 && mode === "direct") {
             setIsStreamModalOpen(true);
           } else {
             setIsSelectStreamModalOpen(true);
@@ -178,20 +177,22 @@ function MediaPageMovie(props: any) {
           }
         })
         .finally(() => {
-          if (type === "direct") {
-            setStreamButtonLoading(false);
-          } else if (type === "select") {
-            setStreamSelectButtonLoading(false);
+          if (mode === "direct") {
+            setIsStreamButtonLoading(false);
+          } else if (mode === "select") {
+            setIsStreamSelectButtonLoading(false);
           }
         });
-    } else {
-      if (type === "direct") {
+    } else if (streams.data.providers[0].streams.length > 0) {
+      if (mode === "direct") {
         setIsStreamModalOpen(true);
-        setStreamButtonLoading(false);
-      } else if (type === "select") {
+        setIsStreamButtonLoading(false);
+      } else if (mode === "select") {
         setIsSelectStreamModalOpen(true);
-        setStreamSelectButtonLoading(false);
+        setIsStreamSelectButtonLoading(false);
       }
+    } else {
+      toast.error("No Streams found");
     }
   };
   const handleVideoButtonClick = (key: string) => {
@@ -277,7 +278,7 @@ function MediaPageMovie(props: any) {
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={
-                    streamButtonLoading ? (
+                    isStreamButtonLoading ? (
                       <Spinner
                         animation="grow"
                         size="sm"
@@ -300,7 +301,7 @@ function MediaPageMovie(props: any) {
                       handleStreamButtonClick("select");
                     }}
                   >
-                    {streamSelectButtonLoading ? (
+                    {isStreamSelectButtonLoading ? (
                       <div className="d-flex justify-content-center">
                         <Spinner
                           animation="border"
@@ -399,6 +400,8 @@ function MediaPageMovie(props: any) {
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
         streamData={streams}
+        setMainStream={setMainStream}
+        setIsStreamModalOpen={setIsStreamModalOpen}
       />
       <VideoModal
         onClose={handleVideoButtonClose}

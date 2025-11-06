@@ -56,7 +56,6 @@ function CreateHistoryModal(props: any) {
     if (props.type === "season") {
       payload = { ...createHistoryData, tag_data: `S${props.seasonNumber}` };
     }
-    console.log(payload, props.seasonNumber);
     axios
       .post(`/api/v1${window.location.pathname}/comments`, payload)
       .then(() => {
