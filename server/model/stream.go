@@ -110,8 +110,8 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string) (*torrent.Fil
 			fmt.Sprintf("Invalid fileidx: %v, total files: %v", fileIdx, len(t.Files())))
 	}
 	var fileToStream *torrent.File
-	// use filename
-	if fileIdx == -1 {
+	// fileIdx defaults to -1 for no index
+	if fileIdx < 0 {
 		// no idx or filename, use largest video file
 		if filename == "" {
 			var largestFile *torrent.File

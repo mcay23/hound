@@ -9,6 +9,7 @@ import {
   IconButton,
   useTheme,
   Fade,
+  Button,
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -21,7 +22,10 @@ import StreamModal from "../Modals/StreamModal";
 import toast from "react-hot-toast";
 import { PlayArrow } from "@mui/icons-material";
 import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
-import { fontGrid } from "@mui/material/styles/cssUtils";
+import Dropdown from "react-bootstrap/Dropdown";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import SelectStreamModal from "./StreamSelectModal";
+import { Spinner } from "react-bootstrap";
 
 const offsetFix = {
   modifiers: [
@@ -46,7 +50,7 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 }));
 
 function SeasonModal(props: any) {
-  const { onClose, open, sourceID, seasonNumber } = props;
+  const { onClose, open, mediaSource, sourceID, seasonNumber } = props;
   const handleClose = () => {
     setIsSeasonDataLoaded(false);
     onClose();
@@ -70,15 +74,12 @@ function SeasonModal(props: any) {
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
+  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
+  const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
+    useState(false);
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
-
-  const handleCreateHistoryButtonClick = () => {
-    setisCreateHistoryModalOpen(true);
-  };
-  const handleCreateHistoryModalClose = () => {
-    setisCreateHistoryModalOpen(false);
-  };
   const handleWatchEpisode = (tagData: string) => {
     var date = new Date();
     var payload = {
@@ -100,16 +101,30 @@ function SeasonModal(props: any) {
         console.log(err);
       });
   };
-  const handleStreamButtonClick = (season: number, episode: number) => {
+  const handleStreamButtonClick = (
+    season: number,
+    episode: number,
+    mode: string
+  ) => {
+    if (mode === "direct") {
+      setIsStreamButtonLoading(true);
+    } else if (mode === "select") {
+      setIsStreamSelectButtonLoading(true);
+    }
     axios
       .get(
-        `/api/v1${window.location.pathname}/providers?season=${season}&episode=${episode}`
+        `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`
       )
       .then((res) => {
         setStreams(res.data);
-        if (res.data.data.providers[0].streams.length > 0) {
+        let numStreams = res.data.data.providers[0].streams.length;
+        if (numStreams > 0) {
           setMainStream(res.data.data.providers[0].streams[0]);
-          setIsStreamModalOpen(true);
+          if (mode === "direct") {
+            setIsStreamModalOpen(true);
+          } else {
+            setIsSelectStreamModalOpen(true);
+          }
         } else {
           toast.error("No streams found");
         }
@@ -117,6 +132,13 @@ function SeasonModal(props: any) {
       .catch((err) => {
         if (err.response.status === 500) {
           toast.error("Error getting streams");
+        }
+      })
+      .finally(() => {
+        if (mode === "direct") {
+          setIsStreamButtonLoading(false);
+        } else if (mode === "select") {
+          setIsStreamSelectButtonLoading(false);
         }
       });
   };
@@ -230,7 +252,11 @@ function SeasonModal(props: any) {
                       }
                       PopperProps={offsetFix}
                     >
-                      <IconButton onClick={handleCreateHistoryButtonClick}>
+                      <IconButton
+                        onClick={() => {
+                          setisCreateHistoryModalOpen(true);
+                        }}
+                      >
                         <VisibilityIcon />
                       </IconButton>
                     </BootstrapTooltip>
@@ -258,13 +284,17 @@ function SeasonModal(props: any) {
                   episode,
                   watchedEpisodes.includes(episode["episode_number"]),
                   handleWatchEpisode,
-                  handleStreamButtonClick
+                  handleStreamButtonClick,
+                  isStreamButtonLoading,
+                  isStreamSelectButtonLoading
                 );
               })}
             </div>
           </div>
           <CreateHistoryModal
-            onClose={handleCreateHistoryModalClose}
+            onClose={() => {
+              setisCreateHistoryModalOpen(false);
+            }}
             open={isCreateHistoryModalOpen}
             type={"season"}
             seasonNumber={seasonData.season.season_number}
@@ -273,6 +303,13 @@ function SeasonModal(props: any) {
             setOpen={setIsStreamModalOpen}
             open={isStreamModalOpen}
             streamDetails={mainStream}
+          />
+          <SelectStreamModal
+            setOpen={setIsSelectStreamModalOpen}
+            open={isSelectStreamModalOpen}
+            streamData={streams}
+            setMainStream={setMainStream}
+            setIsStreamModalOpen={setIsStreamModalOpen}
           />
         </Dialog>
       ) : (
@@ -285,8 +322,10 @@ function SeasonModal(props: any) {
 function EpisodeCard(
   episode: any,
   watched: boolean,
-  handleWatchEpisode: any,
-  handleStreamButtonClick: any
+  handleWatchEpisode: Function,
+  handleStreamButtonClick: Function,
+  isStreamButtonLoading: boolean,
+  isStreamSelectButtonLoading: boolean
 ) {
   var episodeNumber =
     episode.season_number.toString() &&
@@ -321,25 +360,72 @@ function EpisodeCard(
         </div>
       </div>
       <div className="episode-card-actions">
-        <BootstrapTooltip
-          title={
-            <span className="media-page-tv-header-button-tooltip-title">
-              Play Episode
-            </span>
-          }
-          PopperProps={offsetFix}
+        <Dropdown
+          align="end"
+          autoClose="outside"
+          id="season-episode-card-dropdown-container"
         >
-          <IconButton
-            onClick={() => {
-              handleStreamButtonClick(
-                episode.season_number,
-                episode.episode_number
-              );
-            }}
+          <Dropdown.Toggle
+            as={Button}
+            variant="light"
+            id="season-episode-card-dropdown"
+            className="border-0 p-0"
+            style={{ minWidth: "auto" }}
           >
-            <PlayArrow />
-          </IconButton>
-        </BootstrapTooltip>
+            <MoreVertIcon />
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item
+              onClick={() => {
+                handleStreamButtonClick(
+                  episode.season_number,
+                  episode.episode_number,
+                  "direct"
+                );
+              }}
+            >
+              {isStreamButtonLoading ? (
+                <div className="d-flex justify-content-center">
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    id="stream-select-button-loading"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                "Play Episode"
+              )}
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => {
+                handleStreamButtonClick(
+                  episode.season_number,
+                  episode.episode_number,
+                  "select"
+                );
+              }}
+            >
+              {isStreamSelectButtonLoading ? (
+                <div className="d-flex justify-content-center">
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    id="stream-select-button-loading"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                "Select Stream..."
+              )}
+            </Dropdown.Item>
+            <Dropdown.Item>Mark as Watched</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
         {watched ? (
           <IconButton disabled>
             <DoneAllIcon />

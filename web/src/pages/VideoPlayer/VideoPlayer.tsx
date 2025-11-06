@@ -31,7 +31,12 @@ function VideoPlayer({ options }: IVideoPlayerProps) {
         player.current.dispose();
       }
     };
-  }, [options]);
+  }, []);
+  React.useEffect(() => {
+    if (player.current && options.sources) {
+      player.current.src(options.sources);
+    }
+  }, [options.sources]);
   return <video ref={videoNode} className="video-js vjs-fill" />;
 }
 
