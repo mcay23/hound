@@ -136,14 +136,7 @@ function MediaPageMovie(props: any) {
       id: item.credit_id,
     };
   });
-  // modal functions
-  const handleAddToCollectionButtonClick = () => {
-    setIsCollectionModalOpen(true);
-  };
-  const handleAddToCollectionClose = () => {
-    setIsCollectionModalOpen(false);
-  };
-  // type is either "direct" or "select"
+  // mode is either "direct" or "select"
   // direct plays the stream directly, select opens the stream selection modal
   const handleStreamButtonClick = (mode: string) => {
     if (mode === "direct") {
@@ -198,21 +191,6 @@ function MediaPageMovie(props: any) {
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);
     setVideoKey(key);
-  };
-  const handleVideoButtonClose = () => {
-    setIsVideoModalOpen(false);
-  };
-  const handleHistoryModalButtonClick = () => {
-    setIsHistoryModalOpen(true);
-  };
-  const handleHistoryModalClose = () => {
-    setIsHistoryModalOpen(false);
-  };
-  const handleCreateHistoryButtonClick = () => {
-    setisCreateHistoryModalOpen(true);
-  };
-  const handleCreateHistoryModalClose = () => {
-    setisCreateHistoryModalOpen(false);
   };
   if (props.data.media_title) {
     var yearString = props.data.release_date
@@ -325,7 +303,11 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleAddToCollectionButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsCollectionModalOpen(true);
+                    }}
+                  >
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -337,7 +319,11 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleCreateHistoryButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setisCreateHistoryModalOpen(true);
+                    }}
+                  >
                     <VisibilityIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -349,7 +335,11 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleHistoryModalButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsHistoryModalOpen(true);
+                    }}
+                  >
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
@@ -387,7 +377,9 @@ function MediaPageMovie(props: any) {
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
-        onClose={handleAddToCollectionClose}
+        onClose={() => {
+          setIsCollectionModalOpen(false);
+        }}
         open={isCollectionModalOpen}
         item={props.data}
       />
@@ -404,17 +396,23 @@ function MediaPageMovie(props: any) {
         setIsStreamModalOpen={setIsStreamModalOpen}
       />
       <VideoModal
-        onClose={handleVideoButtonClose}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+        }}
         open={isVideoModalOpen}
         videoKey={videoKey}
       />
       <HistoryModal
-        onClose={handleHistoryModalClose}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+        }}
         open={isHistoryModalOpen}
         data={props.data}
       />
       <CreateHistoryModal
-        onClose={handleCreateHistoryModalClose}
+        onClose={() => {
+          setisCreateHistoryModalOpen(false);
+        }}
         open={isCreateHistoryModalOpen}
         type={"movie"}
       />
