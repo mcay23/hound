@@ -1,11 +1,13 @@
-	package v1
+package v1
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 	"hound/helpers"
 	"hound/model"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 func RegistrationHandler(c *gin.Context) {
@@ -58,6 +60,15 @@ func LoginHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		MaxAge:   viper.GetInt("auth.jwt-access-token-expiration"),
+		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(c.Writer, cookie)
 	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
 }
