@@ -26,9 +26,6 @@ function Library(props: any) {
     description: "",
     is_public: true,
   });
-  const handleCollectionDialogClickOpen = () => {
-    setIsCreateCollectionDialogOpen(true);
-  };
   const handleCollectionDialogClose = () => {
     setCreateCollectionData({
       collection_title: "",
@@ -64,6 +61,8 @@ function Library(props: any) {
         toast.error("Error creating collection");
       });
   };
+  document.title = "My Collections - Hound";
+
   useEffect(() => {
     if (!isCollectionsLoaded) {
       const fetchData = async () => {
@@ -92,7 +91,7 @@ function Library(props: any) {
       fetchData();
     }
   });
-  document.title = "My Collections - Hound";
+
   return (
     <>
       <Topnav />
@@ -120,7 +119,9 @@ function Library(props: any) {
                 <div
                   className={"rounded collection-card-cover"}
                   id="library-collection-create-cover"
-                  onClick={handleCollectionDialogClickOpen}
+                  onClick={() => {
+                    setIsCreateCollectionDialogOpen(true);
+                  }}
                 >
                   <div className={"collection-card-cover-inner"}>
                     Add New collection
