@@ -32,11 +32,11 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 		return
 	}
 	// convert url results
-	var viewArray []view.LibraryObject
+	var viewArray []view.MediaRecordView
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryObject{
+		viewObject := view.MediaRecordView{
 			MediaType:    database.MediaTypeMovie,
 			MediaSource:  sources.SourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
@@ -104,10 +104,10 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		WatchProviders:      movieDetails.WatchProviders,
 		ExternalIDs:         movieDetails.MovieExternalIDs,
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
-	if err == nil && libraryID != nil {
+	recordID, err := database.GetRecordID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
+	if err == nil && recordID != nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return

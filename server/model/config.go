@@ -14,15 +14,6 @@ var yamlFileName = "config.yaml"
 var configFilePath = "."
 
 func InitializeConfig() {
-	// read env config
-	//viper.SetConfigName(envFileName)
-	//viper.SetConfigType("env")
-	//viper.AddConfigPath(".")
-	//err := viper.ReadInConfig()
-	//if err != nil {
-	//	_ = helpers.LogErrorWithMessage(err, "Failed to read .env config")
-	//	panic(fmt.Errorf("fatal error config file: %w", err))
-	//}
 	// read yaml config
 	viper.SetConfigName(yamlFileName)
 	viper.SetConfigType("yaml")

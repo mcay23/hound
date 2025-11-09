@@ -7,7 +7,7 @@ import (
 )
 
 type CollectionView struct {
-	Results      *[]LibraryObject      `json:"results"`
+	Results      *[]MediaRecordView    `json:"results"`
 	Collection   *CollectionRecordView `json:"collection"`
 	TotalRecords int64                 `json:"total_records"`
 	Limit        int                   `json:"limit"`
@@ -15,7 +15,7 @@ type CollectionView struct {
 }
 
 // store user saved libraries
-type LibraryObject struct {
+type MediaRecordView struct {
 	MediaType    string      `json:"media_type"`    // books,tvshows, etc.
 	MediaSource  string      `json:"media_source"`  // tmdb, openlibrary, etc
 	SourceID     string      `json:"source_id"`     // tmdb id, etc.
@@ -51,7 +51,7 @@ type CommentObject struct {
 	CommentID    int64     `json:"comment_id"`
 	CommentType  string    `json:"comment_type"`
 	UserID       string    `json:"user_id"`
-	LibraryID    int64     `json:"library_id"`
+	RecordID     int64     `json:"record_id"`
 	IsPrivate    bool      `json:"is_private"`
 	Comment      string    `json:"comment"`  // actual content of comment, review
 	TagData      string    `json:"tag_data"` // extra tag info, eg. season, episode

@@ -2,13 +2,14 @@ package v1
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SearchGamesHandler(c *gin.Context) {
@@ -43,10 +44,10 @@ func GetGameFromIDHandler(c *gin.Context) {
 	resultView := view.GameFullObject{
 		IGDBGameObject: result,
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
+	recordID, err := database.GetRecordID(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
 	if err == nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return
