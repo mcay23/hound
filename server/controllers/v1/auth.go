@@ -15,6 +15,7 @@ func RegistrationHandler(c *gin.Context) {
 		err := errors.New(helpers.BadRequest)
 		_ = helpers.LogErrorWithMessage(err, "Registration is currently disabled. Please contact your system admin.")
 		helpers.ErrorResponse(c, err)
+		return
 	}
 	userPayload := model.RegistrationUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {

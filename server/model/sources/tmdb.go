@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tmdb "github.com/cyruzin/golang-tmdb"
 	"hound/helpers"
 	"hound/model"
 	"hound/model/database"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
 const (
@@ -59,7 +60,7 @@ func InitializeTMDB() {
 ------------------------------
 	TMDB TV SHOWS FUNCTIONS
 ------------------------------
- */
+*/
 
 func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 	cacheKey := "tmdb|" + database.MediaTypeTVShow + "|trending|page:" + page
@@ -153,31 +154,31 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 	if source != SourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
-	entry, err := GetLibraryObjectTMDB(database.MediaTypeTVShow, sourceID)
+	entry, err := GetRecordObjectTMDB(database.MediaTypeTVShow, sourceID)
 	if err != nil {
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToInternalLibrary(entry)
+	recordID, err := database.AddMediaRecord(entry)
 	if err != nil {
 		return err
 	}
 	// insert collection relation to collections table
-	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
+	err = database.InsertCollectionRelation(userID, recordID, collectionID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func MarkTVSeasonAsWatchedTMDB(userID int64, libraryID int64, seasonNumber int, minEp int, maxEp int, date time.Time) error {
+func MarkTVSeasonAsWatchedTMDB(userID int64, recordID int64, seasonNumber int, minEp int, maxEp int, date time.Time) error {
 	var records []database.CommentRecord
 	for i := minEp; i <= maxEp; i++ {
 		tagData := "S" + strconv.Itoa(seasonNumber) + "E" + strconv.Itoa(i)
 		records = append(records, database.CommentRecord{
 			CommentType:  "history",
 			UserID:       userID,
-			LibraryID:    libraryID,
+			RecordID:     recordID,
 			IsPrivate:    true,
 			CommentTitle: "",
 			Comment:      nil,
@@ -256,23 +257,22 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 	if source != SourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
-	entry, err := GetLibraryObjectTMDB(database.MediaTypeMovie, sourceID)
+	entry, err := GetRecordObjectTMDB(database.MediaTypeMovie, sourceID)
 	if err != nil {
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToInternalLibrary(entry)
+	recordID, err := database.AddMediaRecord(entry)
 	if err != nil {
 		return err
 	}
 	// insert collection relation to collections table
-	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
+	err = database.InsertCollectionRelation(userID, recordID, collectionID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
 
 /*
 ------------------------------
@@ -337,8 +337,8 @@ func GetGenresMap(genreIds []int64, mediaType string) *[]GenreObject {
 	return &ret
 }
 
-func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryRecord, error) {
-	var entry database.LibraryRecord
+func GetRecordObjectTMDB(mediaType string, sourceID int) (*database.MediaRecords, error) {
+	var entry database.MediaRecords
 	if mediaType == database.MediaTypeTVShow {
 		show, err := GetTVShowFromIDTMDB(sourceID, nil)
 		if err != nil {
@@ -362,7 +362,7 @@ func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryReco
 		if show.PosterPath == "" {
 			thumbnailURL = nil
 		}
-		entry = database.LibraryRecord{
+		entry = database.MediaRecords{
 			MediaType:    database.MediaTypeTVShow,
 			MediaSource:  SourceTMDB,
 			SourceID:     strconv.Itoa(sourceID),
@@ -370,7 +370,7 @@ func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryReco
 			ReleaseDate:  show.FirstAirDate,
 			Tags:         &tagsArray,
 			Description:  []byte(show.Overview),
-			FullData: 	  showJson,
+			FullData:     showJson,
 			ThumbnailURL: thumbnailURL,
 		}
 		return &entry, nil
@@ -397,7 +397,7 @@ func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryReco
 		if movie.PosterPath == "" {
 			thumbnailURL = nil
 		}
-		entry = database.LibraryRecord{
+		entry = database.MediaRecords{
 			MediaType:    database.MediaTypeMovie,
 			MediaSource:  SourceTMDB,
 			SourceID:     strconv.Itoa(sourceID),
@@ -405,7 +405,7 @@ func GetLibraryObjectTMDB(mediaType string, sourceID int) (*database.LibraryReco
 			ReleaseDate:  movie.ReleaseDate,
 			Tags:         &tagsArray,
 			Description:  []byte(movie.Overview),
-			FullData: 	  movieJson,
+			FullData:     movieJson,
 			ThumbnailURL: thumbnailURL,
 		}
 		return &entry, nil

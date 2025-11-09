@@ -2,20 +2,16 @@ package v1
 
 import (
 	"errors"
-	tmdb "github.com/cyruzin/golang-tmdb"
-	"github.com/gin-gonic/gin"
 	"hound/helpers"
 	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
 	"strconv"
 	"strings"
-)
 
-type AddLibraryRequest struct {
-	MediaSource string `json:"media_source" binding:"required,gt=0"`
-	SourceID    string `json:"source_id" binding:"required,gt=0"`
-}
+	tmdb "github.com/cyruzin/golang-tmdb"
+	"github.com/gin-gonic/gin"
+)
 
 func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
@@ -30,7 +26,7 @@ func SearchTVShowHandler(c *gin.Context) {
 func GetTVShowFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.SourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
 	options := map[string]string{
@@ -94,12 +90,12 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		WatchProviders:   showDetails.WatchProviders,
 		TVCredits:        showDetails.Credits.TVCredits,
 		Recommendations:  showDetails.Recommendations,
-		ExternalIDs: 	  showDetails.TVExternalIDs,
+		ExternalIDs:      showDetails.TVExternalIDs,
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
+	recordID, err := database.GetRecordID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return
@@ -119,11 +115,11 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 	}
 	//results.Results = append(results.Results, results2.Results...)
 	// convert url results
-	var viewArray []view.LibraryObject
+	var viewArray []view.MediaRecordView
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryObject{
+		viewObject := view.MediaRecordView{
 			MediaType:    database.MediaTypeTVShow,
 			MediaSource:  sources.SourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
@@ -202,7 +198,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 	}
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.SourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid" + err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
 	tvSeason, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)
@@ -221,18 +217,18 @@ func GetTVSeasonHandler(c *gin.Context) {
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
+	recordID, err := database.GetRecordID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
 	// if library id exists, retrieve watch history
 	if err == nil {
 		commentType := "history"
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
 			return
 		}
 		var filteredComments []view.CommentObject
 		for _, item := range *comments {
-			if strings.HasPrefix(item.TagData, "S" + strconv.Itoa(seasonNumber)) {
+			if strings.HasPrefix(item.TagData, "S"+strconv.Itoa(seasonNumber)) {
 				filteredComments = append(filteredComments, item)
 			}
 		}

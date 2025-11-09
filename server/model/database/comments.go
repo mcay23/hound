@@ -17,13 +17,13 @@ const (
 )
 
 /*
-	"Comments" include watch history, not just comments/reviews
- */
+"Comments" include watch history, not just comments/reviews
+*/
 type CommentRecord struct {
 	CommentID    int64     `xorm:"pk autoincr 'comment_id'" json:"id"`
 	CommentType  string    `json:"comment_type"`
 	UserID       int64     `xorm:"'user_id'" json:"user_id"`
-	LibraryID    int64     `xorm:"'library_id'" json:"library_id"`
+	RecordID     int64     `xorm:"'record_id'" json:"record_id"`
 	IsPrivate    bool      `json:"is_private"`
 	CommentTitle string    `json:"title"`
 	Comment      []byte    `json:"comment"`  // actual content of comment, review
@@ -57,9 +57,9 @@ func AddCommentsBatch(comments *[]CommentRecord) error {
 	return err
 }
 
-func GetComments(libraryID int64, commentType *string) (*[]CommentRecord, error) {
+func GetComments(recordID int64, commentType *string) (*[]CommentRecord, error) {
 	var comments []CommentRecord
-	sess := databaseEngine.Table(commentsTable).Where("library_id = ?", libraryID)
+	sess := databaseEngine.Table(commentsTable).Where("record_id = ?", recordID)
 	if *commentType == commentTypeHistory {
 		sess = sess.OrderBy("start_date desc")
 	} else {

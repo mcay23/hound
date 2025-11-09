@@ -40,5 +40,10 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate comment table")
 		panic(err)
 	}
+	err = runMigrations()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to migrate databases!")
+		panic(err)
+	}
 	slog.Info("DB tables initialized")
 }

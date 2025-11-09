@@ -1,7 +1,6 @@
 package database
 
 import (
-	"encoding/json"
 	"errors"
 	"hound/helpers"
 	"time"
@@ -15,29 +14,19 @@ type UserMeta struct {
 }
 
 type User struct {
-	Id             int64
-	Username       string
-	FirstName      string
-	LastName       string
-	HashedPassword string
-	UserMeta       UserMeta
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-}
-
-type UserXorm struct {
-	Id             int64  `xorm:"pk autoincr"`
+	UserID         int64  `xorm:"pk autoincr 'user_id'"`
 	Username       string `xorm:"not null unique"`
+	IsAdmin        bool   `xorm:"not null default false 'is_admin'"`
 	FirstName      string
 	LastName       string
 	HashedPassword string
-	UserMeta       []byte
+	UserMeta       UserMeta  `xorm:"json 'user_meta'"`
 	CreatedAt      time.Time `xorm:"created"`
 	UpdatedAt      time.Time `xorm:"updated"`
 }
 
 func instantiateUsersTable() error {
-	err := databaseEngine.Table(usersTable).Sync2(new(UserXorm))
+	err := databaseEngine.Table(usersTable).Sync2(new(User))
 	if err != nil {
 		return err
 	}
@@ -45,49 +34,23 @@ func instantiateUsersTable() error {
 }
 
 func InsertUser(user User) (*int64, error) {
-	userMetaBytes, err := json.Marshal(user.UserMeta)
+	_, err := databaseEngine.Table(usersTable).Insert(&user)
 	if err != nil {
 		return nil, err
 	}
-	userXorm := UserXorm{
-		Username:       user.Username,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
-		HashedPassword: user.HashedPassword,
-		UserMeta:       userMetaBytes,
-	}
-	_, err = databaseEngine.Table(usersTable).Insert(&userXorm)
-	if err != nil {
-		return nil, err
-	}
-	return &userXorm.Id, nil
+	return &user.UserID, nil
 }
 
 func GetUser(username string) (*User, error) {
-	var userXorm UserXorm
-	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&userXorm)
+	var user User
+	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&user)
+	if err != nil {
+		return nil, err
+	}
 	if !found {
 		return nil, errors.New(helpers.BadRequest)
 	}
-	if err != nil {
-		return nil, err
-	}
-	var userMeta UserMeta
-	err = json.Unmarshal(userXorm.UserMeta, &userMeta)
-	if err != nil {
-		return nil, err
-	}
-	user := &User{
-		Id:             userXorm.Id,
-		Username:       userXorm.Username,
-		FirstName:      userXorm.FirstName,
-		LastName:       userXorm.LastName,
-		HashedPassword: userXorm.HashedPassword,
-		UserMeta:       userMeta,
-		CreatedAt:      userXorm.CreatedAt,
-		UpdatedAt:      userXorm.UpdatedAt,
-	}
-	return user, nil
+	return &user, nil
 }
 
 func GetUserIDFromUsername(username string) (int64, error) {
@@ -95,17 +58,17 @@ func GetUserIDFromUsername(username string) (int64, error) {
 	if err != nil {
 		return -1, helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
 	}
-	return user.Id, nil
+	return user.UserID, nil
 }
 
 func GetUsernameFromID(userID int64) (string, error) {
-	var userXorm UserXorm
-	found, err := databaseEngine.Table(usersTable).ID(userID).Get(&userXorm)
+	var user User
+	found, err := databaseEngine.Table(usersTable).ID(userID).Get(&user)
 	if !found {
 		return "", errors.New(helpers.BadRequest)
 	}
 	if err != nil {
 		return "", err
 	}
-	return userXorm.Username, nil
+	return user.Username, nil
 }

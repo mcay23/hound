@@ -170,12 +170,12 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	libraryID, err := database.GetInternalLibraryID(body.MediaType, body.MediaSource, body.SourceID)
+	recordID, err := database.GetRecordID(body.MediaType, body.MediaSource, body.SourceID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	err = database.DeleteCollectionRelation(userID, *libraryID, *body.CollectionID)
+	err = database.DeleteCollectionRelation(userID, *recordID, *body.CollectionID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete collection record"))
 		return
@@ -273,9 +273,9 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get collection records"))
 		return
 	}
-	var viewArray []view.LibraryObject
+	var viewArray []view.MediaRecordView
 	for _, item := range records {
-		viewObject := view.LibraryObject{
+		viewObject := view.MediaRecordView{
 			MediaType:    item.MediaType,
 			MediaSource:  item.MediaSource,
 			SourceID:     item.SourceID,
@@ -353,13 +353,13 @@ func GetCommentsHandler(c *gin.Context) {
 	if mediaType == "tv" {
 		mediaType = database.MediaTypeTVShow
 	}
-	libraryID, err := database.GetInternalLibraryID(mediaType, mediaSource, strconv.Itoa(sourceID))
+	recordID, err := database.GetRecordID(mediaType, mediaSource, strconv.Itoa(sourceID))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No internal library ID found"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No internal record ID found"))
 		return
 	}
 	commentType := c.Query("type")
-	comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
+	comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 		return
@@ -417,16 +417,16 @@ func PostCommentHandler(c *gin.Context) {
 		Score:        body.Score,
 	}
 	if mediaType == database.MediaTypeTVShow || mediaType == database.MediaTypeMovie {
-		record, err := sources.GetLibraryObjectTMDB(mediaType, sourceID)
+		record, err := sources.GetRecordObjectTMDB(mediaType, sourceID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object tmdb"))
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get record object tmdb"))
 			return
 		}
 		// TODO bound checking for tag data (season and episode)
 		// add item to internal library if not there
-		libraryID, err := database.AddRecordToInternalLibrary(record)
+		recordID, err := database.AddMediaRecord(record)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to internal library"))
 			return
 		}
 		if mediaType == database.MediaTypeTVShow && body.CommentType == "history" {
@@ -457,7 +457,7 @@ func PostCommentHandler(c *gin.Context) {
 						maxEpisode = ep.EpisodeNumber
 					}
 				}
-				err = sources.MarkTVSeasonAsWatchedTMDB(userID, libraryID, seasonNumber, minEpisode, maxEpisode, body.StartDate)
+				err = sources.MarkTVSeasonAsWatchedTMDB(userID, recordID, seasonNumber, minEpisode, maxEpisode, body.StartDate)
 				if err != nil {
 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error during batch insertion"))
 					return
@@ -466,20 +466,20 @@ func PostCommentHandler(c *gin.Context) {
 				return
 			}
 		}
-		comment.LibraryID = libraryID
+		comment.RecordID = recordID
 	} else if mediaType == database.MediaTypeGame {
-		record, err := sources.GetLibraryObjectIGDB(sourceID)
+		record, err := sources.GetRecordObjectIGDB(sourceID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object igdb"))
 			return
 		}
 		// add item to internal library if not there
-		libraryID, err := database.AddRecordToInternalLibrary(record)
+		recordID, err := database.AddMediaRecord(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 			return
 		}
-		comment.LibraryID = libraryID
+		comment.RecordID = recordID
 	} else {
 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
 		return
@@ -499,15 +499,14 @@ func DeleteCommentHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	idParam := c.Query("ids")
-	idSplit := strings.Split(idParam, ",")
-	if len(idSplit) > 1 {
-		// batch delete case
+	// for batch deletion, split query params /comment?ids=1,2,3
+	idSplit := strings.Split(c.Query("ids"), ",")
+	if c.Query("ids") != "" {
 		var batchIDs []int64
 		for _, item := range idSplit {
 			tempID, err := strconv.Atoi(item)
 			if err != nil {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
+				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Batch deletion: Invalid comment id in url query"))
 				return
 			}
 			batchIDs = append(batchIDs, int64(tempID))
@@ -517,9 +516,10 @@ func DeleteCommentHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, err)
 			return
 		}
-	} else {
+	} else if c.Param("id") != "" {
 		// single delete case
-		commentID, err := strconv.Atoi(idParam)
+		fmt.Println("param", c.Param("id"))
+		commentID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
 			return
@@ -529,12 +529,15 @@ func DeleteCommentHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, err)
 			return
 		}
+	} else {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param/query"))
+		return
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
-func GetCommentsCore(username string, libraryID int64, commentType *string) (*[]view.CommentObject, error) {
-	comments, err := database.GetComments(libraryID, commentType)
+func GetCommentsCore(username string, recordID int64, commentType *string) (*[]view.CommentObject, error) {
+	comments, err := database.GetComments(recordID, commentType)
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +552,7 @@ func GetCommentsCore(username string, libraryID int64, commentType *string) (*[]
 			CommentID:    item.CommentID,
 			CommentType:  item.CommentType,
 			UserID:       commenter,
-			LibraryID:    item.LibraryID,
+			RecordID:     item.RecordID,
 			IsPrivate:    item.IsPrivate,
 			Comment:      string(item.Comment),
 			TagData:      item.TagData,

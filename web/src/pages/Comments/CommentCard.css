@@ -1,72 +1,73 @@
 .comment-card-container {
-    display: flex;
-    flex-direction: row;
-    margin-bottom: 20px;
-    margin-right: 20px;
-    min-height: 100px;
-    max-height: 300px;
-    min-width: 20vw;
-    padding: 15px;
-    padding-top: 0px;
-    padding-right: 0px;
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 5px;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 20px;
+  margin-right: 20px;
+  min-height: 100px;
+  max-height: 300px;
+  min-width: 20vw;
+  padding: 15px;
+  padding-top: 0px;
+  padding-right: 0px;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 5px;
 }
 
 .comment-card-actions-container {
-    margin-left: auto;
-    padding-top: 3px;
-    padding-right: 3px;
+  margin-left: auto;
+  padding-top: 3px;
+  padding-right: 3px;
 }
 
 .comment-card-title-section {
-    font-family: 'Roboto Condensed', sans-serif;
-    font-size: 24px;
-    margin-top: 15px;
-    margin-bottom: 8px;
-    display: flex;
-    flex-direction: row;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 24px;
+  margin-top: 15px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .comment-card-title {
-    margin-left: 10px;
+  margin-left: 10px;
 }
 
 .comment-card-divider {
-    margin-right: 10px;
+  margin-right: 10px;
 }
 
 .comment-card-divider hr {
-    margin-bottom: 8px !important;
+  margin-bottom: 8px !important;
 }
 
 .comment-card-author {
-    color: darkslategray;
-    font-size: 14px;
-    font-family: 'Cabin', sans-serif;
+  color: darkslategray;
+  font-size: 14px;
+  font-family: "Cabin", sans-serif;
 }
 
 .comment-card-content {
-    display: -webkit-box;
-    -webkit-line-clamp: 5;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .review-score-icon {
-    user-select: none;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    border-radius: 25%;
-    font-size: 18px;
-    font-family: 'Cabin', sans-serif;
-    color: rgba(var(--hound-secondary), 1);
-    text-align: center;
-    background: rgba(var(--hound-primary), 0.9);
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  user-select: none;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 25%;
+  font-size: 18px;
+  font-family: "Cabin", sans-serif;
+  color: rgba(var(--hound-secondary), 1);
+  text-align: center;
+  background: rgba(var(--hound-primary), 0.9);
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 }

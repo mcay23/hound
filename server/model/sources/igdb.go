@@ -165,7 +165,6 @@ type IGDBGameObject struct {
 		Category int    `json:"category"`
 		URL      string `json:"url"`
 	} `json:"websites"`
-
 }
 
 type IGDBGamesResultsResponseObject []IGDBGameObject
@@ -218,7 +217,7 @@ func queryIGDBGames(body string) ([]byte, error) {
 	}
 	r.Header.Set("Client-ID", os.Getenv("IGDB_CLIENT_ID"))
 	// call getAccessToken
-	r.Header.Set("Authorization", "Bearer "+ getAccessToken(false))
+	r.Header.Set("Authorization", "Bearer "+getAccessToken(false))
 	res, err := igdbClient.Do(r)
 	if err != nil {
 		panic(err)
@@ -317,24 +316,24 @@ func AddGameToCollectionIGDB(username string, source string, sourceID int, colle
 	if source != SourceIGDB {
 		panic("Only igdb source is allowed for now")
 	}
-	entry, err := GetLibraryObjectIGDB(sourceID)
+	entry, err := GetRecordObjectIGDB(sourceID)
 	if err != nil {
 		return err
 	}
 	// insert record to internal library if not exists
-	libraryID, err := database.AddRecordToInternalLibrary(entry)
+	recordID, err := database.AddMediaRecord(entry)
 	if err != nil {
 		return err
 	}
 	// insert collection relation to collections table
-	err = database.InsertCollectionRelation(userID, libraryID, collectionID)
+	err = database.InsertCollectionRelation(userID, recordID, collectionID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
+func GetRecordObjectIGDB(igdbID int) (*database.MediaRecords, error) {
 	game, err := GetGameFromIDIGDB(igdbID)
 	if err != nil {
 		return nil, err
@@ -356,7 +355,7 @@ func GetLibraryObjectIGDB(igdbID int) (*database.LibraryRecord, error) {
 			TagName: genre.Name,
 		})
 	}
-	record := database.LibraryRecord{
+	record := database.MediaRecords{
 		MediaType:    database.MediaTypeGame,
 		MediaSource:  SourceIGDB,
 		SourceID:     strconv.Itoa(game.SourceID),
