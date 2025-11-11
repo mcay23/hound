@@ -38,7 +38,7 @@ func SearchProvidersHandler(c *gin.Context) {
 	path := c.FullPath() // gives the registered route path like "/api/tv/:id"
 	if strings.HasPrefix(path, "/api/v1/tv") {
 		mediaType = database.MediaTypeTVShow
-		imdbID, err = sources.GetTVShowIMDBID(sourceID, nil)
+		imdbID, err = sources.GetTVShowIMDBID(sourceID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB tv"+err.Error()))
 			return
@@ -55,7 +55,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		}
 	} else if strings.HasPrefix(path, "/api/v1/movie") {
 		mediaType = database.MediaTypeMovie
-		movie, err := sources.GetMovieFromIDTMDB(sourceID, nil)
+		movie, err := sources.GetMovieFromIDTMDB(sourceID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB movie"+err.Error()))
 			return
@@ -84,7 +84,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		// For TV Shows, episodes are sometimes offset, eg. for show A, Season 2 starts at episode 20 instead of 1
 		// Offset this negatively to normalize to S2E1
 		query.Episode = episode
-		seasonData, err := sources.GetTVSeasonTMDB(query.SourceID, query.Season, nil)
+		seasonData, err := sources.GetTVSeasonTMDB(query.SourceID, query.Season)
 		// no errors, continue set season
 		if err == nil && len(seasonData.Episodes) > 0 {
 			query.Episode = episode - seasonData.Episodes[0].EpisodeNumber + 1

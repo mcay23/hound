@@ -29,10 +29,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
-	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations,external_ids",
-	}
-	showDetails, err := sources.GetTVShowFromIDTMDB(sourceID, options)
+	showDetails, err := sources.GetTVShowFromIDTMDB(sourceID)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -114,10 +111,10 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 		return
 	}
 	//results.Results = append(results.Results, results2.Results...)
-	// convert url results
 	var viewArray []view.MediaRecordView
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		// convert url
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
 		viewObject := view.MediaRecordView{
 			MediaType:    database.MediaTypeTVShow,
@@ -125,8 +122,8 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 			SourceID:     strconv.Itoa(int(item.ID)),
 			MediaTitle:   item.OriginalName,
 			ReleaseDate:  item.FirstAirDate,
-			Description:  item.Overview,
-			ThumbnailURL: &thumbnailURL,
+			Overview:     item.Overview,
+			ThumbnailURL: thumbnailURL,
 			Tags:         genreArray,
 			UserTags:     nil,
 		}
@@ -201,7 +198,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
-	tvSeason, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)
+	tvSeason, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return

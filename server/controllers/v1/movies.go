@@ -42,8 +42,8 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 			SourceID:     strconv.Itoa(int(item.ID)),
 			MediaTitle:   item.OriginalTitle,
 			ReleaseDate:  item.ReleaseDate,
-			Description:  item.Overview,
-			ThumbnailURL: &thumbnailURL,
+			Overview:     item.Overview,
+			ThumbnailURL: thumbnailURL,
 			Tags:         genreArray,
 			UserTags:     nil,
 		}
@@ -58,10 +58,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
-	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations,external_ids",
-	}
-	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID, options)
+	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return

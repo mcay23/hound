@@ -69,7 +69,7 @@ type CreateCollectionRequest struct {
 }
 
 func instantiateMediaTables() error {
-	err := databaseEngine.Table(mediaRecordsTable).Sync2(new(MediaRecords))
+	err := databaseEngine.Table(mediaRecordsTable).Sync2(new(MediaRecord))
 	if err != nil {
 		return err
 	}

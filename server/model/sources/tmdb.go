@@ -98,12 +98,17 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 	return shows.SearchTVShowsResults, nil
 }
 
-func GetTVShowFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.TVDetails, error) {
+func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeTVShow, tmdbID)
 	var cacheObject tmdb.TVDetails
 	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
+	}
+	// for now, remove ability to control append_to_response, just cache the complete
+	// response for safety
+	options := map[string]string{
+		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids",
 	}
 	tvShow, err := tmdbClient.GetTVDetails(tmdbID, options)
 	if err != nil {
@@ -115,28 +120,28 @@ func GetTVShowFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.TVDetails
 	return tvShow, nil
 }
 
-func GetTVShowIMDBID(tmdbID int, options map[string]string) (string, error) {
+func GetTVShowIMDBID(tmdbID int) (string, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeTVShow, tmdbID)
 	var cacheObject tmdb.TVDetails
 	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return cacheObject.TVExternalIDs.IMDbID, nil
 	}
-	externalIDs, err := tmdbClient.GetTVExternalIDs(tmdbID, options)
+	externalIDs, err := tmdbClient.GetTVExternalIDs(tmdbID, nil)
 	if err != nil {
 		return "", helpers.LogErrorWithMessage(err, "Failed to get tv show external ids from tmdb")
 	}
 	return externalIDs.IMDbID, nil
 }
 
-func GetTVSeasonTMDB(tmdbID int, seasonNumber int, options map[string]string) (*tmdb.TVSeasonDetails, error) {
+func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|season|tmdb-%d|S%d", database.MediaTypeTVShow, tmdbID, seasonNumber)
 	var cacheObject tmdb.TVSeasonDetails
 	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
-	season, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, options)
+	season, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, nil)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb")
 	}
@@ -232,12 +237,15 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 	return movies.SearchMoviesResults, nil
 }
 
-func GetMovieFromIDTMDB(tmdbID int, options map[string]string) (*tmdb.MovieDetails, error) {
+func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeMovie, tmdbID)
 	var cacheObject tmdb.MovieDetails
 	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
+	}
+	options := map[string]string{
+		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids",
 	}
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
 	if err != nil {
@@ -337,10 +345,12 @@ func GetGenresMap(genreIds []int64, mediaType string) *[]GenreObject {
 	return &ret
 }
 
-func GetRecordObjectTMDB(mediaType string, sourceID int) (*database.MediaRecords, error) {
-	var entry database.MediaRecords
+// Returns an array
+// For shows, seasons are injected as well
+func GetRecordObjectTMDB(mediaType string, sourceID int) (*[]database.MediaRecord, error) {
+	var entry database.MediaRecord
 	if mediaType == database.MediaTypeTVShow {
-		show, err := GetTVShowFromIDTMDB(sourceID, nil)
+		show, err := GetTVShowFromIDTMDB(sourceID)
 		if err != nil {
 			return nil, err
 		}
@@ -357,25 +367,27 @@ func GetRecordObjectTMDB(mediaType string, sourceID int) (*database.MediaRecords
 			})
 		}
 		// weird but works
-		temp := tmdb.GetImageURL(show.PosterPath, tmdb.W300)
-		thumbnailURL := &temp
+		thumbnailURL := tmdb.GetImageURL(show.PosterPath, tmdb.W300)
 		if show.PosterPath == "" {
-			thumbnailURL = nil
+			thumbnailURL = ""
 		}
-		entry = database.MediaRecords{
-			MediaType:    database.MediaTypeTVShow,
-			MediaSource:  SourceTMDB,
-			SourceID:     strconv.Itoa(sourceID),
-			MediaTitle:   show.Name,
-			ReleaseDate:  show.FirstAirDate,
-			Tags:         &tagsArray,
-			Description:  []byte(show.Overview),
-			FullData:     showJson,
-			ThumbnailURL: thumbnailURL,
+		entry = database.MediaRecord{
+			RecordType:       mediaType,
+			MediaSource:      SourceTMDB,
+			SourceID:         strconv.Itoa(sourceID),
+			MediaTitle:       show.Name,
+			OriginalTitle:    show.OriginalName,
+			OriginalLanguage: show.OriginalLanguage,
+			OriginCountry:    show.OriginCountry,
+			ReleaseDate:      show.FirstAirDate,
+			Tags:             &tagsArray,
+			Overview:         show.Overview,
+			FullData:         showJson,
+			ThumbnailURL:     thumbnailURL,
 		}
 		return &entry, nil
 	} else if mediaType == database.MediaTypeMovie {
-		movie, err := GetMovieFromIDTMDB(sourceID, nil)
+		movie, err := GetMovieFromIDTMDB(sourceID)
 		if err != nil {
 			return nil, err
 		}
@@ -392,23 +404,74 @@ func GetRecordObjectTMDB(mediaType string, sourceID int) (*database.MediaRecords
 			})
 		}
 		// weird but works
-		temp := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
-		thumbnailURL := &temp
+		thumbnailURL := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
 		if movie.PosterPath == "" {
-			thumbnailURL = nil
+			thumbnailURL = ""
 		}
-		entry = database.MediaRecords{
-			MediaType:    database.MediaTypeMovie,
+		entry = database.MediaRecord{
+			RecordType:   mediaType,
 			MediaSource:  SourceTMDB,
 			SourceID:     strconv.Itoa(sourceID),
 			MediaTitle:   movie.Title,
 			ReleaseDate:  movie.ReleaseDate,
 			Tags:         &tagsArray,
-			Description:  []byte(movie.Overview),
+			Overview:     movie.Overview,
 			FullData:     movieJson,
 			ThumbnailURL: thumbnailURL,
 		}
 		return &entry, nil
 	}
 	return nil, errors.New("invalid media type in call to GetLibraryObjectTMDB()")
+}
+
+// create a tmdb movie record to be inserted to the internal library
+func CreateMovieRecordEntryTMDB(sourceID int) (*database.MediaRecord, error) {
+	movie, err := GetMovieFromIDTMDB(sourceID)
+	if err != nil {
+		return nil, err
+	}
+	movieJson, err := json.Marshal(movie)
+	if err != nil {
+		return nil, err
+	}
+	// import tmdb genres
+	var tagsArray []database.TagObject
+	for _, genre := range movie.Genres {
+		tagsArray = append(tagsArray, database.TagObject{
+			TagID:   genre.ID,
+			TagName: genre.Name,
+		})
+	}
+	// parse image keys -> links
+	posterURL := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
+	if movie.PosterPath == "" {
+		posterURL = ""
+	}
+	backdropURL := tmdb.GetImageURL(movie.BackdropPath, tmdb.W1280)
+	if movie.BackdropPath == "" {
+		backdropURL = ""
+	}
+	entry := database.MediaRecord{
+		RecordType:       database.MediaTypeMovie,
+		MediaSource:      SourceTMDB,
+		SourceID:         strconv.Itoa(sourceID),
+		ParentID:         -1, // movie is top level, has no parent
+		MediaTitle:       movie.Title,
+		OriginalTitle:    movie.OriginalTitle,
+		OriginalLanguage: movie.OriginalLanguage,
+		OriginCountry:    movie.OriginCountry,
+		ReleaseDate:      movie.ReleaseDate,
+		SeasonNumber:     -1,
+		EpisodeNumber:    -1,
+		SortIndex:        -1, // not used for movies
+		Status:           movie.Status,
+		Overview:         movie.Overview,
+		Duration:         movie.Runtime,
+		Tags:             &tagsArray,
+		ThumbnailURL:     posterURL,
+		BackdropURL:      backdropURL,
+		StillURL:         "", // don't use stills for movies
+		FullData:         movieJson,
+	}
+	return &entry, nil
 }

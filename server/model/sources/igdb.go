@@ -333,7 +333,7 @@ func AddGameToCollectionIGDB(username string, source string, sourceID int, colle
 	return nil
 }
 
-func GetRecordObjectIGDB(igdbID int) (*database.MediaRecords, error) {
+func GetRecordObjectIGDB(igdbID int) (*database.MediaRecord, error) {
 	game, err := GetGameFromIDIGDB(igdbID)
 	if err != nil {
 		return nil, err
@@ -355,15 +355,15 @@ func GetRecordObjectIGDB(igdbID int) (*database.MediaRecords, error) {
 			TagName: genre.Name,
 		})
 	}
-	record := database.MediaRecords{
-		MediaType:    database.MediaTypeGame,
+	record := database.MediaRecord{
+		RecordType:   database.MediaTypeGame,
 		MediaSource:  SourceIGDB,
 		SourceID:     strconv.Itoa(game.SourceID),
 		MediaTitle:   game.MediaTitle,
 		ReleaseDate:  releaseDate,
-		Description:  []byte(game.Summary),
+		Overview:     game.Summary,
 		FullData:     gameJson,
-		ThumbnailURL: &game.Cover.ImageURL,
+		ThumbnailURL: game.Cover.ImageURL,
 		Tags:         &tagsArray,
 		UserTags:     nil,
 	}
