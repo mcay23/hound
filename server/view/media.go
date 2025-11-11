@@ -21,8 +21,8 @@ type MediaRecordView struct {
 	SourceID     string      `json:"source_id"`     // tmdb id, etc.
 	MediaTitle   string      `json:"media_title"`   // game of thrones, etc.
 	ReleaseDate  string      `json:"release_date"`  //
-	Description  string      `json:"description"`   // game of thrones is a show about ...
-	ThumbnailURL *string     `json:"thumbnail_url"` // url for media thumbnails
+	Overview     string      `json:"overview"`      // game of thrones is a show about ...
+	ThumbnailURL string      `json:"thumbnail_url"` // url for media thumbnails
 	Tags         interface{} `json:"tags"`          // to store genres, tags
 	UserTags     interface{} `json:"user_tags"`
 }

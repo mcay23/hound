@@ -233,6 +233,10 @@ func CreateCollectionHandler(c *gin.Context) {
 	}
 	body.OwnerID = userID
 	collectionID, err := database.CreateCollection(body)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error creating colection"+err.Error()))
+		return
+	}
 	helpers.SuccessResponse(c, gin.H{"status": "success", "collection_id": collectionID}, 200)
 }
 
@@ -276,12 +280,12 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	var viewArray []view.MediaRecordView
 	for _, item := range records {
 		viewObject := view.MediaRecordView{
-			MediaType:    item.MediaType,
+			MediaType:    item.RecordType,
 			MediaSource:  item.MediaSource,
 			SourceID:     item.SourceID,
 			MediaTitle:   item.MediaTitle,
 			ReleaseDate:  item.ReleaseDate,
-			Description:  string(item.Description),
+			Overview:     item.Overview,
 			ThumbnailURL: item.ThumbnailURL,
 			Tags:         item.Tags,
 			UserTags:     item.UserTags,
@@ -442,7 +446,7 @@ func PostCommentHandler(c *gin.Context) {
 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format"))
 					return
 				}
-				season, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)
+				season, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
 				if err != nil {
 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error retrieving season"))
 					return
