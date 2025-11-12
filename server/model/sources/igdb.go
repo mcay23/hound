@@ -321,7 +321,7 @@ func AddGameToCollectionIGDB(username string, source string, sourceID int, colle
 		return err
 	}
 	// insert record to internal library if not exists
-	recordID, err := database.AddMediaRecord(entry)
+	recordID, err := database.UpsertMediaRecord(entry)
 	if err != nil {
 		return err
 	}
