@@ -40,10 +40,11 @@ func SearchProvidersHandler(c *gin.Context) {
 		mediaType = database.MediaTypeTVShow
 		imdbID, err = sources.GetTVShowIMDBID(sourceID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB tv"+err.Error()))
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB imdb id"+err.Error()))
 			return
 		}
 		// cannot find IMDB id
+		// TODO other providers may allow searching for query, but for now through aiostreams, only imdb id search
 		if imdbID == "" {
 			res := map[string]interface{}{
 				"results":    []interface{}{}, // empty array

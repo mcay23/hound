@@ -1,6 +1,8 @@
 package sources
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
@@ -121,10 +124,11 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 }
 
 func GetTVShowIMDBID(tmdbID int) (string, error) {
+	// just grab the tv show from cache, by default external_ids are appended
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeTVShow, tmdbID)
 	var cacheObject tmdb.TVDetails
 	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
-	if cacheExists {
+	if cacheExists && cacheObject.TVExternalIDs.IMDbID != "" {
 		return cacheObject.TVExternalIDs.IMDbID, nil
 	}
 	externalIDs, err := tmdbClient.GetTVExternalIDs(tmdbID, nil)
@@ -164,7 +168,7 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 		return err
 	}
 	// insert record to internal library if not exists
-	recordID, err := database.AddMediaRecord(entry)
+	recordID, err := database.UpsertMediaRecord(entry)
 	if err != nil {
 		return err
 	}
@@ -270,7 +274,7 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 		return err
 	}
 	// insert record to internal library if not exists
-	recordID, err := database.AddMediaRecord(entry)
+	recordID, err := database.UpsertMediaRecord(entry)
 	if err != nil {
 		return err
 	}
@@ -424,8 +428,65 @@ func GetRecordObjectTMDB(mediaType string, sourceID int) (*[]database.MediaRecor
 	return nil, errors.New("invalid media type in call to GetLibraryObjectTMDB()")
 }
 
+// Generate md5 hash from records
+// Used to compare newly fetched data->internal library to see if there are changes to update/insert
+// some flaws, credits/cast changes are not caught
+// in the future, if the functionality to duplicate/copy a movie/show so we can make local changes exist
+// update logic/hashing keys will need to change since this increases the risk of duplicate hashes
+// hash key changes will also trigger updates all relevant records when fetched, which is potentially expensive
+// additionalKey is appended at the end of the key before hashing, useful for season since its not specific enough
+// to detect changes
+func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
+	var sb strings.Builder
+	switch record.RecordType {
+	case "movie":
+		sb.WriteString(record.MediaSource)
+		sb.WriteString(record.SourceID)
+		sb.WriteString(record.MediaTitle)
+		sb.WriteString(record.OriginalTitle)
+		sb.WriteString(record.OriginalLanguage)
+		sb.WriteString(record.ReleaseDate)
+		sb.WriteString(record.Overview)
+		sb.WriteString(string(record.Duration))
+		sb.WriteString(record.ThumbnailURL)
+		sb.WriteString(record.BackdropURL)
+	case "tvshow":
+		sb.WriteString(record.MediaSource)
+		sb.WriteString(record.SourceID)
+		sb.WriteString(record.MediaTitle)
+		sb.WriteString(record.OriginalTitle)
+		sb.WriteString(record.ReleaseDate)
+		sb.WriteString(record.LastAirDate)
+		sb.WriteString(record.NextAirDate)
+		sb.WriteString(record.Status)
+		sb.WriteString(record.Overview)
+		sb.WriteString(record.ThumbnailURL)
+		sb.WriteString(record.BackdropURL)
+	case "season":
+		sb.WriteString(record.MediaSource)
+		sb.WriteString(record.SourceID) // tmdb seasonid
+		sb.WriteString(string(record.SeasonNumber))
+		sb.WriteString(record.Overview)
+		sb.WriteString(record.ReleaseDate)
+		sb.WriteString(record.ThumbnailURL)
+		sb.WriteString(record.BackdropURL)
+	case "episode":
+		sb.WriteString(record.MediaSource)
+		sb.WriteString(record.SourceID) // tmdb episodeid
+		sb.WriteString(string(record.EpisodeNumber))
+		sb.WriteString(record.MediaTitle) // episode title
+		sb.WriteString(record.Overview)
+		sb.WriteString(string(record.Duration))
+		sb.WriteString(record.ReleaseDate) // air_date
+		sb.WriteString(record.ThumbnailURL)
+		sb.WriteString(record.StillURL)
+	}
+	hash := md5.Sum([]byte(sb.String() + additionalKey))
+	return hex.EncodeToString(hash[:])
+}
+
 // create a tmdb movie record to be inserted to the internal library
-func CreateMovieRecordEntryTMDB(sourceID int) (*database.MediaRecord, error) {
+func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	movie, err := GetMovieFromIDTMDB(sourceID)
 	if err != nil {
 		return nil, err
@@ -452,7 +513,7 @@ func CreateMovieRecordEntryTMDB(sourceID int) (*database.MediaRecord, error) {
 		backdropURL = ""
 	}
 	entry := database.MediaRecord{
-		RecordType:       database.MediaTypeMovie,
+		RecordType:       database.RecordTypeMovie,
 		MediaSource:      SourceTMDB,
 		SourceID:         strconv.Itoa(sourceID),
 		ParentID:         -1, // movie is top level, has no parent
@@ -461,17 +522,172 @@ func CreateMovieRecordEntryTMDB(sourceID int) (*database.MediaRecord, error) {
 		OriginalLanguage: movie.OriginalLanguage,
 		OriginCountry:    movie.OriginCountry,
 		ReleaseDate:      movie.ReleaseDate,
+		LastAirDate:      movie.ReleaseDate,
+		NextAirDate:      movie.ReleaseDate,
 		SeasonNumber:     -1,
 		EpisodeNumber:    -1,
 		SortIndex:        -1, // not used for movies
 		Status:           movie.Status,
 		Overview:         movie.Overview,
 		Duration:         movie.Runtime,
-		Tags:             &tagsArray,
 		ThumbnailURL:     posterURL,
 		BackdropURL:      backdropURL,
 		StillURL:         "", // don't use stills for movies
+		Tags:             &tagsArray,
+		UserTags:         nil,
 		FullData:         movieJson,
 	}
+	entry.ContentHash = hashRecordTMDB(entry, "")
 	return &entry, nil
+}
+
+/*
+Create a tv show, season, and episode records
+Eg. for a single show, this structure will be created
+id: 1, parent_id: -1, "show", "game of thrones", ...
+id: 2, parent_id: 1, "season", season_number: 1
+id: 3, parent_id: 2, type: episode, episode_number: 1
+id: 4, parent_id: 2, type: episode, episode_number: 2
+id: 5, parent_id: 2, type: episode, episode_number: 3
+*/
+func UpsertTVShowRecordTMDB(sourceID int) ([]*database.MediaRecord, error) {
+	showData, err := GetTVShowFromIDTMDB(sourceID)
+	if err != nil {
+		return nil, err
+	}
+	showJson, err := json.Marshal(showData)
+	if err != nil {
+		return nil, err
+	}
+	// import tmdb genres
+	var tagsArray []database.TagObject
+	for _, genre := range showData.Genres {
+		tagsArray = append(tagsArray, database.TagObject{
+			TagID:   genre.ID,
+			TagName: genre.Name,
+		})
+	}
+	posterURL := tmdb.GetImageURL(showData.PosterPath, tmdb.W300)
+	if showData.PosterPath == "" {
+		posterURL = ""
+	}
+	backdropURL := tmdb.GetImageURL(showData.BackdropPath, tmdb.W1280)
+	if showData.BackdropPath == "" {
+		backdropURL = ""
+	}
+	// construct show (parent)
+	tvShowEntry := database.MediaRecord{
+		RecordType:       database.RecordTypeTVShow,
+		MediaSource:      SourceTMDB,
+		SourceID:         strconv.Itoa(sourceID),
+		ParentID:         -1, // show is top level, has no parent
+		MediaTitle:       showData.Name,
+		OriginalTitle:    showData.OriginalName,
+		OriginalLanguage: showData.OriginalLanguage,
+		OriginCountry:    showData.OriginCountry,
+		ReleaseDate:      showData.FirstAirDate,
+		LastAirDate:      showData.LastAirDate,
+		NextAirDate:      showData.NextEpisodeToAir.AirDate,
+		SeasonNumber:     -1,
+		EpisodeNumber:    -1,
+		SortIndex:        -1, // not used for shows
+		Status:           showData.Status,
+		Overview:         showData.Overview,
+		Duration:         -1, // not used in tv show parent
+		ThumbnailURL:     posterURL,
+		BackdropURL:      backdropURL,
+		StillURL:         "", // don't use stills for tv show parent
+		Tags:             &tagsArray,
+		UserTags:         nil,
+		FullData:         showJson,
+	}
+	tvShowEntry.ContentHash = hashRecordTMDB(tvShowEntry, "")
+	// create list of records to add
+	recordEntries := []*database.MediaRecord{&tvShowEntry}
+	// create record for each season
+	for _, season := range showData.Seasons {
+		// fetch each seasonData, season array from tv show doesn't append episodes
+		seasonData, err := GetTVSeasonTMDB(sourceID, season.SeasonNumber)
+		if err != nil {
+			return nil, err
+		}
+		seasonJson, err := json.Marshal(seasonData)
+		if err != nil {
+			return nil, err
+		}
+		posterURL := tmdb.GetImageURL(seasonData.PosterPath, tmdb.W300)
+		if showData.PosterPath == "" {
+			posterURL = ""
+		}
+		seasonEntry := database.MediaRecord{
+			RecordType:       database.RecordTypeSeason,
+			MediaSource:      SourceTMDB,
+			SourceID:         strconv.Itoa(int(seasonData.ID)),
+			ParentID:         -1, // record_id of the parent show
+			MediaTitle:       seasonData.Name,
+			OriginalTitle:    seasonData.Name,
+			OriginalLanguage: showData.OriginalLanguage, // inherit from show, probably don't need to
+			OriginCountry:    showData.OriginCountry,
+			ReleaseDate:      seasonData.AirDate,
+			LastAirDate:      "",
+			NextAirDate:      "",
+			SeasonNumber:     seasonData.SeasonNumber,
+			EpisodeNumber:    -1,
+			SortIndex:        seasonData.SeasonNumber,
+			Status:           "",
+			Overview:         seasonData.Overview,
+			Duration:         -1, // not used in season
+			ThumbnailURL:     posterURL,
+			BackdropURL:      "",
+			StillURL:         "",  // don't use stills for season
+			Tags:             nil, // just reuse
+			UserTags:         nil,
+			FullData:         seasonJson,
+		}
+		// add more hash info for seasons
+		// number of episodes and latest air date should be sufficient
+		seasonHashKey := ""
+		if len(seasonData.Episodes) > 0 {
+			seasonHashKey += strconv.Itoa(len(seasonData.Episodes))
+			seasonHashKey += seasonData.Episodes[len(seasonData.Episodes)-1].AirDate
+		}
+		seasonHash := hashRecordTMDB(tvShowEntry, seasonHashKey)
+		seasonEntry.ContentHash = seasonHash
+		recordEntries = append(recordEntries, &seasonEntry)
+		// create record for each episode in season
+		for _, episode := range seasonData.Episodes {
+			stillURL := tmdb.GetImageURL(episode.StillPath, tmdb.W1280)
+			if episode.StillPath == "" {
+				stillURL = ""
+			}
+			episodeEntry := database.MediaRecord{
+				RecordType:       database.RecordTypeEpisode,
+				MediaSource:      SourceTMDB,
+				SourceID:         strconv.Itoa(int(episode.ID)),
+				ParentID:         -1, // record_id of the parent season
+				MediaTitle:       episode.Name,
+				OriginalTitle:    episode.Name,
+				OriginalLanguage: showData.OriginalLanguage, // inherit from show, probably don't need to
+				OriginCountry:    showData.OriginCountry,
+				ReleaseDate:      episode.AirDate,
+				LastAirDate:      "",
+				NextAirDate:      "",
+				SeasonNumber:     seasonData.SeasonNumber,
+				EpisodeNumber:    -1,
+				SortIndex:        episode.SeasonNumber,
+				Status:           "",
+				Overview:         episode.Overview,
+				Duration:         -1, // not used in season
+				ThumbnailURL:     "",
+				BackdropURL:      "",
+				StillURL:         stillURL,
+				Tags:             nil,
+				UserTags:         nil,
+				FullData:         showJson,
+			}
+			episodeEntry.ContentHash = hashRecordTMDB(episodeEntry, "")
+			recordEntries = append(recordEntries, &episodeEntry)
+		}
+	}
+	return recordEntries, nil
 }

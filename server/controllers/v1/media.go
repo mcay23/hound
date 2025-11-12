@@ -428,7 +428,7 @@ func PostCommentHandler(c *gin.Context) {
 		}
 		// TODO bound checking for tag data (season and episode)
 		// add item to internal library if not there
-		recordID, err := database.AddMediaRecord(record)
+		recordID, err := database.UpsertMediaRecord(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to internal library"))
 			return
@@ -478,7 +478,7 @@ func PostCommentHandler(c *gin.Context) {
 			return
 		}
 		// add item to internal library if not there
-		recordID, err := database.AddMediaRecord(record)
+		recordID, err := database.UpsertMediaRecord(record)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
 			return
