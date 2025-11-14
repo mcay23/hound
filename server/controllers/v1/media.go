@@ -8,7 +8,6 @@ import (
 	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -170,12 +169,12 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	recordID, err := database.GetRecordID(body.MediaType, body.MediaSource, body.SourceID)
+	record, err := database.GetMediaRecord(body.MediaType, body.MediaSource, body.SourceID, -1, -1)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	err = database.DeleteCollectionRelation(userID, *recordID, *body.CollectionID)
+	err = database.DeleteCollectionRelation(userID, record.RecordID, *body.CollectionID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete collection record"))
 		return
@@ -357,13 +356,13 @@ func GetCommentsHandler(c *gin.Context) {
 	if mediaType == "tv" {
 		mediaType = database.MediaTypeTVShow
 	}
-	recordID, err := database.GetRecordID(mediaType, mediaSource, strconv.Itoa(sourceID))
+	record, err := database.GetMediaRecord(mediaType, mediaSource, strconv.Itoa(sourceID), -1, -1)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No internal record ID found"))
 		return
 	}
 	commentType := c.Query("type")
-	comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
+	comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 		return
@@ -372,128 +371,132 @@ func GetCommentsHandler(c *gin.Context) {
 }
 
 // Post comments and add watch history
+// func PostCommentHandler(c *gin.Context) {
+// 	var body CommentRequest
+// 	err := c.ShouldBindJSON(&body)
+// 	if err != nil {
+// 		helpers.ErrorResponse(c, err)
+// 		return
+// 	}
+// 	if body.Score > 100 || body.Score < 0 {
+// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
+// 		return
+// 	}
+// 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+// 	if err != nil {
+// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+// 		return
+// 	}
+// 	requestURL := strings.Split(c.Request.URL.Path, "/")
+// 	if len(requestURL) <= 0 {
+// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
+// 		return
+// 	}
+// 	mediaType := requestURL[3]
+// 	if mediaType == "tv" {
+// 		mediaType = database.MediaTypeTVShow
+// 	}
+// 	// get userID
+// 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+// 	if err != nil {
+// 		helpers.ErrorResponse(c, err)
+// 		return
+// 	}
+// 	// check valid mediaType and source
+// 	err = ValidateMediaParams(mediaType, mediaSource)
+// 	if err != nil {
+// 		helpers.ErrorResponse(c, err)
+// 		return
+// 	}
+// 	comment := database.CommentRecord{
+// 		UserID:       userID,
+// 		CommentTitle: body.CommentTitle,
+// 		IsPrivate:    body.IsPrivate,
+// 		CommentType:  body.CommentType,
+// 		Comment:      []byte(body.Comment),
+// 		StartDate:    body.StartDate,
+// 		EndDate:      body.EndDate,
+// 		TagData:      body.TagData,
+// 		Score:        body.Score,
+// 	}
+// 	if mediaType == database.MediaTypeTVShow || mediaType == database.MediaTypeMovie {
+// 		record, err := sources.GetRecordObjectTMDB(mediaType, sourceID)
+// 		if err != nil {
+// 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get record object tmdb"))
+// 			return
+// 		}
+// 		// TODO bound checking for tag data (season and episode)
+// 		// add item to internal library if not there
+// 		recordID, err := database.AddMediaRecord(record)
+// 		if err != nil {
+// 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to internal library"))
+// 			return
+// 		}
+// 		if mediaType == database.MediaTypeTVShow && body.CommentType == "history" {
+// 			if match, _ := regexp.MatchString(`S\d+$|S\d+E\d+$`, body.TagData); !match {
+// 				fmt.Println(body.TagData)
+// 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format, regex failed"))
+// 				return
+// 			}
+// 			// mark seasons as watch case, no episode data
+// 			if !strings.Contains(body.TagData, "E") {
+// 				seasonNumber, err := strconv.Atoi(strings.Split(body.TagData, "E")[0][1:])
+// 				if err != nil {
+// 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format"))
+// 					return
+// 				}
+// 				season, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
+// 				if err != nil {
+// 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error retrieving season"))
+// 					return
+// 				}
+// 				minEpisode := season.Episodes[0].EpisodeNumber
+// 				maxEpisode := 0
+// 				for _, ep := range season.Episodes {
+// 					if ep.EpisodeNumber < minEpisode {
+// 						minEpisode = ep.EpisodeNumber
+// 					}
+// 					if ep.EpisodeNumber > maxEpisode {
+// 						maxEpisode = ep.EpisodeNumber
+// 					}
+// 				}
+// 				err = sources.MarkTVSeasonAsWatchedTMDB(userID, recordID, seasonNumber, minEpisode, maxEpisode, body.StartDate)
+// 				if err != nil {
+// 					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error during batch insertion"))
+// 					return
+// 				}
+// 				helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+// 				return
+// 			}
+// 		}
+// 		comment.RecordID = recordID
+// 	} else if mediaType == database.MediaTypeGame {
+// 		record, err := sources.GetRecordObjectIGDB(sourceID)
+// 		if err != nil {
+// 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object igdb"))
+// 			return
+// 		}
+// 		// add item to internal library if not there
+// 		recordID, err := database.AddMediaRecord(record)
+// 		if err != nil {
+// 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
+// 			return
+// 		}
+// 		comment.RecordID = recordID
+// 	} else {
+// 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+// 		return
+// 	}
+// 	err = database.AddComment(&comment)
+// 	if err != nil {
+// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to add comment"))
+// 		return
+// 	}
+// 	helpers.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
+// }
+
 func PostCommentHandler(c *gin.Context) {
-	var body CommentRequest
-	err := c.ShouldBindJSON(&body)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	if body.Score > 100 || body.Score < 0 {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
-		return
-	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
-		return
-	}
-	requestURL := strings.Split(c.Request.URL.Path, "/")
-	if len(requestURL) <= 0 {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
-		return
-	}
-	mediaType := requestURL[3]
-	if mediaType == "tv" {
-		mediaType = database.MediaTypeTVShow
-	}
-	// get userID
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	// check valid mediaType and source
-	err = ValidateMediaParams(mediaType, mediaSource)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	comment := database.CommentRecord{
-		UserID:       userID,
-		CommentTitle: body.CommentTitle,
-		IsPrivate:    body.IsPrivate,
-		CommentType:  body.CommentType,
-		Comment:      []byte(body.Comment),
-		StartDate:    body.StartDate,
-		EndDate:      body.EndDate,
-		TagData:      body.TagData,
-		Score:        body.Score,
-	}
-	if mediaType == database.MediaTypeTVShow || mediaType == database.MediaTypeMovie {
-		record, err := sources.GetRecordObjectTMDB(mediaType, sourceID)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get record object tmdb"))
-			return
-		}
-		// TODO bound checking for tag data (season and episode)
-		// add item to internal library if not there
-		recordID, err := database.UpsertMediaRecord(record)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to internal library"))
-			return
-		}
-		if mediaType == database.MediaTypeTVShow && body.CommentType == "history" {
-			if match, _ := regexp.MatchString(`S\d+$|S\d+E\d+$`, body.TagData); !match {
-				fmt.Println(body.TagData)
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format, regex failed"))
-				return
-			}
-			// mark seasons as watch case, no episode data
-			if !strings.Contains(body.TagData, "E") {
-				seasonNumber, err := strconv.Atoi(strings.Split(body.TagData, "E")[0][1:])
-				if err != nil {
-					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid TagData format"))
-					return
-				}
-				season, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
-				if err != nil {
-					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error retrieving season"))
-					return
-				}
-				minEpisode := season.Episodes[0].EpisodeNumber
-				maxEpisode := 0
-				for _, ep := range season.Episodes {
-					if ep.EpisodeNumber < minEpisode {
-						minEpisode = ep.EpisodeNumber
-					}
-					if ep.EpisodeNumber > maxEpisode {
-						maxEpisode = ep.EpisodeNumber
-					}
-				}
-				err = sources.MarkTVSeasonAsWatchedTMDB(userID, recordID, seasonNumber, minEpisode, maxEpisode, body.StartDate)
-				if err != nil {
-					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error during batch insertion"))
-					return
-				}
-				helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
-				return
-			}
-		}
-		comment.RecordID = recordID
-	} else if mediaType == database.MediaTypeGame {
-		record, err := sources.GetRecordObjectIGDB(sourceID)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to get library object igdb"))
-			return
-		}
-		// add item to internal library if not there
-		recordID, err := database.UpsertMediaRecord(record)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to insert record to library"))
-			return
-		}
-		comment.RecordID = recordID
-	} else {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	err = database.AddComment(&comment)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Failed to add comment"))
-		return
-	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
+	helpers.ErrorResponse(c, helpers.LogErrorWithMessage(nil, "API Deprecated"))
 }
 
 func DeleteCommentHandler(c *gin.Context) {

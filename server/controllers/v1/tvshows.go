@@ -89,10 +89,10 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Recommendations:  showDetails.Recommendations,
 		ExternalIDs:      showDetails.TVExternalIDs,
 	}
-	recordID, err := database.GetRecordID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
+	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)), -1, -1)
 	if err == nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return
@@ -214,11 +214,11 @@ func GetTVSeasonHandler(c *gin.Context) {
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
 	}
-	recordID, err := database.GetRecordID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
+	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID), -1, -1)
 	// if library id exists, retrieve watch history
 	if err == nil {
 		commentType := "history"
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
 			return
