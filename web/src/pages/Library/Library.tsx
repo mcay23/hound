@@ -46,7 +46,7 @@ function Library(props: any) {
       return;
     }
     if (createCollectionData.description === "") {
-      toast.error("Review comment required");
+      toast.error("Description required");
       return;
     }
     axios

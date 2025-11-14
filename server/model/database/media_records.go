@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -257,108 +256,6 @@ func encodeJSON(v any) []byte {
 	}
 	b, _ := json.Marshal(v)
 	return b
-}
-
-// DEPRECATE SOON
-// Insert a tree of media records, root has parent_id of nil, children has parent_id of root
-// returns number of records inserted
-func UpsertMediaRecordTree(topNode *MediaRecordNode) (*MediaRecord, error) {
-	session := databaseEngine.NewSession()
-	defer session.Close()
-	if err := session.Begin(); err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "UpsertMediaRecordTree(): Failed to start xorm session")
-	}
-	affected := 0
-	var insertNode func(node *MediaRecordNode, parentID *int64) error
-	insertNode = func(node *MediaRecordNode, parentID *int64) error {
-		// check if root hash has changed
-		slog.Info("root", "ssn", node.Root.SeasonNumber)
-		if node.Root.SeasonNumber == 22 {
-			for _, child := range node.Children {
-				slog.Info("child", "ep", child.Root.EpisodeNumber, "tit", child.Root.MediaTitle)
-			}
-		}
-		var rootData MediaRecord
-		has, err := session.Table(mediaRecordsTable).
-			Where("record_type = ?", node.Root.RecordType).
-			Where("media_source = ?", node.Root.MediaSource).
-			Where("source_id = ?", node.Root.SourceID).
-			Where("season_number = ?", node.Root.SeasonNumber).
-			Where("episode_number = ?", node.Root.EpisodeNumber).
-			Get(&rootData)
-		if err != nil {
-			helpers.LogErrorWithMessage(err,
-				fmt.Sprintf("UpsertMediaRecordTree(): Failed to fetch data for tmdb:%v", node.Root.SourceID))
-			return err
-		}
-		var newParentID *int64 = nil
-		// root already in internal library, update root if hash changed
-		if has {
-			// root hash has not changed, exit early
-			if rootData.ContentHash == node.Root.ContentHash {
-				return nil
-			}
-			// RECORD EXISTS, HASH CHANGED, UPDATE
-			// set to 0 so xorm doesn't update parent id
-			node.Root.ParentID = nil
-			fmt.Println("type", node.Root.RecordType, "id", rootData.RecordID)
-			_, err := session.Table(mediaRecordsTable).ID(rootData.RecordID).Update(node.Root)
-			if err != nil {
-				helpers.LogErrorWithMessage(err,
-					fmt.Sprintf("UpsertMediaRecordTree(): Failed to update data for tmdb:%v", node.Root.SourceID))
-				return err
-			}
-			newParentID = &rootData.RecordID
-			affected += 1
-			slog.Info("Record Update: ", "title", node.Root.MediaTitle, "media_source", node.Root.MediaSource,
-				"source_id", node.Root.SourceID, "record_type", node.Root.RecordType)
-		} else {
-			// RECORD DOESN'T EXIST, INSERT
-			node.Root.ParentID = parentID
-			_, err := session.Table(mediaRecordsTable).Insert(&node.Root)
-			if err != nil {
-				helpers.LogErrorWithMessage(err,
-					fmt.Sprintf("UpsertMediaRecordTree(): Failed to insert data for tmdb:%v", node.Root.SourceID))
-				return err
-			}
-			newParentID = &node.Root.RecordID
-			affected += 1
-			slog.Info("Record Insert: ", "title", node.Root.MediaTitle, "media_source", node.Root.MediaSource,
-				"source_id", node.Root.SourceID, "record_type", node.Root.RecordType)
-		}
-		for _, child := range node.Children {
-			if child == nil {
-				continue
-			}
-			if err := insertNode(child, newParentID); err != nil {
-				helpers.LogErrorWithMessage(err,
-					fmt.Sprintf("UpsertMediaRecordTree(): Node insert failed for tmdb:%v", node.Root.SourceID))
-				return err
-			}
-		}
-		return nil
-	}
-	err := insertNode(topNode, nil)
-	if err != nil {
-		session.Rollback()
-		helpers.LogErrorWithMessage(err,
-			fmt.Sprintf("UpsertMediaRecordTree(): Failed to upsert data for tmdb:%v", topNode.Root.SourceID))
-		return nil, err
-	}
-	var topNodeRoot MediaRecord
-	_, err = session.Table(mediaRecordsTable).
-		Where("record_type = ?", topNode.Root.RecordType).
-		Where("media_source = ?", topNode.Root.MediaSource).
-		Where("source_id = ?", topNode.Root.SourceID).Get(&topNodeRoot)
-	if err != nil {
-		session.Rollback()
-		helpers.LogErrorWithMessage(err,
-			fmt.Sprintf("UpsertMediaRecordTree(): Failed to get data for tmdb:%v", topNode.Root.SourceID))
-		return nil, err
-	}
-	slog.Info("Record Update: ", "affected", affected, "media_source", topNode.Root.MediaSource,
-		"source_id", topNode.Root.SourceID, "record_type", topNode.Root.RecordType)
-	return &topNodeRoot, session.Commit()
 }
 
 func MarkForUpdate(recordType string, mediaSource string, sourceID string) error {
