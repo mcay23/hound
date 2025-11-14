@@ -101,10 +101,10 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		WatchProviders:      movieDetails.WatchProviders,
 		ExternalIDs:         movieDetails.MovieExternalIDs,
 	}
-	recordID, err := database.GetRecordID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
-	if err == nil && recordID != nil {
+	record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)), -1, -1)
+	if err == nil && record != nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return

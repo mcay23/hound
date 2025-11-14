@@ -47,3 +47,7 @@ func InstantiateDB() {
 	}
 	slog.Info("DB tables initialized")
 }
+
+func NewSession() *xorm.Session {
+	return databaseEngine.NewSession()
+}

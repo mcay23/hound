@@ -44,10 +44,10 @@ func GetGameFromIDHandler(c *gin.Context) {
 	resultView := view.GameFullObject{
 		IGDBGameObject: result,
 	}
-	recordID, err := database.GetRecordID(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
+	record, err := database.GetMediaRecord(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID), -1, -1)
 	if err == nil {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *recordID, &commentType)
+		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
 			return

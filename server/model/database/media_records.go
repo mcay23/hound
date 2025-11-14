@@ -1,9 +1,16 @@
 package database
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"hound/helpers"
+	"log/slog"
+	"strings"
 	"time"
+
+	"github.com/lib/pq"
+	"xorm.io/xorm"
 )
 
 /*
@@ -26,27 +33,27 @@ type MediaRecord struct {
 	RecordType       string       `xorm:"unique(primary) not null" json:"record_type"`           // movie,tvshow,season,episode
 	MediaSource      string       `xorm:"unique(primary) not null" json:"media_source"`          // tmdb, openlibrary, etc. the main metadata provider
 	SourceID         string       `xorm:"unique(primary) not null 'source_id'" json:"source_id"` // tmdb id, episode/season tmdb id
-	ParentID         int64        `xorm:"'parent_id'" json:"parent_id"`                          // reference to fk record_id, null for movie, tvshow
-	MediaTitle       string       `xorm:"'media_title'" json:"media_title"`                      // movie, tvshow, season or episode title
-	OriginalTitle    string       `xorm:"'original_title'" json:"original_title"`                // original title in release language
-	OriginalLanguage string       `xorm:"'original_language'" json:"original_language"`
+	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id"`                          // reference to fk record_id, null for movie, tvshow
+	MediaTitle       string       `xorm:"text 'media_title'" json:"media_title"`                 // movie, tvshow, season or episode title
+	OriginalTitle    string       `xorm:"text 'original_title'" json:"original_title"`           // original title in release language
+	OriginalLanguage string       `xorm:"text 'original_language'" json:"original_language"`
 	OriginCountry    []string     `xorm:"'origin_country'" json:"origin_country"`
 	ReleaseDate      string       `xorm:"'release_date'" json:"release_date"`   // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
 	LastAirDate      string       `xorm:"'last_air_date'" json:"last_air_date"` // for shows, latest episode air date
 	NextAirDate      string       `xorm:"'next_air_date'" json:"next_air_date"` // for shows, next scheduled episode air date
-	SeasonNumber     int          `xorm:"'season_number'" json:"season_number"`
-	EpisodeNumber    int          `xorm:"'episode_number'" json:"episode_number"`
+	SeasonNumber     int          `xorm:"unique(primary) 'season_number'" json:"season_number"`
+	EpisodeNumber    int          `xorm:"unique(primary) 'episode_number'" json:"episode_number"`
 	SortIndex        int          `xorm:"'sort_index'" json:"sort_index"`       // not in use yet, used to sort based on user preferences
 	Status           string       `xorm:"'status'" json:"status"`               // Returning Series, Released, etc.
-	Overview         string       `xorm:"'overview'" json:"overview"`           // game of thrones is a show about ...
+	Overview         string       `xorm:"text 'overview'" json:"overview"`      // game of thrones is a show about ...
 	Duration         int          `xorm:"'duration'" json:"duration"`           // duration/runtime in minutes
 	ThumbnailURL     string       `xorm:"'thumbnail_url'" json:"thumbnail_url"` // poster image for tmdb
 	BackdropURL      string       `xorm:"'backdrop_url'" json:"backdrop_url"`   // backgrounds
 	StillURL         string       `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
 	Tags             *[]TagObject `json:"tags"`                                 // to store genres, tags
 	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags"`
-	FullData         []byte       `json:"data"`                                // full data from tmdb
-	ContentHash      string       `xorm:"'coontent_hash'" json:"content_hash"` // checksum to compare changes/updates
+	FullData         []byte       `json:"data"`                               // full data from tmdb
+	ContentHash      string       `xorm:"'content_hash'" json:"content_hash"` // checksum to compare changes/updates
 	CreatedAt        time.Time    `xorm:"created" json:"created_at"`
 	UpdatedAt        time.Time    `xorm:"updated" json:"updated_at"`
 }
@@ -57,12 +64,20 @@ type MediaRecordGroup struct {
 	CollectionID int64
 }
 
-func UpsertMediaRecord(mediaRecord *MediaRecord) (int64, error) {
+// For recursive entry
+type MediaRecordNode struct {
+	Root     *MediaRecord
+	Children []*MediaRecordNode
+}
+
+func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 	// check if data is already in internal library
 	var existingRecords []MediaRecord
 	_ = databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
 		Where("media_source = ?", mediaRecord.MediaSource).
-		Where("source_id = ?", mediaRecord.SourceID).Find(&existingRecords)
+		Where("source_id = ?", mediaRecord.SourceID).
+		Where("season_number = ?", mediaRecord.SeasonNumber).
+		Where("episode_number = ?", mediaRecord.EpisodeNumber).Find(&existingRecords)
 
 	// source_id is either movie, show, season, or episode id
 	// a key on these three should be sufficiently unique (?)
@@ -74,27 +89,310 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) (int64, error) {
 			// hash changed, update record in internal library
 			_, err := databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(&mediaRecord)
 			if err != nil {
-				return -1, err
+				return err
 			}
-			recordID = mediaRecord.RecordID
 		}
+		// mutate in place
+		*mediaRecord = existingRecords[0]
 	} else {
 		// insert media data to library table
 		_, err := databaseEngine.Table(mediaRecordsTable).Insert(&mediaRecord)
 		if err != nil {
-			return -1, err
+			return err
 		}
-		recordID = mediaRecord.RecordID
 	}
-	return recordID, nil
+	return nil
 }
 
-func GetRecordID(recordType string, mediaSource string, sourceID string) (*int64, error) {
-	// using current handling, errors are usually ignored by the caller
-	var record MediaRecord
-	has, err := databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", recordType).
+// Caller responsible for session, can rollback
+// returns true if upserted
+func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error) {
+	var recordData MediaRecord
+	has, err := sess.Table(mediaRecordsTable).Where("record_type = ?", record.RecordType).
+		Where("media_source = ?", record.MediaSource).
+		Where("source_id = ?", record.SourceID).
+		Where("season_number = ?", record.SeasonNumber).
+		Where("episode_number = ?", record.EpisodeNumber).
+		Get(&recordData)
+	if err != nil {
+		return false, err
+	}
+	if !has {
+		_, err := sess.Table(mediaRecordsTable).Insert(record)
+		if err != nil {
+			return false, err
+		}
+	}
+	// if has, check hash, then update if not match
+	if record.ContentHash == recordData.ContentHash {
+		return false, nil
+	}
+	_, err = sess.Table(mediaRecordsTable).ID(recordData.RecordID).Update(record)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func BatchUpsertMediaRecords(sess *xorm.Session, records []*MediaRecord) error {
+	if len(records) == 0 {
+		return nil
+	}
+	// don't want to run out of memory
+	// we need to batch
+	const batchSize = 100
+	for start := 0; start < len(records); start += batchSize {
+		end := start + batchSize
+		if end > len(records) {
+			end = len(records)
+		}
+
+		batch := records[start:end]
+
+		if err := batchUpsertChunk(sess, batch); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
+	columns := []string{
+		"record_type", "media_source", "source_id", "parent_id",
+		"media_title", "original_title", "original_language",
+		"origin_country", "release_date", "last_air_date", "next_air_date",
+		"season_number", "episode_number",
+		"sort_index", "status", "overview", "duration",
+		"thumbnail_url", "backdrop_url", "still_url",
+		"tags", "user_tags", "full_data", "content_hash", "updated_at",
+	}
+
+	var sb strings.Builder
+	sb.Grow(len(records) * 1024)
+
+	sb.WriteString("INSERT INTO media_records (")
+	sb.WriteString(strings.Join(columns, ","))
+	sb.WriteString(") VALUES ")
+
+	valArgs := make([]any, 0, len(records)*len(columns))
+	argIndex := 1
+
+	for idx, record := range records {
+		if idx > 0 {
+			sb.WriteString(",")
+		}
+
+		sb.WriteString("(")
+		for c := range columns {
+			if c > 0 {
+				sb.WriteString(",")
+			}
+			sb.WriteString(fmt.Sprintf("$%d", argIndex))
+			argIndex++
+		}
+		sb.WriteString(")")
+
+		valArgs = append(valArgs,
+			record.RecordType,
+			record.MediaSource,
+			record.SourceID,
+			record.ParentID,
+			record.MediaTitle,
+			record.OriginalTitle,
+			record.OriginalLanguage,
+			pq.Array(record.OriginCountry),
+			record.ReleaseDate,
+			record.LastAirDate,
+			record.NextAirDate,
+			record.SeasonNumber,
+			record.EpisodeNumber,
+			record.SortIndex,
+			record.Status,
+			record.Overview,
+			record.Duration,
+			record.ThumbnailURL,
+			record.BackdropURL,
+			record.StillURL,
+			encodeJSON(record.Tags),
+			encodeJSON(record.UserTags),
+			record.FullData,
+			record.ContentHash,
+			time.Now().UTC(),
+		)
+	}
+
+	sb.WriteString(`
+ON CONFLICT (record_type, media_source, source_id, season_number, episode_number)
+DO UPDATE SET
+	parent_id       = EXCLUDED.parent_id,
+	media_title     = EXCLUDED.media_title,
+	original_title  = EXCLUDED.original_title,
+	original_language = EXCLUDED.original_language,
+	origin_country  = EXCLUDED.origin_country,
+	release_date    = EXCLUDED.release_date,
+	last_air_date   = EXCLUDED.last_air_date,
+	next_air_date   = EXCLUDED.next_air_date,
+	sort_index      = EXCLUDED.sort_index,
+	status          = EXCLUDED.status,
+	overview        = EXCLUDED.overview,
+	duration        = EXCLUDED.duration,
+	thumbnail_url   = EXCLUDED.thumbnail_url,
+	backdrop_url    = EXCLUDED.backdrop_url,
+	still_url       = EXCLUDED.still_url,
+	tags            = EXCLUDED.tags,
+	user_tags       = EXCLUDED.user_tags,
+	full_data       = EXCLUDED.full_data,
+	content_hash    = EXCLUDED.content_hash,
+	updated_at      = NOW()
+WHERE media_records.content_hash IS DISTINCT FROM EXCLUDED.content_hash;
+`)
+	_, err := sess.DB().Exec(sb.String(), valArgs...)
+	return err
+}
+
+func encodeJSON(v any) []byte {
+	if v == nil {
+		return nil
+	}
+	b, _ := json.Marshal(v)
+	return b
+}
+
+// DEPRECATE SOON
+// Insert a tree of media records, root has parent_id of nil, children has parent_id of root
+// returns number of records inserted
+func UpsertMediaRecordTree(topNode *MediaRecordNode) (*MediaRecord, error) {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "UpsertMediaRecordTree(): Failed to start xorm session")
+	}
+	affected := 0
+	var insertNode func(node *MediaRecordNode, parentID *int64) error
+	insertNode = func(node *MediaRecordNode, parentID *int64) error {
+		// check if root hash has changed
+		slog.Info("root", "ssn", node.Root.SeasonNumber)
+		if node.Root.SeasonNumber == 22 {
+			for _, child := range node.Children {
+				slog.Info("child", "ep", child.Root.EpisodeNumber, "tit", child.Root.MediaTitle)
+			}
+		}
+		var rootData MediaRecord
+		has, err := session.Table(mediaRecordsTable).
+			Where("record_type = ?", node.Root.RecordType).
+			Where("media_source = ?", node.Root.MediaSource).
+			Where("source_id = ?", node.Root.SourceID).
+			Where("season_number = ?", node.Root.SeasonNumber).
+			Where("episode_number = ?", node.Root.EpisodeNumber).
+			Get(&rootData)
+		if err != nil {
+			helpers.LogErrorWithMessage(err,
+				fmt.Sprintf("UpsertMediaRecordTree(): Failed to fetch data for tmdb:%v", node.Root.SourceID))
+			return err
+		}
+		var newParentID *int64 = nil
+		// root already in internal library, update root if hash changed
+		if has {
+			// root hash has not changed, exit early
+			if rootData.ContentHash == node.Root.ContentHash {
+				return nil
+			}
+			// RECORD EXISTS, HASH CHANGED, UPDATE
+			// set to 0 so xorm doesn't update parent id
+			node.Root.ParentID = nil
+			fmt.Println("type", node.Root.RecordType, "id", rootData.RecordID)
+			_, err := session.Table(mediaRecordsTable).ID(rootData.RecordID).Update(node.Root)
+			if err != nil {
+				helpers.LogErrorWithMessage(err,
+					fmt.Sprintf("UpsertMediaRecordTree(): Failed to update data for tmdb:%v", node.Root.SourceID))
+				return err
+			}
+			newParentID = &rootData.RecordID
+			affected += 1
+			slog.Info("Record Update: ", "title", node.Root.MediaTitle, "media_source", node.Root.MediaSource,
+				"source_id", node.Root.SourceID, "record_type", node.Root.RecordType)
+		} else {
+			// RECORD DOESN'T EXIST, INSERT
+			node.Root.ParentID = parentID
+			_, err := session.Table(mediaRecordsTable).Insert(&node.Root)
+			if err != nil {
+				helpers.LogErrorWithMessage(err,
+					fmt.Sprintf("UpsertMediaRecordTree(): Failed to insert data for tmdb:%v", node.Root.SourceID))
+				return err
+			}
+			newParentID = &node.Root.RecordID
+			affected += 1
+			slog.Info("Record Insert: ", "title", node.Root.MediaTitle, "media_source", node.Root.MediaSource,
+				"source_id", node.Root.SourceID, "record_type", node.Root.RecordType)
+		}
+		for _, child := range node.Children {
+			if child == nil {
+				continue
+			}
+			if err := insertNode(child, newParentID); err != nil {
+				helpers.LogErrorWithMessage(err,
+					fmt.Sprintf("UpsertMediaRecordTree(): Node insert failed for tmdb:%v", node.Root.SourceID))
+				return err
+			}
+		}
+		return nil
+	}
+	err := insertNode(topNode, nil)
+	if err != nil {
+		session.Rollback()
+		helpers.LogErrorWithMessage(err,
+			fmt.Sprintf("UpsertMediaRecordTree(): Failed to upsert data for tmdb:%v", topNode.Root.SourceID))
+		return nil, err
+	}
+	var topNodeRoot MediaRecord
+	_, err = session.Table(mediaRecordsTable).
+		Where("record_type = ?", topNode.Root.RecordType).
+		Where("media_source = ?", topNode.Root.MediaSource).
+		Where("source_id = ?", topNode.Root.SourceID).Get(&topNodeRoot)
+	if err != nil {
+		session.Rollback()
+		helpers.LogErrorWithMessage(err,
+			fmt.Sprintf("UpsertMediaRecordTree(): Failed to get data for tmdb:%v", topNode.Root.SourceID))
+		return nil, err
+	}
+	slog.Info("Record Update: ", "affected", affected, "media_source", topNode.Root.MediaSource,
+		"source_id", topNode.Root.SourceID, "record_type", topNode.Root.RecordType)
+	return &topNodeRoot, session.Commit()
+}
+
+func MarkForUpdate(recordType string, mediaSource string, sourceID string) error {
+	_, err := databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", recordType).
 		Where("media_source = ?", mediaSource).
-		Where("source_id = ?", sourceID).Get(&record)
+		Where("source_id = ?", sourceID).Update(map[string]interface{}{
+		"content_hash": "xxx",
+	})
+	return err
+}
+
+func GetMediaRecord(recordType string, mediaSource string, sourceID string, seasonNumber int, episodeNumber int) (*MediaRecord, error) {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	return GetMediaRecordTrx(session, recordType, mediaSource, sourceID, seasonNumber, episodeNumber)
+}
+
+func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string, seasonNumber int, episodeNumber int) (*MediaRecord, error) {
+	var record MediaRecord
+	if session == nil {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetRecordID(): Session is nil")
+	}
+	query := session.Table(mediaRecordsTable).
+		Where("record_type = ?", recordType).
+		Where("media_source = ?", mediaSource).
+		Where("source_id = ?", sourceID)
+	if recordType == RecordTypeSeason {
+		query = query.Where("season_number = ?", seasonNumber)
+	}
+	if recordType == RecordTypeEpisode {
+		query = query.Where("season_number = ?", seasonNumber).
+			Where("episode_number = ?", episodeNumber)
+	}
+	has, err := query.Get(&record)
 	if err != nil {
 		return nil, err
 	}
@@ -102,5 +400,5 @@ func GetRecordID(recordType string, mediaSource string, sourceID string) (*int64
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"GetRecordID(): No matching record in internal library")
 	}
-	return &record.RecordID, nil
+	return &record, nil
 }
