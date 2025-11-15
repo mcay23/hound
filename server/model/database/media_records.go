@@ -281,14 +281,8 @@ func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource str
 	query := session.Table(mediaRecordsTable).
 		Where("record_type = ?", recordType).
 		Where("media_source = ?", mediaSource).
-		Where("source_id = ?", sourceID)
-	if recordType == RecordTypeSeason {
-		query = query.Where("season_number = ?", seasonNumber)
-	}
-	if recordType == RecordTypeEpisode {
-		query = query.Where("season_number = ?", seasonNumber).
-			Where("episode_number = ?", episodeNumber)
-	}
+		Where("source_id = ?", sourceID).Where("season_number = ?", seasonNumber).
+		Where("episode_number = ?", episodeNumber)
 	has, err := query.Get(&record)
 	if err != nil {
 		return nil, err
