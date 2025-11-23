@@ -27,10 +27,7 @@ type User struct {
 
 func instantiateUsersTable() error {
 	err := databaseEngine.Table(usersTable).Sync2(new(User))
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func InsertUser(user User) (*int64, error) {
