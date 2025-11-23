@@ -40,6 +40,11 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate comment table")
 		panic(err)
 	}
+	err = instantiateWatchTables()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate watch tables")
+		panic(err)
+	}
 	err = runMigrations()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to migrate databases!")
