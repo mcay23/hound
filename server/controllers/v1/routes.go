@@ -27,10 +27,15 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
-	privateRoutes.POST("/collection/new", CreateCollectionHandler)
-	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler)
-	privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
-	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
+	privateRoutes.POST("/collection/new", CreateCollectionHandler)          // add new collection
+	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler) // delete whole collection
+	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
+	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
+
+	/*
+		Watch History Routes
+	*/
+	privateRoutes.POST("/tv/history/:id", AddWatchHistoryTVShowHandler)
 
 	/*
 		TV Show Routes

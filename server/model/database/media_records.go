@@ -40,8 +40,8 @@ type MediaRecord struct {
 	ReleaseDate      string       `xorm:"'release_date'" json:"release_date"`   // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
 	LastAirDate      string       `xorm:"'last_air_date'" json:"last_air_date"` // for shows, latest episode air date
 	NextAirDate      string       `xorm:"'next_air_date'" json:"next_air_date"` // for shows, next scheduled episode air date
-	SeasonNumber     int          `xorm:"unique(primary) 'season_number'" json:"season_number"`
-	EpisodeNumber    int          `xorm:"unique(primary) 'episode_number'" json:"episode_number"`
+	SeasonNumber     *int         `xorm:"unique(primary) 'season_number'" json:"season_number"`
+	EpisodeNumber    *int         `xorm:"unique(primary) 'episode_number'" json:"episode_number"`
 	SortIndex        int          `xorm:"'sort_index'" json:"sort_index"`       // not in use yet, used to sort based on user preferences
 	Status           string       `xorm:"'status'" json:"status"`               // Returning Series, Released, etc.
 	Overview         string       `xorm:"text 'overview'" json:"overview"`      // game of thrones is a show about ...
@@ -164,7 +164,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		"season_number", "episode_number",
 		"sort_index", "status", "overview", "duration",
 		"thumbnail_url", "backdrop_url", "still_url",
-		"tags", "user_tags", "full_data", "content_hash", "updated_at",
+		"tags", "user_tags", "full_data", "content_hash", "created_at", "updated_at",
 	}
 
 	var sb strings.Builder
@@ -192,6 +192,8 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		}
 		sb.WriteString(")")
 
+		// Truncate time to seconds to remove microseconds
+		now := time.Now().UTC().Truncate(time.Second)
 		valArgs = append(valArgs,
 			record.RecordType,
 			record.MediaSource,
@@ -217,10 +219,10 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			encodeJSON(record.UserTags),
 			record.FullData,
 			record.ContentHash,
-			time.Now().UTC(),
+			now, // created_at
+			now, // updated_at
 		)
 	}
-
 	sb.WriteString(`
 ON CONFLICT (record_type, media_source, source_id, season_number, episode_number)
 DO UPDATE SET
@@ -243,7 +245,7 @@ DO UPDATE SET
 	user_tags       = EXCLUDED.user_tags,
 	full_data       = EXCLUDED.full_data,
 	content_hash    = EXCLUDED.content_hash,
-	updated_at      = NOW()
+	updated_at      = date_trunc('second', NOW())
 WHERE media_records.content_hash IS DISTINCT FROM EXCLUDED.content_hash;
 `)
 	_, err := sess.DB().Exec(sb.String(), valArgs...)
@@ -267,22 +269,22 @@ func MarkForUpdate(recordType string, mediaSource string, sourceID string) error
 	return err
 }
 
-func GetMediaRecord(recordType string, mediaSource string, sourceID string, seasonNumber int, episodeNumber int) (*MediaRecord, error) {
+func GetMediaRecord(recordType string, mediaSource string, sourceID string) (*MediaRecord, error) {
 	session := databaseEngine.NewSession()
 	defer session.Close()
-	return GetMediaRecordTrx(session, recordType, mediaSource, sourceID, seasonNumber, episodeNumber)
+	return GetMediaRecordTrx(session, recordType, mediaSource, sourceID)
 }
 
-func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string, seasonNumber int, episodeNumber int) (*MediaRecord, error) {
+// each mediaSource, sourceID combination should be unique
+// for shows, episodes, etc.
+func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string) (*MediaRecord, error) {
 	var record MediaRecord
 	if session == nil {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetRecordID(): Session is nil")
 	}
 	query := session.Table(mediaRecordsTable).
 		Where("record_type = ?", recordType).
-		Where("media_source = ?", mediaSource).
-		Where("source_id = ?", sourceID).Where("season_number = ?", seasonNumber).
-		Where("episode_number = ?", episodeNumber)
+		Where("media_source = ?", mediaSource)
 	has, err := query.Get(&record)
 	if err != nil {
 		return nil, err

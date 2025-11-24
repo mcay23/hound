@@ -14,7 +14,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
-import VideoPlayer from "./pages/VideoPlayer/VideoPlayer";
 
 // axios defaults
 axios.defaults.withCredentials = true;
@@ -108,19 +107,6 @@ function App() {
                       <source src="http://localhost:8000/api/v1/stream" />
                     </video>
                   </>
-                  // <VideoPlayer
-                  //   option={{
-                  //     container: ".artplayer-app",
-                  //     url: "https://repo.jellyfin.org/archive/jellyfish/media/jellyfish-15-mbps-hd-h264.mkv",
-                  //     // url: "http://localhost:8000/api/v1/stream",
-                  //     fullscreen: true,
-                  //     pip: true,
-                  //   }}
-                  //   style={{
-                  //     width: "500px",
-                  //     height: "300px",
-                  //   }}
-                  // />
                 }
               />
             }
