@@ -23,6 +23,7 @@ type WatchEventsRecord struct {
 
 // Every show/movie has one active 'rewatch' session at a time
 // starting a new rewatch will unmark the watch history in the client's UI
+// the active/current rewatch record is the one with the newest started_at
 type RewatchRecord struct {
 	RewatchID  int64     `xorm:"pk autoincr 'rewatch_id'" json:"id"`
 	UserID     int64     `xorm:"'user_id'" json:"user_id"`
@@ -55,14 +56,25 @@ func InsertRewatchRecord(record *RewatchRecord) error {
 
 // Gets the current active rewatch
 // this is the rewatch with the latest start time
-func GetActiveRewatchFromSourceID(media_type string, media_source string, source_id string, user_id string) (*RewatchRecord, error) {
-	var record RewatchRecord
-	has, err := databaseEngine.Table(rewatchesTable).Where("user_id = ?", user_id).
-		Where("record_id = ?", source_id).Get(&record)
+func GetActiveRewatchFromSourceID(recordType string, mediaSource string, sourceID string, userID string) (*RewatchRecord, error) {
+	// find record id
+	_, err := GetMediaRecord(recordType, mediaSource, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	var rewatchRecord RewatchRecord
+	has, err := databaseEngine.Table(rewatchesTable).Where("user_id = ?", userID).Where("record_type = ?", recordType).
+		Where("mediaSource = ?", mediaSource).Where("sourceID = ?", sourceID).
+		Desc("started_at").Limit(1).Get(&rewatchRecord)
 	if !has {
 		return nil, nil
 	}
-	return &record, err
+	return &rewatchRecord, err
+}
+
+// Create rewatch
+func InsertRewatchFromSourceID() {
+
 }
 
 func UpdateWatchEventsRecord(record *WatchEventsRecord) error {

@@ -19,7 +19,7 @@ var databaseEngine *xorm.Engine
 
 func InstantiateDB() {
 	var err error
-	slog.Info("DB loaded:", "driver", os.Getenv("DB_DRIVER"))
+	slog.Info("DB loaded", "driver", os.Getenv("DB_DRIVER"))
 	databaseEngine, err = xorm.NewEngine(os.Getenv("DB_DRIVER"), os.Getenv("DB_CONNECTION_STRING"))
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
@@ -45,12 +45,13 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate watch tables")
 		panic(err)
 	}
+	slog.Info("DB tables initialized")
 	err = runMigrations()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to migrate databases!")
 		panic(err)
 	}
-	slog.Info("DB tables initialized")
+	slog.Info("DB migrations complete")
 }
 
 func NewSession() *xorm.Session {

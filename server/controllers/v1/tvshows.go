@@ -46,7 +46,6 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	for num, item := range showDetails.Credits.TVCredits.Crew {
 		showDetails.Credits.TVCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 	}
-
 	var viewSeasons []view.SeasonObjectPartial
 	for _, item := range showDetails.Seasons {
 		viewSeasons = append(viewSeasons, view.SeasonObjectPartial{
@@ -89,7 +88,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Recommendations:  showDetails.Recommendations,
 		ExternalIDs:      showDetails.TVExternalIDs,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)), -1, -1)
+	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
@@ -214,7 +213,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID), -1, -1)
+	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
 	// if library id exists, retrieve watch history
 	if err == nil {
 		commentType := "history"
