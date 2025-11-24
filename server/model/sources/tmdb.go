@@ -526,8 +526,10 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		showData.LastEpisodeToAir.AirDate+
 			showData.LastEpisodeToAir.Name+
 			showData.LastEpisodeToAir.Overview+
+			showData.LastEpisodeToAir.StillPath+
 			showData.NextEpisodeToAir.AirDate+
 			showData.NextEpisodeToAir.Name+
+			showData.NextEpisodeToAir.StillPath+
 			showData.NextEpisodeToAir.Overview)
 	// start session
 	session := database.NewSession()

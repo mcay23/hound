@@ -21,7 +21,7 @@ func ValidateMediaParams(mediaType string, mediaSource string) error {
 	return nil
 }
 
-func GetSourceIDFromParams(tmdbParam string) (string, int, error){
+func GetSourceIDFromParams(tmdbParam string) (string, int, error) {
 	split := strings.Split(tmdbParam, "-")
 	if len(split) != 2 {
 		return "", -1, errors.New(helpers.BadRequest + "Invalid source id parameters")
