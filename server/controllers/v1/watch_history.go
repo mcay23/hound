@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"hound/helpers"
+	"hound/model/database"
 	"hound/model/sources"
 	"strconv"
 
@@ -42,10 +43,14 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error upserting tv show: "+c.Param("id")))
 		return
 	}
-	fmt.Println(showRecord, username)
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
-	// 3. get or create latest rewatch
+	// 3. get current rewatch or create new rewatch if none
+	rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), username)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting active rewatch: "+c.Param("id")))
+		return
+	}
 
 	// 4. get episode record ID
-
+	fmt.Println(showRecord, username, rewatchRecord)
+	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
