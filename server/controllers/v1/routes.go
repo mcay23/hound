@@ -36,6 +36,7 @@ func SetupRoutes(r *gin.Engine) {
 		Watch History Routes
 	*/
 	privateRoutes.POST("/tv/history/:id", AddWatchHistoryTVShowHandler)
+	privateRoutes.GET("/tv/history/:id", GetWatchHistoryTVShowHandler)
 
 	/*
 		TV Show Routes

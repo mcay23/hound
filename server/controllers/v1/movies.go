@@ -101,7 +101,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		WatchProviders:      movieDetails.WatchProviders,
 		ExternalIDs:         movieDetails.MovieExternalIDs,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
+	_, record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
 	if err == nil && record != nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)

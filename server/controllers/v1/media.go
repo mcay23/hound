@@ -109,10 +109,13 @@ func GetCommentsHandler(c *gin.Context) {
 	if mediaType == "tv" {
 		mediaType = database.MediaTypeTVShow
 	}
-	record, err := database.GetMediaRecord(mediaType, mediaSource, strconv.Itoa(sourceID))
+	has, record, err := database.GetMediaRecord(mediaType, mediaSource, strconv.Itoa(sourceID))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No internal record ID found"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error getting Media Record"))
 		return
+	}
+	if !has {
+		helpers.SuccessResponse(c, nil, 200)
 	}
 	commentType := c.Query("type")
 	comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)

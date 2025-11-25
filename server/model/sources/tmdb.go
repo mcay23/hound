@@ -544,10 +544,14 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// we get here since xorm.Update doesn't get recordID automatically
-	showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, SourceTMDB,
+	has, showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, SourceTMDB,
 		strconv.Itoa(showSourceID))
 	if err != nil {
 		return nil, err
+	}
+	if !has {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"No Media Record Found for "+database.RecordTypeTVShow+":"+SourceTMDB+"-"+strconv.Itoa(showSourceID))
 	}
 	// hash same, no update/insert
 	if !affected {
@@ -615,10 +619,14 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			continue
 		}
 		// get season so we know the parent ID
-		seasonRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeSeason, SourceTMDB,
+		has, seasonRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeSeason, SourceTMDB,
 			strconv.Itoa(int(seasonData.ID)))
 		if err != nil {
 			return nil, err
+		}
+		if !has {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"No Media Record Found for "+database.RecordTypeTVShow+":"+SourceTMDB+"-"+strconv.Itoa(showSourceID))
 		}
 		if seasonRecord == nil || seasonRecord.ParentID == nil {
 			return nil, fmt.Errorf("UpsertTVShowRecordTMDB(): season record is nil or has no parent id")

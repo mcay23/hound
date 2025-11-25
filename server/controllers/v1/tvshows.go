@@ -88,7 +88,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Recommendations:  showDetails.Recommendations,
 		ExternalIDs:      showDetails.TVExternalIDs,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
+	_, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
@@ -213,9 +213,9 @@ func GetTVSeasonHandler(c *gin.Context) {
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
-	// if library id exists, retrieve watch history
-	if err == nil {
+	has, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
+	// if record id exists, retrieve watch history
+	if err == nil && has {
 		commentType := "history"
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {

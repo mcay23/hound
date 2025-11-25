@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"xorm.io/xorm"
 )
 
@@ -29,19 +28,19 @@ const (
 // store user saved Records
 type MediaRecord struct {
 	RecordID         int64        `xorm:"pk autoincr 'record_id'" json:"record_id"`
-	RecordType       string       `xorm:"unique(primary) not null" json:"record_type"`           // movie,tvshow,season,episode
-	MediaSource      string       `xorm:"unique(primary) not null" json:"media_source"`          // tmdb, openlibrary, etc. the main metadata provider
-	SourceID         string       `xorm:"unique(primary) not null 'source_id'" json:"source_id"` // tmdb id, episode/season tmdb id
-	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id"`                          // reference to fk record_id, null for movie, tvshow
-	MediaTitle       string       `xorm:"text 'media_title'" json:"media_title"`                 // movie, tvshow, season or episode title
-	OriginalTitle    string       `xorm:"text 'original_title'" json:"original_title"`           // original title in release language
+	RecordType       string       `xorm:"unique(primary) not null 'record_type'" json:"record_type"`   // movie,tvshow,season,episode
+	MediaSource      string       `xorm:"unique(primary) not null 'media_source'" json:"media_source"` // tmdb, openlibrary, etc. the main metadata provider
+	SourceID         string       `xorm:"unique(primary) not null 'source_id'" json:"source_id"`       // tmdb id, episode/season tmdb id
+	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id"`                                // reference to fk record_id, null for movie, tvshow
+	MediaTitle       string       `xorm:"text 'media_title'" json:"media_title"`                       // movie, tvshow, season or episode title
+	OriginalTitle    string       `xorm:"text 'original_title'" json:"original_title"`                 // original title in release language
 	OriginalLanguage string       `xorm:"text 'original_language'" json:"original_language"`
 	OriginCountry    []string     `xorm:"'origin_country'" json:"origin_country"`
 	ReleaseDate      string       `xorm:"'release_date'" json:"release_date"`   // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
 	LastAirDate      string       `xorm:"'last_air_date'" json:"last_air_date"` // for shows, latest episode air date
 	NextAirDate      string       `xorm:"'next_air_date'" json:"next_air_date"` // for shows, next scheduled episode air date
-	SeasonNumber     *int         `xorm:"unique(primary) 'season_number'" json:"season_number"`
-	EpisodeNumber    *int         `xorm:"unique(primary) 'episode_number'" json:"episode_number"`
+	SeasonNumber     *int         `xorm:"'season_number'" json:"season_number"`
+	EpisodeNumber    *int         `xorm:"'episode_number'" json:"episode_number"`
 	SortIndex        int          `xorm:"'sort_index'" json:"sort_index"`       // not in use yet, used to sort based on user preferences
 	Status           string       `xorm:"'status'" json:"status"`               // Returning Series, Released, etc.
 	Overview         string       `xorm:"text 'overview'" json:"overview"`      // game of thrones is a show about ...
@@ -51,7 +50,7 @@ type MediaRecord struct {
 	StillURL         string       `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
 	Tags             *[]TagObject `json:"tags"`                                 // to store genres, tags
 	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags"`
-	FullData         []byte       `json:"data"`                               // full data from tmdb
+	FullData         []byte       `xorm:"'full_data'" json:"full_data"`       // full data from tmdb
 	ContentHash      string       `xorm:"'content_hash'" json:"content_hash"` // checksum to compare changes/updates
 	CreatedAt        time.Time    `xorm:"created" json:"created_at"`
 	UpdatedAt        time.Time    `xorm:"updated" json:"updated_at"`
@@ -110,8 +109,6 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 	has, err := sess.Table(mediaRecordsTable).Where("record_type = ?", record.RecordType).
 		Where("media_source = ?", record.MediaSource).
 		Where("source_id = ?", record.SourceID).
-		Where("season_number = ?", record.SeasonNumber).
-		Where("episode_number = ?", record.EpisodeNumber).
 		Get(&recordData)
 	if err != nil {
 		return false, err
@@ -202,7 +199,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.MediaTitle,
 			record.OriginalTitle,
 			record.OriginalLanguage,
-			pq.Array(record.OriginCountry),
+			encodeJSON(record.OriginCountry),
 			record.ReleaseDate,
 			record.LastAirDate,
 			record.NextAirDate,
@@ -224,7 +221,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		)
 	}
 	sb.WriteString(`
-ON CONFLICT (record_type, media_source, source_id, season_number, episode_number)
+ON CONFLICT (record_type, media_source, source_id)
 DO UPDATE SET
 	parent_id       = EXCLUDED.parent_id,
 	media_title     = EXCLUDED.media_title,
@@ -269,7 +266,7 @@ func MarkForUpdate(recordType string, mediaSource string, sourceID string) error
 	return err
 }
 
-func GetMediaRecord(recordType string, mediaSource string, sourceID string) (*MediaRecord, error) {
+func GetMediaRecord(recordType string, mediaSource string, sourceID string) (bool, *MediaRecord, error) {
 	session := databaseEngine.NewSession()
 	defer session.Close()
 	return GetMediaRecordTrx(session, recordType, mediaSource, sourceID)
@@ -277,21 +274,18 @@ func GetMediaRecord(recordType string, mediaSource string, sourceID string) (*Me
 
 // each mediaSource, sourceID combination should be unique
 // for shows, episodes, etc.
-func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string) (*MediaRecord, error) {
+func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string) (bool, *MediaRecord, error) {
 	var record MediaRecord
 	if session == nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetRecordID(): Session is nil")
+		return false, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetMediaRecordTrx(): Session is nil")
 	}
 	query := session.Table(mediaRecordsTable).
 		Where("record_type = ?", recordType).
-		Where("media_source = ?", mediaSource)
+		Where("media_source = ?", mediaSource).
+		Where("source_id = ?", sourceID)
 	has, err := query.Get(&record)
 	if err != nil {
-		return nil, err
+		return has, nil, err
 	}
-	if !has {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"GetRecordID(): No matching record in internal library")
-	}
-	return &record, nil
+	return has, &record, nil
 }
