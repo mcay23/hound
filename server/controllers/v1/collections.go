@@ -87,9 +87,13 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	record, err := database.GetMediaRecord(body.MediaType, body.MediaSource, body.SourceID)
+	has, record, err := database.GetMediaRecord(body.MediaType, body.MediaSource, body.SourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error retrieving Media Record"))
+		return
+	}
+	if !has {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find Media Record"))
 		return
 	}
 	err = database.DeleteCollectionRelation(userID, record.RecordID, *body.CollectionID)

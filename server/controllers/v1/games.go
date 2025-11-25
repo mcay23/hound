@@ -44,8 +44,8 @@ func GetGameFromIDHandler(c *gin.Context) {
 	resultView := view.GameFullObject{
 		IGDBGameObject: result,
 	}
-	record, err := database.GetMediaRecord(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
-	if err == nil {
+	has, record, err := database.GetMediaRecord(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
+	if err == nil && has {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
