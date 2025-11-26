@@ -4,8 +4,8 @@ import (
 	"hound/helpers"
 	"log/slog"
 	"os"
+	"time"
 
-	_ "github.com/lib/pq"
 	"xorm.io/xorm"
 )
 
@@ -25,6 +25,10 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
 		panic(err)
 	}
+	// always use UTC for timestamps
+	tz, _ := time.LoadLocation("UTC")
+	databaseEngine.SetTZDatabase(tz)
+	databaseEngine.SetTZLocation(tz)
 	err = instantiateUsersTable()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate users table")

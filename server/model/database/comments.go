@@ -31,8 +31,8 @@ type CommentRecord struct {
 	Score        int       `json:"score"`
 	StartDate    time.Time `json:"start_date"`
 	EndDate      time.Time `json:"end_date"`
-	CreatedAt    time.Time `xorm:"created" json:"created_at"`
-	UpdatedAt    time.Time `xorm:"updated" json:"updated_at"`
+	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 func instantiateCommentTable() error {

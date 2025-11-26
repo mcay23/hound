@@ -34,8 +34,8 @@ type CollectionRelation struct {
 	UserID       int64     `xorm:"unique(primary) not null 'user_id'" json:"user_id"` // refers to users table ids
 	RecordID     int64     `xorm:"unique(primary) not null 'record_id'" json:"record_id"`
 	CollectionID int64     `xorm:"unique(primary) not null 'collection_id'" json:"collection_id"`
-	CreatedAt    time.Time `xorm:"created" json:"created_at"`
-	UpdatedAt    time.Time `xorm:"updated" json:"updated_at"`
+	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 type CollectionRecord struct {
@@ -47,8 +47,8 @@ type CollectionRecord struct {
 	IsPublic        bool         `json:"is_public"`
 	Tags            *[]TagObject `json:"tags"`
 	ThumbnailURL    *string      `xorm:"'thumbnail_url'" json:"thumbnail_url"` // url for media thumbnails
-	CreatedAt       time.Time    `xorm:"created" json:"created_at"`
-	UpdatedAt       time.Time    `xorm:"updated" json:"updated_at"`
+	CreatedAt       time.Time    `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt       time.Time    `xorm:"timestampz updated" json:"updated_at"`
 }
 
 type CollectionRecordQuery struct {

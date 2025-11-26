@@ -23,7 +23,7 @@ func DecodeTestHandler(c *gin.Context) {
 }
 
 func ClearCacheHandler(c *gin.Context) {
-	model.ClearCache()
+	database.ClearCache()
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 

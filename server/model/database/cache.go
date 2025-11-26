@@ -1,4 +1,4 @@
-package model
+package database
 
 import (
 	"encoding/json"
@@ -84,7 +84,6 @@ func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 func GetCache(key string, out interface{}) (bool, error) {
 	if db == nil {
 		panic("Error: GetCache() called while cache not initialized")
-		return false, nil
 	}
 	err := db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
@@ -104,31 +103,6 @@ func GetCache(key string, out interface{}) (bool, error) {
 		_ = helpers.LogErrorWithMessage(err, "Error getting cache key:"+key)
 		return false, err
 	}
-	slog.Info("Cache found", "key", key)
+	// slog.Info("Cache found", "key", key)
 	return true, nil
 }
-
-//
-//// In-memory cache layer
-//var cacheObject *mcache.CacheDriver
-//
-//func InitializeCache() {
-//	cacheObject = mcache.New()
-//}
-//
-//func SetCache(key string, value interface{}, ttl time.Duration) error {
-//	err := cacheObject.Set(key, value, ttl)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func GetCache(key string) (interface{}, bool) {
-//	return cacheObject.Get(key)
-//}
-//
-//func UpdateOrSetCache(key string, value interface{}, ttl time.Duration) error {
-//	cacheObject.Remove(key)
-//	return SetCache(key, value, ttl)
-//}

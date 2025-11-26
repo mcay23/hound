@@ -24,8 +24,8 @@ type WatchEventsRecord struct {
 	RecordID      int64     `xorm:"pk autoincr 'record_id'" json:"record_id"`
 	WatchType     string    `xorm:"'watch_type'" json:"watch_type"` // watch, scrobble
 	WatchedAt     time.Time `xorm:"'watched_at'" json:"watched_at"`
-	CreatedAt     time.Time `xorm:"created" json:"created_at"`
-	UpdatedAt     time.Time `xorm:"updated" json:"updated_at"`
+	CreatedAt     time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt     time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 // Every show has one active 'rewatch' session at a time
@@ -38,8 +38,8 @@ type TVShowRewatchRecord struct {
 	ShowRecordID  int64     `xorm:"'show_record_id'" json:"show_record_id"` // show record id
 	StartedAt     time.Time `xorm:"'started_at'" json:"rewatch_started_at"`
 	FinishedAt    time.Time `xorm:"'finished_at'" json:"rewatch_finished_at"`
-	CreatedAt     time.Time `xorm:"created" json:"created_at"`
-	UpdatedAt     time.Time `xorm:"updated" json:"updated_at"`
+	CreatedAt     time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt     time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 // combination fo a watch event and a media record
