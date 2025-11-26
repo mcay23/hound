@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -53,8 +54,8 @@ type MediaRecord struct {
 	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags,omitempty"`
 	FullData         []byte       `xorm:"'full_data'" json:"full_data"`       // full data from tmdb
 	ContentHash      string       `xorm:"'content_hash'" json:"content_hash"` // checksum to compare changes/updates
-	CreatedAt        time.Time    `xorm:"created" json:"created_at"`
-	UpdatedAt        time.Time    `xorm:"updated" json:"updated_at"`
+	CreatedAt        time.Time    `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt        time.Time    `xorm:"timestampz updated" json:"updated_at"`
 }
 
 type MediaRecordGroup struct {
@@ -179,7 +180,6 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		if idx > 0 {
 			sb.WriteString(",")
 		}
-
 		sb.WriteString("(")
 		for c := range columns {
 			if c > 0 {
@@ -200,7 +200,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.MediaTitle,
 			record.OriginalTitle,
 			record.OriginalLanguage,
-			encodeJSON(record.OriginCountry),
+			encodeJSONDB(record.OriginCountry),
 			record.ReleaseDate,
 			record.LastAirDate,
 			record.NextAirDate,
@@ -213,8 +213,8 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.ThumbnailURL,
 			record.BackdropURL,
 			record.StillURL,
-			encodeJSON(record.Tags),
-			encodeJSON(record.UserTags),
+			encodeJSONDB(record.Tags),
+			encodeJSONDB(record.UserTags),
 			record.FullData,
 			record.ContentHash,
 			now, // created_at
@@ -250,11 +250,26 @@ WHERE media_records.content_hash IS DISTINCT FROM EXCLUDED.content_hash;
 	return err
 }
 
-func encodeJSON(v any) []byte {
+// returns json encoding for database
+// nil for empty map, slices
+func encodeJSONDB(v any) any {
 	if v == nil {
 		return nil
 	}
-	b, _ := json.Marshal(v)
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return nil
+	}
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Map:
+		if rv.Len() == 0 {
+			return nil
+		}
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
 	return b
 }
 

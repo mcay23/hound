@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
-	"hound/model"
 	"hound/model/database"
 	"log/slog"
 	"os"
@@ -69,7 +68,7 @@ func InitializeTMDB() {
 func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 	cacheKey := "tmdb|" + database.MediaTypeTVShow + "|trending|page:" + page
 	var cacheObject tmdb.Trending
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -80,7 +79,7 @@ func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 		return nil, err
 	}
 	if shows != nil {
-		_, _ = model.SetCache(cacheKey, shows, trendingCacheDuration)
+		_, _ = database.SetCache(cacheKey, shows, trendingCacheDuration)
 	}
 	return shows, nil
 }
@@ -88,7 +87,7 @@ func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 	cacheKey := "tmdb|" + database.MediaTypeTVShow + "|search|query:" + query
 	var cacheObject tmdb.SearchTVShowsResults
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -97,7 +96,7 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 		return nil, err
 	}
 	if shows != nil {
-		_, _ = model.SetCache(cacheKey, shows, searchCacheDuration)
+		_, _ = database.SetCache(cacheKey, shows, searchCacheDuration)
 	}
 	return shows.SearchTVShowsResults, nil
 }
@@ -105,7 +104,7 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeTVShow, tmdbID)
 	var cacheObject tmdb.TVDetails
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -119,7 +118,7 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
 	}
 	if tvShow != nil {
-		_, _ = model.SetCache(cacheKey, tvShow, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, tvShow, getCacheDuration)
 	}
 	return tvShow, nil
 }
@@ -128,7 +127,7 @@ func GetTVShowIMDBID(tmdbID int) (string, error) {
 	// just grab the tv show from cache, by default external_ids are appended
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeTVShow, tmdbID)
 	var cacheObject tmdb.TVDetails
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists && cacheObject.TVExternalIDs.IMDbID != "" {
 		return cacheObject.TVExternalIDs.IMDbID, nil
 	}
@@ -142,7 +141,7 @@ func GetTVShowIMDBID(tmdbID int) (string, error) {
 func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|season|tmdb-%d|S%d", database.MediaTypeTVShow, tmdbID, seasonNumber)
 	var cacheObject tmdb.TVSeasonDetails
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -151,7 +150,7 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb")
 	}
 	if season != nil {
-		_, _ = model.SetCache(cacheKey, season, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, season, getCacheDuration)
 	}
 	return season, nil
 }
@@ -206,7 +205,7 @@ func MarkTVSeasonAsWatchedTMDB(userID int64, recordID int64, seasonNumber int, m
 func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 	cacheKey := "tmdb|" + database.MediaTypeMovie + "|trending|page:" + page
 	var cacheObject tmdb.Trending
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -217,7 +216,7 @@ func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 		return nil, err
 	}
 	if movies != nil {
-		_, _ = model.SetCache(cacheKey, movies, trendingCacheDuration)
+		_, _ = database.SetCache(cacheKey, movies, trendingCacheDuration)
 	}
 	return movies, nil
 }
@@ -225,7 +224,7 @@ func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 	cacheKey := "tmdb|" + database.MediaTypeMovie + "|search|query:" + query
 	var cacheObject tmdb.SearchMoviesResults
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -234,7 +233,7 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 		return nil, err
 	}
 	if movies != nil {
-		_, _ = model.SetCache(cacheKey, movies, searchCacheDuration)
+		_, _ = database.SetCache(cacheKey, movies, searchCacheDuration)
 	}
 	return movies.SearchMoviesResults, nil
 }
@@ -242,7 +241,7 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	cacheKey := fmt.Sprintf("tmdb|%s|get|tmdb-%d", database.MediaTypeMovie, tmdbID)
 	var cacheObject tmdb.MovieDetails
-	cacheExists, _ := model.GetCache(cacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -254,7 +253,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get movie details from tmdb")
 	}
 	if movie != nil {
-		_, _ = model.SetCache(cacheKey, movie, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, movie, getCacheDuration)
 	}
 	return movie, nil
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"hound/helpers"
 	"time"
 )
@@ -21,8 +22,8 @@ type User struct {
 	LastName       string
 	HashedPassword string
 	UserMeta       UserMeta  `xorm:"json 'user_meta'"`
-	CreatedAt      time.Time `xorm:"created"`
-	UpdatedAt      time.Time `xorm:"updated"`
+	CreatedAt      time.Time `xorm:"timestampz created"`
+	UpdatedAt      time.Time `xorm:"timestampz updated"`
 }
 
 func instantiateUsersTable() error {
@@ -51,10 +52,18 @@ func GetUser(username string) (*User, error) {
 }
 
 func GetUserIDFromUsername(username string) (int64, error) {
+	cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
+	var userID int64
+	_, err := GetCache(cacheKey, &userID)
+	cacheExists, _ := GetCache(cacheKey, &userID)
+	if cacheExists {
+		return userID, nil
+	}
 	user, err := GetUser(username)
 	if err != nil {
 		return -1, helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
 	}
+	SetCache(cacheKey, user.UserID, 48*time.Hour)
 	return user.UserID, nil
 }
 
