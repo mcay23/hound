@@ -42,17 +42,18 @@ type TVShowRewatchRecord struct {
 	UpdatedAt     time.Time `xorm:"updated" json:"updated_at"`
 }
 
+// combination fo a watch event and a media record
 type TVShowWatchEventMediaRecord struct {
 	WatchEventsRecord `xorm:"extends"`
-	// LEFT JOIN rewatches on show_rewatch_id
-	UserID       int64 `xorm:"'user_id'" json:"user_id"`
-	ShowRecordID int64 `xorm:"'show_record_id'" json:"show_record_id"` // reference to movie/show record id
-	// LEFT JOIN media_records on record_id
-	RecordType    string `xorm:"unique(primary) not null 'record_type'" json:"record_type"`   // movie,tvshow,season,episode
-	MediaSource   string `xorm:"unique(primary) not null 'media_source'" json:"media_source"` // tmdb, openlibrary, etc. the main metadata provider
-	SourceID      string `xorm:"unique(primary) not null 'source_id'" json:"source_id"`       // tmdb id, episode/season tmdb id
-	SeasonNumber  *int   `xorm:"'season_number'" json:"season_number"`
-	EpisodeNumber *int   `xorm:"'episode_number'" json:"episode_number"`
+	RecordType        string `xorm:"'record_type'" json:"record_type"`      // movie,episode
+	MediaSource       string `xorm:"'media_source'" json:"media_source"`    // tmdb, openlibrary, etc. the main metadata provider
+	SourceID          string `xorm:"'source_id'" json:"source_id"`          // tmdb id, episode/season tmdb id
+	MediaTitle        string `xorm:"text 'media_title'" json:"media_title"` // movie, tvshow, season or episode title
+	SeasonNumber      *int   `xorm:"'season_number'" json:"season_number"`
+	EpisodeNumber     *int   `xorm:"'episode_number'" json:"episode_number"`
+	ReleaseDate       string `xorm:"'release_date'" json:"release_date"` // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
+	Overview          string `xorm:"text 'overview'" json:"overview"`    // game of thrones is a show about ...
+	Duration          int    `xorm:"'duration'" json:"duration"`         // duration/runtime in minutes
 }
 
 func instantiateWatchTables() error {
@@ -104,8 +105,20 @@ func GetActiveRewatchFromSourceID(recordType string, mediaSource string, sourceI
 	return &rewatchRecord, err
 }
 
+// get rewatches for a certain show, given user id and show source id
+func GetShowRewatchesFromSourceID(mediaSource string, sourceID string, userID int64) ([]*TVShowRewatchRecord, error) {
+	var records []*TVShowRewatchRecord
+	err := databaseEngine.Table(rewatchesTable).
+		Where("user_id = ?", userID).
+		Where("show_record_id in (select record_id from media_records where record_type = ? and media_source = ? and source_id = ?)",
+			RecordTypeTVShow, mediaSource, sourceID).
+		Desc("started_at").
+		Find(&records)
+	return records, err
+}
+
 // Create rewatch
-func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID string, userID int64) (*TVShowRewatchRecord, error) {
+func InsertShowRewatchFromSourceID(recordType string, mediaSource string, sourceID string, userID int64) (*TVShowRewatchRecord, error) {
 	if recordType != RecordTypeTVShow {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "InsertRewatchFromSourceID(): Only tvshows are allowed")
 	}
@@ -128,15 +141,15 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 	return &rewatch, nil
 }
 
-func GetWatchEventsFromSourceID(recordType string, mediaSource string, sourceID string, userID int64) ([]TVShowWatchEventMediaRecord, error) {
-	// cannot search by seasons for now
-	if recordType != RecordTypeMovie && recordType != RecordTypeTVShow &&
-		recordType != RecordTypeEpisode {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Record type not supported "+recordType)
-	}
-	var records []TVShowWatchEventMediaRecord
-
-	return records, nil
+// get rewatches joined with media_records by show_record_id for a certain rewatch id
+func GetWatchEventsFromRewatchID(rewatchID int64) ([]*TVShowWatchEventMediaRecord, error) {
+	var records []*TVShowWatchEventMediaRecord
+	err := databaseEngine.Table(watchEventsTable).
+		Where("show_rewatch_id = ?", rewatchID).
+		Join("LEFT", "media_records", "media_records.record_id = watch_events.record_id").
+		Omit("media_records.full_data").
+		Find(&records)
+	return records, err
 }
 
 func BatchInsertWatchEvents(records []WatchEventsRecord) error {
