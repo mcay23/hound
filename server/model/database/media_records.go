@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,7 +32,7 @@ type MediaRecord struct {
 	RecordType       string       `xorm:"unique(primary) not null 'record_type'" json:"record_type"`   // movie,tvshow,season,episode
 	MediaSource      string       `xorm:"unique(primary) not null 'media_source'" json:"media_source"` // tmdb, openlibrary, etc. the main metadata provider
 	SourceID         string       `xorm:"unique(primary) not null 'source_id'" json:"source_id"`       // tmdb id, episode/season tmdb id
-	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id"`                                // reference to fk record_id, null for movie, tvshow
+	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id,omitempty"`                      // reference to fk record_id, null for movie, tvshow
 	MediaTitle       string       `xorm:"text 'media_title'" json:"media_title"`                       // movie, tvshow, season or episode title
 	OriginalTitle    string       `xorm:"text 'original_title'" json:"original_title"`                 // original title in release language
 	OriginalLanguage string       `xorm:"text 'original_language'" json:"original_language"`
@@ -39,8 +40,8 @@ type MediaRecord struct {
 	ReleaseDate      string       `xorm:"'release_date'" json:"release_date"`   // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
 	LastAirDate      string       `xorm:"'last_air_date'" json:"last_air_date"` // for shows, latest episode air date
 	NextAirDate      string       `xorm:"'next_air_date'" json:"next_air_date"` // for shows, next scheduled episode air date
-	SeasonNumber     *int         `xorm:"'season_number'" json:"season_number"`
-	EpisodeNumber    *int         `xorm:"'episode_number'" json:"episode_number"`
+	SeasonNumber     *int         `xorm:"'season_number'" json:"season_number,omitempty"`
+	EpisodeNumber    *int         `xorm:"'episode_number'" json:"episode_number,omitempty"`
 	SortIndex        int          `xorm:"'sort_index'" json:"sort_index"`       // not in use yet, used to sort based on user preferences
 	Status           string       `xorm:"'status'" json:"status"`               // Returning Series, Released, etc.
 	Overview         string       `xorm:"text 'overview'" json:"overview"`      // game of thrones is a show about ...
@@ -48,8 +49,8 @@ type MediaRecord struct {
 	ThumbnailURL     string       `xorm:"'thumbnail_url'" json:"thumbnail_url"` // poster image for tmdb
 	BackdropURL      string       `xorm:"'backdrop_url'" json:"backdrop_url"`   // backgrounds
 	StillURL         string       `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
-	Tags             *[]TagObject `json:"tags"`                                 // to store genres, tags
-	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags"`
+	Tags             *[]TagObject `xorm:"'tags'" json:"tags,omitempty"`         // to store genres, tags
+	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags,omitempty"`
 	FullData         []byte       `xorm:"'full_data'" json:"full_data"`       // full data from tmdb
 	ContentHash      string       `xorm:"'content_hash'" json:"content_hash"` // checksum to compare changes/updates
 	CreatedAt        time.Time    `xorm:"created" json:"created_at"`
@@ -288,4 +289,57 @@ func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource str
 		return has, nil, err
 	}
 	return has, &record, nil
+}
+
+// for an array of episode ids, check if exist in
+// the database as a child of the show
+// hierarchy show -> season -> episode
+// returns a list of invalid episode ids
+func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []int) (map[string]string, []int, error) {
+	type EpisodeIDObject struct {
+		SourceID string `xorm:"source_id" json:"source_id"`
+		RecordID string `xorm:"record_id" json:"record_id"`
+	}
+	var episodes []EpisodeIDObject
+	err := databaseEngine.SQL(`
+        SELECT e.source_id, e.record_id
+        FROM media_records AS show
+        JOIN media_records AS season
+            ON  season.parent_id = show.record_id
+            AND season.record_type = 'season'
+            AND season.media_source = show.media_source
+        JOIN media_records AS e
+            ON  e.parent_id = season.record_id
+            AND e.record_type = 'episode'
+            AND e.media_source = show.media_source
+        WHERE show.record_type = 'tvshow'
+          AND show.media_source = ?
+          AND show.source_id = ?;
+    `, mediaSource, showSourceID).Find(&episodes)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(episodes) <= 0 {
+		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find any episodes for "+mediaSource+"-"+showSourceID)
+	}
+	// Build index of episode IDs
+	episodesMap := make(map[string]string, len(episodes))
+	for _, ep := range episodes {
+		episodesMap[ep.SourceID] = ep.RecordID
+	}
+	// Check invalidIDs
+	var invalidIDs []int
+	for _, id := range episodeIDs {
+		if _, ok := episodesMap[strconv.Itoa(id)]; !ok {
+			invalidIDs = append(invalidIDs, id)
+		}
+	}
+	if len(invalidIDs) > 0 {
+		invalidIDStr := ""
+		for _, item := range invalidIDs {
+			invalidIDStr += strconv.Itoa(int(item)) + ","
+		}
+		return nil, invalidIDs, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid episode IDs requested for "+mediaSource+"-"+showSourceID+" invalid ids:"+invalidIDStr)
+	}
+	return episodesMap, nil, nil
 }

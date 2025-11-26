@@ -11,6 +11,7 @@ import (
 	model "hound/model"
 	"hound/model/database"
 	"hound/model/sources"
+	"hound/view"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,29 +42,40 @@ func GetWatchHistoryTVShowHandler(c *gin.Context) {
 		return
 	}
 	// get record
-	has, _, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID))
+	// has, _, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID))
+	// if err != nil {
+	// 	helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting media record for source ID"))
+	// 	return
+	// }
+	rewatchRecords, err := database.GetShowRewatchesFromSourceID(mediaSource, strconv.Itoa(showID), userID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting media record for source ID"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting show rewatch records"))
 		return
 	}
 	// exit early if show record doesn't exist, since this means no watch history
-	if !has {
+	if len(rewatchRecords) == 0 {
 		helpers.SuccessResponse(c,
 			gin.H{
 				"status": "success",
 				"data":   nil,
 			}, 200)
 	}
-	// get all show_rewatches for user and source id
-	events, err := database.GetWatchEventsFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch events: "+c.Param("id")))
-		return
+	var rewatchObjects []*view.TVShowRewatchRecordWatchEvents
+	for _, rewatchRecord := range rewatchRecords {
+		watchEvents, err := database.GetWatchEventsFromRewatchID(rewatchRecord.ShowRewatchID)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch events from rewatch id"))
+			return
+		}
+		rewatchObjects = append(rewatchObjects, &view.TVShowRewatchRecordWatchEvents{
+			TVShowRewatchRecord: *rewatchRecord,
+			WatchEvents:         watchEvents,
+		})
 	}
 	helpers.SuccessResponse(c,
 		gin.H{
 			"status": "success",
-			"data":   events,
+			"data":   rewatchObjects,
 		}, 200)
 }
 
@@ -122,6 +134,20 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
+	// check if episode ids are in the database, and belong to the correct show
+	episodeMap, invalidIDs, err := database.CheckShowEpisodesIDs(mediaSource, strconv.Itoa(showID), episodeIDs)
+	if len(invalidIDs) > 0 {
+		errorStr := ""
+		for _, item := range invalidIDs {
+			errorStr += strconv.Itoa(item) + ","
+		}
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid Episode IDs found:"+errorStr))
+		return
+	}
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error checking episode ids for tv show:"+c.Param("id")))
+		return
+	}
 	// 3. Get most current rewatch or create new rewatch if none
 	rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 	if err != nil {
@@ -130,7 +156,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	}
 	// add rewatch record if none exists
 	if rewatchRecord == nil {
-		rewatchRecord, err = database.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
+		rewatchRecord, err = database.InsertShowRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 			return
@@ -165,9 +191,14 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 			}
 		}
 		showRewatchID := &rewatchRecord.ShowRewatchID
+		int64Val, err := strconv.ParseInt(episodeMap[episodeIDStr], 10, 64)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing episode id"))
+			return
+		}
 		pendingRecords = append(pendingRecords, database.WatchEventsRecord{
 			ShowRewatchID: showRewatchID,
-			RecordID:      int64(episodeID),
+			RecordID:      int64Val,
 			WatchType:     actionType,
 			WatchedAt:     watchTime,
 		})
