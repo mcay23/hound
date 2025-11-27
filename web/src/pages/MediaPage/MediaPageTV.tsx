@@ -114,31 +114,13 @@ function MediaPageTV(props: any) {
   //   props.data.seasons.push(props.data.seasons.shift());
   // }
   // modal functions
-  const handleAddToCollectionButtonClick = () => {
-    setIsCollectionModalOpen(true);
-  };
-  const handleAddToCollectionClose = () => {
-    setIsCollectionModalOpen(false);
-  };
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);
     setVideoKey(key);
   };
-  const handleVideoButtonClose = () => {
-    setIsVideoModalOpen(false);
-  };
   const handleSeasonButtonClick = (key: number) => {
     setSeasonModal(key);
     setIsSeasonModalOpen(true);
-  };
-  const handleSeasonModalClose = () => {
-    setIsSeasonModalOpen(false);
-  };
-  const handleHistoryModalButtonClick = () => {
-    setIsHistoryModalOpen(true);
-  };
-  const handleHistoryModalClose = () => {
-    setIsHistoryModalOpen(false);
   };
   if (props.data.media_title) {
     var yearString = props.data.first_air_date
@@ -203,7 +185,11 @@ function MediaPageTV(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleAddToCollectionButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsCollectionModalOpen(true);
+                    }}
+                  >
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -215,7 +201,11 @@ function MediaPageTV(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleHistoryModalButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsHistoryModalOpen(true);
+                    }}
+                  >
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
@@ -247,17 +237,23 @@ function MediaPageTV(props: any) {
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
-        onClose={handleAddToCollectionClose}
+        onClose={() => {
+          setIsCollectionModalOpen(false);
+        }}
         open={isCollectionModalOpen}
         item={props.data}
       />
       <VideoModal
-        onClose={handleVideoButtonClose}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+        }}
         open={isVideoModalOpen}
         videoKey={videoKey}
       />
       <SeasonModal
-        onClose={handleSeasonModalClose}
+        onClose={() => {
+          setIsSeasonModalOpen(false);
+        }}
         open={isSeasonModalOpen}
         mediaSource={props.data ? props.data.media_source : undefined}
         sourceID={props.data ? props.data.source_id : undefined}
@@ -265,7 +261,9 @@ function MediaPageTV(props: any) {
         mediaTitle={props.data.media_title}
       />
       <HistoryModal
-        onClose={handleHistoryModalClose}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+        }}
         open={isHistoryModalOpen}
         data={props.data}
       />

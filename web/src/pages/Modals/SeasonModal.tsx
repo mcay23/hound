@@ -1,6 +1,5 @@
 import {
   Dialog,
-  LinearProgress,
   styled,
   Tooltip,
   tooltipClasses,
@@ -20,7 +19,6 @@ import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CreateHistoryModal from "./CreateHistoryModal";
 import StreamModal from "../Modals/StreamModal";
 import toast from "react-hot-toast";
-import { PlayArrow } from "@mui/icons-material";
 import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
 import Dropdown from "react-bootstrap/Dropdown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -80,22 +78,15 @@ function SeasonModal(props: any) {
     useState(false);
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
-  const handleWatchEpisode = (tagData: string) => {
-    var date = new Date();
+  const handleWatchEpisode = (tmdbID: number) => {
     var payload = {
-      comment_type: "history",
-      is_private: true,
-      tag_data: tagData,
-      start_date: date.toISOString(),
-      end_date: date.toISOString(),
+      episode_ids: [tmdbID],
+      action_type: "watch",
     };
     axios
-      .post(`/api/v1${window.location.pathname}/comments`, payload)
+      .post(`/api/v1${window.location.pathname}/history`, payload)
       .then(() => {
-        setWatchedEpisodes([
-          ...watchedEpisodes,
-          parseInt(tagData.split("E")[1]),
-        ]);
+        setWatchedEpisodes([...watchedEpisodes, tmdbID]);
       })
       .catch((err) => {
         console.log(err);
@@ -153,34 +144,59 @@ function SeasonModal(props: any) {
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   useEffect(() => {
     // no need to call on close
-    if (open === false) {
-      return;
-    }
+    if (open === false) return;
+    if (seasonNumber < 0) return;
+
     // TODO try to cache the call, but watch info might change
     // check data is loaded
     // season 0 is used for extras, specials sometimes
-    if (seasonNumber >= 0) {
-      axios
-        .get(`/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}`)
-        .then((res) => {
-          setSeasonData(res.data);
-          if (res.data.watch_info) {
-            setWatchedEpisodes(
-              res.data.watch_info.map((item: { tag_data: string }) =>
-                parseInt(item.tag_data.split("E")[1])
-              )
-            );
-          } else {
-            setWatchedEpisodes([]);
-          }
-          setIsSeasonDataLoaded(true);
-        })
-        .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
-          }
-        });
-    }
+    const loadData = async () => {
+      try {
+        const seasonRes = await axios.get(
+          `/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}`
+        );
+        setSeasonData(seasonRes.data);
+        setIsSeasonDataLoaded(true);
+        // get watch data
+        const historyRes = await axios.get(
+          `/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}/history`
+        );
+        if (historyRes.data.data) {
+          const latest = historyRes.data.data.reduce((a: any, b: any) =>
+            new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
+              ? a
+              : b
+          );
+          const sourceIDs = (latest.watch_events || [])
+            .map((event: any) => parseInt(event.source_id, 10))
+            .filter((tmdbID: number) => !isNaN(tmdbID));
+          setWatchedEpisodes(sourceIDs);
+        }
+      } catch (err: any) {
+        console.log(err.response);
+      }
+    };
+    loadData();
+    // if (seasonNumber >= 0) {
+    //   // get watch data
+    //   axios
+    //     .get(`/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}/history`)
+    //     .then((res) => {
+    //       const latest = res.data.reduce((a: any, b: any) => {
+    //         return new Date(a.rewatch_started_at) >
+    //           new Date(b.rewatch_started_at)
+    //           ? a
+    //           : b;
+    //       });
+    //       const sourceIDs = (latest.watch_events || [])
+    //         .map((event: any) => parseInt(event.source_id, 10))
+    //         .filter((tmdbID: number) => !isNaN(tmdbID));
+    //       setWatchedEpisodes(sourceIDs);
+    //     })
+    //     .catch((err) => {
+    //       console.log(err.response);
+    //     });
+    // }
   }, [seasonNumber, sourceID, open]);
   // data is already loaded, useEffect not triggered (open and close same season modal)
   // if (
@@ -282,7 +298,7 @@ function SeasonModal(props: any) {
               {seasonData.season.episodes.map((episode) => {
                 return EpisodeCard(
                   episode,
-                  watchedEpisodes.includes(episode["episode_number"]),
+                  watchedEpisodes.includes(episode["id"]),
                   handleWatchEpisode,
                   handleStreamButtonClick,
                   isStreamButtonLoading,
@@ -441,9 +457,7 @@ function EpisodeCard(
           >
             <IconButton
               onClick={() => {
-                handleWatchEpisode(
-                  `S${episode.season_number}E${episode.episode_number}`
-                );
+                handleWatchEpisode(episode.id);
               }}
             >
               <VisibilityIcon />

@@ -35,9 +35,10 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Watch History Routes
 	*/
-	privateRoutes.POST("/tv/history/rewatch/:id", AddTVShowRewatchHandler)
-	privateRoutes.POST("/tv/history/:id", AddWatchHistoryTVShowHandler)
-	privateRoutes.GET("/tv/history/:id", GetWatchHistoryTVShowHandler)
+	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVShowHandler)
+	privateRoutes.GET("/tv/:id/history", GetWatchHistoryTVShowHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryTVShowHandler)
+	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler)
 
 	/*
 		TV Show Routes
@@ -48,6 +49,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
 	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
+
 	/*
 		Movies Routes
 	*/

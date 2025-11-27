@@ -191,7 +191,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		sb.WriteString(")")
 
 		// Truncate time to seconds to remove microseconds
-		now := time.Now().UTC().Truncate(time.Second)
+		now := time.Now().UTC()
 		valArgs = append(valArgs,
 			record.RecordType,
 			record.MediaSource,

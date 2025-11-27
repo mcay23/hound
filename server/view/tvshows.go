@@ -90,5 +90,6 @@ type TVShowFullObject struct {
 
 type TVShowRewatchRecordWatchEvents struct {
 	database.TVShowRewatchRecord
-	WatchEvents []*database.TVShowWatchEventMediaRecord `json:"watch_events"`
+	TargetSeason *int                                    `json:"target_season,omitempty"`
+	WatchEvents  []*database.TVShowWatchEventMediaRecord `json:"watch_events"`
 }
