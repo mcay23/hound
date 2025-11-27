@@ -21,7 +21,7 @@ const (
 type WatchEventsRecord struct {
 	WatchEventID  int64     `xorm:"pk autoincr 'watch_event_id'" json:"watch_event_id"`
 	ShowRewatchID *int64    `xorm:"'show_rewatch_id'" json:"show_rewatch_id"`
-	RecordID      int64     `xorm:"pk autoincr 'record_id'" json:"record_id"`
+	RecordID      int64     `xorm:"'record_id'" json:"record_id"`
 	WatchType     string    `xorm:"'watch_type'" json:"watch_type"` // watch, scrobble
 	WatchedAt     time.Time `xorm:"'watched_at'" json:"watched_at"`
 	CreatedAt     time.Time `xorm:"timestampz created" json:"created_at"`
@@ -68,11 +68,6 @@ func instantiateWatchTables() error {
 	return nil
 }
 
-func InsertRewatchRecord(record *TVShowRewatchRecord) error {
-	_, err := databaseEngine.Table(rewatchesTable).Insert(record)
-	return err
-}
-
 // Gets the current active rewatch
 // this is the rewatch with the latest start time
 // show_record_id should only be show records
@@ -117,8 +112,8 @@ func GetShowRewatchesFromSourceID(mediaSource string, sourceID string, userID in
 	return records, err
 }
 
-// Create rewatch
-func InsertShowRewatchFromSourceID(recordType string, mediaSource string, sourceID string, userID int64) (*TVShowRewatchRecord, error) {
+func InsertShowRewatchFromSourceID(recordType string, mediaSource string, sourceID string,
+	userID int64, startedAt time.Time) (*TVShowRewatchRecord, error) {
 	if recordType != RecordTypeTVShow {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "InsertRewatchFromSourceID(): Only tvshows are allowed")
 	}
@@ -133,22 +128,31 @@ func InsertShowRewatchFromSourceID(recordType string, mediaSource string, source
 	rewatch := TVShowRewatchRecord{
 		UserID:       userID,
 		ShowRecordID: record.RecordID,
-		StartedAt:    time.Now().UTC(),
+		StartedAt:    startedAt,
 	}
-	if err := InsertRewatchRecord(&rewatch); err != nil {
+	_, err = databaseEngine.Table(rewatchesTable).Insert(&rewatch)
+	if err != nil {
 		return nil, err
 	}
 	return &rewatch, nil
 }
 
-// get rewatches joined with media_records by show_record_id for a certain rewatch id
-func GetWatchEventsFromRewatchID(rewatchID int64) ([]*TVShowWatchEventMediaRecord, error) {
+// get rewatches joined with media_records by record_id for a certain rewatch id
+func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*TVShowWatchEventMediaRecord, error) {
 	var records []*TVShowWatchEventMediaRecord
-	err := databaseEngine.Table(watchEventsTable).
+	sess := NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return nil, err
+	}
+	sess = sess.Table(watchEventsTable).
 		Where("show_rewatch_id = ?", rewatchID).
 		Join("LEFT", "media_records", "media_records.record_id = watch_events.record_id").
-		Omit("media_records.full_data").
-		Find(&records)
+		Omit("media_records.full_data")
+	if seasonNumber != nil {
+		sess = sess.Where("media_records.season_number = ?", *seasonNumber)
+	}
+	err := sess.Find(&records)
 	return records, err
 }
 
@@ -156,9 +160,9 @@ func BatchInsertWatchEvents(records []WatchEventsRecord) error {
 	if len(records) == 0 {
 		return nil
 	}
-	session := NewSession()
-	defer session.Close()
-	if err := session.Begin(); err != nil {
+	sess := NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
 		return err
 	}
 	for start := 0; start < len(records); start += watchEventsBatchSize {
@@ -167,10 +171,10 @@ func BatchInsertWatchEvents(records []WatchEventsRecord) error {
 			end = len(records)
 		}
 		chunk := records[start:end]
-		if _, err := session.Table(watchEventsTable).Insert(&chunk); err != nil {
-			_ = session.Rollback()
+		if _, err := sess.Table(watchEventsTable).Insert(&chunk); err != nil {
+			_ = sess.Rollback()
 			return err
 		}
 	}
-	return session.Commit()
+	return sess.Commit()
 }

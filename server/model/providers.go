@@ -103,7 +103,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 	}
 	// get cache
 	var cacheObject ProviderResponseObject
-	cacheExists, _ := GetCache(providersCacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(providersCacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -153,7 +153,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 		Providers:          &providersArray,
 	}
 	// TODO revert TTL
-	_, err = SetCache(providersCacheKey, result, providersCacheDuration)
+	_, err = database.SetCache(providersCacheKey, result, providersCacheDuration)
 	if err != nil {
 		// just log error, no failed return
 		_ = helpers.LogErrorWithMessage(err, "Failed to set cache")
