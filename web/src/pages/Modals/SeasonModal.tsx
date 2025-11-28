@@ -84,7 +84,7 @@ function SeasonModal(props: any) {
       action_type: "watch",
     };
     axios
-      .post(`/api/v1${window.location.pathname}/history`, payload)
+      .post(`/api/v1/tv/${mediaSource}-${sourceID}/history`, payload)
       .then(() => {
         setWatchedEpisodes([...watchedEpisodes, tmdbID]);
       })
@@ -153,13 +153,13 @@ function SeasonModal(props: any) {
     const loadData = async () => {
       try {
         const seasonRes = await axios.get(
-          `/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}`
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`
         );
         setSeasonData(seasonRes.data);
         setIsSeasonDataLoaded(true);
         // get watch data
         const historyRes = await axios.get(
-          `/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}/history`
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`
         );
         if (historyRes.data.data) {
           const latest = historyRes.data.data.reduce((a: any, b: any) =>

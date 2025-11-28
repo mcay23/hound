@@ -8,13 +8,14 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
 import HistoryModal from "../Modals/HistoryModal";
+import axios from "axios";
 
 const offsetFix = {
   modifiers: [
@@ -128,6 +129,17 @@ function MediaPageTV(props: any) {
       : "";
     document.title = props.data.media_title + " " + yearString + " - Hound";
   }
+  // grab rewatches
+  useEffect(() => {
+    axios
+      .get(
+        `/api/v1/tv/${props.data.media_source}-${props.data.source_id}/history`
+      )
+      .then((res) => {
+        console.log(res.data);
+      });
+  }, []);
+
   return (
     <>
       <div
