@@ -139,7 +139,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
 		return
 	}
 	// check if episode ids are in the database, and belong to the correct show
@@ -278,6 +278,44 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		response["skipped_episode_ids"] = skippedEpisodeIDs
 	}
 	helpers.SuccessResponse(c, response, 200)
+}
+
+func DeleteWatchHistoryTVShowHandler(c *gin.Context) {
+	username := c.GetHeader("X-Username")
+	if username == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		return
+	}
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		return
+	}
+	// Only episode ids that belong to the same show should be inserted at the same time
+	type deleteWatchHistoryPayload struct {
+		WatchEventIDs []int64 `json:"watch_event_ids" binding:"required"`
+	}
+	payload := deleteWatchHistoryPayload{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+		return
+	}
+	// get record id from show source id
+	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.SourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		return
+	}
+	has, record, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID))
+	if !has || err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting media record"))
+		return
+	}
+	if err := database.BatchDeleteWatchEvents(payload.WatchEventIDs, userID, int(record.RecordID)); err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting watch history records"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
 // Create new rewatch for tv show

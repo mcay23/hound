@@ -156,6 +156,8 @@ func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*TVShowW
 	return records, err
 }
 
+// batch the inserts since we also insert the full json data
+// might take some memory
 func BatchInsertWatchEvents(records []WatchEventsRecord) error {
 	if len(records) == 0 {
 		return nil
@@ -175,6 +177,39 @@ func BatchInsertWatchEvents(records []WatchEventsRecord) error {
 			_ = sess.Rollback()
 			return err
 		}
+	}
+	return sess.Commit()
+}
+
+func BatchDeleteWatchEvents(watchEventIDs []int64, userID int64, showRecordID int) error {
+	if len(watchEventIDs) == 0 {
+		return nil
+	}
+	sess := NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return err
+	}
+	// make sure all events belong to the user, show record
+	count, err := sess.Table("watch_events").
+		Join("INNER", "show_rewatches", "show_rewatches.show_rewatch_id = watch_events.show_rewatch_id").
+		In("watch_events.watch_event_id", watchEventIDs).
+		And("show_rewatches.user_id = ?", userID).
+		And("show_rewatches.show_record_id = ?", showRecordID).
+		Count()
+	if err != nil {
+		_ = sess.Rollback()
+		return err
+	}
+	if count != int64(len(watchEventIDs)) {
+		_ = sess.Rollback()
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Watch history does not belong to the user")
+	}
+	// count correct, delete
+	_, err = sess.Table(watchEventsTable).In("watch_event_id", watchEventIDs).Delete(&WatchEventsRecord{})
+	if err != nil {
+		_ = sess.Rollback()
+		return err
 	}
 	return sess.Commit()
 }

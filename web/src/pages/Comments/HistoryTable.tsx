@@ -16,49 +16,50 @@ function HistoryTable(props: any) {
     if (!isDataLoaded) {
       axios
         .get(
-          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/comments?type=history`
+          `/api/v1/tv/${props.data.media_source}-${props.data.source_id}/history`
         )
         .then((res) => {
-          if (res.data) {
-            var temp: any[][] = [];
-            res.data.map((item: any) => {
-              var seasonEpisode = item.tag_data.split("E");
-              var title = item.title ? item.title : props.data.media_title;
+          var temp: any[][] = [];
+          res.data.data.forEach((rewatch: any) => {
+            rewatch?.watch_events?.forEach((item: any) => {
               temp.push([
-                title,
-                parseInt(seasonEpisode[0].substring(1)),
-                parseInt(seasonEpisode[1]),
-                item.start_date.split("T")[0],
-                item.comment,
-                item.comment_id,
+                item.media_title,
+                item.season_number,
+                item.episode_number,
+                item.watched_at.split("T")[0],
+                item.watch_event_id,
               ]);
-              return false;
             });
-            setData(temp);
-          }
-          // set data as loaded, even if null
+          });
+          setData(temp);
           setIsDataLoaded(true);
-        })
-        .catch((err) => {
-          console.log(err);
         });
     }
-  });
+  }, [isDataLoaded, props.data.media_source, props.data.source_id]);
   const options: MUIDataTableOptions = {
     filterType: "checkbox",
     download: false,
     print: false,
     onRowsDelete: (rowsDeleted) => {
       const idsToDelete = rowsDeleted.data.map((d) => {
-        return data[d.dataIndex][5];
+        return data[d.dataIndex][4];
       }); // array of all ids to to be deleted
-      axios.delete(`/api/v1/comments?ids=${idsToDelete}`).catch((err) => {
-        console.log(err);
-      });
+      const payload = {
+        watch_event_ids: idsToDelete,
+      };
+      axios
+        .post(
+          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history/delete`,
+          payload
+        )
+        .catch((err) => {
+          console.log(err);
+        });
     },
   };
   const excludeDisplay: MUIDataTableColumnOptions = {
     display: "excluded",
+    filter: false,
   };
   const includeDisplay: MUIDataTableColumnOptions = {
     display: "true",
@@ -74,13 +75,9 @@ function HistoryTable(props: any) {
       options: mediaType === "tv" ? includeDisplay : excludeDisplay,
     },
     "Watch Date",
-    {
-      name: "Notes",
-      options: mediaType === "tv" ? excludeDisplay : includeDisplay,
-    },
-    { name: "comment_id", options: excludeDisplay },
+    { name: "watch_event_id", options: excludeDisplay },
   ];
-  if (isDataLoaded && data[0].length === 0) {
+  if (!isDataLoaded || data.length === 0) {
     return <div className="history-no-data-header">No watch data.</div>;
   }
   return (
