@@ -223,6 +223,10 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
         # penalize files below 50MB
         if t_dict["file_size"] < 50000000:
             t_dict["rank"] -= 2000
+        # REVIEW: penalize italian, russian streams since browser playback can't change
+        # audio language
+        if "it" in t.get("languages", []) or "ru" in t.get("languages", []):
+            t_dict["rank"] -= 50
         torrentsData.append(t_dict)
     return torrentsData
 

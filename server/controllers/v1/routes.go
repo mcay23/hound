@@ -35,8 +35,9 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Watch History Routes
 	*/
-	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVShowHandler)
 	privateRoutes.GET("/tv/:id/history", GetWatchHistoryTVShowHandler)
+	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVShowHandler)
+	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryTVShowHandler) // batch deletion, we send a body so use POST which is more defined
 	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryTVShowHandler)
 	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler)
 
