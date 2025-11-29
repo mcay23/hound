@@ -46,6 +46,7 @@ function MediaPageTV(props: any) {
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyData, setHistoryData] = useState(null);
 
   var styles = {
     noBackdrop: {
@@ -131,14 +132,16 @@ function MediaPageTV(props: any) {
   }
   // grab rewatches
   useEffect(() => {
+    if (!isHistoryModalOpen) return;
     axios
       .get(
         `/api/v1/tv/${props.data.media_source}-${props.data.source_id}/history`
       )
       .then((res) => {
+        setHistoryData(res.data);
         console.log(res.data);
       });
-  }, []);
+  }, [props.data.media_source, props.data.source_id, isHistoryModalOpen]);
 
   return (
     <>
