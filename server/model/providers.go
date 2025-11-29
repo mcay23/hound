@@ -12,14 +12,15 @@ import (
 
 // for calling the python scripts
 type ProviderQueryObject struct {
-	MediaSource string   `json:"media_source"` // eg. tmdb
-	SourceID    int      `json:"source_id"`
-	IMDbID      string   `json:"imdb_id,omitempty"` // starts with 'tt'
-	MediaType   string   `json:"media_type"`        // movies or tvshows, etc.
-	Season      int      `json:"season,omitempty"`
-	Episode     int      `json:"episode,omitempty"`
-	Query       string   `json:"search_query,omitempty"`
-	Params      []string `json:"params"`
+	MediaSource     string   `json:"media_source"` // eg. tmdb
+	SourceID        int      `json:"source_id"`
+	IMDbID          string   `json:"imdb_id,omitempty"` // starts with 'tt'
+	MediaType       string   `json:"media_type"`        // movies or tvshows, etc.
+	Season          int      `json:"season,omitempty"`
+	Episode         int      `json:"episode,omitempty"`
+	SourceEpisodeID int      `json:"source_episode_id,omitempty"`
+	Query           string   `json:"search_query,omitempty"`
+	Params          []string `json:"params"`
 }
 
 // return struct of the python scripts
@@ -40,12 +41,13 @@ type ProviderResponseObject struct {
 }
 
 type StreamMediaDetails struct {
-	MediaSource string `json:"media_source"`
-	SourceID    int    `json:"source_id"`
-	MediaType   string `json:"media_type"`       // movies or tvshows, etc.
-	IMDbID      string `json:"imdb_id"`          // starts with 'tt'
-	Season      *int   `json:"season,omitempty"` // shows only
-	Episode     *int   `json:"episode,omitempty"`
+	MediaSource     string `json:"media_source"`
+	SourceID        int    `json:"source_id"`
+	MediaType       string `json:"media_type"`       // movies or tvshows, etc.
+	IMDbID          string `json:"imdb_id"`          // starts with 'tt'
+	Season          *int   `json:"season,omitempty"` // shows only
+	Episode         *int   `json:"episode,omitempty"`
+	SourceEpisodeID *int   `json:"source_episode_id,omitempty"` // tv shows only
 }
 
 type ProviderObject struct {
@@ -126,12 +128,13 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 		return nil, err
 	}
 	var streamInfo = StreamMediaDetails{
-		MediaSource: query.MediaSource,
-		SourceID:    query.SourceID,
-		MediaType:   query.MediaType,
-		IMDbID:      query.IMDbID,
-		Season:      &query.Season,
-		Episode:     &query.Episode,
+		MediaSource:     query.MediaSource,
+		SourceID:        query.SourceID,
+		MediaType:       query.MediaType,
+		IMDbID:          query.IMDbID,
+		Season:          &query.Season,
+		Episode:         &query.Episode,
+		SourceEpisodeID: &query.SourceEpisodeID,
 	}
 	providersArray := []ProviderObject{obj}
 	for _, provider := range providersArray {

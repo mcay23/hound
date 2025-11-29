@@ -4,21 +4,27 @@ import { ArrowBack } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import houndConfig from "./../../config.json";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 function StreamModal(props: any) {
-  const { setOpen, open } = props;
+  const { streamDetails, streams, setOpen, open } = props;
+  const [videoURL, setVideoURL] = useState("");
   const handleClose = () => {
     setOpen(false);
   };
-  let videoURL = "";
-  if (props.streamDetails != null) {
-    videoURL =
-      houndConfig.server_host +
-      "/api/v1/stream/" +
-      props.streamDetails.encoded_data;
-  }
-  // videoURL =
-  //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv";
+
+  useEffect(() => {
+    if (streamDetails != null) {
+      setVideoURL(
+        houndConfig.server_host + "/api/v1/stream/" + streamDetails.encoded_data
+      );
+      // setVideoURL(
+      //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv"
+      // );
+    }
+  }, [streamDetails, streams, open]);
+
   const videoJsOptions = {
     sources: [
       {
@@ -26,6 +32,23 @@ function StreamModal(props: any) {
         type: "video/mp4",
       },
     ],
+  };
+  const handleSetWatched = () => {
+    const payload = {
+      episode_ids: [streams.source_episode_id],
+      action_type: "scrobble",
+    };
+    axios
+      .post(
+        `/api/v1/tv/${streams.media_source}-${streams.source_id}/history`,
+        payload
+      )
+      .then((res) => {
+        // console.log(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
   return (
     <Dialog
@@ -54,7 +77,7 @@ function StreamModal(props: any) {
       >
         <ArrowBack />
       </IconButton>
-      <VideoPlayer options={videoJsOptions} />
+      <VideoPlayer options={videoJsOptions} onVideoEnding={handleSetWatched} />
     </Dialog>
   );
 }
