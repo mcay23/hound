@@ -197,7 +197,7 @@ function SeasonModal(props: any) {
     //       console.log(err.response);
     //     });
     // }
-  }, [seasonNumber, sourceID, open]);
+  }, [seasonNumber, mediaSource, sourceID, open]);
   // data is already loaded, useEffect not triggered (open and close same season modal)
   // if (
   //   !isSeasonDataLoaded &&

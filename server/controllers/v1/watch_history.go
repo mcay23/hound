@@ -42,7 +42,7 @@ func GetWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting show rewatch records"))
 		return
 	}
-	// exit early if show record doesn't exist, since this means no watch history
+	// exit early if rewatch record doesn't exist, since this means no watch history
 	if len(rewatchRecords) == 0 {
 		helpers.SuccessResponse(c,
 			gin.H{
