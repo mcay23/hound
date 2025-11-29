@@ -177,35 +177,8 @@ function SeasonModal(props: any) {
       }
     };
     loadData();
-    // if (seasonNumber >= 0) {
-    //   // get watch data
-    //   axios
-    //     .get(`/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}/history`)
-    //     .then((res) => {
-    //       const latest = res.data.reduce((a: any, b: any) => {
-    //         return new Date(a.rewatch_started_at) >
-    //           new Date(b.rewatch_started_at)
-    //           ? a
-    //           : b;
-    //       });
-    //       const sourceIDs = (latest.watch_events || [])
-    //         .map((event: any) => parseInt(event.source_id, 10))
-    //         .filter((tmdbID: number) => !isNaN(tmdbID));
-    //       setWatchedEpisodes(sourceIDs);
-    //     })
-    //     .catch((err) => {
-    //       console.log(err.response);
-    //     });
-    // }
   }, [seasonNumber, mediaSource, sourceID, open]);
-  // data is already loaded, useEffect not triggered (open and close same season modal)
-  // if (
-  //   !isSeasonDataLoaded &&
-  //   seasonData &&
-  //   seasonData.season.season_number === seasonNumber
-  // ) {
-  //   setIsSeasonDataLoaded(true);
-  // }
+
   return (
     <>
       {isSeasonDataLoaded ? (
@@ -319,6 +292,7 @@ function SeasonModal(props: any) {
             setOpen={setIsStreamModalOpen}
             open={isStreamModalOpen}
             streamDetails={mainStream}
+            streams={streams?.data}
           />
           <SelectStreamModal
             setOpen={setIsSelectStreamModalOpen}
