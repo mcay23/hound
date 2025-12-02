@@ -24,6 +24,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SelectStreamModal from "./StreamSelectModal";
 import { Spinner } from "react-bootstrap";
+import { PlayArrow, PlayArrowRounded } from "@mui/icons-material";
 
 const offsetFix = {
   modifiers: [
@@ -326,16 +327,32 @@ function EpisodeCard(
     );
   return (
     <div className="episode-card-container" key={episode.id}>
-      <img
-        src={episode.still_path}
-        alt={episode.name}
-        className="episode-card-img hide-alt"
-        loading="lazy"
-        onError={({ currentTarget }) => {
-          currentTarget.onerror = null; // prevents looping
-          currentTarget.src = "/landscape-placeholder.jpg";
+      <div
+        className="episode-card-img-container"
+        onClick={() => {
+          handleStreamButtonClick(
+            episode.season_number,
+            episode.episode_number,
+            "select"
+          );
         }}
-      />
+      >
+        <img
+          src={episode.still_path}
+          alt={episode.name}
+          className="episode-card-img hide-alt"
+          loading="lazy"
+          onError={({ currentTarget }) => {
+            currentTarget.onerror = null; // prevents looping
+            currentTarget.src = "/landscape-placeholder.jpg";
+          }}
+        />
+        <div className="episode-card-img-play-overlay">
+          <div className="episode-card-img-play-icon">
+            <PlayArrowRounded sx={{ fontSize: "90px" }} />
+          </div>
+        </div>
+      </div>
       <div className="episode-card-content">
         <div className="episode-card-title">{episode.name}</div>
         {episode.air_date && (

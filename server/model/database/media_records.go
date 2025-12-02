@@ -76,8 +76,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 	_ = databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
 		Where("media_source = ?", mediaRecord.MediaSource).
 		Where("source_id = ?", mediaRecord.SourceID).
-		Where("season_number = ?", mediaRecord.SeasonNumber).
-		Where("episode_number = ?", mediaRecord.EpisodeNumber).Find(&existingRecords)
+		Find(&existingRecords)
 
 	// source_id is either movie, show, season, or episode id
 	// a key on these three should be sufficiently unique (?)

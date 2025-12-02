@@ -66,7 +66,7 @@ func SearchProvidersHandler(c *gin.Context) {
 	query := model.ProviderQueryObject{
 		IMDbID:          imdbID,
 		MediaType:       mediaType,
-		MediaSource:     sources.SourceTMDB,
+		MediaSource:     sources.MediaSourceTMDB,
 		SourceID:        sourceID,
 		Query:           "",
 		Season:          0,
@@ -84,22 +84,26 @@ func SearchProvidersHandler(c *gin.Context) {
 		}
 		query.Season = seasonNumber
 		// For TV Shows, episodes are sometimes offset, eg. for show A, Season 2 starts at episode 20 instead of 1
-		// Offset this negatively to normalize to S2E1
+		// Offset this negatively to normalize to S2E1 since this is how most providers work
 		query.Episode = episodeNumber
 		seasonData, err := sources.GetTVSeasonTMDB(query.SourceID, query.Season)
-		// no errors, continue set season
-		if err == nil && len(seasonData.Episodes) > 0 {
-			query.Episode = episodeNumber - seasonData.Episodes[0].EpisodeNumber + 1
-			for _, episode := range seasonData.Episodes {
-				if episode.EpisodeNumber == query.Episode {
-					query.SourceEpisodeID = int(episode.ID)
-					break
-				}
-				if query.SourceEpisodeID == 0 {
-					helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Episode ID not found for this query"))
-				}
+		if err != nil || len(seasonData.Episodes) < 1 {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB season"+err.Error()))
+			return
+		}
+		// no errors, continue set episode id
+		for _, episode := range seasonData.Episodes {
+			if episode.EpisodeNumber == query.Episode {
+				query.SourceEpisodeID = int(episode.ID)
+				break
 			}
 		}
+		if query.SourceEpisodeID == 0 {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Episode ID not found for this query"))
+			return
+		}
+		// normalize episode so every season starts from ep 1.
+		query.Episode = episodeNumber - seasonData.Episodes[0].EpisodeNumber + 1
 	}
 	res, err := model.SearchProviders(query)
 	if err != nil {

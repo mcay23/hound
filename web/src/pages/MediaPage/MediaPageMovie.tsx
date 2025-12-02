@@ -387,6 +387,7 @@ function MediaPageMovie(props: any) {
         setOpen={setIsStreamModalOpen}
         open={isStreamModalOpen}
         streamDetails={mainStream}
+        streams={streams?.data}
       />
       <SelectStreamModal
         setOpen={setIsSelectStreamModalOpen}

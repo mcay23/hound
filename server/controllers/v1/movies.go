@@ -38,7 +38,7 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
 		viewObject := view.MediaRecordView{
 			MediaType:    database.MediaTypeMovie,
-			MediaSource:  sources.SourceTMDB,
+			MediaSource:  sources.MediaSourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
 			MediaTitle:   item.OriginalTitle,
 			ReleaseDate:  item.ReleaseDate,
@@ -54,7 +54,7 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 
 func GetMovieFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
@@ -73,7 +73,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		}
 	}
 	returnObject := view.MovieFullObject{
-		MediaSource:         sources.SourceTMDB,
+		MediaSource:         sources.MediaSourceTMDB,
 		MediaType:           database.MediaTypeMovie,
 		SourceID:            movieDetails.ID,
 		MediaTitle:          movieDetails.Title,
@@ -101,7 +101,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		WatchProviders:      movieDetails.WatchProviders,
 		ExternalIDs:         movieDetails.MovieExternalIDs,
 	}
-	_, record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
+	_, record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.MediaSourceTMDB, strconv.Itoa(int(movieDetails.ID)))
 	if err == nil && record != nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
@@ -125,7 +125,7 @@ func SearchMoviesCore(queryString string) (*[]view.TMDBSearchResultObject, error
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		resultObject := view.TMDBSearchResultObject{
 			MediaType:        database.MediaTypeMovie,
-			MediaSource:      sources.SourceTMDB,
+			MediaSource:      sources.MediaSourceTMDB,
 			OriginalName:     item.OriginalTitle,
 			SourceID:         item.ID,
 			MediaTitle:       item.Title,

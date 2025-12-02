@@ -88,8 +88,8 @@ type TVShowFullObject struct {
 	Comments         *[]CommentObject           `json:"comments"`
 }
 
-type TVShowRewatchRecordWatchEvents struct {
-	database.TVShowRewatchRecord
-	TargetSeason *int                                    `json:"target_season,omitempty"`
-	WatchEvents  []*database.TVShowWatchEventMediaRecord `json:"watch_events"`
+type MediaRewatchRecordWatchEvents struct {
+	database.RewatchRecord
+	TargetSeason *int                              `json:"target_season,omitempty"`
+	WatchEvents  []*database.WatchEventMediaRecord `json:"watch_events"`
 }

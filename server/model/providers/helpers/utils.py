@@ -206,7 +206,7 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
             t_dict["rank"] -= 2000
         # penalize unknown audio codecs, as this may disrupt browser playback 
         if len(t_dict["data"]["audio"]) == 0:
-            t_dict["rank"] -= 300
+            t_dict["rank"] -= 150
         # boost cached torrents for debrid
         if useDebrid:
             if t_dict["cached"] == "true":
@@ -223,10 +223,10 @@ def rank_and_parse_torrents(torrents, provider, useDebrid=False):
         # penalize files below 50MB
         if t_dict["file_size"] < 50000000:
             t_dict["rank"] -= 2000
-        # REVIEW: penalize italian, russian streams since browser playback can't change
+        # SHOULD CHANGE: penalize italian, russian streams since browser playback can't change
         # audio language
-        if "it" in t.get("languages", []) or "ru" in t.get("languages", []):
-            t_dict["rank"] -= 50
+        if "it" in t_dict["data"]["languages"] or "ru" in t_dict["data"]["languages"]:
+            t_dict["rank"] -= 1000
         torrentsData.append(t_dict)
     return torrentsData
 

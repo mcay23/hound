@@ -16,7 +16,7 @@ function HistoryTable(props: any) {
     if (!isDataLoaded) {
       axios
         .get(
-          `/api/v1/tv/${props.data.media_source}-${props.data.source_id}/history`
+          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history`
         )
         .then((res) => {
           var temp: any[][] = [];
@@ -35,7 +35,7 @@ function HistoryTable(props: any) {
           setIsDataLoaded(true);
         });
     }
-  }, [isDataLoaded, props.data.media_source, props.data.source_id]);
+  }, [isDataLoaded, mediaType, props.data.media_source, props.data.source_id]);
   const options: MUIDataTableOptions = {
     filterType: "checkbox",
     download: false,
