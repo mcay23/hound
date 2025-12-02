@@ -25,7 +25,7 @@ func SearchTVShowHandler(c *gin.Context) {
 
 func GetTVShowFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
@@ -59,7 +59,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		})
 	}
 	returnObject := view.TVShowFullObject{
-		MediaSource:      sources.SourceTMDB,
+		MediaSource:      sources.MediaSourceTMDB,
 		MediaType:        database.MediaTypeTVShow,
 		OriginalName:     showDetails.OriginalName,
 		SourceID:         showDetails.ID,
@@ -88,7 +88,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Recommendations:  showDetails.Recommendations,
 		ExternalIDs:      showDetails.TVExternalIDs,
 	}
-	_, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
+	_, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.MediaSourceTMDB, strconv.Itoa(int(showDetails.ID)))
 	if err == nil {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
@@ -117,7 +117,7 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
 		viewObject := view.MediaRecordView{
 			MediaType:    database.MediaTypeTVShow,
-			MediaSource:  sources.SourceTMDB,
+			MediaSource:  sources.MediaSourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
 			MediaTitle:   item.OriginalName,
 			ReleaseDate:  item.FirstAirDate,
@@ -193,7 +193,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 		return
 	}
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
@@ -209,11 +209,11 @@ func GetTVSeasonHandler(c *gin.Context) {
 	tvSeason.PosterPath = GetTMDBImageURL(tvSeason.PosterPath, tmdb.W500)
 
 	response := view.TVSeasonResponseObject{
-		MediaSource: sources.SourceTMDB,
+		MediaSource: sources.MediaSourceTMDB,
 		SourceID:    int64(sourceID),
 		SeasonData:  tvSeason,
 	}
-	has, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
+	has, record, err := database.GetMediaRecord(database.MediaTypeTVShow, sources.MediaSourceTMDB, strconv.Itoa(sourceID))
 	// if record id exists, retrieve watch history
 	if err == nil && has {
 		commentType := "history"
@@ -251,7 +251,7 @@ func SearchTVShowCore(queryString string) (*[]view.TMDBSearchResultObject, error
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		resultObject := view.TMDBSearchResultObject{
-			MediaSource:      sources.SourceTMDB,
+			MediaSource:      sources.MediaSourceTMDB,
 			MediaType:        database.MediaTypeTVShow,
 			OriginalName:     item.OriginalName,
 			SourceID:         item.ID,

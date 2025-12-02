@@ -124,6 +124,35 @@
   min-height: 160px;
 }
 
+.episode-card-img-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.episode-card-img-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.episode-card-img-container:hover .episode-card-img-play-overlay {
+  opacity: 0.6;
+}
+
+.episode-card-img-play-icon {
+  color: white;
+  transform: scale(.85);
+}
+
+.episode-card-img-container:hover .episode-card-img-play-icon {
+  transform: scale(1);
+}
+
 .episode-card-content {
   width: 100%;
   margin-top: 10px;

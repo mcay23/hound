@@ -19,9 +19,9 @@ function StreamModal(props: any) {
       setVideoURL(
         houndConfig.server_host + "/api/v1/stream/" + streamDetails.encoded_data
       );
-      // setVideoURL(
-      //   "https://filesamples.com/samples/video/mkv/sample_1280x720_surfing_with_audio.mkv"
-      // );
+      setVideoURL(
+        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+      );
     }
   }, [streamDetails, streams, open]);
 
@@ -35,12 +35,16 @@ function StreamModal(props: any) {
   };
   const handleSetWatched = () => {
     const payload = {
-      episode_ids: [streams.source_episode_id],
       action_type: "scrobble",
+      ...(streams.media_type === "tvshow"
+        ? { episode_ids: [streams.source_episode_id] }
+        : {}),
     };
     axios
       .post(
-        `/api/v1/tv/${streams.media_source}-${streams.source_id}/history`,
+        `/api/v1/${streams.media_type === "tvshow" ? "tv" : "movie"}/${
+          streams.media_source
+        }-${streams.source_id}/history`,
         payload
       )
       .then((res) => {

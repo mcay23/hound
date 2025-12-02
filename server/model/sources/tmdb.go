@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	SourceTMDB string = "tmdb"
+	MediaSourceTMDB string = "tmdb"
 )
 
 var tmdbClient *tmdb.Client
@@ -160,7 +160,7 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 	if err != nil {
 		return err
 	}
-	if source != SourceTMDB {
+	if source != MediaSourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
 	// this is quite expensive since by default all seasons and episodes are fetched and inserted
@@ -263,7 +263,7 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 	if err != nil {
 		return err
 	}
-	if source != SourceTMDB {
+	if source != MediaSourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
 	entry, err := UpsertMovieRecordTMDB(sourceID)
@@ -433,7 +433,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	}
 	entry := database.MediaRecord{
 		RecordType:       database.RecordTypeMovie,
-		MediaSource:      SourceTMDB,
+		MediaSource:      MediaSourceTMDB,
 		SourceID:         strconv.Itoa(sourceID),
 		ParentID:         nil, // movie is top level, has no parent
 		MediaTitle:       movie.Title,
@@ -496,7 +496,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	// construct show (parent)
 	tvShowEntry := database.MediaRecord{
 		RecordType:       database.RecordTypeTVShow,
-		MediaSource:      SourceTMDB,
+		MediaSource:      MediaSourceTMDB,
 		SourceID:         strconv.Itoa(showSourceID),
 		ParentID:         nil, // show is top level, has no parent
 		MediaTitle:       showData.Name,
@@ -543,14 +543,14 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// we get here since xorm.Update doesn't get recordID automatically
-	has, showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, SourceTMDB,
+	has, showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, MediaSourceTMDB,
 		strconv.Itoa(showSourceID))
 	if err != nil {
 		return nil, err
 	}
 	if !has {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"No Media Record Found for "+database.RecordTypeTVShow+":"+SourceTMDB+"-"+strconv.Itoa(showSourceID))
+			"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
 	}
 	// hash same, no update/insert
 	if !affected {
@@ -576,7 +576,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		}
 		seasonEntry := database.MediaRecord{
 			RecordType:       database.RecordTypeSeason,
-			MediaSource:      SourceTMDB,
+			MediaSource:      MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(seasonData.ID)),
 			ParentID:         &showRecord.RecordID, // record_id of the parent show
 			MediaTitle:       seasonData.Name,
@@ -618,14 +618,14 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			continue
 		}
 		// get season so we know the parent ID
-		has, seasonRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeSeason, SourceTMDB,
+		has, seasonRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeSeason, MediaSourceTMDB,
 			strconv.Itoa(int(seasonData.ID)))
 		if err != nil {
 			return nil, err
 		}
 		if !has {
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"No Media Record Found for "+database.RecordTypeTVShow+":"+SourceTMDB+"-"+strconv.Itoa(showSourceID))
+				"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
 		}
 		if seasonRecord == nil || seasonRecord.ParentID == nil {
 			return nil, fmt.Errorf("UpsertTVShowRecordTMDB(): season record is nil or has no parent id")
@@ -640,7 +640,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			episodeNum := episode.EpisodeNumber
 			episodeEntry := database.MediaRecord{
 				RecordType:       database.RecordTypeEpisode,
-				MediaSource:      SourceTMDB,
+				MediaSource:      MediaSourceTMDB,
 				SourceID:         strconv.Itoa(int(episode.ID)),
 				ParentID:         &seasonRecord.RecordID, // record_id of the season
 				MediaTitle:       episode.Name,

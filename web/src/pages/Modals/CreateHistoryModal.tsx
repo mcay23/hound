@@ -14,31 +14,24 @@ import React, { useState } from "react";
 function CreateHistoryModal(props: any) {
   const { onClose, open } = props;
   const [createHistoryData, setCreateHistoryData] = useState({
-    comment: "",
     is_private: true,
-    comment_type: "history",
-    tag_data: "",
-    start_date: "",
-    end_date: "",
+    action_type: "watch",
+    watched_at: "",
   });
   const [date, setDate] = React.useState<Dayjs | null>(dayjs());
   const handleClose = () => {
     setCreateHistoryData({
-      comment: "",
       is_private: true,
-      comment_type: "history",
-      tag_data: "",
-      start_date: "",
-      end_date: "",
+      action_type: "watch",
+      watched_at: "",
     });
     setDate(dayjs());
     onClose();
   };
-  if (createHistoryData.start_date === "" && date) {
+  if (createHistoryData.watched_at === "" && date) {
     setCreateHistoryData({
       ...createHistoryData,
-      start_date: date.toISOString(),
-      end_date: date.toISOString(),
+      watched_at: date.toISOString(),
     });
   }
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,16 +41,19 @@ function CreateHistoryModal(props: any) {
     });
   };
   const createHistoryHandler = () => {
-    if (createHistoryData.start_date === "") {
-      alert("unset date (bug, should not be possible)");
+    if (createHistoryData.watched_at === "") {
+      alert(
+        "unset date (bug, should not be possible, please report in github)"
+      );
       return;
     }
     var payload = { ...createHistoryData };
+    // full season insertion
     if (props.type === "season") {
-      payload = { ...createHistoryData, tag_data: `S${props.seasonNumber}` };
+      payload = { ...createHistoryData };
     }
     axios
-      .post(`/api/v1${window.location.pathname}/comments`, payload)
+      .post(`/api/v1${window.location.pathname}/history`, payload)
       .then(() => {
         toast.success("Added To Watch History");
         handleClose();
@@ -91,13 +87,12 @@ function CreateHistoryModal(props: any) {
                 if (newValue) {
                   setCreateHistoryData({
                     ...createHistoryData,
-                    start_date: newValue.toISOString(),
-                    end_date: newValue.toISOString(),
+                    watched_at: newValue.toISOString(),
                   });
                 }
               }}
             />
-            {props.type === "movie" ? (
+            {/* {props.type === "movie" ? (
               <TextField
                 id="outlined-multiline-static"
                 className="mt-3"
@@ -110,7 +105,7 @@ function CreateHistoryModal(props: any) {
               />
             ) : (
               ""
-            )}
+            )} */}
           </FormControl>
         </div>
         <DialogActions>

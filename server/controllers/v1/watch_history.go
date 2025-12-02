@@ -15,13 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const scrobbleCacheTTL = 72 * time.Hour
+const scrobbleCacheTTL = 48 * time.Hour
 
-/*
-	TV Show Watch History Handlers
-*/
-
-func GetWatchHistoryTVShowHandler(c *gin.Context) {
+func GetWatchHistoryHandler(c *gin.Context) {
+	recordType := database.RecordTypeMovie
+	if strings.Contains(c.FullPath(), "/tv/") {
+		recordType = database.RecordTypeTVShow
+	} else if !strings.Contains(c.FullPath(), "/movie/") {
+		// this shouldn't happen
+		panic("Fatal error, invalid path for watch history")
+	}
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
@@ -33,11 +36,11 @@ func GetWatchHistoryTVShowHandler(c *gin.Context) {
 		return
 	}
 	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
 	}
-	rewatchRecords, err := database.GetShowRewatchesFromSourceID(mediaSource, strconv.Itoa(showID), userID)
+	rewatchRecords, err := database.GetRewatchesFromSourceID(recordType, mediaSource, strconv.Itoa(showID), userID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting show rewatch records"))
 		return
@@ -60,17 +63,17 @@ func GetWatchHistoryTVShowHandler(c *gin.Context) {
 		}
 		targetSeason = &temp
 	}
-	var rewatchObjects []*view.TVShowRewatchRecordWatchEvents
+	var rewatchObjects []*view.MediaRewatchRecordWatchEvents
 	for _, rewatchRecord := range rewatchRecords {
-		watchEvents, err := database.GetWatchEventsFromRewatchID(rewatchRecord.ShowRewatchID, targetSeason)
+		watchEvents, err := database.GetWatchEventsFromRewatchID(rewatchRecord.RewatchID, targetSeason)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch events from rewatch id"))
 			return
 		}
-		rewatchObjects = append(rewatchObjects, &view.TVShowRewatchRecordWatchEvents{
-			TVShowRewatchRecord: *rewatchRecord,
-			TargetSeason:        targetSeason,
-			WatchEvents:         watchEvents,
+		rewatchObjects = append(rewatchObjects, &view.MediaRewatchRecordWatchEvents{
+			RewatchRecord: *rewatchRecord,
+			TargetSeason:  targetSeason,
+			WatchEvents:   watchEvents,
 		})
 	}
 	helpers.SuccessResponse(c,
@@ -80,18 +83,26 @@ func GetWatchHistoryTVShowHandler(c *gin.Context) {
 		}, 200)
 }
 
+/*
+TV Show Watch History Handlers
+*/
 func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
 		return
 	}
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		return
+	}
 	// Only episode ids that belong to the same show should be inserted at the same time
 	type addWatchHistoryPayload struct {
-		EpisodeIDs    []int   `json:"episode_ids" binding:"required"` // tmdb unique id for episode
-		ActionType    string  `json:"action_type" binding:"required,oneof=watch scrobble"`
-		ShowRewatchID *int64  `json:"show_rewatch_id"`
-		WatchedAt     *string `json:"watched_at"`
+		EpisodeIDs []int   `json:"episode_ids" binding:"required"` // tmdb unique id for episode
+		ActionType string  `json:"action_type" binding:"required,oneof=watch scrobble"`
+		RewatchID  *int64  `json:"rewatch_id"`
+		WatchedAt  *string `json:"watched_at"`
 	}
 	watchHistoryPayload := addWatchHistoryPayload{}
 	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
@@ -114,7 +125,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	}
 	// 1. Parse episode ids
 	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
 	}
@@ -137,11 +148,6 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error upserting tv show: "+c.Param("id")))
 		return
 	}
-	userID, err := database.GetUserIDFromUsername(username)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
-		return
-	}
 	// check if episode ids are in the database, and belong to the correct show
 	episodeMap, invalidIDs, err := database.CheckShowEpisodesIDs(mediaSource, strconv.Itoa(showID), episodeIDs)
 	if len(invalidIDs) > 0 {
@@ -157,17 +163,17 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		return
 	}
 	var targetRewatchID *int64
-	if watchHistoryPayload.ShowRewatchID != nil {
-		targetRewatchID = watchHistoryPayload.ShowRewatchID
+	if watchHistoryPayload.RewatchID != nil {
+		targetRewatchID = watchHistoryPayload.RewatchID
 		// check if rewatch_id exists for this user
-		rewatchRecords, err := database.GetShowRewatchesFromSourceID(mediaSource, strconv.Itoa(showID), userID)
+		rewatchRecords, err := database.GetRewatchesFromSourceID(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting show rewatch records"))
 			return
 		}
 		found := false
 		for _, item := range rewatchRecords {
-			if item.ShowRewatchID == *targetRewatchID {
+			if item.RewatchID == *targetRewatchID {
 				found = true
 				break
 			}
@@ -186,14 +192,14 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		}
 		// add rewatch record if none exists
 		if rewatchRecord == nil {
-			rewatchRecord, err = database.InsertShowRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
+			rewatchRecord, err = database.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
 				strconv.Itoa(showID), userID, time.Now().UTC())
 			if err != nil {
 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 				return
 			}
 		}
-		targetRewatchID = &rewatchRecord.ShowRewatchID
+		targetRewatchID = &rewatchRecord.RewatchID
 	}
 	// 4. Filter cached scrobbles, since we don't want to accidentally double insert scrobbles
 	// if they are inserted within X hours of each other. Watches are fine since it's manual
@@ -211,7 +217,8 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		cacheKey := ""
 		if actionType == database.ActionScrobble {
 			// realistically, scrobbles should only operate on the latest rewatch session
-			cacheKey = fmt.Sprintf("watch_history:scrobble:rewatchid-%d:%d:%s", targetRewatchID, userID, episodeIDStr)
+			cacheKey = fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%d:%s:%s-%s", userID, targetRewatchID,
+				database.RecordTypeEpisode, mediaSource, episodeIDStr)
 			var cached bool
 			cacheHit, err := database.GetCache(cacheKey, &cached)
 			if err != nil {
@@ -230,10 +237,10 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 			return
 		}
 		pendingRecords = append(pendingRecords, database.WatchEventsRecord{
-			ShowRewatchID: targetRewatchID,
-			RecordID:      int64Val,
-			WatchType:     actionType,
-			WatchedAt:     watchTime,
+			RewatchID: targetRewatchID,
+			RecordID:  int64Val,
+			WatchType: actionType,
+			WatchedAt: watchTime,
 		})
 		pendingMetadata = append(pendingMetadata, pendingInsert{
 			EpisodeID:    episodeID,
@@ -280,7 +287,14 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, response, 200)
 }
 
-func DeleteWatchHistoryTVShowHandler(c *gin.Context) {
+func DeleteWatchHistoryHandler(c *gin.Context) {
+	recordType := database.RecordTypeMovie
+	if strings.Contains(c.FullPath(), "/tv/") {
+		recordType = database.RecordTypeTVShow
+	} else if !strings.Contains(c.FullPath(), "/movie/") {
+		// this shouldn't happen
+		panic("Fatal error, invalid path for watch history")
+	}
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
@@ -302,11 +316,11 @@ func DeleteWatchHistoryTVShowHandler(c *gin.Context) {
 	}
 	// get record id from show source id
 	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
 	}
-	has, record, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID))
+	has, record, err := database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(showID))
 	if !has || err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting media record"))
 		return
@@ -332,7 +346,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 		return
 	}
 	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.SourceTMDB {
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
 	}
@@ -356,7 +370,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 			startedAt = parsed
 		}
 	}
-	rewatchRecord, err := database.InsertShowRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID, startedAt)
+	rewatchRecord, err := database.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID, startedAt)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 		return
@@ -366,4 +380,114 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 			"status": "success",
 			"data":   rewatchRecord,
 		}, 200)
+}
+
+/*
+Movie Watch Handlers
+*/
+
+// for movies, only a single rewatch is supported
+func AddWatchHistoryMovieHandler(c *gin.Context) {
+	username := c.GetHeader("X-Username")
+	if username == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		return
+	}
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		return
+	}
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		return
+	}
+	type addWatchHistoryPayload struct {
+		ActionType string  `json:"action_type" binding:"required,oneof=watch scrobble"`
+		WatchedAt  *string `json:"watched_at"`
+	}
+	watchHistoryPayload := addWatchHistoryPayload{}
+	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+		return
+	}
+	actionType := strings.ToLower(watchHistoryPayload.ActionType)
+	if actionType != database.ActionWatch && actionType != database.ActionScrobble {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid action type"))
+		return
+	}
+	watchTime := time.Now().UTC()
+	if watchHistoryPayload.WatchedAt != nil && *watchHistoryPayload.WatchedAt != "" {
+		parsed, err := time.Parse(time.RFC3339, *watchHistoryPayload.WatchedAt)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid watched_at timestamp"))
+			return
+		}
+		watchTime = parsed.UTC()
+	}
+	// 1. Upsert movie record
+	movieRecord, err := sources.UpsertMovieRecordTMDB(sourceID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error upserting media record for "+c.Param("id")))
+		return
+	}
+	// 2. Get most current rewatch or create new rewatch if none exists
+	rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeMovie, mediaSource, strconv.Itoa(sourceID), userID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting active rewatch: "+c.Param("id")))
+		return
+	}
+	// add rewatch record if none exists
+	if rewatchRecord == nil {
+		rewatchRecord, err = database.InsertRewatchFromSourceID(database.MediaTypeMovie, mediaSource,
+			strconv.Itoa(sourceID), userID, time.Now().UTC())
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
+			return
+		}
+	}
+	watchEvent := database.WatchEventsRecord{
+		RewatchID: &rewatchRecord.RewatchID,
+		RecordID:  movieRecord.RecordID,
+		WatchType: actionType,
+		WatchedAt: watchTime,
+	}
+	if actionType == database.ActionScrobble {
+		// check cache for recent scrobble
+		cacheKey := fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%d",
+			userID, rewatchRecord.RewatchID, database.RecordTypeMovie, mediaSource, sourceID)
+		var cached bool
+		cacheHit, err := database.GetCache(cacheKey, &cached)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error checking scrobble cache"))
+			return
+		}
+		// if cache hit, return without inserting
+		if cacheHit {
+			helpers.SuccessResponse(c, gin.H{
+				"status":             "success",
+				"media_source":       mediaSource,
+				"action_type":        actionType,
+				"inserted_source_id": nil,
+			}, 200)
+			return
+		}
+		// set cache for scrobbles to prevent accident duplicate inserts
+		if _, err := database.SetCache(cacheKey, true, scrobbleCacheTTL); err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error caching scrobble entry"))
+			return
+		}
+	}
+	err = database.BatchInsertWatchEvents([]database.WatchEventsRecord{watchEvent})
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error inserting watch event to db: "+c.Param("id")))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{
+		"status":             "success",
+		"media_source":       mediaSource,
+		"action_type":        actionType,
+		"inserted_source_id": sourceID,
+	}, 200)
 }
