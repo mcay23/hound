@@ -47,6 +47,11 @@
     height: 300px !important;
 }
 
+.itemcard-img-cast-skeleton {
+    width: 160px !important;
+    height: 240px !important;
+}
+
 .itemcard-img-poster-game-cover {
     width: 210px !important;
     height: 280px !important;
@@ -95,8 +100,8 @@ a {
         height: 240px;
     }
     .itemcard-img-poster-skeleton {
-        width: 160px;
-        height: 240px;
+        width: 160px !important;
+        height: 240px !important;
     }
     .itemcard-item-caption {
         font-family: 'Cabin', sans-serif;

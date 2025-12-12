@@ -66,12 +66,26 @@ function ItemCard(props: {
     return (
       <figure>
         {props.item.thumbnail_url ? (
-          <img
-            className={"rounded itemcard-img-cast"}
-            src={props.item.thumbnail_url}
-            alt={props.item.media_title}
-            loading="lazy"
-          />
+          <>
+            {!loaded && (
+              <Skeleton
+                variant="rounded"
+                className="rounded itemcard-img-cast-skeleton"
+                animation="wave"
+              />
+            )}
+            <img
+              className={"rounded itemcard-img-cast"}
+              src={props.item.thumbnail_url}
+              alt={props.item.media_title}
+              loading="lazy"
+              onLoad={() => setLoaded(true)}
+              style={{
+                opacity: loaded ? 1 : 0,
+                transition: "opacity 0.5s ease",
+              }}
+            />
+          </>
         ) : (
           <div className={"rounded itemcard-img-cast"} />
         )}
