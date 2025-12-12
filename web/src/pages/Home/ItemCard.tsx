@@ -26,8 +26,12 @@ function ItemCard(props: {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
     if (!props.item.thumbnail_url) {
       return (
-        <a href={mediaPagePath}>
-          <div className={"rounded itemcard-img-poster item-card-no-thumbnail"}>
+        <a href={mediaPagePath} className="itemcard-img-poster-container">
+          <div
+            className={
+              "rounded itemcard-img-poster item-card-no-thumbnail border border-primary"
+            }
+          >
             {props.item.media_title + releaseYearText}
           </div>
         </a>
@@ -183,12 +187,26 @@ function ItemCard(props: {
     return (
       <a href={mediaPagePath}>
         {props.item.poster_url ? (
-          <img
-            className={"rounded itemcard-img-poster " + gameAspectRatioClass}
-            src={props.item.poster_url}
-            alt={props.item.media_title}
-            loading="lazy"
-          />
+          <a href={mediaPagePath} className="itemcard-img-poster-container">
+            {!loaded && (
+              <Skeleton
+                variant="rounded"
+                className="rounded itemcard-img-poster-skeleton"
+                animation="wave"
+              />
+            )}
+            <img
+              className={"rounded itemcard-img-poster"}
+              src={props.item.poster_url}
+              alt={props.item.media_title}
+              loading="lazy"
+              onLoad={() => setLoaded(true)}
+              style={{
+                opacity: loaded ? 1 : 0,
+                transition: "opacity 0.5s ease",
+              }}
+            />
+          </a>
         ) : (
           <div
             className={
