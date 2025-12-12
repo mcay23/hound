@@ -3,19 +3,19 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import {
   IconButton,
+  Skeleton,
   styled,
   Tooltip,
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
 import HistoryModal from "../Modals/HistoryModal";
-import axios from "axios";
 
 const offsetFix = {
   modifiers: [
@@ -46,6 +46,7 @@ function MediaPageTV(props: any) {
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isPosterLoaded, setIsPosterLoaded] = useState(false);
 
   var styles = {
     noBackdrop: {
@@ -129,7 +130,6 @@ function MediaPageTV(props: any) {
       : "";
     document.title = props.data.media_title + " " + yearString + " - Hound";
   }
-
   return (
     <>
       <div
@@ -141,11 +141,21 @@ function MediaPageTV(props: any) {
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
+              {!isPosterLoaded && props.data.poster_url && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded media-page-tv-poster-skeleton"
+                  animation="wave"
+                />
+              )}
               {props.data.poster_url ? (
                 <img
-                  className="media-page-tv-poster"
+                  className={
+                    "media-page-tv-poster " + (!isPosterLoaded && "d-none")
+                  }
                   src={props.data.poster_url}
                   alt={props.data.media_title}
+                  onLoad={() => setIsPosterLoaded(true)}
                 />
               ) : (
                 <div className="media-page-tv-poster">

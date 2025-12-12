@@ -22,8 +22,9 @@
 }
 
 .media-page-tv-poster {
-    width: 200px;
-    height: 300px;
+    width: 200px !important;
+    height: 300px !important;
+    transition: all 0.5s ease;
     display: inline-flex;
     border-radius: 6px;
     border: solid rgba(255, 255, 255, 0.8) 2px;
@@ -32,6 +33,12 @@
     text-align: center;
     justify-content: center;
     align-items: center;
+}
+
+.media-page-tv-poster-skeleton {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    width: 200px !important;
+    height: 300px !important;
 }
 
 .media-page-tv-header-info {

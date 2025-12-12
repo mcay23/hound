@@ -4,6 +4,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
 import {
   IconButton,
+  Skeleton,
   styled,
   Tooltip,
   tooltipClasses,
@@ -59,6 +60,7 @@ function MediaPageMovie(props: any) {
   const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
+  const [isPosterLoaded, setIsPosterLoaded] = useState(false);
 
   var styles = {
     noBackdrop: {
@@ -209,11 +211,21 @@ function MediaPageMovie(props: any) {
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
+              {!isPosterLoaded && props.data.poster_url && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded media-page-tv-poster-skeleton"
+                  animation="wave"
+                />
+              )}
               {props.data.poster_url ? (
                 <img
-                  className="media-page-tv-poster"
+                  className={
+                    "media-page-tv-poster " + (!isPosterLoaded && "d-none")
+                  }
                   src={props.data.poster_url}
                   alt={props.data.media_title}
+                  onLoad={() => setIsPosterLoaded(true)}
                 />
               ) : (
                 <div className="media-page-tv-poster">
