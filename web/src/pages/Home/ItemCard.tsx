@@ -42,7 +42,7 @@ function ItemCard(props: {
         {!loaded && (
           <Skeleton
             variant="rounded"
-            className="rounded itemcard-img-poster-skeleton"
+            className="rounded w-100 h-100"
             animation="wave"
           />
         )}
@@ -67,24 +67,26 @@ function ItemCard(props: {
       <figure>
         {props.item.thumbnail_url ? (
           <>
-            {!loaded && (
-              <Skeleton
-                variant="rounded"
-                className="rounded itemcard-img-cast-skeleton"
-                animation="wave"
+            <div className={"itemcard-img-cast-container"}>
+              {!loaded && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded w-100 h-100"
+                  animation="wave"
+                />
+              )}
+              <img
+                className={"rounded itemcard-img-cast"}
+                src={props.item.thumbnail_url}
+                alt={props.item.media_title}
+                loading="lazy"
+                onLoad={() => setLoaded(true)}
+                style={{
+                  opacity: loaded ? 1 : 0,
+                  transition: "opacity 0.5s ease",
+                }}
               />
-            )}
-            <img
-              className={"rounded itemcard-img-cast"}
-              src={props.item.thumbnail_url}
-              alt={props.item.media_title}
-              loading="lazy"
-              onLoad={() => setLoaded(true)}
-              style={{
-                opacity: loaded ? 1 : 0,
-                transition: "opacity 0.5s ease",
-              }}
-            />
+            </div>
           </>
         ) : (
           <div className={"rounded itemcard-img-cast"} />
@@ -111,7 +113,7 @@ function ItemCard(props: {
               {!loaded && (
                 <Skeleton
                   variant="rounded"
-                  className="rounded itemcard-img-poster-skeleton"
+                  className="rounded w-100 h-100"
                   animation="wave"
                 />
               )}
@@ -205,7 +207,7 @@ function ItemCard(props: {
             {!loaded && (
               <Skeleton
                 variant="rounded"
-                className="rounded itemcard-img-poster-skeleton"
+                className="rounded w-100 h-100"
                 animation="wave"
               />
             )}
