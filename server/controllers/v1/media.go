@@ -19,13 +19,6 @@ var (
 	backdropCacheKey = "server-backdrop-cache"
 )
 
-type AddToCollectionRequest struct {
-	MediaSource  string `json:"media_source" binding:"required,gt=0"`
-	MediaType    string `json:"media_type"  binding:"required,gt=0"`
-	SourceID     string `json:"source_id" binding:"required,gt=0"`
-	CollectionID *int64 `json:"collection_id"`
-}
-
 type CommentRequest struct {
 	CommentType  string    `json:"comment_type" binding:"required,gt=0"` // review, etc.
 	IsPrivate    bool      `json:"is_private"`

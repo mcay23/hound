@@ -71,5 +71,5 @@ func LoginHandler(c *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(c.Writer, cookie)
-	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username}, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "username": userPayload.Username, "token": token}, 200)
 }

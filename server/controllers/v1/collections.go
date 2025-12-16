@@ -11,6 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type AddToCollectionRequest struct {
+	MediaSource  string `json:"media_source" binding:"required,gt=0"`
+	MediaType    string `json:"media_type"  binding:"required,gt=0"`
+	SourceID     string `json:"source_id" binding:"required,gt=0"`
+	CollectionID *int64 `json:"collection_id"`
+}
+
 func AddToCollectionHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	body := AddToCollectionRequest{}
