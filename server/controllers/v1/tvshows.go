@@ -233,6 +233,21 @@ func GetTVSeasonHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, response, 200)
 }
 
+func GetTVEpisodeGroupsHandler(c *gin.Context) {
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"request id param invalid"+err.Error()))
+		return
+	}
+	episodeGroups, err := sources.GetTVEpisodeGroupsTMDB(sourceID)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"episode_groups": episodeGroups.Results}, 200)
+}
+
 func GetTMDBImageURL(path string, size string) string {
 	if path == "" {
 		return ""

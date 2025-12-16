@@ -155,6 +155,40 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	return season, nil
 }
 
+func GetTVEpisodeGroupsTMDB(tmdbID int) (*tmdb.TVEpisodeGroups, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|episode_groups|tmdb-%d", database.MediaTypeTVShow, tmdbID)
+	var cacheObject tmdb.TVEpisodeGroups
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
+	if cacheExists {
+		return &cacheObject, nil
+	}
+	episodeGroups, err := tmdbClient.GetTVEpisodeGroups(tmdbID, nil)
+	if err != nil {
+		return nil, err
+	}
+	if episodeGroups != nil {
+		_, _ = database.SetCache(cacheKey, episodeGroups, getCacheDuration)
+	}
+	return episodeGroups, err
+}
+
+func GetTVEpisodeGroupsDetailsTMDB(tmdbEpisodeGroupID string) (*tmdb.TVEpisodeGroupsDetails, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|episode_groups_details|tmdb-%s", database.MediaTypeTVShow, tmdbEpisodeGroupID)
+	var cacheObject tmdb.TVEpisodeGroupsDetails
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
+	if cacheExists {
+		return &cacheObject, nil
+	}
+	episodeGroupDetails, err := tmdbClient.GetTVEpisodeGroupsDetails(tmdbEpisodeGroupID, nil)
+	if err != nil {
+		return nil, err
+	}
+	if episodeGroupDetails != nil {
+		_, _ = database.SetCache(cacheKey, episodeGroupDetails, getCacheDuration)
+	}
+	return episodeGroupDetails, err
+}
+
 func AddTVShowToCollectionTMDB(username string, source string, sourceID int, collectionID *int64) error {
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {

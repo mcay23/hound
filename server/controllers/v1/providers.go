@@ -72,6 +72,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		Season:          0,
 		Episode:         0,
 		SourceEpisodeID: 0,
+		EpisodeGroupID:  "",
 	}
 	if mediaType == database.MediaTypeTVShow {
 		seasonNumber, err := strconv.Atoi(c.Query("season"))
@@ -82,6 +83,7 @@ func SearchProvidersHandler(c *gin.Context) {
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid episode query param"+err.Error()))
 		}
+		query.EpisodeGroupID = c.Query("episode_group_id")
 		query.Season = seasonNumber
 		// For TV Shows, episodes are sometimes offset, eg. for show A, Season 2 starts at episode 20 instead of 1
 		// Offset this negatively to normalize to S2E1 since this is how most providers work
