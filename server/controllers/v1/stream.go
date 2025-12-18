@@ -2,6 +2,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"hound/helpers"
 	"hound/model"
 	"io"
@@ -21,7 +22,8 @@ func StreamHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
-	// Torrent Streaming Case
+	fmt.Println("Initializing Stream ", streamDetails.Filename)
+	// Torrent/P2P Streaming Case
 	if streamDetails.Cached == "false" && streamDetails.P2P == "p2p" {
 		file, err := model.GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex, streamDetails.Filename)
 		if err != nil {
@@ -97,11 +99,11 @@ func AddTorrentHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
-	if streamDetails.FileIndex == -1 && streamDetails.Filename == "" || streamDetails.InfoHash == "" {
+	if streamDetails.FileIndex == -1 || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Torrent hash, File Index and/or File name not provided"))
 		return
 	}
-	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources, streamDetails.FileIndex, streamDetails.Filename)
+	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return

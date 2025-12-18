@@ -21,5 +21,6 @@ func main() {
 	database.InitializeCache()
 	sources.InitializeSources()
 	model.InitializeP2P()
+	model.InitializeMedia()
 	controllers.SetupRoutes()
 }
