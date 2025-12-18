@@ -7,6 +7,7 @@ import "video.js/dist/video-js.css";
 interface IVideoPlayerProps {
   options: any;
   onVideoEnding?: () => void;
+  setLoading?: (loading: boolean) => void;
 }
 
 const initialOptions: any = {
@@ -25,7 +26,11 @@ const initialOptions: any = {
   ],
 };
 
-function VideoPlayer({ options, onVideoEnding }: IVideoPlayerProps) {
+function VideoPlayer({
+  options,
+  onVideoEnding,
+  setLoading,
+}: IVideoPlayerProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Player | null>(null);
 

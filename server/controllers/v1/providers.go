@@ -76,12 +76,12 @@ func SearchProvidersHandler(c *gin.Context) {
 	}
 	if mediaType == database.MediaTypeTVShow {
 		seasonNumber, err := strconv.Atoi(c.Query("season"))
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid season query param"+err.Error()))
+		if err != nil || c.Query("season") == "" {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid season query param"+err.Error()))
 		}
 		episodeNumber, err := strconv.Atoi(c.Query("episode"))
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid episode query param"+err.Error()))
+		if err != nil || c.Query("episode") == "" {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid episode query param"+err.Error()))
 		}
 		query.EpisodeGroupID = c.Query("episode_group_id")
 		query.Season = seasonNumber

@@ -6,22 +6,48 @@ import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import houndConfig from "./../../config.json";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open } = props;
   const [videoURL, setVideoURL] = useState("");
+  const [loading, setLoading] = useState(false);
   const handleClose = () => {
+    setLoading(false);
     setOpen(false);
   };
 
   useEffect(() => {
-    if (streamDetails != null) {
-      setVideoURL(
-        houndConfig.server_host + "/api/v1/stream/" + streamDetails.encoded_data
-      );
-      setVideoURL(
-        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-      );
+    if (!open) {
+      setVideoURL("");
+      return;
+    }
+    setLoading(true);
+    if (streamDetails) {
+      if (streamDetails.p2p === "p2p") {
+        const fetchToast = toast.loading("Fetching torrent...");
+        axios
+          .post("/api/v1/torrent/" + streamDetails.encoded_data)
+          .then(() => {
+            toast.dismiss(fetchToast);
+            setVideoURL(
+              houndConfig.server_host +
+                "/api/v1/stream/" +
+                streamDetails.encoded_data
+            );
+            setLoading(false);
+          })
+          .catch((err) => {
+            toast.error("Failed to add torrent " + err, { id: fetchToast });
+          });
+      } else {
+        setVideoURL(
+          houndConfig.server_host +
+            "/api/v1/stream/" +
+            streamDetails.encoded_data
+        );
+        setLoading(false);
+      }
     }
   }, [streamDetails, streams, open]);
 
@@ -57,7 +83,7 @@ function StreamModal(props: any) {
   return (
     <Dialog
       onClose={handleClose}
-      open={open}
+      open={open && !loading}
       disableScrollLock={false}
       fullScreen
       PaperProps={{
@@ -81,7 +107,11 @@ function StreamModal(props: any) {
       >
         <ArrowBack />
       </IconButton>
-      <VideoPlayer options={videoJsOptions} onVideoEnding={handleSetWatched} />
+      <VideoPlayer
+        options={videoJsOptions}
+        onVideoEnding={handleSetWatched}
+        setLoading={setLoading}
+      />
     </Dialog>
   );
 }

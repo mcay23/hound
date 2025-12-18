@@ -42,18 +42,28 @@ type TorrentSession struct {
 }
 
 var (
-	client         *torrent.Client
-	activeTorrents sync.Map // infoHash -> TorrentSession
+	streamClient   *torrent.Client
+	downloadClient *torrent.Client
+	activeStreams  sync.Map // infoHash -> TorrentSession
 )
 
 func InitializeP2P() {
-	cfg := torrent.NewDefaultClientConfig()
-	cfg.DataDir = filepath.Join(os.TempDir(), "torrent-data")
+	// client for streaming
+	streamingConfig := torrent.NewDefaultClientConfig()
+	streamingConfig.DataDir = filepath.Join(os.TempDir(), "torrent-data")
 	var err error
-	client, err = torrent.NewClient(cfg)
+	streamClient, err = torrent.NewClient(streamingConfig)
 	if err != nil {
 		panic(err)
 	}
+	// client for downloads
+	// downloadConfig := torrent.NewDefaultClientConfig()
+	// downloadConfig.DataDir = DownloadsPath
+	// downloadConfig.ListenPort = 0
+	// downloadClient, err = torrent.NewClient(downloadConfig)
+	// if err != nil {
+	// 	panic(err)
+	// }
 	go cleanupSessions()
 	slog.Info("Initialized P2P Client")
 }
@@ -61,20 +71,27 @@ func InitializeP2P() {
 /*
 File idx is used, but if -1 (invalid) use filename
 */
-func AddTorrent(infoHashStr string, sources []string, fileIdx int, filename string) error {
-	if client == nil {
-		panic("Torrent client is not initialized!")
+func AddTorrent(infoHashStr string, sources []string) error {
+	if streamClient == nil {
+		panic("Streaming torrent client is not initialized!")
 	}
 	var infoHash metainfo.Hash
 	if err := infoHash.FromHexString(infoHashStr); err != nil {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid infoHash")
 	}
-	if _, exists := activeTorrents.Load(infoHash); exists {
+	// don't return error if already exists
+	if v, exists := activeStreams.Load(infoHash); exists {
+		session, ok := v.(*TorrentSession)
+		if !ok {
+			return nil
+		}
+		// update last used
+		session.LastUsed = time.Now()
 		return nil
 	}
 	magnetURI := getMagnetLink(infoHash.HexString(), sources)
 	slog.Info("Retrieving Magnet...", "magnet", magnetURI)
-	t, err := client.AddMagnet(magnetURI)
+	t, err := streamClient.AddMagnet(magnetURI)
 
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to add magnet")
@@ -85,7 +102,7 @@ func AddTorrent(infoHashStr string, sources []string, fileIdx int, filename stri
 	case <-time.After(120 * time.Second):
 		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+magnetURI)
 	}
-	activeTorrents.Store(infoHashStr, &TorrentSession{
+	activeStreams.Store(infoHashStr, &TorrentSession{
 		Torrent:  t,
 		LastUsed: time.Now(),
 	})
@@ -94,7 +111,7 @@ func AddTorrent(infoHashStr string, sources []string, fileIdx int, filename stri
 }
 
 func GetTorrentFile(infoHash string, fileIdx int, filename string) (*torrent.File, error) {
-	v, ok := activeTorrents.Load(infoHash)
+	v, ok := activeStreams.Load(infoHash)
 	if !ok {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No session with this hash found, add the torrent first")
 	}
@@ -102,6 +119,7 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string) (*torrent.Fil
 	if !ok {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
 	}
+	slog.Info("Starting p2p stream", "file", session.Torrent.Files()[fileIdx].DisplayPath())
 	// update last used
 	session.LastUsed = time.Now()
 	t := session.Torrent
@@ -194,12 +212,14 @@ func cleanupSessions() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		activeTorrents.Range(func(key, value interface{}) bool {
+		activeStreams.Range(func(key, value interface{}) bool {
 			session := value.(*TorrentSession)
-
+			// for _, file := range session.Torrent.Info().Files {
+			// 	os.Remove(file.Path())
+			// }
 			if time.Since(session.LastUsed) > 15*time.Minute {
 				session.Torrent.Drop()
-				activeTorrents.Delete(key)
+				activeStreams.Delete(key)
 				slog.Info("Removed unused session: %s", key)
 			}
 			return true

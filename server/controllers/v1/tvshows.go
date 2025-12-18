@@ -35,7 +35,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		return
 	}
 	// get profile, video urls
-	for num, _ := range showDetails.Seasons {
+	for num := range showDetails.Seasons {
 		// this doesn't work, pointer stuff
 		// item.PosterPath = tmdb.GetImageURL(item.PosterPath, tmdb.W500)
 		showDetails.Seasons[num].PosterPath = GetTMDBImageURL(showDetails.Seasons[num].PosterPath, tmdb.W500)
