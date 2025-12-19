@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/helpers"
 	"hound/model"
+	"hound/model/sources"
 	"io"
 	"log/slog"
 	"net/http"
@@ -116,6 +117,7 @@ func AddTorrentHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
+// This downloads the torrent to the server, not the client
 func DownloadTorrentHandler(c *gin.Context) {
 	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
@@ -123,7 +125,12 @@ func DownloadTorrentHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
-	err = model.DownloadTorrent(streamDetails.InfoHash, streamDetails.FileIndex, streamDetails.Filename, streamDetails.Sources)
+	if streamDetails.MediaSource != sources.MediaSourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid media source: "+streamDetails.MediaSource))
+		return
+	}
+	err = model.DownloadTorrent(streamDetails)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to download torrent"))
 		return

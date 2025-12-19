@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
+	"hound/model/database"
+	"hound/model/sources"
 	"log/slog"
 	"mime"
 	"net/url"
@@ -168,8 +170,36 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []str
 	return fileToStream, session, nil
 }
 
-func DownloadTorrent(infoHash string, fileIdx int, filename string, sources []string) error {
-	file, session, err := GetTorrentFile(infoHash, fileIdx, filename, sources)
+// Downloads torrent to server, not clients
+func DownloadTorrent(streamDetails *StreamObjectFull) error {
+	if streamDetails == nil {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Nil stream details passed to DownloadTorrent()")
+	}
+	if streamDetails.MediaSource != sources.MediaSourceTMDB {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
+	}
+	var err error
+	var mediaRecord *database.MediaRecord
+	// attempt upsert first, if failed, abort
+	if streamDetails.MediaType == database.MediaTypeMovie {
+		mediaRecord, err = sources.UpsertMovieRecordTMDB(streamDetails.SourceID)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "Failed to upsert movie record when downloading")
+		}
+	} else if streamDetails.MediaType == database.MediaTypeTVShow {
+		mediaRecord, err = sources.UpsertTVShowRecordTMDB(streamDetails.SourceID)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "Failed to upsert tv show record when downloading")
+		}
+	} else {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid media type: "+streamDetails.MediaType)
+	}
+	// upsert has suceeded, if something else fails database won't be rolled back
+	file, session, err := GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex,
+		streamDetails.Filename, streamDetails.Sources)
 	if err != nil {
 		return err
 	}
@@ -184,7 +214,12 @@ func DownloadTorrent(infoHash string, fileIdx int, filename string, sources []st
 				float64(completed)/float64(total)*100, completed, total)
 
 			if completed >= total {
-				fmt.Println("\nDownload finished!")
+				slog.Info("Download finished, starting ingestion", "infohash", streamDetails.InfoHash,
+					"filename", streamDetails.Filename)
+				err = IngestFile(mediaRecord, streamDetails, file.Path())
+				if err != nil {
+					slog.Error("Failed to ingest file!", "error", err)
+				}
 				break
 			}
 			time.Sleep(5 * time.Second)
