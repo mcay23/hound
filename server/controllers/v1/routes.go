@@ -78,6 +78,7 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
+	privateRoutes.POST("/torrent/:encodedString/download", DownloadTorrentHandler)
 	//privateRoutes.GET("/tv/:id/stream/:encodedString", StreamHandler)
 
 	/*

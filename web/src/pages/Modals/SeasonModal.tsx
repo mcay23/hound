@@ -148,7 +148,6 @@ function SeasonModal(props: any) {
     if (open === false) return;
     if (seasonNumber < 0) return;
 
-    // TODO try to cache the call, but watch info might change
     // check data is loaded
     // season 0 is used for extras, specials sometimes
     const loadData = async () => {

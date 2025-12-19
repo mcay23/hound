@@ -2,10 +2,10 @@ package v1
 
 import (
 	"errors"
-	"fmt"
 	"hound/helpers"
 	"hound/model"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -22,17 +22,20 @@ func StreamHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
-	fmt.Println("Initializing Stream ", streamDetails.Filename)
+	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
+		"filename", streamDetails.Filename)
 	// Torrent/P2P Streaming Case
 	if streamDetails.Cached == "false" && streamDetails.P2P == "p2p" {
-		file, err := model.GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex, streamDetails.Filename)
+		file, _, err := model.GetTorrentFile(streamDetails.InfoHash,
+			streamDetails.FileIndex, streamDetails.Filename, streamDetails.Sources)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
 			return
 		}
 		// GetTorrentFile could return nil
 		if file == nil {
-			helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find file in torrent"+streamDetails.InfoHash)
+			helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Could not find file in torrent"+streamDetails.InfoHash)
 			return
 		}
 		c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
@@ -99,8 +102,10 @@ func AddTorrentHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
+	// may want to be more lax in the future
 	if streamDetails.FileIndex == -1 || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Torrent hash, File Index and/or File name not provided"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Torrent hash, File Index and/or File name not provided"))
 		return
 	}
 	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources)
@@ -109,4 +114,19 @@ func AddTorrentHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+}
+
+func DownloadTorrentHandler(c *gin.Context) {
+	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+	if err != nil || streamDetails == nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"Failed to parse encoded string:"+c.Param("encodedString")))
+		return
+	}
+	err = model.DownloadTorrent(streamDetails.InfoHash, streamDetails.FileIndex, streamDetails.Filename, streamDetails.Sources)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to download torrent"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "started"}, 200)
 }
