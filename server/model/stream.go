@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
-	"hound/model/database"
 	"hound/model/sources"
 	"log/slog"
 	"mime"
@@ -110,6 +109,19 @@ func AddTorrent(infoHashStr string, sources []string) error {
 	return nil
 }
 
+func GetTorrentSession(infoHash string) (*TorrentSession, error) {
+	v, ok := activeSessions.Load(infoHash)
+	// no need to log, expected to fail sometimes
+	if !ok {
+		return nil, errors.New(helpers.BadRequest)
+	}
+	session, ok := v.(*TorrentSession)
+	if !ok {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
+	}
+	return session, nil
+}
+
 func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []string) (*torrent.File, *TorrentSession, error) {
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
@@ -180,22 +192,10 @@ func DownloadTorrent(streamDetails *StreamObjectFull) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
 	}
-	var err error
-	var mediaRecord *database.MediaRecord
 	// attempt upsert first, if failed, abort
-	if streamDetails.MediaType == database.MediaTypeMovie {
-		mediaRecord, err = sources.UpsertMovieRecordTMDB(streamDetails.SourceID)
-		if err != nil {
-			return helpers.LogErrorWithMessage(err, "Failed to upsert movie record when downloading")
-		}
-	} else if streamDetails.MediaType == database.MediaTypeTVShow {
-		mediaRecord, err = sources.UpsertTVShowRecordTMDB(streamDetails.SourceID)
-		if err != nil {
-			return helpers.LogErrorWithMessage(err, "Failed to upsert tv show record when downloading")
-		}
-	} else {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media type: "+streamDetails.MediaType)
+	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, streamDetails.SourceID)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to upsert media record when downloading")
 	}
 	// upsert has suceeded, if something else fails database won't be rolled back
 	file, session, err := GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex,
@@ -203,6 +203,11 @@ func DownloadTorrent(streamDetails *StreamObjectFull) error {
 	if err != nil {
 		return err
 	}
+	relativePath := filepath.FromSlash(file.Path())
+	currentDir, _ := os.Getwd()
+	absolutePath := filepath.Join(currentDir, TorrentDownloadsDir, strings.ToLower(streamDetails.InfoHash), relativePath)
+	fmt.Println("SeasonNumber", *streamDetails.SeasonNumber, "EpisodeNumber", *streamDetails.EpisodeNumber)
+	fmt.Println("path", absolutePath)
 	go func() {
 		file.Download()
 		for {
@@ -216,7 +221,8 @@ func DownloadTorrent(streamDetails *StreamObjectFull) error {
 			if completed >= total {
 				slog.Info("Download finished, starting ingestion", "infohash", streamDetails.InfoHash,
 					"filename", streamDetails.Filename)
-				err = IngestFile(mediaRecord, streamDetails, file.Path())
+				_, err := IngestFile(mediaRecord, streamDetails.SeasonNumber, streamDetails.EpisodeNumber,
+					&streamDetails.InfoHash, &streamDetails.FileIndex, absolutePath)
 				if err != nil {
 					slog.Error("Failed to ingest file!", "error", err)
 				}

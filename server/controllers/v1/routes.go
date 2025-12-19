@@ -88,6 +88,16 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersHandler)
 
 	/*
+		Media Routes
+	*/
+	privateRoutes.POST("/media/ingest", IngestFileHandler)
+
+	/*
+		Metadata Routes
+	*/
+	privateRoutes.GET("/media/metadata", GetMetadataHandler)
+
+	/*
 		Testing purposes only
 	*/
 	privateRoutes.GET("/decode", DecodeTestHandler)

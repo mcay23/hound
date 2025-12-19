@@ -70,6 +70,10 @@ type MediaRecordNode struct {
 	Children []*MediaRecordNode
 }
 
+func instantiateMediaTables() error {
+	return databaseEngine.Table(mediaRecordsTable).Sync2(new(MediaRecord))
+}
+
 func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 	// check if data is already in internal library
 	var existingRecords []MediaRecord

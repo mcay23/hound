@@ -33,6 +33,9 @@ var addForeignKeys = &migrate.Migration{
 				ON UPDATE CASCADE ON DELETE CASCADE,
 			ADD CONSTRAINT fk_collection_relations_collection_id
 				FOREIGN KEY (collection_id) REFERENCES collections (collection_id)
+				ON UPDATE CASCADE ON DELETE CASCADE,
+			ADD CONSTRAINT fk_media_files_record_id
+				FOREIGN KEY (record_id) REFERENCES media_records (record_id)
 				ON UPDATE CASCADE ON DELETE CASCADE;
 			`
 		_, err := tx.Exec(query)
@@ -40,8 +43,13 @@ var addForeignKeys = &migrate.Migration{
 	},
 	Rollback: func(tx *xorm.Engine) error {
 		sql := `
-		ALTER TABLE collections DROP CONSTRAINT fk_collection_user;
-		ALTER TABLE comments DROP CONSTRANT fk_comment_user;
+		ALTER TABLE collections DROP CONSTRAINT fk_collections_user_id;
+		ALTER TABLE comments DROP CONSTRAINT fk_comments_user_id;
+		ALTER TABLE comments DROP CONSTRAINT fk_comments_record_id;
+		ALTER TABLE collection_relations DROP CONSTRAINT fk_collection_relations_user_id;
+		ALTER TABLE collection_relations DROP CONSTRAINT fk_collection_relations_record_id;
+		ALTER TABLE collection_relations DROP CONSTRAINT fk_collection_relations_collection_id;
+		ALTER TABLE media_files DROP CONSTRAINT fk_media_files_record_id;
 		`
 		_, err := tx.Exec(sql)
 		return err

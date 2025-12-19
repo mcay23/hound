@@ -5,8 +5,14 @@ import (
 	"fmt"
 	"hound/helpers"
 	"hound/model/database"
+	"hound/model/services"
+	"hound/model/sources"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 const (
@@ -17,7 +23,7 @@ const (
 )
 
 /*
-media deals with downloading files, creating file systems, and probing data
+media deals with file ingestion pipeline download->create files->process metadata...etc.
 */
 func InitializeMedia() {
 	// create media directories
@@ -34,28 +40,196 @@ func InitializeMedia() {
 }
 
 /*
-IngestFile ingests downloaded file into the media directory
-and add it to the database
+IngestFile copies the downloaded file into the media directory
+and adds its metadata to the database
 */
-func IngestFile(mediaRecord *database.MediaRecord, streamDetails *StreamObjectFull, path string) error {
+func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int,
+	infoHash *string, fileIdx *int, sourcePath string) (*database.MediaFileMetadata, error) {
 	if mediaRecord == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
 	}
-	targetPath := ""
-	if mediaRecord.RecordType == database.RecordTypeMovie {
-		targetPath = filepath.Join(MediaPath, MoviesPath)
-	} else if mediaRecord.RecordType == database.RecordTypeTVShow {
-		if streamDetails.SeasonNumber == nil || streamDetails.EpisodeNumber == nil {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+	if !IsVideoFile(filepath.Ext(sourcePath)) {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File is not a video file")
+	}
+	targetDir := ""
+	targetFilename := ""
+	var targetRecordID int64
+	switch mediaRecord.RecordType {
+	case database.RecordTypeMovie:
+		targetDir = filepath.Join(MediaPath, MoviesPath)
+		targetRecordID = mediaRecord.RecordID
+	case database.RecordTypeTVShow:
+		if seasonNumber == nil || episodeNumber == nil {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"Season number or episode number is nil")
 		}
-		seasonStr := "Specials"
-		if *streamDetails.SeasonNumber > 0 {
-			seasonStr = fmt.Sprintf("Season %d", *streamDetails.SeasonNumber)
+		// check if season/episode pair actually exists
+		sourceID, err := strconv.Atoi(mediaRecord.SourceID)
+		if err != nil {
+			return nil, helpers.LogErrorWithMessage(err, "Failed to convert source id to int")
 		}
-		mediaTitleStr := fmt.Sprintf("%s (%s)", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4])
-		targetPath = filepath.Join(MediaPath, TVShowsPath, mediaTitleStr, seasonStr)
+		season, err := sources.GetTVSeasonTMDB(sourceID, *seasonNumber)
+		if err != nil {
+			return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb, check if season exists")
+		}
+		found := false
+		for _, episode := range season.Episodes {
+			if episode.EpisodeNumber == *episodeNumber {
+				// get record id for this episode
+				has, episodeRecord, err := database.GetMediaRecord(database.RecordTypeEpisode,
+					sources.MediaSourceTMDB, strconv.Itoa(int(episode.ID)))
+				if err != nil {
+					return nil, helpers.LogErrorWithMessage(err, "Failed to get media record")
+				}
+				if !has {
+					return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+						"could not find media record for episode id "+strconv.Itoa(int(episode.ID)))
+				}
+				targetRecordID = episodeRecord.RecordID
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
+		}
+		// continue to construct dir
+		// eg. Big Buck Bunny (2001) {tmdb-123456}
+		mediaTitleStr := fmt.Sprintf("%s (%s) {%s-%s}", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4],
+			mediaRecord.MediaSource, mediaRecord.SourceID)
+		targetFilename = fmt.Sprintf("%s - S%02dE%02d", mediaTitleStr, *seasonNumber, *episodeNumber)
+		// add infohash, this just helps with multiple sources per episode
+		// of course, it's possible to have multiple qualities per infohash
+		// eg. Big Buck Bunny (2001) {tmdb-123456} - S1E5 {tmdb-5123} {infohash-ab23ef12[2]}.mp4
+		if infoHash != nil && *infoHash != "" && fileIdx != nil && *fileIdx >= 0 {
+			targetFilename += fmt.Sprintf(" {infohash-%s[%d]}", *infoHash, *fileIdx)
+		}
+		seasonStr := fmt.Sprintf("Season %02d", *seasonNumber)
+		targetFilename += filepath.Ext(sourcePath)
+		targetDir = filepath.Join(MediaPath, TVShowsPath, mediaTitleStr, seasonStr)
+	default:
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
 	}
-	os.MkdirAll(targetPath, 0755)
-	return nil
+	var session *TorrentSession
+	if infoHash != nil && *infoHash != "" {
+		session, _ = GetTorrentSession(*infoHash)
+	}
+	if err := copyWithUpdateTorrentSession(sourcePath, filepath.Join(targetDir, targetFilename), session); err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to copy file")
+	}
+	videoMetadata, err := ProbeVideoFromURI(filepath.Join(targetDir, targetFilename))
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to probe video + "+filepath.Join(targetDir, targetFilename))
+	}
+	mediaFile, err := database.InsertMediaFile(targetRecordID,
+		filepath.Join(targetDir, targetFilename), filepath.Base(sourcePath), videoMetadata)
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db"+filepath.Join(targetDir, targetFilename))
+	}
+	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
+	return mediaFile, nil
+}
+
+// Helper function to copy files from downloads -> media directory
+// update the torrent session periodically in case copy takes time,
+// so the torrent session isn't dropped and files deleted before copy is complete
+func copyWithUpdateTorrentSession(src, dst string, session *TorrentSession) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to stat source file: "+src)
+	}
+	if !srcInfo.Mode().IsRegular() {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Source is not a regular file")
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to create destination directory")
+	}
+	// keep updating session in case copy takes time
+	done := make(chan struct{})
+	if session != nil {
+		go func() {
+			t := time.NewTicker(time.Second * 60)
+			defer t.Stop()
+			for {
+				select {
+				case <-t.C:
+					session.LastUsed = time.Now()
+				case <-done:
+					return
+				}
+			}
+		}()
+	}
+	defer close(done)
+	_ = os.Remove(dst)
+	// copy via hardlinks
+	if err := os.Link(src, dst); err == nil {
+		return nil
+	}
+	// fallback to regular copy
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Sync()
+}
+
+func ProbeVideoFromURI(uri string) (*database.VideoMetadata, error) {
+	rawOutput, err := services.FFProbe(uri)
+	if err != nil {
+		return nil, err
+	}
+	return simplifyMetadata(uri, rawOutput)
+}
+
+// helper convert ffprobe output to a metadata struct to store in db
+func simplifyMetadata(uri string, raw *services.FfprobeOutput) (*database.VideoMetadata, error) {
+	size, _ := strconv.ParseInt(raw.Format.Size, 10, 64)
+	durationSeconds, _ := strconv.ParseFloat(raw.Format.Duration, 64)
+	metadata := &database.VideoMetadata{
+		Filename:           filepath.Base(uri),
+		Filesize:           size,
+		FileFormat:         raw.Format.FileFormat,
+		FileFormatLongName: raw.Format.FileFormatLongName,
+		Duration:           time.Duration(durationSeconds * float64(time.Second)),
+		Bitrate:            raw.Format.Bitrate,
+	}
+	for _, rawStream := range raw.Streams {
+		stream := database.Stream{
+			CodecType:      rawStream.CodecType,
+			CodecName:      rawStream.CodecName,
+			CodecLongName:  rawStream.CodecLongName,
+			Profile:        rawStream.Profile,
+			Channels:       rawStream.Channels,
+			ChannelLayout:  rawStream.ChannelLayout,
+			PixelFormat:    rawStream.PixelFormat,
+			ColorPrimaries: rawStream.ColorPrimaries,
+			ColorTransfer:  rawStream.ColorTransfer,
+			ColorSpace:     rawStream.ColorSpace,
+			ColorRange:     rawStream.ColorRange,
+		}
+		// should be ISO-639-2 3 letter codes
+		if lang, ok := rawStream.Tags["language"]; ok {
+			stream.Language = lang
+		}
+		if title, ok := rawStream.Tags["title"]; ok {
+			stream.Title = title
+		}
+		metadata.Streams = append(metadata.Streams, stream)
+		if rawStream.CodecType == "video" {
+			metadata.Width = rawStream.Width
+			metadata.Height = rawStream.Height
+			metadata.Framerate = rawStream.AvgFrameRate
+		}
+	}
+	return metadata, nil
 }

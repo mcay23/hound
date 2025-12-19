@@ -4,6 +4,7 @@ import (
 	"hound/controllers"
 	"hound/model"
 	"hound/model/database"
+	"hound/model/services"
 	"hound/model/sources"
 	"log/slog"
 	"os"
@@ -22,5 +23,6 @@ func main() {
 	sources.InitializeSources()
 	model.InitializeP2P()
 	model.InitializeMedia()
+	services.InitializeFFMPEG()
 	controllers.SetupRoutes()
 }
