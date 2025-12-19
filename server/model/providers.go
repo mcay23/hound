@@ -47,10 +47,10 @@ type ProviderResponseObject struct {
 type StreamMediaDetails struct {
 	MediaSource     string `json:"media_source"`
 	SourceID        int    `json:"source_id"`
-	MediaType       string `json:"media_type"`       // movies or tvshows, etc.
-	IMDbID          string `json:"imdb_id"`          // starts with 'tt'
-	Season          *int   `json:"season,omitempty"` // shows only
-	Episode         *int   `json:"episode,omitempty"`
+	MediaType       string `json:"media_type"`              // movies or tvshows, etc.
+	IMDbID          string `json:"imdb_id"`                 // starts with 'tt'
+	SeasonNumber    *int   `json:"season_number,omitempty"` // shows only
+	EpisodeNumber   *int   `json:"episode_number,omitempty"`
 	SourceEpisodeID *int   `json:"source_episode_id,omitempty"` // tv shows only
 }
 
@@ -150,8 +150,8 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 		SourceID:        query.SourceID,
 		MediaType:       query.MediaType,
 		IMDbID:          query.IMDbID,
-		Season:          &query.Season,
-		Episode:         &query.Episode,
+		SeasonNumber:    &query.Season,
+		EpisodeNumber:   &query.Episode,
 		SourceEpisodeID: &query.SourceEpisodeID,
 	}
 	providersArray := []ProviderObject{obj}

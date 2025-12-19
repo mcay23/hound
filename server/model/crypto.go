@@ -3,8 +3,9 @@ package model
 import (
 	"encoding/json"
 	"errors"
-	"github.com/golang-jwt/jwt/v4"
 	"os"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // to encode into JWT string
@@ -14,8 +15,8 @@ type StreamObjectFull struct {
 }
 
 /*
-	Encodes a stream into a string using JWT
- */
+Encodes a stream into a string using JWT
+*/
 func EncodeJsonStreamJWT(streamObject StreamObjectFull) (string, error) {
 	var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 	// Marshal the struct into JSON
@@ -29,9 +30,9 @@ func EncodeJsonStreamJWT(streamObject StreamObjectFull) (string, error) {
 }
 
 /*
-	Decode a string back into StreamObjectFull data
- */
-func DecodeJsonStreamJWT(tokenString string) (*StreamObjectFull, error){
+Decode a string back into StreamObjectFull data
+*/
+func DecodeJsonStreamJWT(tokenString string) (*StreamObjectFull, error) {
 	var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 	parsed, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil

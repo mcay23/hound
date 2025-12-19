@@ -30,3 +30,11 @@ func InitializeMedia() {
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
 }
+
+/*
+IngestFile ingests downloaded file into the media directory
+and add it to the database
+*/
+func IngestFile(file os.File) {
+
+}
