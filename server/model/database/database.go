@@ -34,6 +34,11 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate users table")
 		panic(err)
 	}
+	err = instantiateCollectionTables()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate collection tables")
+		panic(err)
+	}
 	err = instantiateMediaTables()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media tables")
@@ -47,6 +52,11 @@ func InstantiateDB() {
 	err = instantiateWatchTables()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate watch tables")
+		panic(err)
+	}
+	err = instantiateMediaFilesTable()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media files table")
 		panic(err)
 	}
 	slog.Info("DB tables initialized")

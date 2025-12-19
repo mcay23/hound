@@ -68,20 +68,12 @@ type CreateCollectionRequest struct {
 	IsPublic        bool   `json:"is_public"`
 }
 
-func instantiateMediaTables() error {
-	err := databaseEngine.Table(mediaRecordsTable).Sync2(new(MediaRecord))
+func instantiateCollectionTables() error {
+	err := databaseEngine.Table(collectionsTable).Sync2(new(CollectionRecord))
 	if err != nil {
 		return err
 	}
-	err = databaseEngine.Table(collectionsTable).Sync2(new(CollectionRecord))
-	if err != nil {
-		return err
-	}
-	err = databaseEngine.Table(collectionRelationsTable).Sync2(new(CollectionRelation))
-	if err != nil {
-		return err
-	}
-	return nil
+	return databaseEngine.Table(collectionRelationsTable).Sync2(new(CollectionRelation))
 }
 
 func GetCollectionRecords(userID int64, collectionID int64, limit int, offset int) ([]MediaRecordGroup, *CollectionRecord, int64, error) {

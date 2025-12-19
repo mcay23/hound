@@ -438,6 +438,18 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 	return hex.EncodeToString(hash[:])
 }
 
+// simple helper function
+func UpsertMediaRecordTMDB(mediaType string, sourceID int) (*database.MediaRecord, error) {
+	switch mediaType {
+	case database.MediaTypeMovie:
+		return UpsertMovieRecordTMDB(sourceID)
+	case database.MediaTypeTVShow:
+		return UpsertTVShowRecordTMDB(sourceID)
+	default:
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid media type")
+	}
+}
+
 // create a tmdb movie record to be inserted to the internal library
 func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	movie, err := GetMovieFromIDTMDB(sourceID)

@@ -1,4 +1,4 @@
-FROM golang:1.19.4-alpine as builder
+FROM golang:1.25.5-alpine as builder
 
 # ENV GO111MODULE=on
 
@@ -22,7 +22,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Start a new stage from scratch
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+RUN apk add --no-cache \
+    ffmpeg \
+    ca-certificates
 
 WORKDIR /root/
 
@@ -33,8 +35,8 @@ COPY --from=builder /app/config/config.yaml .
 
 # COPY --from=builder /app/.env .
 
-# Expose port 8080 to the outside world
-EXPOSE 8080
+# Expose port 8000 to the outside world
+EXPOSE 8000
 
 #Command to run the executable
 CMD ["./main"]
