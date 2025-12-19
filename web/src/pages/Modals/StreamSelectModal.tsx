@@ -2,6 +2,9 @@ import { Chip, Dialog, Fade, useMediaQuery, useTheme } from "@mui/material";
 import "./StreamSelectModal.css";
 import "video.js/dist/video-js.css";
 import { slotPropsGlass, paperPropsGlass } from "./modalStyles";
+import { Button } from "react-bootstrap";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 function SelectStreamModal(props: any) {
   const { setOpen, open, setMainStream, setIsStreamModalOpen } = props;
@@ -125,6 +128,26 @@ function SelectStreamModal(props: any) {
                       {stream.addon}
                       {stream.addon && stream.folder_name ? " ⸱ " : ""}
                       {stream.folder_name}
+                    </div>
+                    <div>
+                      <Button
+                        onClick={() => {
+                          axios
+                            .post(
+                              "/api/v1/torrent/" +
+                                stream.encoded_data +
+                                "/download"
+                            )
+                            .then((res) => {
+                              toast.success("Download added to queue");
+                            })
+                            .catch((err) => {
+                              toast.error("Download Failed! " + err);
+                            });
+                        }}
+                      >
+                        Download to Hound
+                      </Button>
                     </div>
                   </div>
                 );
