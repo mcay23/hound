@@ -3,9 +3,9 @@ package model
 import (
 	"errors"
 	"fmt"
+	"hound/database"
 	"hound/helpers"
-	"hound/model/database"
-	"hound/model/services"
+	"hound/services"
 	"io"
 	"log/slog"
 	"os"
@@ -43,7 +43,7 @@ IngestFile copies the downloaded file into the media directory
 and adds its metadata to the database
 */
 func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int,
-	infoHash *string, fileIdx *int, sourcePath string) (*database.MediaFileMetadata, error) {
+	infoHash *string, fileIdx *int, sourcePath string) (*database.MediaFile, error) {
 	if mediaRecord == nil {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
 	}
@@ -63,23 +63,12 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 				"Season number or episode number is nil")
 		}
 		// check if season/episode pair actually exists
-		episodes, err := database.GetEpisodeMediaRecordsForShow(mediaRecord.MediaSource,
-			&mediaRecord.SourceID, seasonNumber)
-		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
+		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
+			&mediaRecord.SourceID, seasonNumber, *episodeNumber)
+		if err != nil || episodeRecord == nil {
+			return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media record")
 		}
-		found := false
-		for _, episode := range episodes {
-			if *episode.EpisodeNumber == *episodeNumber {
-				targetRecordID = episode.RecordID
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
-		}
-		slog.Info("found!")
+		targetRecordID = episodeRecord.RecordID
 		// continue to construct dir
 		// eg. Big Buck Bunny (2001) {tmdb-123456}
 		mediaTitleStr := fmt.Sprintf("%s (%s) {%s-%s}", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4],
@@ -108,13 +97,21 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to probe video + "+filepath.Join(targetDir, targetFilename))
 	}
-	mediaFile, err := database.InsertMediaFile(targetRecordID,
-		filepath.Join(targetDir, targetFilename), filepath.Base(sourcePath), videoMetadata)
+	mediaFile := database.MediaFile{
+		Filepath:         filepath.Join(targetDir, targetFilename),
+		OriginalFilename: filepath.Base(sourcePath),
+		RecordID:         targetRecordID,
+		SourceURI:        getMagnetURI(*infoHash, nil),
+		FileIdx:          fileIdx,
+		VideoMetadata:    *videoMetadata,
+	}
+	insertedMediaFile, err := database.InsertMediaFile(&mediaFile)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db"+filepath.Join(targetDir, targetFilename))
+		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db"+
+			filepath.Join(targetDir, targetFilename))
 	}
 	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
-	return mediaFile, nil
+	return insertedMediaFile, nil
 }
 
 // Helper function to copy files from downloads -> media directory

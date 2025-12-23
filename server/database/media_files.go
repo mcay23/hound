@@ -6,11 +6,13 @@ const (
 	mediaFilesTable = "media_files"
 )
 
-type MediaFileMetadata struct {
-	FileID           int64  `xorm:"pk autoincr 'file_id'" json:"file_id"`
-	Filepath         string `xorm:"not null unique 'file_path'" json:"file_path"`
-	OriginalFilename string `xorm:"'original_file_name'" json:"original_file_name"`
-	RecordID         int64  `xorm:"'record_id'" json:"record_id"`
+type MediaFile struct {
+	FileID           int64   `xorm:"pk autoincr 'file_id'" json:"file_id"`
+	Filepath         string  `xorm:"not null unique 'file_path'" json:"file_path"`
+	OriginalFilename string  `xorm:"'original_file_name'" json:"original_file_name"`
+	RecordID         int64   `xorm:"'record_id'" json:"record_id"`
+	SourceURI        *string `xorm:"'source_uri'" json:"source_uri"`
+	FileIdx          *int    `xorm:"'file_idx'" json:"file_idx"`
 	VideoMetadata    `xorm:"extends"`
 	CreatedAt        time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
@@ -46,28 +48,24 @@ type Stream struct {
 }
 
 func instantiateMediaFilesTable() error {
-	return databaseEngine.Table(mediaFilesTable).Sync2(new(MediaFileMetadata))
+	return databaseEngine.Table(mediaFilesTable).Sync2(new(MediaFile))
 }
 
-func InsertMediaFile(recordID int64, filepath string, originalFilename string, videoMetadata *VideoMetadata) (*MediaFileMetadata, error) {
-	mediaFileMetadata := MediaFileMetadata{
-		Filepath:         filepath,
-		OriginalFilename: originalFilename,
-		RecordID:         recordID,
-		VideoMetadata:    *videoMetadata,
-	}
-	_, err := databaseEngine.Table(mediaFilesTable).Insert(&mediaFileMetadata)
-	return &mediaFileMetadata, err
+func InsertMediaFile(mediaFileMetadata *MediaFile) (*MediaFile, error) {
+	_, err := databaseEngine.Table(mediaFilesTable).Insert(mediaFileMetadata)
+	return mediaFileMetadata, err
 }
 
-func GetMediaFile(fileID int64) (*MediaFileMetadata, error) {
-	var metadata MediaFileMetadata
-	_, err := databaseEngine.Table(mediaFilesTable).Where("file_id = ?", fileID).Get(&metadata)
+func GetMediaFile(fileID int64) (*MediaFile, error) {
+	var metadata MediaFile
+	_, err := databaseEngine.Table(mediaFilesTable).Where("file_id = ?", fileID).
+		Get(&metadata)
 	return &metadata, err
 }
 
-func GetMediaFileByRecordID(recordID int64) ([]*MediaFileMetadata, error) {
-	var metadata []*MediaFileMetadata
-	err := databaseEngine.Table(mediaFilesTable).Where("record_id = ?", recordID).Find(&metadata)
+func GetMediaFileByRecordID(recordID int64) ([]*MediaFile, error) {
+	var metadata []*MediaFile
+	err := databaseEngine.Table(mediaFilesTable).
+		Where("record_id = ?", recordID).Find(&metadata)
 	return metadata, err
 }

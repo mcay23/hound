@@ -1,7 +1,7 @@
 package view
 
 import (
-	"hound/model/database"
+	"hound/database"
 	"hound/model/sources"
 	"time"
 )

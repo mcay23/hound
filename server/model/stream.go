@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"hound/helpers"
-	"hound/model/sources"
 	"log/slog"
 	"mime"
 	"net/url"
@@ -91,9 +90,9 @@ func AddTorrent(infoHashStr string, sources []string) error {
 		session.LastUsed = time.Now()
 		return nil
 	}
-	magnetURI := getMagnetURI(infoHash.HexString(), sources)
+	magnetURI := getMagnetURI(infoHash.HexString(), &sources)
 	slog.Info("Retrieving Magnet...", "magnet", magnetURI)
-	t, err := torrentClient.AddMagnet(magnetURI)
+	t, err := torrentClient.AddMagnet(*magnetURI)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to add magnet")
 	}
@@ -101,7 +100,7 @@ func AddTorrent(infoHashStr string, sources []string) error {
 	case <-t.GotInfo():
 		slog.Info("Success Retrieving Magnet Info: " + t.InfoHash().HexString())
 	case <-time.After(120 * time.Second):
-		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+magnetURI)
+		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+*magnetURI)
 	}
 	activeSessions.Store(infoHashStr, &TorrentSession{
 		Torrent:  t,
@@ -184,66 +183,18 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []str
 	return fileToStream, session, nil
 }
 
-// Downloads torrent to server, not clients
-func DownloadTorrent(streamDetails *StreamObjectFull) error {
-	if streamDetails == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Nil stream details passed to DownloadTorrent()")
-	}
-	if streamDetails.MediaSource != sources.MediaSourceTMDB {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
-	}
-	// attempt upsert first, if failed, abort
-	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, streamDetails.SourceID)
-	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to upsert media record when downloading")
-	}
-	// upsert has suceeded, if something else fails database won't be rolled back
-	file, session, err := GetTorrentFile(streamDetails.InfoHash, streamDetails.FileIndex,
-		streamDetails.Filename, streamDetails.Sources)
-	if err != nil {
-		return err
-	}
-	relativePath := filepath.FromSlash(file.Path())
-	currentDir, _ := os.Getwd()
-	absolutePath := filepath.Join(currentDir, TorrentDownloadsDir, strings.ToLower(streamDetails.InfoHash), relativePath)
-	fmt.Println("SeasonNumber", *streamDetails.SeasonNumber, "EpisodeNumber", *streamDetails.EpisodeNumber)
-	fmt.Println("path", absolutePath)
-	go func() {
-		file.Download()
-		for {
-			// keep session alive while still downloading
-			session.LastUsed = time.Now()
-			completed := file.BytesCompleted()
-			total := file.Length()
-			fmt.Printf("\rProgress: %.2f%% (%d/%d bytes)",
-				float64(completed)/float64(total)*100, completed, total)
-
-			if completed >= total {
-				slog.Info("Download finished, starting ingestion", "infohash", streamDetails.InfoHash,
-					"filename", streamDetails.Filename)
-				_, err := IngestFile(mediaRecord, streamDetails.SeasonNumber, streamDetails.EpisodeNumber,
-					&streamDetails.InfoHash, &streamDetails.FileIndex, absolutePath)
-				if err != nil {
-					slog.Error("Failed to ingest file!", "error", err)
-				}
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
-	}()
-	return nil
-}
-
 // getMagnetURI returns magnet: uri from hash and trackers
-func getMagnetURI(infoHash string, sources []string) string {
+func getMagnetURI(infoHash string, trackers *[]string) *string {
 	if infoHash == "" {
-		return ""
+		return nil
+	}
+	magnetURI := fmt.Sprintf("magnet:?xt=urn:btih:%s", strings.ToUpper(infoHash))
+	if trackers == nil {
+		return &magnetURI
 	}
 	uniqueTrackers := make(map[string]struct{})
-	for _, source := range sources {
-		parts := strings.SplitN(source, ":", 2)
+	for _, tracker := range *trackers {
+		parts := strings.SplitN(tracker, ":", 2)
 		if len(parts) != 2 {
 			continue
 		}
@@ -257,8 +208,6 @@ func getMagnetURI(infoHash string, sources []string) string {
 			slog.Info("Skipping tracker: " + sourceType)
 		}
 	}
-	magnetURI := fmt.Sprintf("magnet:?xt=urn:btih:%s", strings.ToUpper(infoHash))
-
 	// append trackers
 	var trackerParts []string
 	for tracker := range uniqueTrackers {
@@ -268,7 +217,7 @@ func getMagnetURI(infoHash string, sources []string) string {
 	if len(trackerParts) > 0 {
 		magnetURI += "&" + strings.Join(trackerParts, "&")
 	}
-	return magnetURI
+	return &magnetURI
 }
 
 func cleanupSessions() {

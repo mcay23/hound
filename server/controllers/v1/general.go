@@ -3,8 +3,8 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"hound/database"
 	"hound/helpers"
-	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
 	"strconv"

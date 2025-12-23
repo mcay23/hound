@@ -407,3 +407,16 @@ func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, sea
 	}
 	return episodes, nil
 }
+
+func GetEpisodeMediaRecord(mediaSource string, showSourceID *string, seasonNumber *int, episodeNumber int) (*MediaRecord, error) {
+	episodes, err := GetEpisodeMediaRecordsForShow(mediaSource, showSourceID, seasonNumber)
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
+	}
+	for _, episode := range episodes {
+		if *episode.EpisodeNumber == episodeNumber {
+			return &episode, nil
+		}
+	}
+	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
+}

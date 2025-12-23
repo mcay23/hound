@@ -2,13 +2,14 @@ package model
 
 import (
 	"errors"
+	"hound/database"
+	"hound/helpers"
+	"os"
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
-	"hound/helpers"
-	"hound/model/database"
-	"os"
-	"time"
 )
 
 type RegistrationUser struct {

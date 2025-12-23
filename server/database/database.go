@@ -59,6 +59,11 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media files table")
 		panic(err)
 	}
+	err = instantiateIngestTasksTable()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate ingest tasks table")
+		panic(err)
+	}
 	slog.Info("DB tables initialized")
 	err = runMigrations()
 	if err != nil {

@@ -2,9 +2,9 @@ package v1
 
 import (
 	"errors"
+	"hound/database"
 	"hound/helpers"
 	"hound/model"
-	"hound/model/database"
 	"hound/model/sources"
 	"strconv"
 	"strings"
@@ -84,6 +84,10 @@ func SearchProvidersHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid episode query param"+err.Error()))
 		}
 		query.EpisodeGroupID = c.Query("episode_group_id")
+		// EVALUATE, THIS IS UNDEFINED BEHAVIOR
+		// if query.EpisodeGroupID == "" {
+		// 	query.EpisodeGroupID = "tvdb"
+		// }
 		query.Season = seasonNumber
 		// For TV Shows, episodes are sometimes offset, eg. for show A, Season 2 starts at episode 20 instead of 1
 		// Offset this negatively to normalize to S2E1 since this is how most providers work
