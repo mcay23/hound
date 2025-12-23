@@ -34,7 +34,9 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 	}
 	// 2. Insert ingest task
 	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
-	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, database.DownloadTypeP2P, database.IngestStatusPendingDownload, streamDetails.InfoHash)
+	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, database.DownloadTypeP2P,
+		database.IngestStatusPendingDownload, *getMagnetURI(streamDetails.InfoHash, &streamDetails.Sources),
+		streamDetails.FileIndex)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
 	}

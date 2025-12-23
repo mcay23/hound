@@ -39,7 +39,7 @@ var videoExtensions = map[string]bool{
 }
 
 const (
-	TorrentDownloadsDir = "torrent-data"
+	P2PDownloadsDir = "Downloads/p2p"
 )
 
 type TorrentSession struct {
@@ -53,14 +53,15 @@ var (
 )
 
 func InitializeP2P() {
-	// client for streaming
 	config := torrent.NewDefaultClientConfig()
-	// uncomment for prod
-	// streamingConfig.DataDir = filepath.Join(os.TempDir(), "torrent-data")
 	// downloads grouped by infohash directories
-	config.DefaultStorage = storage.NewFileByInfoHash(TorrentDownloadsDir)
+	relativeDir := filepath.FromSlash(P2PDownloadsDir)
+	currentDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	config.DefaultStorage = storage.NewFileByInfoHash(filepath.Join(currentDir, relativeDir))
 	config.Logger.SetHandlers(log.DiscardHandler)
-	var err error
 	torrentClient, err = torrent.NewClient(config)
 	if err != nil {
 		panic(err)
@@ -123,7 +124,10 @@ func GetTorrentSession(infoHash string) (*TorrentSession, error) {
 	return session, nil
 }
 
-func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []string) (*torrent.File, *TorrentSession, error) {
+func GetTorrentFile(infoHash string, fileIdx *int, filename string, sources []string) (*torrent.File, *TorrentSession, error) {
+	if fileIdx == nil {
+		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File index not provided")
+	}
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
 		// force-add the torrent if it doesn't exist
@@ -137,22 +141,21 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []str
 				"Could not find torrent session")
 		}
 	}
-
 	session, ok := v.(*TorrentSession)
 	if !ok {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
 	}
-	slog.Info("Starting p2p stream", "file", session.Torrent.Files()[fileIdx].DisplayPath())
+	slog.Info("Starting p2p download", "file", session.Torrent.Files()[*fileIdx].DisplayPath())
 	// update last used
 	session.LastUsed = time.Now()
 	t := session.Torrent
-	if fileIdx >= len(t.Files()) {
+	if *fileIdx >= len(t.Files()) {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			fmt.Sprintf("Invalid fileidx: %v, total files: %v", fileIdx, len(t.Files())))
+			fmt.Sprintf("Invalid fileidx: %v, total files: %v", *fileIdx, len(t.Files())))
 	}
 	var fileToStream *torrent.File
 	// fileIdx defaults to -1 for no index
-	if fileIdx < 0 {
+	if *fileIdx < 0 {
 		// no idx or filename, use largest video file
 		if filename == "" {
 			var largestFile *torrent.File
@@ -179,7 +182,7 @@ func GetTorrentFile(infoHash string, fileIdx int, filename string, sources []str
 		// could return nil, nil
 		return fileToStream, session, nil
 	}
-	fileToStream = t.Files()[fileIdx]
+	fileToStream = t.Files()[*fileIdx]
 	return fileToStream, session, nil
 }
 
@@ -188,7 +191,7 @@ func getMagnetURI(infoHash string, trackers *[]string) *string {
 	if infoHash == "" {
 		return nil
 	}
-	magnetURI := fmt.Sprintf("magnet:?xt=urn:btih:%s", strings.ToUpper(infoHash))
+	magnetURI := fmt.Sprintf("magnet:?xt=urn:btih:%s", strings.ToLower(infoHash))
 	if trackers == nil {
 		return &magnetURI
 	}
@@ -232,7 +235,7 @@ func cleanupSessions() {
 				session.Torrent.Drop()
 				activeSessions.Delete(key)
 				// clean up folder
-				path := filepath.Join(TorrentDownloadsDir, session.Torrent.InfoHash().HexString())
+				path := filepath.Join(P2PDownloadsDir, session.Torrent.InfoHash().HexString())
 				slog.Info("Cleaning temp folder", "path", path)
 				err := os.RemoveAll(path)
 				if err != nil {

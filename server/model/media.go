@@ -36,6 +36,11 @@ func InitializeMedia() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
+	err = os.MkdirAll(filepath.Join(DownloadsPath), 0755)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to create downloads directory")
+		panic(fmt.Errorf("fatal error creating downloads directory %w", err))
+	}
 }
 
 /*
@@ -73,6 +78,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		// eg. Big Buck Bunny (2001) {tmdb-123456}
 		mediaTitleStr := fmt.Sprintf("%s (%s) {%s-%s}", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4],
 			mediaRecord.MediaSource, mediaRecord.SourceID)
+		mediaTitleStr = helpers.SanitizeFilename(mediaTitleStr)
 		targetFilename = fmt.Sprintf("%s - S%02dE%02d", mediaTitleStr, *seasonNumber, *episodeNumber)
 		// add infohash, this just helps with multiple sources per episode
 		// of course, it's possible to have multiple qualities per infohash

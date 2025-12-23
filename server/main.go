@@ -6,6 +6,7 @@ import (
 	"hound/model"
 	"hound/model/sources"
 	"hound/services"
+	"hound/workers"
 	"log/slog"
 	"os"
 	"time"
@@ -24,5 +25,6 @@ func main() {
 	model.InitializeP2P()
 	model.InitializeMedia()
 	services.InitializeFFMPEG()
+	workers.InitializeWorkers(model.MaxConcurrentDownloads, 3)
 	controllers.SetupRoutes()
 }

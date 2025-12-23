@@ -217,7 +217,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		cacheKey := ""
 		if actionType == database.ActionScrobble {
 			// realistically, scrobbles should only operate on the latest rewatch session
-			cacheKey = fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%d:%s:%s-%s", userID, targetRewatchID,
+			cacheKey = fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%s", userID, targetRewatchID,
 				database.RecordTypeEpisode, mediaSource, episodeIDStr)
 			var cached bool
 			cacheHit, err := database.GetCache(cacheKey, &cached)

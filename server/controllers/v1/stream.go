@@ -27,6 +27,11 @@ func StreamHandler(c *gin.Context) {
 		"filename", streamDetails.Filename)
 	// Torrent/P2P Streaming Case
 	if streamDetails.Cached == "false" && streamDetails.P2P == "p2p" {
+		if streamDetails.FileIndex == nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"File index not provided"))
+			return
+		}
 		file, _, err := model.GetTorrentFile(streamDetails.InfoHash,
 			streamDetails.FileIndex, streamDetails.Filename, streamDetails.Sources)
 		if err != nil {
@@ -104,7 +109,7 @@ func AddTorrentHandler(c *gin.Context) {
 		return
 	}
 	// may want to be more lax in the future
-	if streamDetails.FileIndex == -1 || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
+	if streamDetails.FileIndex == nil || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Torrent hash, File Index and/or File name not provided"))
 		return

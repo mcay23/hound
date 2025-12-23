@@ -8,10 +8,10 @@ const (
 
 type MediaFile struct {
 	FileID           int64   `xorm:"pk autoincr 'file_id'" json:"file_id"`
-	Filepath         string  `xorm:"not null unique 'file_path'" json:"file_path"`
-	OriginalFilename string  `xorm:"'original_file_name'" json:"original_file_name"`
+	Filepath         string  `xorm:"text not null unique 'file_path'" json:"file_path"`
+	OriginalFilename string  `xorm:"text 'original_file_name'" json:"original_file_name"`
 	RecordID         int64   `xorm:"'record_id'" json:"record_id"`
-	SourceURI        *string `xorm:"'source_uri'" json:"source_uri"`
+	SourceURI        *string `xorm:"text 'source_uri'" json:"source_uri"`
 	FileIdx          *int    `xorm:"'file_idx'" json:"file_idx"`
 	VideoMetadata    `xorm:"extends"`
 	CreatedAt        time.Time `xorm:"timestampz created" json:"created_at"`
@@ -19,10 +19,10 @@ type MediaFile struct {
 }
 
 type VideoMetadata struct {
-	Filename           string        `xorm:"'file_name'" json:"file_name"`
+	Filename           string        `xorm:"text 'file_name'" json:"file_name"`
 	Filesize           int64         `xorm:"'file_size'" json:"file_size"`
-	FileFormat         string        `xorm:"'format_name'" json:"format_name"`
-	FileFormatLongName string        `xorm:"'format_long_name'" json:"format_long_name"`
+	FileFormat         string        `xorm:"text 'format_name'" json:"format_name"`
+	FileFormatLongName string        `xorm:"text 'format_long_name'" json:"format_long_name"`
 	Duration           time.Duration `xorm:"'duration'" json:"duration"`
 	Bitrate            string        `xorm:"'bit_rate'" json:"bit_rate"`
 	Width              int           `xorm:"'width'" json:"width,omitempty"`
