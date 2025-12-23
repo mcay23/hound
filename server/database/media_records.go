@@ -310,6 +310,15 @@ func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource str
 	return has, &record, nil
 }
 
+func GetMediaRecordByID(recordID int64) (*MediaRecord, error) {
+	var record MediaRecord
+	_, err := databaseEngine.Table(mediaRecordsTable).Where("record_id = ?", recordID).Get(&record)
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
 // for an array of episode ids, check if exist in
 // the database as a child of the show
 // hierarchy show -> season -> episode

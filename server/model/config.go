@@ -13,11 +13,15 @@ var envFileName = ".env"
 var yamlFileName = "config.yaml"
 var configFilePath = "."
 
+var (
+	MaxConcurrentDownloads int
+)
+
 func InitializeConfig() {
 	// read yaml config
-	viper.SetConfigName(yamlFileName)
-	viper.SetConfigType("yaml")
 	viper.AddConfigPath(configFilePath)
+	viper.SetConfigType("yaml")
+	viper.SetConfigName(yamlFileName)
 	err := viper.MergeInConfig()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to read .yaml config")
@@ -30,5 +34,7 @@ func InitializeConfig() {
 	}
 	// hot reload functionality
 	viper.WatchConfig()
-	slog.Info("Config Initialized")
+	viper.SetDefault("max_concurrent_downloads", 3)
+	MaxConcurrentDownloads = viper.GetInt("max_concurrent_downloads")
+	slog.Info("Config Initialized", "MaxConcurrentDownloads", MaxConcurrentDownloads)
 }
