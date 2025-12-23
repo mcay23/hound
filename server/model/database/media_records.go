@@ -276,6 +276,7 @@ func encodeJSONDB(v any) any {
 	return b
 }
 
+// marks a media_record to be updated on the next attempt
 func MarkForUpdate(recordType string, mediaSource string, sourceID string) error {
 	_, err := databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", recordType).
 		Where("media_source = ?", mediaSource).
@@ -360,4 +361,49 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 		return nil, invalidIDs, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid episode IDs requested for "+mediaSource+"-"+showSourceID+" invalid ids:"+invalidIDStr)
 	}
 	return episodesMap, nil, nil
+}
+
+// showSourceID and seasonNumber are optional
+func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, seasonNumber *int) ([]MediaRecord, error) {
+	var episodes []MediaRecord
+	sess := databaseEngine.NewSession()
+	defer sess.Close()
+	fmt.Println(mediaSource, showSourceID, seasonNumber)
+	columns := `
+		episode.record_id,
+		episode.record_type,
+		episode.media_source,
+		episode.source_id,
+		episode.parent_id,
+		episode.media_title,
+		episode.original_title,
+		episode.origin_country,
+		episode.release_date,
+		episode.season_number,
+		episode.episode_number,
+		episode.sort_index,
+		episode.overview,
+		episode.duration,
+		episode.still_url,
+		episode.content_hash
+	`
+	sess = sess.Table(mediaRecordsTable).Alias("show").
+		Select(columns).
+		Join("INNER", []string{"media_records", "season"}, "season.parent_id = show.record_id").
+		Join("INNER", []string{"media_records", "episode"}, "episode.parent_id = season.record_id").
+		Where("show.media_source = ?", mediaSource).
+		Where("show.record_type = ?", "tvshow").
+		Where("season.record_type = ?", "season").
+		Where("episode.record_type = ?", "episode")
+	if showSourceID != nil {
+		sess = sess.Where("show.source_id = ?", *showSourceID)
+	}
+	if seasonNumber != nil {
+		sess = sess.Where("season.season_number = ?", *seasonNumber)
+	}
+	err := sess.Find(&episodes)
+	if err != nil {
+		return nil, err
+	}
+	return episodes, nil
 }

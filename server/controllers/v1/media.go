@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/helpers"
 	"hound/model"
+	"hound/model/database"
 	"hound/model/sources"
 	"strconv"
 
@@ -62,4 +63,19 @@ func GetMetadataHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success", "metadata": metadata}, 200)
+}
+
+func GetTVEpisodesHandler(c *gin.Context) {
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		return
+	}
+	sourceIDstr := strconv.Itoa(sourceID)
+	episodeRecords, err := database.GetEpisodeMediaRecordsForShow(mediaSource, &sourceIDstr, nil)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episodes"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success", "episodes": episodeRecords}, 200)
 }

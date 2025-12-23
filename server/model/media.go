@@ -6,7 +6,6 @@ import (
 	"hound/helpers"
 	"hound/model/database"
 	"hound/model/services"
-	"hound/model/sources"
 	"io"
 	"log/slog"
 	"os"
@@ -64,28 +63,15 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 				"Season number or episode number is nil")
 		}
 		// check if season/episode pair actually exists
-		sourceID, err := strconv.Atoi(mediaRecord.SourceID)
+		episodes, err := database.GetEpisodeMediaRecordsForShow(mediaRecord.MediaSource,
+			&mediaRecord.SourceID, seasonNumber)
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Failed to convert source id to int")
-		}
-		season, err := sources.GetTVSeasonTMDB(sourceID, *seasonNumber)
-		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb, check if season exists")
+			return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
 		}
 		found := false
-		for _, episode := range season.Episodes {
-			if episode.EpisodeNumber == *episodeNumber {
-				// get record id for this episode
-				has, episodeRecord, err := database.GetMediaRecord(database.RecordTypeEpisode,
-					sources.MediaSourceTMDB, strconv.Itoa(int(episode.ID)))
-				if err != nil {
-					return nil, helpers.LogErrorWithMessage(err, "Failed to get media record")
-				}
-				if !has {
-					return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-						"could not find media record for episode id "+strconv.Itoa(int(episode.ID)))
-				}
-				targetRecordID = episodeRecord.RecordID
+		for _, episode := range episodes {
+			if *episode.EpisodeNumber == *episodeNumber {
+				targetRecordID = episode.RecordID
 				found = true
 				break
 			}
@@ -93,6 +79,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		if !found {
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
 		}
+		slog.Info("found!")
 		// continue to construct dir
 		// eg. Big Buck Bunny (2001) {tmdb-123456}
 		mediaTitleStr := fmt.Sprintf("%s (%s) {%s-%s}", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4],

@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anacrolix/log"
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/anacrolix/torrent/storage"
@@ -54,13 +55,14 @@ var (
 
 func InitializeP2P() {
 	// client for streaming
-	streamingConfig := torrent.NewDefaultClientConfig()
+	config := torrent.NewDefaultClientConfig()
 	// uncomment for prod
 	// streamingConfig.DataDir = filepath.Join(os.TempDir(), "torrent-data")
 	// downloads grouped by infohash directories
-	streamingConfig.DefaultStorage = storage.NewFileByInfoHash(TorrentDownloadsDir)
+	config.DefaultStorage = storage.NewFileByInfoHash(TorrentDownloadsDir)
+	config.Logger.SetHandlers(log.DiscardHandler)
 	var err error
-	torrentClient, err = torrent.NewClient(streamingConfig)
+	torrentClient, err = torrent.NewClient(config)
 	if err != nil {
 		panic(err)
 	}
