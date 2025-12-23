@@ -130,7 +130,7 @@ func DownloadTorrentHandler(c *gin.Context) {
 			"Invalid media source: "+streamDetails.MediaSource))
 		return
 	}
-	err = model.DownloadTorrent(streamDetails)
+	err = model.CreateIngestTaskDownload(streamDetails)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to download torrent"))
 		return

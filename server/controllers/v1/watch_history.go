@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"hound/database"
 	"hound/helpers"
-	"hound/model/database"
 	"hound/model/sources"
 	"hound/view"
 

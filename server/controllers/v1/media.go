@@ -2,9 +2,9 @@ package v1
 
 import (
 	"errors"
+	"hound/database"
 	"hound/helpers"
 	"hound/model"
-	"hound/model/database"
 	"hound/model/sources"
 	"strconv"
 

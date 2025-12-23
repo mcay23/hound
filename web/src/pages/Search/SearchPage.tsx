@@ -68,24 +68,24 @@ function SearchPage(props: any) {
       </div>
       {isLoaded ? (
         <div className="search-page-main-section">
-          {data.tv_results ||
-          data.movie_results ||
-          data.game_results.length > 0 ? (
+          {data?.tv_results?.length > 0 ||
+          data?.movie_results?.length > 0 ||
+          data?.game_results?.length > 0 ? (
             <>
               <HorizontalSection
-                items={data.tv_results}
+                items={data?.tv_results}
                 header={"TV Shows"}
                 itemType={"search"}
                 itemOnClick={undefined}
               />
               <HorizontalSection
-                items={data.movie_results}
+                items={data?.movie_results}
                 header={"Movies"}
                 itemType={"search"}
                 itemOnClick={undefined}
               />
               <HorizontalSection
-                items={data.game_results}
+                items={data?.game_results}
                 header={"Games"}
                 itemType={"search"}
                 itemOnClick={undefined}

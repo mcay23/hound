@@ -2,10 +2,10 @@ package main
 
 import (
 	"hound/controllers"
+	"hound/database"
 	"hound/model"
-	"hound/model/database"
-	"hound/model/services"
 	"hound/model/sources"
+	"hound/services"
 	"log/slog"
 	"os"
 	"time"
