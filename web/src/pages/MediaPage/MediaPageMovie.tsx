@@ -147,11 +147,13 @@ function MediaPageMovie(props: any) {
       setIsStreamSelectButtonLoading(true);
     }
     if (!streams) {
+      const searchProvidersToast = toast.loading("Searching providers...");
       axios
         .get(
           `/api/v1/movie/${props.data.media_source}-${props.data.source_id}/providers`
         )
         .then((res) => {
+          toast.dismiss(searchProvidersToast);
           setStreams(res.data);
           let numStreams = res.data.data.providers[0].streams.length;
           if (numStreams > 0) {
@@ -167,9 +169,9 @@ function MediaPageMovie(props: any) {
           }
         })
         .catch((err) => {
-          if (err.response.status === 500) {
-            toast.error("Error getting streams");
-          }
+          toast.error("Failed to search providers " + err, {
+            id: searchProvidersToast,
+          });
         })
         .finally(() => {
           if (mode === "direct") {
