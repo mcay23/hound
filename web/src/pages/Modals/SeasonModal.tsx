@@ -24,7 +24,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SelectStreamModal from "./StreamSelectModal";
 import { Spinner } from "react-bootstrap";
-import { PlayArrow, PlayArrowRounded } from "@mui/icons-material";
+import { PlayArrowRounded } from "@mui/icons-material";
 
 const offsetFix = {
   modifiers: [
@@ -103,11 +103,13 @@ function SeasonModal(props: any) {
     } else if (mode === "select") {
       setIsStreamSelectButtonLoading(true);
     }
+    const searchProvidersToast = toast.loading("Searching providers...");
     axios
       .get(
         `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`
       )
       .then((res) => {
+        toast.dismiss(searchProvidersToast);
         setStreams(res.data);
         let numStreams = res.data.data.providers[0].streams.length;
         if (numStreams > 0) {
@@ -122,9 +124,9 @@ function SeasonModal(props: any) {
         }
       })
       .catch((err) => {
-        if (err.response.status === 500) {
-          toast.error("Error getting streams");
-        }
+        toast.error("Failed to search providers " + err, {
+          id: searchProvidersToast,
+        });
       })
       .finally(() => {
         if (mode === "direct") {

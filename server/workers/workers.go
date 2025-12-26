@@ -19,11 +19,10 @@ func InitializeWorkers(downloadWorkers int, ingestWorkers int) {
 func cleanUpDownloads() {
 	// clean up downloads if not in use
 	// p2p case
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		slog.Info("Cleaning up unused torrent files")
 		entries, err := os.ReadDir(model.HoundP2PDownloadsPath)
 		if err != nil {
 			slog.Error("Failed to read p2p downloads directory", "error", err)
