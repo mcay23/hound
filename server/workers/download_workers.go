@@ -4,7 +4,6 @@ import (
 	"hound/database"
 	"hound/model"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -66,9 +65,7 @@ func processTask(workerID int, task *database.IngestTask) {
 		return
 	}
 	relativePath := filepath.FromSlash(file.Path())
-	currentDir, _ := os.Getwd()
-	task.SourcePath = filepath.Join(currentDir, model.P2PDownloadsDir,
-		strings.ToLower(infoHash), relativePath)
+	task.SourcePath = filepath.Join(model.HoundP2PDownloadsPath, strings.ToLower(infoHash), relativePath)
 	task.TotalBytes = file.Length()
 	database.UpdateIngestTask(task)
 
