@@ -3,12 +3,14 @@ package model
 import (
 	"errors"
 	"fmt"
+	"hound/database"
 	"hound/helpers"
 	"log/slog"
 	"mime"
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -231,13 +233,28 @@ func cleanupSessions() {
 		activeSessions.Range(func(key, value interface{}) bool {
 			session := value.(*TorrentSession)
 			if time.Since(session.LastUsed) > 15*time.Minute {
-				slog.Info("Removed unused session: %s", key)
+				// check if any ingest tasks are using this torrent
+				magnetURI := *getMagnetURI(session.Torrent.InfoHash().HexString(), nil)
+				task, err := database.GetIngestTask(database.IngestTask{
+					SourceURI: &magnetURI,
+				})
+				if err != nil {
+					slog.Error("Failed to get ingest task", "error", err)
+					return true
+				}
+				// if task exists and not in a terminal state, don't delete
+				if task != nil && !slices.Contains([]string{database.IngestStatusDone,
+					database.IngestStatusCanceled,
+					database.IngestStatusFailed}, task.Status) {
+					return true
+				}
 				session.Torrent.Drop()
 				activeSessions.Delete(key)
+				slog.Info("Removed unused session: %s", key)
 				// clean up folder
 				path := filepath.Join(P2PDownloadsDir, session.Torrent.InfoHash().HexString())
 				slog.Info("Cleaning temp folder", "path", path)
-				err := os.RemoveAll(path)
+				err = os.RemoveAll(path)
 				if err != nil {
 					slog.Error("Failed to remove folder: "+session.Torrent.InfoHash().HexString(), "error", err)
 				}
