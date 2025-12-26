@@ -40,10 +40,6 @@ var videoExtensions = map[string]bool{
 	".3gp":  true,
 }
 
-const (
-	P2PDownloadsDir = "Downloads/p2p"
-)
-
 type TorrentSession struct {
 	Torrent  *torrent.Torrent
 	LastUsed time.Time
@@ -57,13 +53,9 @@ var (
 func InitializeP2P() {
 	config := torrent.NewDefaultClientConfig()
 	// downloads grouped by infohash directories
-	relativeDir := filepath.FromSlash(P2PDownloadsDir)
-	currentDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	config.DefaultStorage = storage.NewFileByInfoHash(filepath.Join(currentDir, relativeDir))
+	config.DefaultStorage = storage.NewFileByInfoHash(HoundP2PDownloadsPath)
 	config.Logger.SetHandlers(log.DiscardHandler)
+	var err error
 	torrentClient, err = torrent.NewClient(config)
 	if err != nil {
 		panic(err)
@@ -252,7 +244,7 @@ func cleanupSessions() {
 				activeSessions.Delete(key)
 				slog.Info("Removed unused session: %s", key)
 				// clean up folder
-				path := filepath.Join(P2PDownloadsDir, session.Torrent.InfoHash().HexString())
+				path := filepath.Join(HoundP2PDownloadsPath, session.Torrent.InfoHash().HexString())
 				slog.Info("Cleaning temp folder", "path", path)
 				err = os.RemoveAll(path)
 				if err != nil {

@@ -91,6 +91,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 		failTask(task, err)
 		return
 	}
+	// set ingest to done
 	task.Status = database.IngestStatusDone
 	task.FinishedAt = time.Now()
 	_, err = database.UpdateIngestTask(task)

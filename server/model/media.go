@@ -15,10 +15,19 @@ import (
 )
 
 const (
-	MediaPath     = "Media"
-	MoviesPath    = "Movies"
-	TVShowsPath   = "TV Shows"
-	DownloadsPath = "Downloads"
+	// all hound data should live in this folder
+	// downloads and media are subdirectories of this folder, so move
+	// between downloads and media should be fast
+	dataDir      = "Hound Data"
+	mediaDir     = "Media"
+	downloadsDir = "Downloads"
+)
+
+var (
+	HoundMoviesPath        = filepath.Join(dataDir, mediaDir, "Movies")
+	HoundTVShowsPath       = filepath.Join(dataDir, mediaDir, "TV Shows")
+	HoundP2PDownloadsPath  = filepath.Join(dataDir, downloadsDir, "p2p")
+	HoundHttpDownloadsPath = filepath.Join(dataDir, downloadsDir, "http")
 )
 
 /*
@@ -26,20 +35,25 @@ media deals with file ingestion pipeline download->create files->process metadat
 */
 func InitializeMedia() {
 	// create media directories
-	err := os.MkdirAll(filepath.Join(MediaPath, MoviesPath), 0755)
+	err := os.MkdirAll(HoundMoviesPath, 0755)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(filepath.Join(MediaPath, TVShowsPath), 0755)
+	err = os.MkdirAll(HoundTVShowsPath, 0755)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(filepath.Join(DownloadsPath), 0755)
+	err = os.MkdirAll(HoundP2PDownloadsPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create downloads directory")
-		panic(fmt.Errorf("fatal error creating downloads directory %w", err))
+		_ = helpers.LogErrorWithMessage(err, "Failed to create p2p downloads directory")
+		panic(fmt.Errorf("fatal error creating p2p downloads directory %w", err))
+	}
+	err = os.MkdirAll(HoundHttpDownloadsPath, 0755)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to create http downloads directory")
+		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
 	}
 }
 
@@ -60,7 +74,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	var targetRecordID int64
 	switch mediaRecord.RecordType {
 	case database.RecordTypeMovie:
-		targetDir = filepath.Join(MediaPath, MoviesPath)
+		targetDir = HoundMoviesPath
 		targetRecordID = mediaRecord.RecordID
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
@@ -88,16 +102,25 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		}
 		seasonStr := fmt.Sprintf("Season %02d", *seasonNumber)
 		targetFilename += filepath.Ext(sourcePath)
-		targetDir = filepath.Join(MediaPath, TVShowsPath, mediaTitleStr, seasonStr)
+		targetDir = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonStr)
 	default:
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
 	}
-	var session *TorrentSession
-	if infoHash != nil && *infoHash != "" {
-		session, _ = GetTorrentSession(*infoHash)
+	// Prefer rename, should be instantaneous on the same filesystem
+	// var session *TorrentSession
+	// if infoHash != nil && *infoHash != "" {
+	// 	session, _ = GetTorrentSession(*infoHash)
+	// }
+	// if err := copyWithUpdateTorrentSession(sourcePath, filepath.Join(targetDir, targetFilename), session); err != nil {
+	// 	return nil, helpers.LogErrorWithMessage(err, "Failed to copy file")
+	// }
+	err := os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to create directory")
 	}
-	if err := copyWithUpdateTorrentSession(sourcePath, filepath.Join(targetDir, targetFilename), session); err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to copy file")
+	err = os.Rename(sourcePath, filepath.Join(targetDir, targetFilename))
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to rename file")
 	}
 	videoMetadata, err := ProbeVideoFromURI(filepath.Join(targetDir, targetFilename))
 	if err != nil {
@@ -123,6 +146,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 // Helper function to copy files from downloads -> media directory
 // update the torrent session periodically in case copy takes time,
 // so the torrent session isn't dropped and files deleted before copy is complete
+// deprecate in favor of atomic move
 func copyWithUpdateTorrentSession(src, dst string, session *TorrentSession) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {

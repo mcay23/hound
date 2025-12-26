@@ -14,6 +14,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 
 // axios defaults
 axios.defaults.withCredentials = true;
@@ -62,58 +63,68 @@ function App() {
       return <Navigate to={{ pathname: "/login" }} />;
     }
   }
+
+  const theme = createTheme({
+    typography: {
+      fontFamily: '"Cabin", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
+  });
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ProtectedRoute component={<Home />} />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          <Route
-            path="logout"
-            element={<ProtectedRoute component={<Logout />} />}
-          />
-          <Route
-            path="library"
-            element={<ProtectedRoute component={<Library />} />}
-          />
-          <Route
-            path="/tv/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/movie/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/game/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/search"
-            element={<ProtectedRoute component={<SearchPage />} />}
-          />
-          <Route
-            path="/collection/:id"
-            element={<ProtectedRoute component={<Collection />} />}
-          />
-          <Route
-            path="/player"
-            element={
-              <ProtectedRoute
-                component={
-                  <>
-                    <video controls>
-                      <source src="http://localhost:8000/api/v1/stream" />
-                    </video>
-                  </>
-                }
-              />
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </LocalizationProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ProtectedRoute component={<Home />} />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route
+              path="logout"
+              element={<ProtectedRoute component={<Logout />} />}
+            />
+            <Route
+              path="library"
+              element={<ProtectedRoute component={<Library />} />}
+            />
+            <Route
+              path="/tv/:id"
+              element={<ProtectedRoute component={<MediaPageLanding />} />}
+            />
+            <Route
+              path="/movie/:id"
+              element={<ProtectedRoute component={<MediaPageLanding />} />}
+            />
+            <Route
+              path="/game/:id"
+              element={<ProtectedRoute component={<MediaPageLanding />} />}
+            />
+            <Route
+              path="/search"
+              element={<ProtectedRoute component={<SearchPage />} />}
+            />
+            <Route
+              path="/collection/:id"
+              element={<ProtectedRoute component={<Collection />} />}
+            />
+            <Route
+              path="/player"
+              element={
+                <ProtectedRoute
+                  component={
+                    <>
+                      <video controls>
+                        <source src="http://localhost:8000/api/v1/stream" />
+                      </video>
+                    </>
+                  }
+                />
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 
