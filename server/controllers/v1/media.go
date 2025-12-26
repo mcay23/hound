@@ -7,6 +7,7 @@ import (
 	"hound/model"
 	"hound/model/sources"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -78,4 +79,18 @@ func GetTVEpisodesHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "success", "episodes": episodeRecords}, 200)
+}
+
+func GetDownloadsHandler(c *gin.Context) {
+	status := c.Query("status")
+	statusSlice := strings.Split(status, ",")
+	if status == "" {
+		statusSlice = []string{}
+	}
+	tasks, err := database.FindIngestTasksForStatus(statusSlice)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get downloads"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success", "downloads": tasks}, 200)
 }

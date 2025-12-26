@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"fmt"
 	"hound/database"
 	"hound/model"
 	"log/slog"
@@ -13,6 +14,16 @@ import (
 
 // Only p2p downloads are supported for now
 func InitializeDownloadWorkers(n int) {
+	// check for invalid downloads and fail them (downloading when server is just starting)
+	tasks, err := database.FindIngestTasksForStatus([]string{database.IngestStatusDownloading})
+	if err != nil {
+		slog.Error("Failed to get pending download tasks", "error", err)
+		return
+	}
+	for _, task := range tasks {
+		failTask(&task, fmt.Errorf("invalid download task - process crashed during download"))
+	}
+
 	slog.Info("Starting download workers", "count", n)
 	for i := range n {
 		go downloadWorker(i)

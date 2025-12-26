@@ -58,7 +58,20 @@ func instantiateIngestTasksTable() error {
 
 func FindIngestTasks(task IngestTask) ([]IngestTask, error) {
 	var tasks []IngestTask
-	err := databaseEngine.Table(IngestTasksTable).Find(&tasks, &task)
+	err := databaseEngine.Table(IngestTasksTable).Desc("created_at").Find(&tasks, &task)
+	if err != nil {
+		return nil, err
+	}
+	return tasks, err
+}
+
+func FindIngestTasksForStatus(status []string) ([]IngestTask, error) {
+	// if no statuses given, return all tasks
+	if len(status) == 0 {
+		return FindIngestTasks(IngestTask{})
+	}
+	var tasks []IngestTask
+	err := databaseEngine.Table(IngestTasksTable).In("status", status).Desc("created_at").Find(&tasks)
 	if err != nil {
 		return nil, err
 	}
@@ -103,42 +116,59 @@ func UpdateStatus(ingestTaskID int64, status string) (bool, error) {
 }
 
 // GetNextPendingDownloadTask atomically gets the next pending download task for workers and marks as downloading
+// use ForUpdate() lock to prevent multiple workers from picking up task
 func GetNextPendingDownloadTask() (*IngestTask, error) {
 	var task IngestTask
-	has, err := databaseEngine.Table(IngestTasksTable).Where("status = ?", IngestStatusPendingDownload).Asc("ingest_task_id").Get(&task)
+	sess := databaseEngine.NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return nil, err
+	}
+	has, err := sess.SQL("SELECT * FROM "+IngestTasksTable+" WHERE status = ? ORDER BY ingest_task_id ASC LIMIT 1 FOR UPDATE",
+		IngestStatusPendingDownload).Get(&task)
 	if err != nil {
+		sess.Rollback()
 		return nil, err
 	}
 	if !has {
+		sess.Rollback()
 		return nil, nil
 	}
 	task.Status = IngestStatusDownloading
 	task.StartedAt = time.Now()
 	task.LastSeen = time.Now()
-	if _, err := databaseEngine.Table(IngestTasksTable).ID(task.IngestTaskID).
+	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
+		sess.Rollback()
 		return nil, err
 	}
+	sess.Commit()
 	return &task, nil
 }
 
 // GetNextPendingIngestTask atomically gets the next pending ingest task for workers and marks as copying
 func GetNextPendingIngestTask() (*IngestTask, error) {
 	var task IngestTask
-	has, err := databaseEngine.Table(IngestTasksTable).
-		Where("status = ?", IngestStatusPendingInsert).Asc("ingest_task_id").Get(&task)
+	sess := databaseEngine.NewSession()
+	defer sess.Close()
+	has, err := sess.SQL("SELECT * FROM "+IngestTasksTable+" WHERE status = ? ORDER BY ingest_task_id ASC LIMIT 1 FOR UPDATE",
+		IngestStatusPendingInsert).Get(&task)
 	if err != nil {
+		sess.Rollback()
 		return nil, err
 	}
 	if !has {
+		sess.Rollback()
 		return nil, nil
 	}
 	task.Status = IngestStatusCopying
 	task.StartedAt = time.Now()
 	task.LastSeen = time.Now()
-	if _, err := databaseEngine.Table(IngestTasksTable).ID(task.IngestTaskID).
+	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
+		sess.Rollback()
 		return nil, err
 	}
+	sess.Commit()
 	return &task, nil
 }

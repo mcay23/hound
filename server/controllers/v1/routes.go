@@ -75,13 +75,12 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
 
 	/*
-		Video Streaming Routes
+		Video Streaming, Downloads Routes
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
-	// downloads to the server, not the client
-	privateRoutes.POST("/torrent/:encodedString/download", DownloadTorrentHandler)
-	//privateRoutes.GET("/tv/:id/stream/:encodedString", StreamHandler)
+	privateRoutes.POST("/torrent/:encodedString/download", DownloadTorrentHandler) // downloads to the server, not the client
+	privateRoutes.GET("/media/downloads", GetDownloadsHandler)
 
 	/*
 		Query Providers Routes
