@@ -1,4 +1,6 @@
-
+.horizontal-section-item-container {
+    margin-right: 15px;
+}
 
 .itemcard-img-poster-container:hover {
     filter: brightness(67%);
@@ -7,7 +9,7 @@
 
 .itemcard-item-caption {
     font-family: 'Cabin', sans-serif;
-    max-width: 200px;
+    max-width: 100%;
 }
 
 .itemcard-item-caption-primary {
@@ -26,8 +28,6 @@
     position: relative;
     width: 200px;
     height: 300px;
-    margin-right: 15px;
-    margin-bottom: 15px;
     transition: all 0.5s ease-out;
 }
 
@@ -50,7 +50,6 @@
 .itemcard-img-cast-container {
     width: 160px !important;
     height: 240px !important;
-    margin-right: 15px;
 }
 
 .itemcard-img-cast {

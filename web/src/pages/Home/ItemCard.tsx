@@ -47,7 +47,7 @@ function ItemCard(props: {
           />
         )}
         <img
-          className={"rounded itemcard-img-poster"}
+          className="rounded itemcard-img-poster"
           src={props.item.thumbnail_url}
           alt={props.item.media_title}
           loading="lazy"
@@ -67,7 +67,7 @@ function ItemCard(props: {
       <figure>
         {props.item.thumbnail_url ? (
           <>
-            <div className={"itemcard-img-cast-container"}>
+            <div className="itemcard-img-cast-container">
               {!loaded && (
                 <Skeleton
                   variant="rounded"
@@ -76,7 +76,7 @@ function ItemCard(props: {
                 />
               )}
               <img
-                className={"rounded itemcard-img-cast"}
+                className="rounded itemcard-img-cast"
                 src={props.item.thumbnail_url}
                 alt={props.item.media_title}
                 loading="lazy"
@@ -89,7 +89,9 @@ function ItemCard(props: {
             </div>
           </>
         ) : (
-          <div className={"rounded itemcard-img-cast"} />
+          <div className="itemcard-img-cast-container">
+            <div className="rounded itemcard-img-cast" />
+          </div>
         )}
         <figcaption className="itemcard-item-caption">
           <div className="itemcard-item-caption-primary">{primaryCaption}</div>
