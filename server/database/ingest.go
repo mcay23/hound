@@ -56,13 +56,21 @@ func instantiateIngestTasksTable() error {
 	return nil
 }
 
-func GetIngestTasks(mediaSource string, sourceID string) ([]*IngestTask, error) {
-	var tasks []*IngestTask
-	err := databaseEngine.Table(IngestTasksTable).
-		Join("INNER", "media_records", "media_records.record_id = ingest_tasks.record_id").
-		Where("media_records.media_source = ? AND media_records.source_id = ?", mediaSource, sourceID).
-		Find(&tasks)
+func FindIngestTasks(task IngestTask) ([]IngestTask, error) {
+	var tasks []IngestTask
+	err := databaseEngine.Table(IngestTasksTable).Find(&tasks, &task)
+	if err != nil {
+		return nil, err
+	}
 	return tasks, err
+}
+
+func GetIngestTask(task IngestTask) (*IngestTask, error) {
+	has, err := databaseEngine.Table(IngestTasksTable).Get(&task)
+	if !has {
+		return nil, nil
+	}
+	return &task, err
 }
 
 func InsertIngestTask(recordID int64, downloadType string, status string,
