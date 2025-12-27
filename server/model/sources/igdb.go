@@ -205,7 +205,6 @@ func getAccessToken(forceRefresh bool) string {
 		}
 		return resp.AccessToken
 	}
-	fmt.Println("error withs status", res.StatusCode)
 	panic(errors.New("non-200 response received from igdb oauth flow"))
 }
 
@@ -223,7 +222,6 @@ func queryIGDBGames(body string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		fmt.Println(res.StatusCode)
 		return nil, errors.New("panic querying igdb")
 	}
 	b, err := io.ReadAll(res.Body)
