@@ -377,7 +377,6 @@ func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, sea
 	var episodes []MediaRecord
 	sess := databaseEngine.NewSession()
 	defer sess.Close()
-	fmt.Println(mediaSource, showSourceID, seasonNumber)
 	columns := `
 		episode.record_id,
 		episode.record_type,

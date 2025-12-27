@@ -38,12 +38,12 @@ func cleanUpDownloads() {
 					slog.Error("Failed to get ingest task", "infohash", infoHash, "error", err)
 					continue
 				}
-				terminalStates := []string{database.IngestStatusDone, database.IngestStatusFailed, database.IngestStatusCanceled}
 				// if torrent session exists, never remove, wait for it to be cleaned up
-				if !model.CheckTorrentSession(infoHash) {
+				session, _ := model.GetTorrentSession(infoHash)
+				if session == nil {
 					if task == nil {
 						removeP2PFiles(infoHash)
-					} else if slices.Contains(terminalStates, task.Status) {
+					} else if slices.Contains(database.IngestTerminalStatuses, task.Status) {
 						removeP2PFiles(infoHash)
 					}
 				}
