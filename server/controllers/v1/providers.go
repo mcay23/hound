@@ -2,7 +2,6 @@ package v1
 
 import (
 	"errors"
-	"hound/cache"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -24,7 +23,7 @@ func DecodeTestHandler(c *gin.Context) {
 }
 
 func ClearCacheHandler(c *gin.Context) {
-	cache.ClearCache()
+	database.ClearCache()
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 

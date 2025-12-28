@@ -2,7 +2,6 @@ package v1
 
 import (
 	"errors"
-	"hound/cache"
 	"hound/database"
 	"hound/helpers"
 	"hound/model/sources"
@@ -49,7 +48,7 @@ func GeneralSearchHandler(c *gin.Context) {
 func GetMediaBackdrops(c *gin.Context) {
 	// refresh backdrop every 24 hours, store data in cache
 	var backdropsCache []string
-	cacheExists, _ := cache.GetCache(backdropCacheKey, &backdropsCache)
+	cacheExists, _ := database.GetCache(backdropCacheKey, &backdropsCache)
 	if cacheExists {
 		helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdropsCache}, 200)
 		return
@@ -81,7 +80,7 @@ func GetMediaBackdrops(c *gin.Context) {
 			}
 		}
 	}
-	_, _ = cache.SetCache(backdropCacheKey, backdrops, time.Hour*24)
+	_, _ = database.SetCache(backdropCacheKey, backdrops, time.Hour*24)
 	helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdrops}, 200)
 }
 
