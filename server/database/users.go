@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"hound/cache"
 	"hound/helpers"
 	"time"
 )
@@ -54,8 +55,8 @@ func GetUser(username string) (*User, error) {
 func GetUserIDFromUsername(username string) (int64, error) {
 	cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
 	var userID int64
-	_, err := GetCache(cacheKey, &userID)
-	cacheExists, _ := GetCache(cacheKey, &userID)
+	_, err := cache.GetCache(cacheKey, &userID)
+	cacheExists, _ := cache.GetCache(cacheKey, &userID)
 	if cacheExists {
 		return userID, nil
 	}
@@ -63,7 +64,7 @@ func GetUserIDFromUsername(username string) (int64, error) {
 	if err != nil {
 		return -1, helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
 	}
-	SetCache(cacheKey, user.UserID, 48*time.Hour)
+	cache.SetCache(cacheKey, user.UserID, 48*time.Hour)
 	return user.UserID, nil
 }
 

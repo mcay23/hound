@@ -1,4 +1,4 @@
-package database
+package cache
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"hound/helpers"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 var db *badger.DB
 
 func InitializeCache() {
-	opts := badger.DefaultOptions("cache_data")
+	opts := badger.DefaultOptions(filepath.Join("Hound Data", "cache_data"))
 	opts.Logger = nil
 
 	var err error

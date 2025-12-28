@@ -1,6 +1,7 @@
 package main
 
 import (
+	"hound/cache"
 	"hound/controllers"
 	"hound/database"
 	"hound/model"
@@ -20,7 +21,7 @@ func main() {
 
 	model.InitializeConfig()
 	database.InstantiateDB()
-	database.InitializeCache()
+	cache.InitializeCache()
 	sources.InitializeSources()
 	model.InitializeP2P()
 	model.InitializeMedia()
