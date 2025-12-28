@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"hound/cache"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -227,7 +226,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 			cacheKey = fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%s", userID, targetRewatchID,
 				database.RecordTypeEpisode, mediaSource, episodeIDStr)
 			var cached bool
-			cacheHit, err := cache.GetCache(cacheKey, &cached)
+			cacheHit, err := database.GetCache(cacheKey, &cached)
 			if err != nil {
 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error checking scrobble cache"))
 				return
@@ -277,7 +276,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	for idx, meta := range pendingMetadata {
 		insertedEpisodeIDs[idx] = meta.EpisodeID
 		if meta.CacheKey != "" {
-			if _, err := cache.SetCache(meta.CacheKey, true, scrobbleCacheTTL); err != nil {
+			if _, err := database.SetCache(meta.CacheKey, true, scrobbleCacheTTL); err != nil {
 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error caching scrobble entry"))
 				return
 			}
@@ -465,7 +464,7 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 		cacheKey := fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%d",
 			userID, rewatchRecord.RewatchID, database.RecordTypeMovie, mediaSource, sourceID)
 		var cached bool
-		cacheHit, err := cache.GetCache(cacheKey, &cached)
+		cacheHit, err := database.GetCache(cacheKey, &cached)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error checking scrobble cache"))
 			return
@@ -481,7 +480,7 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 			return
 		}
 		// set cache for scrobbles to prevent accident duplicate inserts
-		if _, err := cache.SetCache(cacheKey, true, scrobbleCacheTTL); err != nil {
+		if _, err := database.SetCache(cacheKey, true, scrobbleCacheTTL); err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error caching scrobble entry"))
 			return
 		}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hound/cache"
 	"hound/database"
 	"hound/helpers"
 	"hound/model/sources"
@@ -110,7 +109,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 	}
 	// get cache
 	var cacheObject ProviderResponseObject
-	cacheExists, _ := cache.GetCache(providersCacheKey, &cacheObject)
+	cacheExists, _ := database.GetCache(providersCacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
 	}
@@ -174,7 +173,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 		StreamMediaDetails: streamInfo,
 		Providers:          &providersArray,
 	}
-	_, err = cache.SetCache(providersCacheKey, result, providersCacheDuration)
+	_, err = database.SetCache(providersCacheKey, result, providersCacheDuration)
 	if err != nil {
 		// just log error, no failed return
 		_ = helpers.LogErrorWithMessage(err, "Failed to set cache")

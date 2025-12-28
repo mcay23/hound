@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hound/cache"
 	"hound/database"
 	"hound/helpers"
 	"io"
@@ -177,7 +176,7 @@ func getAccessToken(forceRefresh bool) string {
 	// get from ttl cache, return if it exists
 	// if force refresh is true, refresh token
 	var token string
-	cacheExists, _ := cache.GetCache(IGDBAccessTokenCacheKey, &token)
+	cacheExists, _ := database.GetCache(IGDBAccessTokenCacheKey, &token)
 	if cacheExists && !forceRefresh {
 		return token
 	}
@@ -200,7 +199,7 @@ func getAccessToken(forceRefresh bool) string {
 			panic(err)
 		}
 		// expire 1 min earlier
-		_, err = cache.SetCache(IGDBAccessTokenCacheKey, resp.AccessToken, time.Second*time.Duration(resp.ExpiresIn-60))
+		_, err = database.SetCache(IGDBAccessTokenCacheKey, resp.AccessToken, time.Second*time.Duration(resp.ExpiresIn-60))
 		if err != nil {
 			panic(err)
 		}
