@@ -107,3 +107,45 @@ func GetCache(key string, out interface{}) (bool, error) {
 	// slog.Info("Cache found", "key", key)
 	return true, nil
 }
+
+// Returns all keys starting with the given prefix
+func GetKeysWithPrefix(prefix string) ([]string, error) {
+	if db == nil {
+		return nil, errors.New("cache not initialized")
+	}
+	var keys []string
+	err := db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		prefixBytes := []byte(prefix)
+		for it.Seek(prefixBytes); it.ValidForPrefix(prefixBytes); it.Next() {
+			item := it.Item()
+			key := item.Key()
+			keys = append(keys, string(key))
+		}
+		return nil
+	})
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Error getting keys with prefix: "+prefix)
+		return nil, err
+	}
+	return keys, nil
+}
+
+// Deletes a key from the cache
+func DeleteCache(key string) error {
+	if db == nil {
+		return errors.New("cache not initialized")
+	}
+	err := db.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(key))
+	})
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Error deleting cache key: "+key)
+		return err
+	}
+	slog.Info("Cache deleted", "key", key)
+	return nil
+}
