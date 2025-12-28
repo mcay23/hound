@@ -2,7 +2,6 @@ package v1
 
 import (
 	"errors"
-	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model/sources"
@@ -273,7 +272,6 @@ func DeleteCommentHandler(c *gin.Context) {
 		}
 	} else if c.Param("id") != "" {
 		// single delete case
-		fmt.Println("param", c.Param("id"))
 		commentID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))

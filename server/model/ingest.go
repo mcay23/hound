@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 // Downloads torrent to server, not clients
@@ -20,6 +21,17 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 	if streamDetails.MediaSource != sources.MediaSourceTMDB {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
+	}
+	// check if task already exists
+	task, err := database.GetIngestTask(database.IngestTask{
+		SourceURI: GetMagnetURI(streamDetails.InfoHash, nil),
+		FileIdx:   streamDetails.FileIndex})
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
+	}
+	// if a non-terminal task exists for this file, abort
+	if task != nil && !slices.Contains(database.IngestTerminalStatuses, task.Status) {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Ingest task already exists")
 	}
 	// 1. Attempt upsert first, if failed, abort
 	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, streamDetails.SourceID)

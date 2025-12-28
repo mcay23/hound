@@ -38,8 +38,9 @@ var videoExtensions = map[string]bool{
 }
 
 type TorrentSession struct {
-	Torrent  *torrent.Torrent
-	LastUsed time.Time
+	Torrent       *torrent.Torrent
+	ActiveStreams map[int]int // file idx -> num streams
+	LastUsed      int64
 }
 
 var (
@@ -61,6 +62,46 @@ func InitializeP2P() {
 	slog.Info("Initialized P2P Client")
 }
 
+func AddActiveTorrentStream(infoHash string, fileIdx int) error {
+	v, ok := activeSessions.Load(infoHash)
+	if !ok {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error getting TorrentSession")
+	}
+	session, ok := v.(*TorrentSession)
+	if !ok {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
+	}
+	session.LastUsed = time.Now().Unix()
+	if _, ok := session.ActiveStreams[fileIdx]; !ok {
+		session.ActiveStreams[fileIdx] = 1
+	} else {
+		session.ActiveStreams[fileIdx]++
+	}
+	slog.Info("Active stream opened", "infoHash", infoHash, "fileIdx", fileIdx, "activeStreams", session.ActiveStreams)
+	return nil
+}
+
+func RemoveActiveTorrentStream(infoHash string, fileIdx int) error {
+	v, ok := activeSessions.Load(infoHash)
+	if !ok {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error getting TorrentSession")
+	}
+	session, ok := v.(*TorrentSession)
+	if !ok {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Error parsing TorrentSession")
+	}
+	// update last used so it's not removed immediately
+	session.LastUsed = time.Now().Unix()
+	if _, ok := session.ActiveStreams[fileIdx]; !ok || session.ActiveStreams[fileIdx] <= 0 {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Trying to remove non-existent stream")
+	}
+	session.ActiveStreams[fileIdx]--
+	slog.Info("Active stream closed", "infoHash", infoHash, "fileIdx", fileIdx, "activeStreams", session.ActiveStreams)
+	return nil
+}
+
 /*
 File idx is used, but if -1 (invalid) use filename
 */
@@ -68,21 +109,21 @@ func AddTorrent(infoHashStr string, sources []string) error {
 	if torrentClient == nil {
 		panic("Streaming torrent client is not initialized!")
 	}
-	var infoHash metainfo.Hash
-	if err := infoHash.FromHexString(infoHashStr); err != nil {
+	var hashCheck metainfo.Hash
+	if err := hashCheck.FromHexString(infoHashStr); err != nil {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid infoHash")
 	}
 	// don't return error if already exists
-	if v, exists := activeSessions.Load(infoHash); exists {
+	if v, exists := activeSessions.Load(infoHashStr); exists {
 		session, ok := v.(*TorrentSession)
 		if !ok {
 			return nil
 		}
 		// update last used
-		session.LastUsed = time.Now()
+		session.LastUsed = time.Now().Unix()
 		return nil
 	}
-	magnetURI := GetMagnetURI(infoHash.HexString(), &sources)
+	magnetURI := GetMagnetURI(infoHashStr, &sources)
 	slog.Info("Retrieving Magnet...", "magnet", magnetURI)
 	t, err := torrentClient.AddMagnet(*magnetURI)
 	if err != nil {
@@ -95,8 +136,9 @@ func AddTorrent(infoHashStr string, sources []string) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+*magnetURI)
 	}
 	activeSessions.Store(infoHashStr, &TorrentSession{
-		Torrent:  t,
-		LastUsed: time.Now(),
+		Torrent:       t,
+		LastUsed:      time.Now().Unix(),
+		ActiveStreams: make(map[int]int),
 	})
 	slog.Info("Stored Magnet: " + t.InfoHash().HexString())
 	return nil
@@ -121,13 +163,13 @@ func CheckTorrentSession(infoHash string) bool {
 	return ok
 }
 
-func GetTorrentFile(infoHash string, fileIdx *int, filename string, sources []string) (*torrent.File, *TorrentSession, error) {
+func GetTorrentFile(infoHash string, fileIdx *int, sources []string) (*torrent.File, *TorrentSession, error) {
 	if fileIdx == nil {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File index not provided")
 	}
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
-		// force-add the torrent if it doesn't exist
+		// Add the torrent if it doesn't exist
 		err := AddTorrent(infoHash, sources)
 		if err != nil {
 			return nil, nil, err
@@ -142,45 +184,15 @@ func GetTorrentFile(infoHash string, fileIdx *int, filename string, sources []st
 	if !ok {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
 	}
-	slog.Info("Starting p2p download", "file", session.Torrent.Files()[*fileIdx].DisplayPath())
+	slog.Info("grabbing p2p file", "file", session.Torrent.Files()[*fileIdx].DisplayPath())
 	// update last used
-	session.LastUsed = time.Now()
+	session.LastUsed = time.Now().Unix()
 	t := session.Torrent
 	if *fileIdx >= len(t.Files()) {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			fmt.Sprintf("Invalid fileidx: %v, total files: %v", *fileIdx, len(t.Files())))
 	}
-	var fileToStream *torrent.File
-	// fileIdx defaults to -1 for no index
-	if *fileIdx < 0 {
-		// no idx or filename, use largest video file
-		if filename == "" {
-			var largestFile *torrent.File
-			for _, file := range t.Files() {
-				if largestFile == nil || file.Length() > largestFile.Length() {
-					if IsVideoFile(largestFile.DisplayPath()) {
-						largestFile = file
-					}
-				}
-			}
-			fileToStream = largestFile
-			return fileToStream, session, nil
-		}
-		// use filename
-		for _, file := range t.Files() {
-			if filename == file.DisplayPath() {
-				if IsVideoFile(filename) {
-					fileToStream = file
-				} else {
-					return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), filename+" is not a valid video file")
-				}
-			}
-		}
-		// could return nil, nil
-		return fileToStream, session, nil
-	}
-	fileToStream = t.Files()[*fileIdx]
-	return fileToStream, session, nil
+	return t.Files()[*fileIdx], session, nil
 }
 
 // GetMagnetURI returns magnet: uri from hash and trackers
@@ -227,7 +239,16 @@ func cleanupSessions() {
 	for range ticker.C {
 		activeSessions.Range(func(key, value interface{}) bool {
 			session := value.(*TorrentSession)
-			if time.Since(session.LastUsed) > 15*time.Minute {
+			// check if active streams exist
+			totalStreams := 0
+			for _, val := range session.ActiveStreams {
+				totalStreams += val
+			}
+			if totalStreams != 0 {
+				return true
+			}
+			// 10 minute grace period
+			if time.Now().Unix()-session.LastUsed > 600 {
 				session.Torrent.Drop()
 				activeSessions.Delete(key)
 				slog.Info("Removed unused session: %s", key)

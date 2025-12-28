@@ -25,6 +25,15 @@ const (
 	DownloadTypeExternal = "external"
 )
 
+// tasks in terminal statuses won't change, retries must be made as a new task
+var (
+	IngestTerminalStatuses = []string{
+		IngestStatusDone,
+		IngestStatusFailed,
+		IngestStatusCanceled,
+	}
+)
+
 type IngestTask struct {
 	IngestTaskID     int64     `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
 	DownloadPriority int       `xorm:"'download_priority'" json:"download_priority"` // priority of task, not used for now
