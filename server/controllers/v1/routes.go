@@ -80,6 +80,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
 	privateRoutes.POST("/torrent/:encodedString/download", DownloadTorrentHandler) // downloads to the server, not the client
 	privateRoutes.GET("/media/downloads", GetDownloadsHandler)
+	privateRoutes.POST("/media/downloads/:taskID/cancel", CancelDownloadHandler)
 
 	/*
 		Query Providers Routes

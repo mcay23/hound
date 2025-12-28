@@ -2,14 +2,17 @@ package v1
 
 import (
 	"errors"
+	"hound/database"
 	"hound/helpers"
 	"hound/model"
 	"hound/model/sources"
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/anacrolix/torrent"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +36,7 @@ func StreamHandler(c *gin.Context) {
 			return
 		}
 		file, _, err := model.GetTorrentFile(streamDetails.InfoHash,
-			streamDetails.FileIndex, streamDetails.Filename, streamDetails.Sources)
+			streamDetails.FileIndex, streamDetails.Sources)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
 			return
@@ -51,6 +54,13 @@ func StreamHandler(c *gin.Context) {
 				closer.Close()
 			}
 		}()
+		// high prio for streaming
+		file.SetPriority(torrent.PiecePriorityHigh)
+		defer file.SetPriority(torrent.PiecePriorityNormal)
+		// add/remove active streams for this index for cleanup tracking
+		// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
+		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIndex)
+		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIndex)
 		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
 		return
 	}
@@ -141,4 +151,34 @@ func DownloadTorrentHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"status": "started"}, 200)
+}
+
+func CancelDownloadHandler(c *gin.Context) {
+	taskIDStr := c.Param("taskID")
+	taskID, err := strconv.Atoi(taskIDStr)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid task ID Param"))
+		return
+	}
+	task, err := database.GetIngestTask(database.IngestTask{IngestTaskID: int64(taskID)})
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get task"))
+		return
+	}
+	if task.Status != database.IngestStatusDownloading &&
+		task.Status != database.IngestStatusPendingDownload {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Only tasks that are downloading or pending_download can be canceled"))
+		return
+	}
+	updatedTask := database.IngestTask{
+		IngestTaskID: int64(taskID),
+		Status:       database.IngestStatusCanceled,
+	}
+	_, err = database.UpdateIngestTask(&updatedTask)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to cancel task"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"ingest_task_id": taskID, "status": "pending_cancel"}, 200)
 }

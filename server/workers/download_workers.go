@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
 )
 
@@ -69,7 +70,7 @@ func processTask(workerID int, task *database.IngestTask) {
 		failTask(task, err)
 		return
 	}
-	file, _, err := model.GetTorrentFile(infoHash, task.FileIdx, "", nil)
+	file, _, err := model.GetTorrentFile(infoHash, task.FileIdx, nil)
 	if err != nil {
 		slog.Error("Failed to get torrent file", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
@@ -86,27 +87,81 @@ func processTask(workerID int, task *database.IngestTask) {
 
 	lastBytesCompleted := int64(0)
 	for range ticker.C {
-		session.LastUsed = time.Now() // keep torrent session alive
-		task.DownloadedBytes = file.BytesCompleted()
-		task.DownloadSpeed = (file.BytesCompleted() - lastBytesCompleted) / 2
-		lastBytesCompleted = file.BytesCompleted()
-		task.LastSeen = time.Now()
-
-		_, err := database.UpdateIngestTask(task)
+		// check if task is cancelled
+		newTask, err := database.GetIngestTask(database.IngestTask{IngestTaskID: task.IngestTaskID})
 		if err != nil {
-			slog.Error("Failed to update task progress", "taskID", task.IngestTaskID, "error", err)
+			slog.Error("Failed to get ingest task", "taskID", task.IngestTaskID, "error", err)
+			failTask(task, err)
+			return
+		}
+		if newTask.Status == database.IngestStatusCanceled {
+			cancelTask(newTask)
+			return
+		}
+		// update torrent session
+		session.LastUsed = time.Now().Unix()
+		session, err = model.GetTorrentSession(infoHash)
+		if err != nil {
+			slog.Error("Failed to get torrent session", "taskID", newTask.IngestTaskID, "error", err)
+			failTask(newTask, err)
+			return
+		}
+
+		newTask.DownloadedBytes = file.BytesCompleted()
+		newTask.DownloadSpeed = (file.BytesCompleted() - lastBytesCompleted) / 2
+		lastBytesCompleted = file.BytesCompleted()
+		newTask.LastSeen = time.Now()
+
+		_, err = database.UpdateIngestTask(newTask)
+		if err != nil {
+			slog.Error("Failed to update task progress", "taskID", newTask.IngestTaskID, "error", err)
 		}
 
 		if file.BytesCompleted() >= file.Length() {
-			slog.Info("Download finished", "workerID", workerID, "taskID", task.IngestTaskID)
-			task.Status = database.IngestStatusPendingInsert
-			task.FinishedAt = time.Now()
+			slog.Info("Download finished", "workerID", workerID, "taskID", newTask.IngestTaskID)
+			newTask.Status = database.IngestStatusPendingInsert
+			newTask.FinishedAt = time.Now()
 			// let ingest worker pick this up
-			_, err := database.UpdateIngestTask(task)
+			_, err := database.UpdateIngestTask(newTask)
 			if err != nil {
-				slog.Error("Failed to mark task done", "taskID", task.IngestTaskID, "error", err)
+				slog.Error("Failed to mark task done", "taskID", newTask.IngestTaskID, "error", err)
 			}
 			break
+		}
+	}
+}
+
+func cancelTask(task *database.IngestTask) {
+	cancelMsg := "Task cancelled by the user"
+	task.LastMessage = &cancelMsg
+	task.FinishedAt = time.Now()
+	_, err := database.UpdateIngestTask(task)
+	if err != nil {
+		slog.Error("Failed to cancel task", "taskID", task.IngestTaskID, "error", err)
+	}
+	slog.Info("Task cancelled by user", "taskID", task.IngestTaskID, "uri", *task.SourceURI)
+
+	// check Torrent Session
+	uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
+	if err != nil {
+		slog.Error("Failed to parse magnet URI", "taskID", task.IngestTaskID, "error", err)
+		return
+	}
+	session, err := model.GetTorrentSession(uri.InfoHash.HexString())
+	if err != nil {
+		slog.Error("Failed to get torrent session", "taskID", task.IngestTaskID, "error", err)
+		return
+	}
+
+	// if no one is using, set piece priority to none
+	// evaluate: this may not be required, since if the client requests the
+	// stream, the piece should be newly requested again
+	if session != nil && *task.FileIdx < len(session.Torrent.Files()) {
+		numStreams, ok := session.ActiveStreams[*task.FileIdx]
+		// active streams key doesn't exist, or no active streams
+		if !ok || numStreams <= 0 {
+			slog.Info("Setting piece priority to none", "uri", *task.SourceURI, "fileIdx", *task.FileIdx)
+			session.Torrent.Files()[*task.FileIdx].SetPriority(torrent.PiecePriorityNone)
 		}
 	}
 }
