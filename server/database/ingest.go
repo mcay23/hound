@@ -20,9 +20,8 @@ const (
 )
 
 const (
-	DownloadTypeP2P      = "p2p"
-	DownloadTypeHTTP     = "http"
-	DownloadTypeExternal = "external"
+	ProtocolP2P  = "p2p"
+	ProtocolHTTP = "http"
 )
 
 // tasks in terminal statuses won't change, retries must be made as a new task

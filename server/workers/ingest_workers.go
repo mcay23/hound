@@ -39,7 +39,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	slog.Info("Worker picked up ingest task", "workerID", workerID, "taskID", task.IngestTaskID)
 	var infoHash *string
 	// p2p case, for external ingests we don't know the source
-	if task.DownloadType == database.DownloadTypeP2P && task.SourceURI != nil {
+	if task.DownloadType == database.ProtocolP2P && task.SourceURI != nil {
 		uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
 		if err == nil {
 			hash := uri.InfoHash.HexString()

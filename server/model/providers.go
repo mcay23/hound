@@ -81,7 +81,7 @@ type StreamObject struct {
 	Filename    string      `json:"file_name"`
 	FolderName  string      `json:"folder_name"` // folder name for packs
 	Resolution  string      `json:"resolution"`
-	FileIndex   *int        `json:"file_idx"`  // file index of stream in torrent
+	FileIdx     *int        `json:"file_idx"`  // file index of stream in torrent
 	FileSize    int         `json:"file_size"` // file size in bytes
 	Rank        int         `json:"rank"`
 	Seeders     int         `json:"seeders"`

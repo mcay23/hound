@@ -18,7 +18,7 @@ type IngestFileRequest struct {
 	SourceID        string `json:"source_id"` // parent source id of show/movie
 	SeasonNumber    *int   `json:"season_number"`
 	EpisodeNumber   *int   `json:"episode_number"`
-	EpisodeSourceID string `json:"episode_source_id"` // source id of episode
+	EpisodeSourceID string `json:"source_episode_id"` // source id of episode
 	FilePath        string `json:"file_path" binding:"required"`
 }
 

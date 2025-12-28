@@ -45,6 +45,16 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryHandler)
 
 	/*
+		Playback Progress Routes
+	*/
+	privateRoutes.GET("/movie/:id/playback", GetPlaybackProgressHandler)
+	privateRoutes.POST("/movie/:id/playback", SetPlaybackProgressHandler)
+	privateRoutes.POST("/movie/:id/playback/delete", DeletePlaybackProgressHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber/playback", GetPlaybackProgressHandler)
+	privateRoutes.POST("/tv/:id/playback", SetPlaybackProgressHandler)
+	privateRoutes.POST("/tv/:id/playback/delete", DeletePlaybackProgressHandler)
+
+	/*
 		TV Show Routes
 	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)

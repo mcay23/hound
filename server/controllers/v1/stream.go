@@ -29,14 +29,14 @@ func StreamHandler(c *gin.Context) {
 	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
 		"filename", streamDetails.Filename)
 	// Torrent/P2P Streaming Case
-	if streamDetails.Cached == "false" && streamDetails.P2P == "p2p" {
-		if streamDetails.FileIndex == nil {
+	if streamDetails.Cached == "false" && streamDetails.P2P == database.ProtocolP2P {
+		if streamDetails.FileIdx == nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"File index not provided"))
 			return
 		}
 		file, _, err := model.GetTorrentFile(streamDetails.InfoHash,
-			streamDetails.FileIndex, streamDetails.Sources)
+			streamDetails.FileIdx, streamDetails.Sources)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
 			return
@@ -59,8 +59,8 @@ func StreamHandler(c *gin.Context) {
 		defer file.SetPriority(torrent.PiecePriorityNormal)
 		// add/remove active streams for this index for cleanup tracking
 		// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
-		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIndex)
-		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIndex)
+		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
 		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
 		return
 	}
@@ -119,7 +119,7 @@ func AddTorrentHandler(c *gin.Context) {
 		return
 	}
 	// may want to be more lax in the future
-	if streamDetails.FileIndex == nil || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
+	if streamDetails.FileIdx == nil || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Torrent hash, File Index and/or File name not provided"))
 		return

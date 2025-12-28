@@ -26,9 +26,9 @@ var tmdbClient *tmdb.Client
 var tmdbTVGenres tmdb.GenreMovieList
 var tmdbMovieGenres tmdb.GenreMovieList
 
-const trendingCacheDuration = 12 * time.Hour
-const searchCacheDuration = 24 * time.Hour
-const getCacheDuration = 2 * time.Hour
+const trendingCacheTTL = 12 * time.Hour
+const searchCacheTTL = 24 * time.Hour
+const getCacheTTL = 2 * time.Hour
 
 type TVShowObject struct {
 	TMDBData  *tmdb.SearchTVShowsResults
@@ -79,7 +79,7 @@ func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 		return nil, err
 	}
 	if shows != nil {
-		_, _ = database.SetCache(cacheKey, shows, trendingCacheDuration)
+		_, _ = database.SetCache(cacheKey, shows, trendingCacheTTL)
 	}
 	return shows, nil
 }
@@ -96,7 +96,7 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 		return nil, err
 	}
 	if shows != nil {
-		_, _ = database.SetCache(cacheKey, shows, searchCacheDuration)
+		_, _ = database.SetCache(cacheKey, shows, searchCacheTTL)
 	}
 	return shows.SearchTVShowsResults, nil
 }
@@ -118,7 +118,7 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
 	}
 	if tvShow != nil {
-		_, _ = database.SetCache(cacheKey, tvShow, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, tvShow, getCacheTTL)
 	}
 	return tvShow, nil
 }
@@ -149,10 +149,32 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb")
 	}
-	if season != nil {
-		_, _ = database.SetCache(cacheKey, season, getCacheDuration)
+	if season == nil {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"failed to get tv season details from tmdb: season is nil")
 	}
+	_, _ = database.SetCache(cacheKey, season, getCacheTTL)
 	return season, nil
+}
+
+func GetEpisodeIDTMDB(tmdbID int, seasonNumber int, episodeNumber int) (int, error) {
+	// cached call, should be fast under normal flow
+	season, err := GetTVSeasonTMDB(tmdbID, seasonNumber)
+	if err != nil {
+		return -1, helpers.LogErrorWithMessage(err, "failed to get season")
+	}
+	targetEpisodeID := -1
+	for _, episode := range season.Episodes {
+		if episode.EpisodeNumber == episodeNumber {
+			targetEpisodeID = int(episode.ID)
+			break
+		}
+	}
+	if targetEpisodeID == -1 {
+		return -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"season/episode pair not found")
+	}
+	return targetEpisodeID, nil
 }
 
 func GetTVEpisodeGroupsTMDB(tmdbID int) (*tmdb.TVEpisodeGroups, error) {
@@ -167,7 +189,7 @@ func GetTVEpisodeGroupsTMDB(tmdbID int) (*tmdb.TVEpisodeGroups, error) {
 		return nil, err
 	}
 	if episodeGroups != nil {
-		_, _ = database.SetCache(cacheKey, episodeGroups, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, episodeGroups, getCacheTTL)
 	}
 	return episodeGroups, err
 }
@@ -184,7 +206,7 @@ func GetTVEpisodeGroupsDetailsTMDB(tmdbEpisodeGroupID string) (*tmdb.TVEpisodeGr
 		return nil, err
 	}
 	if episodeGroupDetails != nil {
-		_, _ = database.SetCache(cacheKey, episodeGroupDetails, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, episodeGroupDetails, getCacheTTL)
 	}
 	return episodeGroupDetails, err
 }
@@ -250,7 +272,7 @@ func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 		return nil, err
 	}
 	if movies != nil {
-		_, _ = database.SetCache(cacheKey, movies, trendingCacheDuration)
+		_, _ = database.SetCache(cacheKey, movies, trendingCacheTTL)
 	}
 	return movies, nil
 }
@@ -267,7 +289,7 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 		return nil, err
 	}
 	if movies != nil {
-		_, _ = database.SetCache(cacheKey, movies, searchCacheDuration)
+		_, _ = database.SetCache(cacheKey, movies, searchCacheTTL)
 	}
 	return movies.SearchMoviesResults, nil
 }
@@ -287,7 +309,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get movie details from tmdb")
 	}
 	if movie != nil {
-		_, _ = database.SetCache(cacheKey, movie, getCacheDuration)
+		_, _ = database.SetCache(cacheKey, movie, getCacheTTL)
 	}
 	return movie, nil
 }
