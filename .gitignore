@@ -46,7 +46,6 @@ web/yarn-error.log*
 
 server/.env
 .env
-server/cache_data
 /server/model/providers/helpers/__pycache__
 .DS_Store
 /server/Hound Data
