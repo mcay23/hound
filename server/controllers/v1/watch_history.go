@@ -9,6 +9,7 @@ import (
 
 	"hound/database"
 	"hound/helpers"
+	"hound/model"
 	"hound/model/sources"
 	"hound/view"
 
@@ -19,9 +20,9 @@ const scrobbleCacheTTL = 48 * time.Hour
 
 func GetWatchHistoryHandler(c *gin.Context) {
 	recordType := database.RecordTypeMovie
-	if strings.Contains(c.FullPath(), "/tv/") {
+	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
 		recordType = database.RecordTypeTVShow
-	} else if !strings.Contains(c.FullPath(), "/movie/") {
+	} else if !strings.Contains(c.FullPath(), "/api/v1/movie/") {
 		// this shouldn't happen
 		panic("Fatal error, invalid path for watch history")
 	}
@@ -56,6 +57,11 @@ func GetWatchHistoryHandler(c *gin.Context) {
 	}
 	var targetSeason *int
 	if c.Param("seasonNumber") != "" {
+		if recordType != database.RecordTypeTVShow {
+			errMsg := "Season number is only valid for tv shows"
+			helpers.ErrorResponseWithMessage(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), errMsg), errMsg)
+			return
+		}
 		temp, err := strconv.Atoi(c.Param("seasonNumber"))
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing target season"))
@@ -192,7 +198,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		}
 		// add rewatch record if none exists
 		if rewatchRecord == nil {
-			rewatchRecord, err = database.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
+			rewatchRecord, err = model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
 				strconv.Itoa(showID), userID, time.Now().UTC())
 			if err != nil {
 				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
@@ -370,7 +376,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 			startedAt = parsed
 		}
 	}
-	rewatchRecord, err := database.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID, startedAt)
+	rewatchRecord, err := model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID, startedAt)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 		return
@@ -440,7 +446,7 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 	}
 	// add rewatch record if none exists
 	if rewatchRecord == nil {
-		rewatchRecord, err = database.InsertRewatchFromSourceID(database.MediaTypeMovie, mediaSource,
+		rewatchRecord, err = model.InsertRewatchFromSourceID(database.MediaTypeMovie, mediaSource,
 			strconv.Itoa(sourceID), userID, time.Now().UTC())
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))

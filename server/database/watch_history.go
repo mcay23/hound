@@ -107,22 +107,8 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 	return records, err
 }
 
-func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID string,
-	userID int64, startedAt time.Time) (*RewatchRecord, error) {
-	has, record, err := GetMediaRecord(recordType, mediaSource, sourceID)
-	if err != nil {
-		return nil, err
-	}
-	if !has {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"No Media Record Found for "+recordType+":"+mediaSource+"-"+sourceID)
-	}
-	rewatch := RewatchRecord{
-		UserID:    userID,
-		RecordID:  record.RecordID,
-		StartedAt: startedAt,
-	}
-	_, err = databaseEngine.Table(rewatchesTable).Insert(&rewatch)
+func InsertRewatch(rewatch RewatchRecord) (*RewatchRecord, error) {
+	_, err := databaseEngine.Table(rewatchesTable).Insert(&rewatch)
 	if err != nil {
 		return nil, err
 	}
