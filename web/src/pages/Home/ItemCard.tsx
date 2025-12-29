@@ -93,7 +93,7 @@ function ItemCard(props: {
             <div className="rounded itemcard-img-cast" />
           </div>
         )}
-        <figcaption className="itemcard-item-caption">
+        <figcaption className="itemcard-cast-item-caption">
           <div className="itemcard-item-caption-primary">{primaryCaption}</div>
           <div className="itemcard-item-caption-secondary">
             {secondaryCaption}
