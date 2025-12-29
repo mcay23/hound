@@ -9,7 +9,12 @@
 
 .itemcard-item-caption {
     font-family: 'Cabin', sans-serif;
-    max-width: 100%;
+    max-width: 200px;
+}
+
+.itemcard-cast-item-caption {
+    font-family: 'Cabin', sans-serif;
+    max-width: 160px;
 }
 
 .itemcard-item-caption-primary {
