@@ -193,7 +193,6 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		}
 		sb.WriteString(")")
 
-		// Truncate time to seconds to remove microseconds
 		now := time.Now().UTC()
 		valArgs = append(valArgs,
 			record.RecordType,
@@ -373,7 +372,7 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 }
 
 // showSourceID and seasonNumber are optional
-func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, seasonNumber *int) ([]MediaRecord, error) {
+func GetEpisodeMediaRecordsForSeason(mediaSource string, showSourceID string, seasonNumber *int, episodeNumber *int) ([]MediaRecord, error) {
 	var episodes []MediaRecord
 	sess := databaseEngine.NewSession()
 	defer sess.Close()
@@ -400,14 +399,15 @@ func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, sea
 		Join("INNER", []string{"media_records", "season"}, "season.parent_id = show.record_id").
 		Join("INNER", []string{"media_records", "episode"}, "episode.parent_id = season.record_id").
 		Where("show.media_source = ?", mediaSource).
+		Where("show.source_id = ?", showSourceID).
 		Where("show.record_type = ?", "tvshow").
 		Where("season.record_type = ?", "season").
 		Where("episode.record_type = ?", "episode")
-	if showSourceID != nil {
-		sess = sess.Where("show.source_id = ?", *showSourceID)
-	}
 	if seasonNumber != nil {
 		sess = sess.Where("season.season_number = ?", *seasonNumber)
+	}
+	if episodeNumber != nil {
+		sess = sess.Where("episode.episode_number = ?", *episodeNumber)
 	}
 	err := sess.Find(&episodes)
 	if err != nil {
@@ -416,15 +416,14 @@ func GetEpisodeMediaRecordsForShow(mediaSource string, showSourceID *string, sea
 	return episodes, nil
 }
 
-func GetEpisodeMediaRecord(mediaSource string, showSourceID *string, seasonNumber *int, episodeNumber int) (*MediaRecord, error) {
-	episodes, err := GetEpisodeMediaRecordsForShow(mediaSource, showSourceID, seasonNumber)
+func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
+	seasonNumber *int, episodeNumber int) (*MediaRecord, error) {
+	episodes, err := GetEpisodeMediaRecordsForSeason(mediaSource, showSourceID, seasonNumber, &episodeNumber)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
 	}
-	for _, episode := range episodes {
-		if *episode.EpisodeNumber == episodeNumber {
-			return &episode, nil
-		}
+	if len(episodes) > 0 {
+		return &episodes[0], nil
 	}
 	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
 }

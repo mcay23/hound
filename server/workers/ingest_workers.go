@@ -94,7 +94,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	// set ingest to done
 	task.Status = database.IngestStatusDone
 	task.DestinationPath = mediaFile.Filepath
-	task.FinishedAt = time.Now()
+	task.FinishedAt = time.Now().UTC()
 	_, err = database.UpdateIngestTask(task)
 	if err != nil {
 		slog.Error("Failed to update ingest task status", "taskID", task.IngestTaskID, "error", err)

@@ -117,18 +117,18 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	return err
 }
 
+// Delete all watch progress before deleteBefore
+// If nil, delete all watch progress
 func DeleteWatchProgress(userID int64, mediaType string, mediaSource string,
-	sourceID string, seasonNumber *int, episodeNumber *int) error {
+	sourceID string, seasonNumber *int, episodeNumber *int, deleteBefore *time.Time) error {
 	prefixFormat := strings.Split(WATCH_PROGRESS_CACHE_KEY, "|season")[0]
 	keyPrefix := fmt.Sprintf(prefixFormat, userID, mediaType, mediaSource, sourceID)
 	if mediaType == database.MediaTypeTVShow {
-		if seasonNumber == nil {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"invalid param: season number is nil")
-		}
-		keyPrefix += fmt.Sprintf("|season:%v", *seasonNumber)
-		if episodeNumber != nil {
-			keyPrefix += fmt.Sprintf("|episode:%v", *episodeNumber)
+		if seasonNumber != nil {
+			keyPrefix += fmt.Sprintf("|season:%v", *seasonNumber)
+			if episodeNumber != nil {
+				keyPrefix += fmt.Sprintf("|episode:%v", *episodeNumber)
+			}
 		}
 	}
 	keys, err := database.GetKeysWithPrefix(keyPrefix)
@@ -137,7 +137,25 @@ func DeleteWatchProgress(userID int64, mediaType string, mediaSource string,
 	}
 	var deleteError error
 	for _, key := range keys {
-		err := database.DeleteCache(key)
+		// skip checks if deleteBefore == nil, minor optimization
+		// over setting deleteBefore to time.Now()
+		if deleteBefore != nil {
+			var watchProgress WatchProgress
+			exists, err := database.GetCache(key, &watchProgress)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				continue
+			}
+			// skip if setting a watch before the current scrobble activity
+			// eg. you mark movie as watched at 3 months ago,
+			// don't delete current progress
+			if watchProgress.LastWatchedAt > deleteBefore.Unix() {
+				continue
+			}
+		}
+		deleteError = database.DeleteCache(key)
 		if deleteError != nil {
 			// don't return
 			helpers.LogErrorWithMessage(err, "failed to delete watch progress")

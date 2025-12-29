@@ -191,26 +191,28 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 		return
 	}
 	startedAt := time.Now().UTC()
+	// for now, we don't support custom startedAt, evaluate in the future if this might be needed
 	// supplying a body is optional
-	if c.Request.ContentLength != 0 {
-		type addRewatchPayload struct {
-			StartedAt string `json:"rewatch_started_at"`
-		}
-		rewatchPayload := addRewatchPayload{}
-		if err := c.ShouldBindJSON(&rewatchPayload); err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
-			return
-		}
-		if rewatchPayload.StartedAt != "" {
-			parsed, err := time.Parse(time.RFC3339, rewatchPayload.StartedAt)
-			if err != nil {
-				helpers.ErrorResponseWithMessage(c, err, "Error parsing rewatch_started_at, must be RFC3339 string")
-				return
-			}
-			startedAt = parsed
-		}
-	}
-	rewatchRecord, err := model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID, startedAt)
+	// if c.Request.ContentLength != 0 {
+	// 	type addRewatchPayload struct {
+	// 		StartedAt string `json:"rewatch_started_at"`
+	// 	}
+	// 	rewatchPayload := addRewatchPayload{}
+	// 	if err := c.ShouldBindJSON(&rewatchPayload); err != nil {
+	// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+	// 		return
+	// 	}
+	// 	if rewatchPayload.StartedAt != "" {
+	// 		parsed, err := time.Parse(time.RFC3339, rewatchPayload.StartedAt)
+	// 		if err != nil {
+	// 			helpers.ErrorResponseWithMessage(c, err, "Error parsing rewatch_started_at, must be RFC3339 string")
+	// 			return
+	// 		}
+	// 		startedAt = parsed
+	// 	}
+	// }
+	rewatchRecord, err := model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
+		strconv.Itoa(showID), userID, startedAt)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 		return

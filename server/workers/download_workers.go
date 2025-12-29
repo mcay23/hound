@@ -110,7 +110,7 @@ func processTask(workerID int, task *database.IngestTask) {
 		newTask.DownloadedBytes = file.BytesCompleted()
 		newTask.DownloadSpeed = (file.BytesCompleted() - lastBytesCompleted) / 2
 		lastBytesCompleted = file.BytesCompleted()
-		newTask.LastSeen = time.Now()
+		newTask.LastSeen = time.Now().UTC()
 
 		_, err = database.UpdateIngestTask(newTask)
 		if err != nil {
@@ -120,7 +120,7 @@ func processTask(workerID int, task *database.IngestTask) {
 		if file.BytesCompleted() >= file.Length() {
 			slog.Info("Download finished", "workerID", workerID, "taskID", newTask.IngestTaskID)
 			newTask.Status = database.IngestStatusPendingInsert
-			newTask.FinishedAt = time.Now()
+			newTask.FinishedAt = time.Now().UTC()
 			// let ingest worker pick this up
 			_, err := database.UpdateIngestTask(newTask)
 			if err != nil {
@@ -134,7 +134,7 @@ func processTask(workerID int, task *database.IngestTask) {
 func cancelTask(task *database.IngestTask) {
 	cancelMsg := "Task cancelled by the user"
 	task.LastMessage = &cancelMsg
-	task.FinishedAt = time.Now()
+	task.FinishedAt = time.Now().UTC()
 	_, err := database.UpdateIngestTask(task)
 	if err != nil {
 		slog.Error("Failed to cancel task", "taskID", task.IngestTaskID, "error", err)
@@ -171,6 +171,6 @@ func failTask(task *database.IngestTask, err error) {
 	task.Status = database.IngestStatusFailed
 	errorMessage := err.Error()
 	task.LastMessage = &errorMessage
-	task.FinishedAt = time.Now()
+	task.FinishedAt = time.Now().UTC()
 	database.UpdateIngestTask(task)
 }

@@ -14,10 +14,12 @@ import (
 const scrobbleCacheTTL = 48 * time.Hour
 
 type WatchHistoryTVShowPayload struct {
-	EpisodeIDs []int   `json:"episode_ids" binding:"required"` // tmdb unique id for episode
-	ActionType string  `json:"action_type" binding:"required,oneof=watch scrobble"`
-	RewatchID  *int64  `json:"rewatch_id"`
-	WatchedAt  *string `json:"watched_at"`
+	SeasonNumber  *int    `json:"season_number"`
+	EpisodeNumber *int    `json:"episode_number"`
+	EpisodeIDs    *[]int  `json:"episode_ids"` // tmdb unique id for episode
+	ActionType    string  `json:"action_type" binding:"required,oneof=watch scrobble"`
+	RewatchID     *int64  `json:"rewatch_id"`
+	WatchedAt     *string `json:"watched_at"`
 }
 
 type WatchHistoryMoviePayload struct {
@@ -38,22 +40,40 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		}
 		watchTime = parsed.UTC()
 	}
-	// 1. Parse episode ids, check for duplicated episode ids
+	if watchHistoryPayload.EpisodeIDs == nil || len(*watchHistoryPayload.EpisodeIDs) == 0 {
+		if watchHistoryPayload.SeasonNumber == nil || watchHistoryPayload.EpisodeNumber == nil {
+			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"No valid episode ids / season episode pair provided")
+		}
+	}
+	// 1. Upsert show
+	if _, err := sources.UpsertTVShowRecordTMDB(showID); err != nil {
+		return nil, nil, helpers.LogErrorWithMessage(err, "Error upserting tv show: "+mediaSource+"-"+strconv.Itoa(showID))
+	}
+	// 2. if using season/episode number, get episode id
+	// if episodeIDs are not nil, season/episode number is ignored
+	// might want to refactor to allow batch entry by season/episode number
+	if watchHistoryPayload.EpisodeIDs == nil {
+		showIDstr := strconv.Itoa(showID)
+		episodeRecord, err := database.GetEpisodeMediaRecord(mediaSource, showIDstr, watchHistoryPayload.SeasonNumber, *watchHistoryPayload.EpisodeNumber)
+		if err != nil {
+			return nil, nil, helpers.LogErrorWithMessage(err, "Error getting episode record for this show, check if it exists")
+		}
+		targetEpisodeID, err := strconv.Atoi(episodeRecord.SourceID)
+		if err != nil {
+			return nil, nil, helpers.LogErrorWithMessage(err, "Error converting episode id to string")
+		}
+		watchHistoryPayload.EpisodeIDs = &[]int{targetEpisodeID}
+	}
+	// 3. Parse episode ids, check for duplicated episode ids
 	episodeSet := make(map[int]struct{})
 	var episodeIDs []int
-	for _, id := range watchHistoryPayload.EpisodeIDs {
+	for _, id := range *watchHistoryPayload.EpisodeIDs {
 		if _, exists := episodeSet[id]; exists {
 			continue
 		}
 		episodeSet[id] = struct{}{}
 		episodeIDs = append(episodeIDs, id)
-	}
-	if len(episodeIDs) == 0 {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No valid episode ids provided")
-	}
-	// 2. Upsert show
-	if _, err := sources.UpsertTVShowRecordTMDB(showID); err != nil {
-		return nil, nil, helpers.LogErrorWithMessage(err, "Error upserting tv show: "+mediaSource+"-"+strconv.Itoa(showID))
 	}
 	// check if episode ids are in the database, and belong to the correct show
 	episodeMap, invalidIDs, err := database.CheckShowEpisodesIDs(mediaSource, strconv.Itoa(showID), episodeIDs)
@@ -86,7 +106,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find this rewatch ID in the database")
 		}
 	}
-	// 3. Get most current rewatch or create new rewatch if none if rewatch payload is empty
+	// 4. Get most current rewatch or create new rewatch if none if rewatch payload is empty
 	if targetRewatchID == nil {
 		rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
@@ -102,7 +122,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		}
 		targetRewatchID = &rewatchRecord.RewatchID
 	}
-	// 4. Filter cached scrobbles, since we don't want to accidentally double insert scrobbles
+	// 5. Filter cached scrobbles, since we don't want to accidentally double insert scrobbles
 	// if they are inserted within X hours of each other. Watches are fine since it's manual
 	type pendingInsert struct {
 		EpisodeID    int
@@ -162,6 +182,16 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			if _, err := database.SetCache(meta.CacheKey, true, scrobbleCacheTTL); err != nil {
 				return nil, nil, helpers.LogErrorWithMessage(err, "Error caching scrobble entry")
 			}
+		}
+	}
+	// delete all watch progress before watchTime
+	// only for season/episode pair case,
+	// not for batch insertion
+	if watchHistoryPayload.SeasonNumber != nil && watchHistoryPayload.EpisodeNumber != nil {
+		err = DeleteWatchProgress(userID, database.MediaTypeTVShow, mediaSource,
+			strconv.Itoa(showID), watchHistoryPayload.SeasonNumber, watchHistoryPayload.EpisodeNumber, &watchTime)
+		if err != nil {
+			_ = helpers.LogErrorWithMessage(err, "Error deleting watch progress")
 		}
 	}
 	return &insertedEpisodeIDs, &skippedEpisodeIDs, nil
@@ -226,6 +256,12 @@ func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, wat
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Error inserting watch event to db: "+mediaSource+"-"+strconv.Itoa(sourceID))
 	}
+	// delete all watch progress before watchTime
+	err = DeleteWatchProgress(userID, database.MediaTypeMovie, mediaSource,
+		strconv.Itoa(sourceID), nil, nil, &watchTime)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Error deleting watch progress")
+	}
 	return &sourceID, nil
 }
 
@@ -253,7 +289,7 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 		}
 		if len(watchEvents) == 0 {
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Current rewatch is empty, can't create new rewatch")
+				"Current active rewatch is empty, can't create new rewatch")
 		}
 	}
 	rewatch := database.RewatchRecord{
@@ -261,5 +297,14 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 		RecordID:  record.RecordID,
 		StartedAt: startedAt,
 	}
-	return database.InsertRewatch(rewatch)
+	rewatchRecord, err := database.InsertRewatch(rewatch)
+	if err != nil {
+		return nil, err
+	}
+	// close previous rewatch, delete watch progress before startedAt
+	if activeRewatch != nil {
+		_ = database.FinishRewatch(activeRewatch.RewatchID, time.Now().UTC())
+	}
+	_ = DeleteWatchProgress(userID, recordType, mediaSource, sourceID, nil, nil, &startedAt)
+	return rewatchRecord, nil
 }
