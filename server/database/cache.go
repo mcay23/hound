@@ -96,7 +96,6 @@ func GetCache(key string, out interface{}) (bool, error) {
 		})
 	})
 	if err == badger.ErrKeyNotFound {
-		slog.Info("Cache not found", "key", key)
 		// don't treat as an actual error
 		return false, nil
 	}

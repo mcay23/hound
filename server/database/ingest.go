@@ -143,8 +143,8 @@ func GetNextPendingDownloadTask() (*IngestTask, error) {
 		return nil, nil
 	}
 	task.Status = IngestStatusDownloading
-	task.StartedAt = time.Now()
-	task.LastSeen = time.Now()
+	task.StartedAt = time.Now().UTC()
+	task.LastSeen = time.Now().UTC()
 	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
 		sess.Rollback()
@@ -170,8 +170,8 @@ func GetNextPendingIngestTask() (*IngestTask, error) {
 		return nil, nil
 	}
 	task.Status = IngestStatusCopying
-	task.StartedAt = time.Now()
-	task.LastSeen = time.Now()
+	task.StartedAt = time.Now().UTC()
+	task.LastSeen = time.Now().UTC()
 	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
 		sess.Rollback()

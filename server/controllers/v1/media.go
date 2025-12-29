@@ -73,7 +73,7 @@ func GetTVEpisodesHandler(c *gin.Context) {
 		return
 	}
 	sourceIDstr := strconv.Itoa(sourceID)
-	episodeRecords, err := database.GetEpisodeMediaRecordsForShow(mediaSource, &sourceIDstr, nil)
+	episodeRecords, err := database.GetEpisodeMediaRecordsForSeason(mediaSource, sourceIDstr, nil, nil)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episodes"))
 		return

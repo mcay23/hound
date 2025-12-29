@@ -67,7 +67,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 				return
 			}
 			// delete watch progress
-			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil)
+			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil)
 			helpers.SuccessResponse(c, gin.H{"status": "success", "watched": true}, 200)
 			return
 		case database.MediaTypeTVShow:
@@ -77,16 +77,14 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 				return
 			}
 			watchedAtString := time.Now().Format(time.RFC3339)
-			episodeID, err := sources.GetEpisodeIDTMDB(sourceID, *watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)
-			if err != nil {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting episode ID"))
-				return
-			}
+			// use season/episode pair instead of episode ids
 			watchHistoryPayload := model.WatchHistoryTVShowPayload{
-				EpisodeIDs: []int{episodeID},
-				ActionType: database.ActionScrobble,
-				RewatchID:  nil, // will autopopulate during creation
-				WatchedAt:  &watchedAtString,
+				EpisodeIDs:    nil,
+				ActionType:    database.ActionScrobble,
+				SeasonNumber:  watchProgress.SeasonNumber,
+				EpisodeNumber: watchProgress.EpisodeNumber,
+				RewatchID:     nil, // will autopopulate during creation
+				WatchedAt:     &watchedAtString,
 			}
 			_, _, err = model.CreateTVShowWatchHistory(userID, mediaSource, sourceID, watchHistoryPayload)
 			if err != nil {
@@ -95,7 +93,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			}
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
-				watchProgress.SeasonNumber, watchProgress.EpisodeNumber)
+				watchProgress.SeasonNumber, watchProgress.EpisodeNumber, nil)
 			helpers.SuccessResponse(c, gin.H{"status": "success", "watched": true}, 200)
 			return
 		}
@@ -182,7 +180,7 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 		return
 	}
 	if mediaType == database.MediaTypeMovie {
-		if err := model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil); err != nil {
+		if err := model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil); err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting watch history"))
 			return
 		}
@@ -200,7 +198,7 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 		return
 	}
 	if err := model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
-		payload.SeasonNumber, payload.EpisodeNumber); err != nil {
+		payload.SeasonNumber, payload.EpisodeNumber, nil); err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting some watch histories"))
 		return
 	}

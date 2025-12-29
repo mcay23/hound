@@ -115,6 +115,13 @@ func InsertRewatch(rewatch RewatchRecord) (*RewatchRecord, error) {
 	return &rewatch, nil
 }
 
+func FinishRewatch(rewatchID int64, finishedAt time.Time) error {
+	_, err := databaseEngine.Table(rewatchesTable).
+		Where("rewatch_id = ?", rewatchID).
+		Update(RewatchRecord{FinishedAt: finishedAt})
+	return err
+}
+
 // get rewatches joined with media_records by record_id for a certain rewatch id
 func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*WatchEventMediaRecord, error) {
 	var records []*WatchEventMediaRecord
