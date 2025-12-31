@@ -52,14 +52,15 @@ func cleanUpDownloads() {
 	}
 }
 
+// Having issues with this on windows, directory is removed on next startup
 func removeP2PFiles(infoHash string) {
 	slog.Info("Removing unused torrent files", "infohash", infoHash)
 	targetDir := filepath.Join(model.HoundP2PDownloadsPath, infoHash)
-	err := os.Chmod(targetDir, 0666)
-	if err != nil {
-		slog.Error("Failed to chmod dir", "dir", targetDir, "error", err)
-	}
-	err = os.RemoveAll(targetDir)
+	// err := os.Chmod(targetDir, 0666)
+	// if err != nil {
+	// 	slog.Error("Failed to chmod dir", "dir", targetDir, "error", err)
+	// }
+	err := os.RemoveAll(targetDir)
 	if err != nil {
 		slog.Error("Failed to remove dir", "dir", targetDir, "error", err)
 	}

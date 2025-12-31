@@ -51,9 +51,10 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			"invalid param: Total duration is < 60 seconds, likely invalid file"))
 		return
 	}
-	// if progress is > 90% of total duration, mark as watched
-	setWatchCutoff := 0.9 * float64(watchProgress.TotalDurationSeconds)
-	if float64(watchProgress.CurrentProgressSeconds) > setWatchCutoff {
+	// if progress is > 85% of total duration or less than 5 minutes left, mark as watched
+	setWatchCutoff := 0.85 * float64(watchProgress.TotalDurationSeconds)
+	remainingSeconds := float64(watchProgress.TotalDurationSeconds) - float64(watchProgress.CurrentProgressSeconds)
+	if float64(watchProgress.CurrentProgressSeconds) > setWatchCutoff || remainingSeconds < 300 {
 		switch mediaType {
 		case database.MediaTypeMovie:
 			watchedAtString := time.Now().Format(time.RFC3339)
@@ -136,10 +137,10 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 			return
 		}
 		if len(watchProgress) == 0 {
-			helpers.SuccessResponse(c, gin.H{"watch_progress": nil}, 200)
+			helpers.SuccessResponse(c, gin.H{"status": "success", "data": nil}, 200)
 			return
 		}
-		helpers.SuccessResponse(c, gin.H{"watch_progress": watchProgress[0]}, 200)
+		helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchProgress[0]}, 200)
 		return
 	}
 	// tv show case

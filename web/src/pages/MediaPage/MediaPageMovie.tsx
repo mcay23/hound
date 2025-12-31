@@ -10,7 +10,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -46,6 +46,12 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
+type WatchProgressItem = {
+  current_progress_seconds: number;
+  total_duration_seconds: number;
+  encoded_data: string;
+};
+
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
@@ -57,11 +63,30 @@ function MediaPageMovie(props: any) {
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
+  const [watchProgress, setWatchProgress] = useState<WatchProgressItem>({
+    current_progress_seconds: 0,
+    total_duration_seconds: 0,
+    encoded_data: "",
+  });
   const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
-
+  useEffect(() => {
+    axios
+      .get(
+        "/api/v1/movie/" +
+          `${props.data.media_source}-${props.data.source_id}/playback`
+      )
+      .then((res) => {
+        if (res.data?.data) {
+          setWatchProgress(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [isStreamModalOpen]);
   var styles = {
     noBackdrop: {
       background:
@@ -157,7 +182,17 @@ function MediaPageMovie(props: any) {
           setStreams(res.data);
           let numStreams = res.data.data.providers[0].streams.length;
           if (numStreams > 0) {
-            setMainStream(res.data.data.providers[0].streams[0]);
+            let selectedStream = res.data.data.providers[0].streams[0];
+            if (mode === "direct" && watchProgress) {
+              const matchingStream = res.data.data.providers[0].streams.find(
+                (stream: any) =>
+                  stream.encoded_data === watchProgress.encoded_data
+              );
+              if (matchingStream) {
+                selectedStream = matchingStream;
+              }
+            }
+            setMainStream(selectedStream);
           } else {
             toast.error("No streams found");
           }
@@ -277,6 +312,8 @@ function MediaPageMovie(props: any) {
                         role="status"
                         className="stream-play-button-spinner"
                       />
+                    ) : watchProgress ? (
+                      "▶ Resume"
                     ) : (
                       "▶ Play Movie"
                     )
@@ -402,6 +439,7 @@ function MediaPageMovie(props: any) {
         open={isStreamModalOpen}
         streamDetails={mainStream}
         streams={streams?.data}
+        startTime={watchProgress.current_progress_seconds}
       />
       <SelectStreamModal
         setOpen={setIsSelectStreamModalOpen}

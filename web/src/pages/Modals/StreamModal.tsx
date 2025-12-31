@@ -49,7 +49,7 @@ function StreamModal(props: any) {
         setLoading(false);
       }
     }
-  }, [streamDetails, streams, open]);
+  }, [streamDetails, streams, open, startTime]);
 
   const videoJsOptions = {
     autoplay: true,
@@ -62,6 +62,7 @@ function StreamModal(props: any) {
       },
     ],
   };
+
   const handleVideoProgress = (current: number, total: number) => {
     if (current < 300) return; // don't log before 5 minutes
     const payload = {

@@ -396,7 +396,7 @@ function EpisodeCard(
           handleStreamButtonClick(
             episode.season_number,
             episode.episode_number,
-            "select",
+            "direct",
             episode.id
           );
         }}
