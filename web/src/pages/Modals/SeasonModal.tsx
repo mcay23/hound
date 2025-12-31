@@ -48,6 +48,12 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
+type WatchProgressItem = {
+  current_progress_seconds: number;
+  total_duration_seconds: number;
+  encoded_data: string;
+};
+
 function SeasonModal(props: any) {
   const { onClose, open, mediaSource, sourceID, seasonNumber } = props;
   const handleClose = () => {
@@ -69,6 +75,9 @@ function SeasonModal(props: any) {
     watch_info: [],
   });
   const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
+  const [watchProgress, setWatchProgress] = useState<
+    Map<number, WatchProgressItem>
+  >(() => new Map());
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
@@ -79,6 +88,7 @@ function SeasonModal(props: any) {
     useState(false);
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
+  const [streamStartTime, setStreamStartTime] = useState(0);
   const handleWatchEpisode = (tmdbID: number) => {
     var payload = {
       episode_ids: [tmdbID],
@@ -96,12 +106,21 @@ function SeasonModal(props: any) {
   const handleStreamButtonClick = (
     season: number,
     episode: number,
-    mode: string
+    mode: string,
+    episodeID: number
   ) => {
     if (mode === "direct") {
       setIsStreamButtonLoading(true);
     } else if (mode === "select") {
       setIsStreamSelectButtonLoading(true);
+    }
+    // set start time from watch progress
+    if (watchProgress.has(episodeID)) {
+      setStreamStartTime(
+        watchProgress.get(episodeID)?.current_progress_seconds || 0
+      );
+    } else {
+      setStreamStartTime(0);
     }
     const searchProvidersToast = toast.loading("Searching providers...");
     axios
@@ -113,7 +132,20 @@ function SeasonModal(props: any) {
         setStreams(res.data);
         let numStreams = res.data.data.providers[0].streams.length;
         if (numStreams > 0) {
-          setMainStream(res.data.data.providers[0].streams[0]);
+          let selectedStream = res.data.data.providers[0].streams[0];
+          // if we have watch progress, set this as the main stream
+          if (mode === "direct" && watchProgress.has(episodeID)) {
+            const progress = watchProgress.get(episodeID);
+            if (progress && progress.encoded_data) {
+              const matchingStream = res.data.data.providers[0].streams.find(
+                (stream: any) => stream.encoded_data === progress.encoded_data
+              );
+              if (matchingStream) {
+                selectedStream = matchingStream;
+              }
+            }
+          }
+          setMainStream(selectedStream);
           if (mode === "direct") {
             setIsStreamModalOpen(true);
           } else {
@@ -150,36 +182,63 @@ function SeasonModal(props: any) {
     if (open === false) return;
     if (seasonNumber < 0) return;
 
-    // check data is loaded
     // season 0 is used for extras, specials sometimes
     const loadData = async () => {
-      try {
-        const seasonRes = await axios.get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`
-        );
-        setSeasonData(seasonRes.data);
-        setIsSeasonDataLoaded(true);
-        // get watch data
-        const historyRes = await axios.get(
+      const seasonRes = await axios
+        .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`)
+        .catch((err) => {
+          console.log(err);
+        });
+      if (!seasonRes) return;
+      setSeasonData(seasonRes.data);
+      setIsSeasonDataLoaded(true);
+      // get watch data
+      axios
+        .get(
           `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`
-        );
-        if (historyRes.data.data) {
-          const latest = historyRes.data.data.reduce((a: any, b: any) =>
-            new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
-              ? a
-              : b
-          );
-          const sourceIDs = (latest.watch_events || [])
-            .map((event: any) => parseInt(event.source_id, 10))
-            .filter((tmdbID: number) => !isNaN(tmdbID));
-          setWatchedEpisodes(sourceIDs);
-        }
-      } catch (err: any) {
-        console.log(err.response);
-      }
+        )
+        .then((historyRes) => {
+          if (historyRes.data.data) {
+            const latest = historyRes.data.data.reduce((a: any, b: any) =>
+              new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
+                ? a
+                : b
+            );
+            const sourceIDs = (latest.watch_events || [])
+              .map((event: any) => parseInt(event.source_id, 10))
+              .filter((tmdbID: number) => !isNaN(tmdbID));
+            setWatchedEpisodes(sourceIDs);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+      // get watch progress
+      axios
+        .get(
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`
+        )
+        .then((progressRes) => {
+          // overwrite state each time
+          if (progressRes.data.data) {
+            const progressMap = new Map<number, WatchProgressItem>();
+            progressRes.data.data.forEach((item: any) => {
+              const episodeIDNum = parseInt(item.episode_id, 10);
+              progressMap.set(episodeIDNum, {
+                current_progress_seconds: item.current_progress_seconds,
+                total_duration_seconds: item.total_duration_seconds,
+                encoded_data: item.encoded_data,
+              });
+            });
+            setWatchProgress(progressMap);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     };
     loadData();
-  }, [seasonNumber, mediaSource, sourceID, open]);
+  }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
 
   return (
     <>
@@ -274,6 +333,7 @@ function SeasonModal(props: any) {
                 return EpisodeCard(
                   episode,
                   watchedEpisodes.includes(episode["id"]),
+                  watchProgress.get(episode["id"]),
                   handleWatchEpisode,
                   handleStreamButtonClick,
                   isStreamButtonLoading,
@@ -294,6 +354,7 @@ function SeasonModal(props: any) {
             setOpen={setIsStreamModalOpen}
             open={isStreamModalOpen}
             streamDetails={mainStream}
+            startTime={streamStartTime}
             streams={streams?.data}
           />
           <SelectStreamModal
@@ -314,6 +375,7 @@ function SeasonModal(props: any) {
 function EpisodeCard(
   episode: any,
   watched: boolean,
+  watchProgress: WatchProgressItem | undefined,
   handleWatchEpisode: Function,
   handleStreamButtonClick: Function,
   isStreamButtonLoading: boolean,
@@ -334,7 +396,8 @@ function EpisodeCard(
           handleStreamButtonClick(
             episode.season_number,
             episode.episode_number,
-            "select"
+            "select",
+            episode.id
           );
         }}
       >
@@ -353,6 +416,33 @@ function EpisodeCard(
             <PlayArrowRounded sx={{ fontSize: "90px" }} />
           </div>
         </div>
+        {watchProgress && (
+          <>
+            <div className="episode-card-progress-pill">
+              <div className="episode-card-progress-pill-text">
+                {""}
+                {Math.ceil(
+                  (watchProgress.total_duration_seconds -
+                    watchProgress.current_progress_seconds) /
+                    60
+                )}
+                {"m left"}
+              </div>
+            </div>
+            <div className="episode-card-progress-bar-container">
+              <div
+                className="episode-card-progress-bar"
+                style={{
+                  width: `${
+                    (watchProgress.current_progress_seconds /
+                      watchProgress.total_duration_seconds) *
+                    100
+                  }%`,
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
       <div className="episode-card-content">
         <div className="episode-card-title">{episode.name}</div>
@@ -388,7 +478,8 @@ function EpisodeCard(
                 handleStreamButtonClick(
                   episode.season_number,
                   episode.episode_number,
-                  "direct"
+                  "direct",
+                  episode.id
                 );
               }}
             >
@@ -412,7 +503,8 @@ function EpisodeCard(
                 handleStreamButtonClick(
                   episode.season_number,
                   episode.episode_number,
-                  "select"
+                  "select",
+                  episode.id
                 );
               }}
             >

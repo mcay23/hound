@@ -30,10 +30,12 @@ function HorizontalSection(props: {
         <div className="horizontal-scroll-container">
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>
             {props.items.map((item: any) => (
-              <div className="horizontal-section-item-container">
+              <div
+                className="horizontal-section-item-container"
+                key={item.id ? item.id : item.source_id}
+              >
                 <ItemCard
                   item={item}
-                  key={item.id ? item.id : item.source_id}
                   showTitle={null}
                   itemType={props.itemType}
                   itemOnClick={props.itemOnClick}

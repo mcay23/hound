@@ -22,8 +22,10 @@ This is intentional to prevent downloading too much metadata for movies users pe
 15 minutes and never watch again, for example.
 */
 type WatchProgress struct {
+	MediaSource            string  `json:"media_source"`                                     // "tmdb"
 	ParentSourceID         string  `json:"parent_source_id"`                                 // movie/show source id
 	StreamType             string  `json:"stream_type"`                                      // p2p, http, local, etc.
+	EncodedData            string  `json:"encoded_data"`                                     // for hound-proxied sources
 	SourceURI              string  `json:"source_uri"`                                       // magnet, http link, local path
 	SeasonNumber           *int    `json:"season_number,omitempty"`                          // only defined for shows
 	EpisodeNumber          *int    `json:"episode_number,omitempty"`                         // only defined for shows
@@ -81,7 +83,8 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"invalid param: current progress is greater than total duration")
 	}
-	watchProgress.ParentSourceID = fmt.Sprintf("%s-%s", mediaSource, sourceID)
+	watchProgress.MediaSource = mediaSource
+	watchProgress.ParentSourceID = sourceID
 	watchProgress.LastWatchedAt = time.Now().Unix()
 	// dyamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {

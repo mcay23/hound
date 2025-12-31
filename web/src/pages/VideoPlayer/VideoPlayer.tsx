@@ -6,7 +6,7 @@ import "video.js/dist/video-js.css";
 // 1. Define the props interface for type safety
 interface IVideoPlayerProps {
   options: any;
-  onVideoEnding?: () => void;
+  onVideoProgress?: (current: number, total: number) => void;
   setLoading?: (loading: boolean) => void;
 }
 
@@ -28,7 +28,7 @@ const initialOptions: any = {
 
 function VideoPlayer({
   options,
-  onVideoEnding,
+  onVideoProgress,
   setLoading,
 }: IVideoPlayerProps) {
   const videoRef = useRef<HTMLDivElement>(null);
@@ -46,24 +46,32 @@ function VideoPlayer({
       playerRef.current = player;
       player.fill(true);
 
-      const checkDuration = () => {
-        const duration = player.duration();
+      player.on("loadedmetadata", () => {
+        if (combinedOptions.startTime) {
+          player.currentTime(combinedOptions.startTime);
+          player.play();
+        }
+      });
+
+      let lastReportTime = 0;
+      const handleTimeUpdate = () => {
         const currentTime = player.currentTime();
-        if (!duration || !currentTime) return;
-        // call if there are less than 10% or 5 minutes left on the video (and video is at least 10 mins)
-        // some failed streams have short durations, so we set 60 second threshold
+        const duration = player.duration();
+
+        // 5 seconds interval
         if (
-          duration > 60 &&
-          (currentTime >= duration * 0.9 ||
-            (duration > 900 && duration - currentTime <= 300))
+          currentTime &&
+          duration &&
+          Math.abs(currentTime - lastReportTime) >= 5
         ) {
-          if (onVideoEnding) {
-            onVideoEnding();
+          if (onVideoProgress) {
+            onVideoProgress(currentTime, duration);
           }
-          player.off("timeupdate", checkDuration);
+          lastReportTime = currentTime;
         }
       };
-      player.on("timeupdate", checkDuration);
+
+      player.on("timeupdate", handleTimeUpdate);
     }
     return () => {
       const player = playerRef.current;
@@ -72,7 +80,7 @@ function VideoPlayer({
         playerRef.current = null;
       }
     };
-  }, [options, onVideoEnding]);
+  }, [options, onVideoProgress]);
 
   return <div ref={videoRef} style={{ width: "100%", height: "100%" }} />;
 }

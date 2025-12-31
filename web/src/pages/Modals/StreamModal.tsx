@@ -9,7 +9,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 function StreamModal(props: any) {
-  const { streamDetails, streams, setOpen, open } = props;
+  const { streamDetails, streams, setOpen, open, startTime } = props;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const handleClose = () => {
@@ -52,6 +52,9 @@ function StreamModal(props: any) {
   }, [streamDetails, streams, open]);
 
   const videoJsOptions = {
+    autoplay: true,
+    muted: false,
+    startTime: startTime,
     sources: [
       {
         src: videoURL,
@@ -59,18 +62,26 @@ function StreamModal(props: any) {
       },
     ],
   };
-  const handleSetWatched = () => {
+  const handleVideoProgress = (current: number, total: number) => {
+    if (current < 300) return; // don't log before 5 minutes
     const payload = {
-      action_type: "scrobble",
+      stream_type: streamDetails.p2p === "p2p" ? "p2p" : "http",
+      source_uri: streamDetails.uri,
+      encoded_data: streamDetails.encoded_data,
+      current_progress_seconds: Math.floor(current),
+      total_duration_seconds: Math.floor(total),
       ...(streams.media_type === "tvshow"
-        ? { episode_ids: [streams.source_episode_id] }
+        ? {
+            season_number: streams.season_number || 0,
+            episode_number: streams.episode_number || 0,
+          }
         : {}),
     };
     axios
       .post(
         `/api/v1/${streams.media_type === "tvshow" ? "tv" : "movie"}/${
           streams.media_source
-        }-${streams.source_id}/history`,
+        }-${streams.source_id}/playback`,
         payload
       )
       .then((res) => {
@@ -109,7 +120,7 @@ function StreamModal(props: any) {
       </IconButton>
       <VideoPlayer
         options={videoJsOptions}
-        onVideoEnding={handleSetWatched}
+        onVideoProgress={handleVideoProgress}
         setLoading={setLoading}
       />
     </Dialog>

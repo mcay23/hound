@@ -87,7 +87,7 @@ type StreamObject struct {
 	Seeders     int         `json:"seeders"`
 	Leechers    int         `json:"leechers"`
 	Sources     []string    `json:"sources"` // trackers for p2p
-	URL         string      `json:"url"`
+	URI         string      `json:"uri"`
 	EncodedData string      `json:"encoded_data"` // data encoded in JWT for playing streams
 	ParsedData  *ParsedData `json:"data"`
 }
@@ -167,6 +167,9 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 				continue
 			}
 			stream.EncodedData = encodedData
+			if stream.P2P == database.ProtocolP2P {
+				stream.URI = *GetMagnetURI(stream.InfoHash, nil)
+			}
 		}
 	}
 	result := ProviderResponseObject{

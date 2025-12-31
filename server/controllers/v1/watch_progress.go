@@ -153,7 +153,7 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch history"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"watch_progress": watchProgress}, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchProgress}, 200)
 }
 
 func DeletePlaybackProgressHandler(c *gin.Context) {

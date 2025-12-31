@@ -41,6 +41,7 @@ type TorrentSession struct {
 	Torrent       *torrent.Torrent
 	ActiveStreams map[int]int // file idx -> num streams
 	LastUsed      int64
+	Mu            sync.RWMutex
 }
 
 var (
@@ -71,6 +72,8 @@ func AddActiveTorrentStream(infoHash string, fileIdx int) error {
 	if !ok {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
 	}
+	session.Mu.Lock()
+	defer session.Mu.Unlock()
 	session.LastUsed = time.Now().Unix()
 	if _, ok := session.ActiveStreams[fileIdx]; !ok {
 		session.ActiveStreams[fileIdx] = 1
@@ -91,6 +94,8 @@ func RemoveActiveTorrentStream(infoHash string, fileIdx int) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Error parsing TorrentSession")
 	}
+	session.Mu.Lock()
+	defer session.Mu.Unlock()
 	// update last used so it's not removed immediately
 	session.LastUsed = time.Now().Unix()
 	if _, ok := session.ActiveStreams[fileIdx]; !ok || session.ActiveStreams[fileIdx] <= 0 {
@@ -120,7 +125,9 @@ func AddTorrent(infoHashStr string, sources []string) error {
 			return nil
 		}
 		// update last used
+		session.Mu.Lock()
 		session.LastUsed = time.Now().Unix()
+		session.Mu.Unlock()
 		return nil
 	}
 	magnetURI := GetMagnetURI(infoHashStr, &sources)
@@ -186,7 +193,9 @@ func GetTorrentFile(infoHash string, fileIdx *int, sources []string) (*torrent.F
 	}
 	slog.Info("grabbing p2p file", "file", session.Torrent.Files()[*fileIdx].DisplayPath())
 	// update last used
+	session.Mu.Lock()
 	session.LastUsed = time.Now().Unix()
+	session.Mu.Unlock()
 	t := session.Torrent
 	if *fileIdx >= len(t.Files()) {
 		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
@@ -240,15 +249,19 @@ func cleanupSessions() {
 		activeSessions.Range(func(key, value interface{}) bool {
 			session := value.(*TorrentSession)
 			// check if active streams exist
+			session.Mu.RLock()
 			totalStreams := 0
 			for _, val := range session.ActiveStreams {
 				totalStreams += val
 			}
+			lastUsed := session.LastUsed
+			session.Mu.RUnlock()
+
 			if totalStreams != 0 {
 				return true
 			}
 			// 10 minute grace period
-			if time.Now().Unix()-session.LastUsed > 600 {
+			if time.Now().Unix()-lastUsed > 600 {
 				session.Torrent.Drop()
 				activeSessions.Delete(key)
 				slog.Info("Removed unused session: %s", key)
