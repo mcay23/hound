@@ -159,6 +159,9 @@ func GetNextPendingIngestTask() (*IngestTask, error) {
 	var task IngestTask
 	sess := databaseEngine.NewSession()
 	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return nil, err
+	}
 	has, err := sess.SQL("SELECT * FROM "+IngestTasksTable+" WHERE status = ? ORDER BY ingest_task_id ASC LIMIT 1 FOR UPDATE",
 		IngestStatusPendingInsert).Get(&task)
 	if err != nil {

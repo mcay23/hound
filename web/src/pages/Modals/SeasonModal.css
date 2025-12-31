@@ -153,6 +153,39 @@
   transform: scale(1);
 }
 
+.episode-card-progress-pill {
+  position: absolute;
+  bottom: 18px;
+  right: 12px;
+  background-color: rgba(255,255,255,0.7);
+  border-radius: 4px;
+  padding: 2px;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.episode-card-progress-pill-text {
+  font-size: 12px;
+}
+
+.episode-card-progress-bar-container {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  height: 5px;
+  background-color: rgba(255,255,255,0.7);
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.episode-card-progress-bar {
+  height: 100%;
+  background-color: rgba(var(--hound-primary),0.8);
+  border-radius: 4px;
+}
+
 .episode-card-content {
   width: 100%;
   margin-top: 10px;

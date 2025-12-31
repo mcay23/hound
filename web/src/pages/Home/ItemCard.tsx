@@ -266,7 +266,7 @@ function ItemCard(props: {
         style={{
           backgroundImage: `url('${props.item.image_url}')`,
         }}
-      ></div>
+      />
     );
   }
   function itemTypeComment() {

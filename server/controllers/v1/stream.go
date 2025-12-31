@@ -9,6 +9,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -48,6 +50,38 @@ func StreamHandler(c *gin.Context) {
 			return
 		}
 		c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
+		// if file already exists, serve that instead
+		// this is an edge case, completed files
+		// aren't served properly by the reader if the torrent session is restarted
+		// and files are still in the download path
+		// ideally, dropped torrents should delete its download folder immediately/
+		// but on restarts, this would be an issue since we want to resume downloads
+		stat, err := os.Stat(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+		if err == nil {
+			f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+			if err != nil {
+				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
+					"Failed to open file"))
+				return
+			}
+			if file.Length() != stat.Size() {
+				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
+					"File exists but size mismatch"))
+				return
+			}
+			_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+			defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+			defer f.Close()
+			http.ServeContent(
+				c.Writer,
+				c.Request,
+				stat.Name(),
+				stat.ModTime(),
+				f,
+			)
+			return
+		}
+		// if file doesn't exist, serve it from torrent
 		reader := file.NewReader()
 		defer func() {
 			if closer, ok := reader.(io.Closer); ok {
@@ -61,11 +95,12 @@ func StreamHandler(c *gin.Context) {
 		// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
 		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
 		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+		slog.Info("Streaming file", "file", file.DisplayPath())
 		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
 		return
 	}
 	// Direct stream case, just proxy url
-	videoURL := streamDetails.URL
+	videoURL := streamDetails.URI
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return

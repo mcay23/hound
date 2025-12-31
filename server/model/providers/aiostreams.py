@@ -96,7 +96,7 @@ for t in json_data["streams"]:
                 torrent["file_size"] = int(torrent.get("file_size", -1))
             except:
                 torrent["file_size"] = -1
-    # when service such as debrid is note used, no url is returned, but file index is
+    # when service such as debrid is not used, no url is returned, but file index is
     torrent["url"] = t.get("url", "")
     # get p2p trackers, not usually returned for debrid searches
     torrent["sources"] = t.get("sources", [])
