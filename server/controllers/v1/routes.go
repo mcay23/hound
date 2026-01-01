@@ -64,6 +64,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
 	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
 	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
+	privateRoutes.GET("/tv/:id/continue_watching", GetNextWatchAction)
 
 	/*
 		Movies Routes
@@ -73,6 +74,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
+	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchAction)
 
 	/*
 		Games Routes

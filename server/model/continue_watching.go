@@ -38,6 +38,8 @@ type WatchAction struct {
 	SourceID        string         `json:"source_id"`
 	WatchActionType string         `json:"watch_action_type"`        // next_episode or resume
 	Title           string         `json:"title"`                    // title of episode or movie
+	Overview        string         `json:"overview"`                 // overview of episode or movie
+	AirDate         string         `json:"air_date"`                 // air date of episode
 	ThumbnailURL    string         `json:"thumbnail_url"`            // thumbnail for tile
 	NextEpisode     *NextEpisode   `json:"next_episode,omitempty"`   // only for next episode watch action type
 	WatchProgress   *WatchProgress `json:"watch_progress,omitempty"` // only for resume watch action type
@@ -55,6 +57,8 @@ func GetNextWatchAction(userID int64, mediaType string, mediaSource string, sour
 	if mediaType == database.MediaTypeTVShow {
 		return getNextWatchActionTVShow(userID, mediaSource, sourceID)
 	}
+	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+		"Invalid media type, only movie and tv show are supported at this time")
 }
 
 // simply checks the progress table for the next watch action
@@ -83,22 +87,24 @@ func getNextWatchActionMovie(userID int64, mediaSource string, sourceID string) 
 		SourceID:        sourceID,
 		WatchActionType: WatchActionTypeResume,
 		Title:           movieDetails.Title,
+		Overview:        movieDetails.Overview,
+		AirDate:         movieDetails.ReleaseDate,
+		ThumbnailURL:    tmdb.GetImageURL(movieDetails.BackdropPath, tmdb.W500),
 		WatchProgress:   watchProgress[0],
-	}
-	if len(movieDetails.Images.Backdrops) > 0 {
-		watchAction.ThumbnailURL =
-			tmdb.GetImageURL(movieDetails.Images.Backdrops[0].FilePath, tmdb.W500)
 	}
 	return &watchAction, nil
 }
 
-func getNextWatchActionTVShow(userID int64, mediaSource string, sourceID string) (*WatchAction, error) {
+func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (*WatchAction, error) {
 	// get last watched episode
 	rewatch, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow,
-		mediaSource, sourceID, userID)
+		mediaSource, showID, userID)
 	if err != nil {
 		return nil, err
 	}
+	// compare last watch and last resume to see which is newer
+	// if resume is newer -> suggest resume
+	// if watch is newer -> suggest next episode
 	lastCompleteWatch := int64(0)
 	lastResume := int64(0)
 	var targetWatchEvent *database.WatchEventMediaRecord
@@ -113,7 +119,7 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, sourceID string)
 			targetWatchEvent = watchHistory[0]
 		}
 	}
-	watchProgress, err := GetWatchProgress(userID, database.MediaTypeTVShow, mediaSource, sourceID, nil)
+	watchProgress, err := GetWatchProgress(userID, database.MediaTypeTVShow, mediaSource, showID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -128,80 +134,60 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, sourceID string)
 	if lastCompleteWatch == 0 && lastResume == 0 {
 		return nil, nil
 	}
-	var nextEpisodePayload *NextEpisode
-	var watchProgressPayload *WatchProgress
-	watchActionType := ""
+	watchAction := WatchAction{
+		MediaType:   database.MediaTypeTVShow,
+		MediaSource: mediaSource,
+		SourceID:    showID,
+	}
 	// at least one of these will exist at this point
 	// if lastcompletewatch exists, we know the show has been upserted
 	// so we search there instead of making a tmdb network call
 	if lastCompleteWatch > lastResume {
 		// find the next episode
 		currentSeason, err :=
-			database.GetEpisodeMediaRecords(mediaSource, sourceID, targetWatchEvent.SeasonNumber, nil)
+			database.GetEpisodeMediaRecords(mediaSource, showID, targetWatchEvent.SeasonNumber, nil)
 		if err != nil {
 			return nil, err
 		}
-		targetSeason := *targetWatchEvent.SeasonNumber
-		targetEpisode := -1
-		targetEpisodeID := ""
+		var nextEpisodeRecord *database.MediaRecord
 		for index, episode := range currentSeason {
-			if episode.EpisodeNumber == targetWatchEvent.EpisodeNumber {
+			if *episode.EpisodeNumber == *targetWatchEvent.EpisodeNumber {
 				if len(currentSeason) > index+1 {
-					targetEpisode = *currentSeason[index+2].EpisodeNumber
-					targetEpisodeID = currentSeason[index+2].SourceID
+					nextEpisodeRecord = &currentSeason[index+1]
 				}
 				break
 			}
 		}
 		// stil not found, check next season
-		if targetEpisode == -1 {
+		if nextEpisodeRecord == nil {
 			nextSeasonNumber := *targetWatchEvent.SeasonNumber + 1
 			nextSeason, err :=
-				database.GetEpisodeMediaRecords(mediaSource, sourceID, &nextSeasonNumber, nil)
+				database.GetEpisodeMediaRecords(mediaSource, showID, &nextSeasonNumber, nil)
 			if err != nil {
 				return nil, err
 			}
 			if len(nextSeason) > 0 {
-				targetSeason = nextSeasonNumber
-				targetEpisode = *nextSeason[0].EpisodeNumber
-				targetEpisodeID = nextSeason[0].SourceID
-			}
-			// no next episode, very end of show
-			if targetEpisode == -1 {
-				return nil, nil
+				nextEpisodeRecord = &nextSeason[0]
 			}
 		}
-		nextEpisodePayload = &NextEpisode{
-			SeasonNumber:  &targetSeason,
-			EpisodeNumber: &targetEpisode,
-			EpisodeID:     &targetEpisodeID,
+		// no next episode, very end of show
+		if nextEpisodeRecord == nil {
+			return nil, nil
 		}
-		watchActionType = WatchActionTypeNextEpisode
+		watchAction.Title = nextEpisodeRecord.MediaTitle
+		watchAction.Overview = nextEpisodeRecord.Overview
+		watchAction.AirDate = nextEpisodeRecord.ReleaseDate
+		watchAction.ThumbnailURL = tmdb.GetImageURL(nextEpisodeRecord.StillURL, tmdb.W500)
+		watchAction.NextEpisode = &NextEpisode{
+			SeasonNumber:  nextEpisodeRecord.SeasonNumber,
+			EpisodeNumber: nextEpisodeRecord.EpisodeNumber,
+			EpisodeID:     &nextEpisodeRecord.SourceID,
+		}
+		watchAction.WatchActionType = WatchActionTypeNextEpisode
 	} else {
-		watchProgressPayload = watchProgress[0]
-		watchActionType = WatchActionTypeResume
-	}
-	// network call for tv show
-	tvShowID, err := strconv.Atoi(sourceID)
-	if err != nil {
-		return nil, err
-	}
-	tvShowDetails, err := sources.GetTVShowFromIDTMDB(tvShowID)
-	if err != nil {
-		return nil, err
-	}
-	watchAction := WatchAction{
-		MediaType:       database.MediaTypeTVShow,
-		MediaSource:     mediaSource,
-		SourceID:        sourceID,
-		WatchActionType: watchActionType,
-		Title:           tvShowDetails.Name,
-		NextEpisode:     nextEpisodePayload,
-		WatchProgress:   watchProgressPayload,
-	}
-	if len(tvShowDetails.Images.Backdrops) > 0 {
-		watchAction.ThumbnailURL =
-			tmdb.GetImageURL(tvShowDetails.Images.Backdrops[0].FilePath, tmdb.W500)
+		// at this point, watch progress should exist
+		watchAction.WatchProgress = watchProgress[0]
+		watchAction.WatchActionType = WatchActionTypeResume
 	}
 	return &watchAction, nil
 }
