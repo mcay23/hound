@@ -22,7 +22,7 @@ import (
 Proxies links through the server
 */
 func StreamHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))
@@ -147,7 +147,7 @@ func StreamHandler(c *gin.Context) {
 }
 
 func AddTorrentHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))
@@ -167,9 +167,9 @@ func AddTorrentHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
-// This downloads the torrent to the server, not the client
-func DownloadTorrentHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamJWT(c.Param("encodedString"))
+// This downloads the media file to the server, not the client
+func DownloadHandler(c *gin.Context) {
+	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))

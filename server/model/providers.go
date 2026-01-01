@@ -161,7 +161,7 @@ func SearchProviders(query ProviderQueryObject) (*ProviderResponseObject, error)
 				StreamMediaDetails: streamInfo,
 				StreamObject:       *stream,
 			}
-			encodedData, err := EncodeJsonStreamJWT(fullObject)
+			encodedData, err := EncodeJsonStreamAES(fullObject)
 			if err != nil {
 				_ = helpers.LogErrorWithMessage(err, "Failed to encode stream into JWT string")
 				continue
