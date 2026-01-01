@@ -372,7 +372,7 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 }
 
 // showSourceID and seasonNumber are optional
-func GetEpisodeMediaRecordsForSeason(mediaSource string, showSourceID string, seasonNumber *int, episodeNumber *int) ([]MediaRecord, error) {
+func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumber *int, episodeNumber *int) ([]MediaRecord, error) {
 	var episodes []MediaRecord
 	sess := databaseEngine.NewSession()
 	defer sess.Close()
@@ -409,6 +409,7 @@ func GetEpisodeMediaRecordsForSeason(mediaSource string, showSourceID string, se
 	if episodeNumber != nil {
 		sess = sess.Where("episode.episode_number = ?", *episodeNumber)
 	}
+	sess = sess.Asc("episode.episode_number")
 	err := sess.Find(&episodes)
 	if err != nil {
 		return nil, err
@@ -418,7 +419,7 @@ func GetEpisodeMediaRecordsForSeason(mediaSource string, showSourceID string, se
 
 func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 	seasonNumber *int, episodeNumber int) (*MediaRecord, error) {
-	episodes, err := GetEpisodeMediaRecordsForSeason(mediaSource, showSourceID, seasonNumber, &episodeNumber)
+	episodes, err := GetEpisodeMediaRecords(mediaSource, showSourceID, seasonNumber, &episodeNumber)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
 	}
