@@ -45,11 +45,7 @@ func GetWatchProgress(userID int64, mediaType string, mediaSource string,
 	sourceID string, seasonNumber *int) ([]*WatchProgress, error) {
 	prefixFormat := strings.Split(WATCH_PROGRESS_CACHE_KEY, "|season")[0]
 	keyPrefix := fmt.Sprintf(prefixFormat, userID, mediaType, mediaSource, sourceID)
-	if mediaType == database.MediaTypeTVShow {
-		if seasonNumber == nil {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"invalid param: season number is nil")
-		}
+	if mediaType == database.MediaTypeTVShow && seasonNumber != nil {
 		keyPrefix += fmt.Sprintf("|season:%v", *seasonNumber)
 	}
 	keys, err := database.GetKeysWithPrefix(keyPrefix)
@@ -96,12 +92,12 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		if err != nil {
 			return helpers.LogErrorWithMessage(err, "failed to parse source id")
 		}
-		targetEpisodeID, err := sources.GetEpisodeIDTMDB(tmdbID,
+		targetEpisode, err := sources.GetEpisodeTMDB(tmdbID,
 			*watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)
 		if err != nil {
 			return helpers.LogErrorWithMessage(err, "failed to get episode id")
 		}
-		episodeIDStr := strconv.Itoa(targetEpisodeID)
+		episodeIDStr := strconv.Itoa(int(targetEpisode.ID))
 		watchProgress.EpisodeID = &episodeIDStr
 		cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,
 			*watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)

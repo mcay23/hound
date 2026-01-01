@@ -30,6 +30,20 @@ const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
 const getCacheTTL = 2 * time.Hour
 
+// defined anonymously in tmdb, so we redefine
+type TMDBEpisode struct {
+	AirDate        string `json:"air_date"`
+	EpisodeNumber  int    `json:"episode_number"`
+	ID             int64  `json:"id"`
+	Name           string `json:"name"`
+	Overview       string `json:"overview"`
+	ProductionCode string `json:"production_code"`
+	Runtime        int    `json:"runtime"`
+	SeasonNumber   int    `json:"season_number"`
+	ShowID         int64  `json:"show_id"`
+	StillPath      string `json:"still_path"`
+}
+
 type TVShowObject struct {
 	TMDBData  *tmdb.SearchTVShowsResults
 	PosterURL string
@@ -157,24 +171,30 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	return season, nil
 }
 
-func GetEpisodeIDTMDB(tmdbID int, seasonNumber int, episodeNumber int) (int, error) {
+func GetEpisodeTMDB(tmdbID int, seasonNumber int, episodeNumber int) (*TMDBEpisode, error) {
 	// cached call, should be fast under normal flow
 	season, err := GetTVSeasonTMDB(tmdbID, seasonNumber)
 	if err != nil {
-		return -1, helpers.LogErrorWithMessage(err, "failed to get season")
+		return nil, helpers.LogErrorWithMessage(err, "failed to get season")
 	}
-	targetEpisodeID := -1
 	for _, episode := range season.Episodes {
 		if episode.EpisodeNumber == episodeNumber {
-			targetEpisodeID = int(episode.ID)
-			break
+			// tmdb package episode is anonymous struct, so we make our own
+			tmdbEpisode := TMDBEpisode{
+				AirDate:        episode.AirDate,
+				EpisodeNumber:  episode.EpisodeNumber,
+				ID:             episode.ID,
+				Name:           episode.Name,
+				Overview:       episode.Overview,
+				ProductionCode: episode.ProductionCode,
+				SeasonNumber:   episode.SeasonNumber,
+				ShowID:         episode.ShowID,
+				StillPath:      episode.StillPath,
+			}
+			return &tmdbEpisode, nil
 		}
 	}
-	if targetEpisodeID == -1 {
-		return -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"season/episode pair not found")
-	}
-	return targetEpisodeID, nil
+	return nil, nil
 }
 
 func GetTVEpisodeGroupsTMDB(tmdbID int) (*tmdb.TVEpisodeGroups, error) {
