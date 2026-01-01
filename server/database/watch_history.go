@@ -137,6 +137,7 @@ func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*WatchEv
 	if seasonNumber != nil {
 		sess = sess.Where("media_records.season_number = ?", *seasonNumber)
 	}
+	sess = sess.Desc("watch_events.watched_at")
 	err := sess.Find(&records)
 	return records, err
 }
