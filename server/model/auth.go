@@ -64,7 +64,7 @@ func RegisterNewUser(user *RegistrationUser) error {
 
 // GenerateAccessToken JWT access token
 func GenerateAccessToken(user LoginUser, client string) (string, error) {
-	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+	jwtKey := []byte(os.Getenv("HOUND_SECRET"))
 	dbUser, err := database.GetUser(user.Username)
 	if err != nil {
 		return "", helpers.LogErrorWithMessage(err, "Failed to fetch user from database")
@@ -92,7 +92,7 @@ func GenerateAccessToken(user LoginUser, client string) (string, error) {
 }
 
 func ParseAccessToken(token string) (*JWTClaims, error) {
-	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+	jwtKey := []byte(os.Getenv("HOUND_SECRET"))
 	claims := JWTClaims{}
 	tkn, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
@@ -101,7 +101,7 @@ func ParseAccessToken(token string) (*JWTClaims, error) {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Error decoding access token "+err.Error())
 	}
 	if !tkn.Valid {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), err.Error()+"Access token expired "+err.Error())
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Access token invalid or expired")
 	}
 	return &claims, nil
 }
