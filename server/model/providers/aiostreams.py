@@ -101,7 +101,7 @@ for t in json_data["streams"]:
     # get p2p trackers, not usually returned for debrid searches
     torrent["sources"] = t.get("sources", [])
     torrent["file_idx"] = t.get("fileIdx", -1)
-    if "file_name" not in torrent or torrent["file_name"] == "":
+    if torrent["file_name"] == "":
         continue
     # generate a string for RTN to parse
     # we append folder and file name since sometimes filenames don't have video details
