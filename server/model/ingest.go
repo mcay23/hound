@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 // Downloads torrent to server, not clients
@@ -24,7 +25,7 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 	}
 	// check if task already exists
 	task, err := database.GetIngestTask(database.IngestTask{
-		SourceURI: GetMagnetURI(streamDetails.InfoHash, nil),
+		SourceURI: &streamDetails.URI,
 		FileIdx:   streamDetails.FileIdx})
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
@@ -50,9 +51,12 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 	// 2. Insert ingest task
 	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
 	// don't store trackers in uri
-	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, database.ProtocolP2P,
-		database.IngestStatusPendingDownload, *GetMagnetURI(streamDetails.InfoHash, nil),
-		streamDetails.FileIdx)
+	protocol := database.ProtocolP2P
+	if strings.HasPrefix(streamDetails.URI, "http") {
+		protocol = database.ProtocolHTTP
+	}
+	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, protocol,
+		database.IngestStatusPendingDownload, streamDetails.URI, streamDetails.FileIdx)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
 	}
@@ -65,7 +69,7 @@ IngestFile copies the downloaded file into the media directory
 and adds its metadata to the database
 */
 func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int,
-	infoHash *string, fileIdx *int, sourcePath string) (*database.MediaFile, error) {
+	infoHash *string, fileIdx *int, sourceURI *string, sourcePath string) (*database.MediaFile, error) {
 	if mediaRecord == nil {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
 	}
@@ -82,9 +86,16 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to create directory")
 	}
+	// need stricter evaluation for p2p file being streamed
 	err = os.Rename(sourcePath, filepath.Join(targetDir, targetFilename))
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to rename file")
+		slog.Error("Failed to rename file, trying link", "sourcePath", sourcePath, "targetPath",
+			filepath.Join(targetDir, targetFilename), "error", err)
+		// fallback to link, if file is being used
+		linkErr := os.Link(sourcePath, filepath.Join(targetDir, targetFilename))
+		if linkErr != nil {
+			return nil, helpers.LogErrorWithMessage(linkErr, "Failed to rename+link file")
+		}
 	}
 	videoMetadata, err := ProbeVideoFromURI(filepath.Join(targetDir, targetFilename))
 	if err != nil {
@@ -94,7 +105,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		Filepath:         filepath.Join(targetDir, targetFilename),
 		OriginalFilename: filepath.Base(sourcePath),
 		RecordID:         targetRecordID,
-		SourceURI:        GetMagnetURI(*infoHash, nil),
+		SourceURI:        sourceURI,
 		FileIdx:          fileIdx,
 		VideoMetadata:    *videoMetadata,
 	}

@@ -85,7 +85,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 		failTask(task, fmt.Errorf("unsupported record type for ingestion: %s", mediaRecord.RecordType))
 		return
 	}
-	mediaFile, err := model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourcePath)
+	mediaFile, err := model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath)
 	if err != nil {
 		slog.Error("Ingestion failed", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)

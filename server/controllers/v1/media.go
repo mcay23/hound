@@ -45,7 +45,7 @@ func IngestFileHandler(c *gin.Context) {
 	}
 	infoHash := "12345"
 	fileIdx := 1
-	mediaFile, err := model.IngestFile(record, body.SeasonNumber, body.EpisodeNumber, &infoHash, &fileIdx, body.FilePath)
+	mediaFile, err := model.IngestFile(record, body.SeasonNumber, body.EpisodeNumber, &infoHash, &fileIdx, nil, body.FilePath)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to ingest file"))
 		return
