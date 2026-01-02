@@ -17,14 +17,12 @@ import convertDateToReadable from "../../helpers/helpers";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CreateHistoryModal from "./CreateHistoryModal";
-import StreamModal from "../Modals/StreamModal";
-import toast from "react-hot-toast";
 import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
 import Dropdown from "react-bootstrap/Dropdown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import SelectStreamModal from "./StreamSelectModal";
 import { Spinner } from "react-bootstrap";
 import { PlayArrowRounded } from "@mui/icons-material";
+import toast from "react-hot-toast";
 
 const offsetFix = {
   modifiers: [
@@ -55,7 +53,14 @@ type WatchProgressItem = {
 };
 
 function SeasonModal(props: any) {
-  const { onClose, open, mediaSource, sourceID, seasonNumber } = props;
+  const {
+    onClose,
+    open,
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    isStreamModalOpen,
+  } = props;
   const handleClose = () => {
     setIsSeasonDataLoaded(false);
     onClose();
@@ -81,91 +86,29 @@ function SeasonModal(props: any) {
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
-  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
-  const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
-  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
-  const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
-    useState(false);
-  const [streams, setStreams] = useState<any>(null);
-  const [mainStream, setMainStream] = useState<any>(null);
-  const [streamStartTime, setStreamStartTime] = useState(0);
-  const handleWatchEpisode = (tmdbID: number) => {
+  const handleWatchEpisode = (
+    season: number,
+    episode: number,
+    episodeID: number
+  ) => {
+    // don't send in episode_id array, since this doesn't delete
+    // resume progress if mark as watched
     var payload = {
-      episode_ids: [tmdbID],
+      season_number: season,
+      episode_number: episode,
       action_type: "watch",
     };
     axios
       .post(`/api/v1/tv/${mediaSource}-${sourceID}/history`, payload)
-      .then(() => {
-        setWatchedEpisodes([...watchedEpisodes, tmdbID]);
+      .then((res) => {
+        setWatchedEpisodes([...watchedEpisodes, episodeID]);
+        if (res.status === 200) {
+          toast.success("Episode marked as watched");
+        }
       })
       .catch((err) => {
         console.log(err);
-      });
-  };
-  const handleStreamButtonClick = (
-    season: number,
-    episode: number,
-    mode: string,
-    episodeID: number
-  ) => {
-    if (mode === "direct") {
-      setIsStreamButtonLoading(true);
-    } else if (mode === "select") {
-      setIsStreamSelectButtonLoading(true);
-    }
-    // set start time from watch progress
-    if (watchProgress.has(episodeID)) {
-      setStreamStartTime(
-        watchProgress.get(episodeID)?.current_progress_seconds || 0
-      );
-    } else {
-      setStreamStartTime(0);
-    }
-    const searchProvidersToast = toast.loading("Searching providers...");
-    axios
-      .get(
-        `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`
-      )
-      .then((res) => {
-        toast.dismiss(searchProvidersToast);
-        setStreams(res.data);
-        let numStreams = res.data.data.providers[0].streams.length;
-        if (numStreams > 0) {
-          let selectedStream = res.data.data.providers[0].streams[0];
-          // if we have watch progress, set this as the main stream
-          if (mode === "direct" && watchProgress.has(episodeID)) {
-            const progress = watchProgress.get(episodeID);
-            if (progress && progress.encoded_data) {
-              const matchingStream = res.data.data.providers[0].streams.find(
-                (stream: any) => stream.encoded_data === progress.encoded_data
-              );
-              if (matchingStream) {
-                selectedStream = matchingStream;
-              }
-            }
-          }
-          setMainStream(selectedStream);
-          if (mode === "direct") {
-            setIsStreamModalOpen(true);
-          } else {
-            setIsSelectStreamModalOpen(true);
-          }
-        } else {
-          toast.error("No streams found");
-        }
-      })
-      .catch((err) => {
-        toast.error("Failed to search providers " + err, {
-          id: searchProvidersToast,
-        });
-      })
-      .finally(() => {
-        if (mode === "direct") {
-          setIsStreamButtonLoading(false);
-        } else if (mode === "select") {
-          setIsStreamSelectButtonLoading(false);
-        }
+        toast.error("Failed to mark episode as watched");
       });
   };
   var seasonOverviewPlaceholder = "No description available.";
@@ -231,6 +174,9 @@ function SeasonModal(props: any) {
               });
             });
             setWatchProgress(progressMap);
+          } else {
+            // null progress is also a valid response
+            setWatchProgress(new Map<number, WatchProgressItem>());
           }
         })
         .catch((err) => {
@@ -238,7 +184,14 @@ function SeasonModal(props: any) {
         });
     };
     loadData();
-  }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
+  }, [
+    seasonNumber,
+    mediaSource,
+    sourceID,
+    open,
+    isStreamModalOpen,
+    watchedEpisodes,
+  ]);
 
   return (
     <>
@@ -335,9 +288,9 @@ function SeasonModal(props: any) {
                   watchedEpisodes.includes(episode["id"]),
                   watchProgress.get(episode["id"]),
                   handleWatchEpisode,
-                  handleStreamButtonClick,
-                  isStreamButtonLoading,
-                  isStreamSelectButtonLoading
+                  props.handleStreamButtonClick,
+                  props.isStreamButtonLoading,
+                  props.isStreamSelectButtonLoading
                 );
               })}
             </div>
@@ -349,20 +302,6 @@ function SeasonModal(props: any) {
             open={isCreateHistoryModalOpen}
             type={"season"}
             seasonNumber={seasonData.season.season_number}
-          />
-          <StreamModal
-            setOpen={setIsStreamModalOpen}
-            open={isStreamModalOpen}
-            streamDetails={mainStream}
-            startTime={streamStartTime}
-            streams={streams?.data}
-          />
-          <SelectStreamModal
-            setOpen={setIsSelectStreamModalOpen}
-            open={isSelectStreamModalOpen}
-            streamData={streams}
-            setMainStream={setMainStream}
-            setIsStreamModalOpen={setIsStreamModalOpen}
           />
         </Dialog>
       ) : (
@@ -543,7 +482,11 @@ function EpisodeCard(
           >
             <IconButton
               onClick={() => {
-                handleWatchEpisode(episode.id);
+                handleWatchEpisode(
+                  episode.season_number,
+                  episode.episode_number,
+                  episode.id
+                );
               }}
             >
               <VisibilityIcon />

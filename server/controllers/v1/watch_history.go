@@ -111,7 +111,8 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
 		return
 	}
-	insertedEpisodeIDs, skippedEpisodeIDs, err := model.CreateTVShowWatchHistory(userID, mediaSource, showID, watchHistoryPayload)
+	insertedEpisodeIDs, skippedEpisodeIDs, err :=
+		model.CreateTVShowWatchHistory(userID, mediaSource, showID, watchHistoryPayload)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating watch history"))
 		return
