@@ -96,7 +96,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Query Providers Routes
 	*/
-	privateRoutes.GET("/movie/:id/providers", SearchProvidersHandler)
+	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVShowsHandler)
 
 	/*

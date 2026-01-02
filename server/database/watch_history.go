@@ -20,7 +20,7 @@ const (
 // stores completed watches of movies or episodes
 type WatchEventsRecord struct {
 	WatchEventID int64     `xorm:"pk autoincr 'watch_event_id'" json:"watch_event_id"`
-	RewatchID    *int64    `xorm:"'rewatch_id'" json:"rewatch_id"`
+	RewatchID    int64     `xorm:"'rewatch_id'" json:"rewatch_id"`
 	RecordID     int64     `xorm:"'record_id'" json:"record_id"`
 	WatchType    string    `xorm:"'watch_type'" json:"watch_type"` // watch, scrobble
 	WatchedAt    time.Time `xorm:"'watched_at'" json:"watched_at"`

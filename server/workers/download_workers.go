@@ -216,7 +216,7 @@ func startP2PDownload(workerID int, task *database.IngestTask) {
 		failTask(task, err)
 		return
 	}
-	file, _, err := model.GetTorrentFile(infoHash, task.FileIdx, nil)
+	file, _, _, err := model.GetTorrentFile(infoHash, task.FileIdx, nil)
 	if err != nil {
 		slog.Error("Failed to get torrent file", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)

@@ -63,11 +63,9 @@ function MediaPageMovie(props: any) {
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
-  const [watchProgress, setWatchProgress] = useState<WatchProgressItem>({
-    current_progress_seconds: 0,
-    total_duration_seconds: 0,
-    encoded_data: "",
-  });
+  const [watchProgress, setWatchProgress] = useState<
+    WatchProgressItem | undefined
+  >(undefined);
   const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
@@ -180,7 +178,7 @@ function MediaPageMovie(props: any) {
         .then((res) => {
           toast.dismiss(searchProvidersToast);
           setStreams(res.data);
-          let numStreams = res.data.data.providers[0].streams.length;
+          let numStreams = res.data.data?.providers[0]?.streams?.length;
           if (numStreams > 0) {
             let selectedStream = res.data.data.providers[0].streams[0];
             if (mode === "direct" && watchProgress) {
@@ -215,7 +213,7 @@ function MediaPageMovie(props: any) {
             setIsStreamSelectButtonLoading(false);
           }
         });
-    } else if (streams.data.providers[0].streams.length > 0) {
+    } else if (streams.data?.providers[0]?.streams?.length > 0) {
       if (mode === "direct") {
         setIsStreamModalOpen(true);
         setIsStreamButtonLoading(false);
@@ -225,6 +223,8 @@ function MediaPageMovie(props: any) {
       }
     } else {
       toast.error("No Streams found");
+      setIsStreamButtonLoading(false);
+      setIsStreamSelectButtonLoading(false);
     }
   };
   const handleVideoButtonClick = (key: string) => {
@@ -439,7 +439,7 @@ function MediaPageMovie(props: any) {
         open={isStreamModalOpen}
         streamDetails={mainStream}
         streams={streams?.data}
-        startTime={watchProgress.current_progress_seconds}
+        startTime={watchProgress?.current_progress_seconds || 0}
       />
       <SelectStreamModal
         setOpen={setIsSelectStreamModalOpen}

@@ -6,7 +6,6 @@ import (
 	"hound/helpers"
 	"log/slog"
 	"mime"
-	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -110,7 +109,7 @@ func RemoveActiveTorrentStream(infoHash string, fileIdx int) error {
 /*
 File idx is used, but if -1 (invalid) use filename
 */
-func AddTorrent(infoHashStr string, sources []string) error {
+func AddTorrent(infoHashStr string, sources *[]string) error {
 	if torrentClient == nil {
 		panic("Streaming torrent client is not initialized!")
 	}
@@ -130,9 +129,9 @@ func AddTorrent(infoHashStr string, sources []string) error {
 		session.Mu.Unlock()
 		return nil
 	}
-	magnetURI := GetMagnetURI(infoHashStr, &sources)
+	magnetURI := helpers.GetMagnetURI(infoHashStr, sources)
 	slog.Info("Retrieving Magnet...", "magnet", magnetURI)
-	t, err := torrentClient.AddMagnet(*magnetURI)
+	t, err := torrentClient.AddMagnet(magnetURI)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to add magnet")
 	}
@@ -140,7 +139,7 @@ func AddTorrent(infoHashStr string, sources []string) error {
 	case <-t.GotInfo():
 		slog.Info("Success Retrieving Magnet Info: " + t.InfoHash().HexString())
 	case <-time.After(120 * time.Second):
-		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+*magnetURI)
+		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+magnetURI)
 	}
 	activeSessions.Store(infoHashStr, &TorrentSession{
 		Torrent:       t,
@@ -170,75 +169,53 @@ func CheckTorrentSession(infoHash string) bool {
 	return ok
 }
 
-func GetTorrentFile(infoHash string, fileIdx *int, sources []string) (*torrent.File, *TorrentSession, error) {
-	if fileIdx == nil {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File index not provided")
-	}
+func GetTorrentFile(infoHash string, fileIdx *int, sources *[]string) (*torrent.File, int, *TorrentSession, error) {
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
 		// Add the torrent if it doesn't exist
 		err := AddTorrent(infoHash, sources)
 		if err != nil {
-			return nil, nil, err
+			return nil, -1, nil, err
 		}
 		v, ok = activeSessions.Load(infoHash)
 		if !ok {
-			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			return nil, -1, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"Could not find torrent session")
 		}
 	}
 	session, ok := v.(*TorrentSession)
 	if !ok {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
+		return nil, -1, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error parsing TorrentSession")
 	}
-	slog.Info("grabbing p2p file", "file", session.Torrent.Files()[*fileIdx].DisplayPath())
 	// update last used
 	session.Mu.Lock()
 	session.LastUsed = time.Now().Unix()
 	session.Mu.Unlock()
 	t := session.Torrent
+
+	// use largest fileidx if not specified
+	if fileIdx == nil {
+		largestIdx := -1
+		for idx, file := range t.Files() {
+			if !IsVideoFile(file.DisplayPath()) {
+				continue
+			}
+			if largestIdx == -1 || file.Length() > t.Files()[largestIdx].Length() {
+				largestIdx = idx
+			}
+		}
+		if largestIdx == -1 {
+			return nil, -1, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Could not find video file")
+		}
+		fileIdx = &largestIdx
+	}
 	if *fileIdx >= len(t.Files()) {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+		return nil, -1, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			fmt.Sprintf("Invalid fileidx: %v, total files: %v", *fileIdx, len(t.Files())))
 	}
-	return t.Files()[*fileIdx], session, nil
-}
-
-// GetMagnetURI returns magnet: uri from hash and trackers
-func GetMagnetURI(infoHash string, trackers *[]string) *string {
-	if infoHash == "" {
-		return nil
-	}
-	magnetURI := fmt.Sprintf("magnet:?xt=urn:btih:%s", strings.ToLower(infoHash))
-	if trackers == nil {
-		return &magnetURI
-	}
-	uniqueTrackers := make(map[string]struct{})
-	for _, tracker := range *trackers {
-		parts := strings.SplitN(tracker, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		sourceType := parts[0]
-		value := parts[1]
-		if sourceType == "tracker" {
-			if _, exists := uniqueTrackers[value]; !exists {
-				uniqueTrackers[value] = struct{}{}
-			}
-		} else {
-			slog.Info("Skipping tracker: " + sourceType)
-		}
-	}
-	// append trackers
-	var trackerParts []string
-	for tracker := range uniqueTrackers {
-		escapedTracker := url.QueryEscape(tracker)
-		trackerParts = append(trackerParts, fmt.Sprintf("tr=%s", escapedTracker))
-	}
-	if len(trackerParts) > 0 {
-		magnetURI += "&" + strings.Join(trackerParts, "&")
-	}
-	return &magnetURI
+	slog.Info("grabbing p2p file", "file", t.Files()[*fileIdx].DisplayPath())
+	return t.Files()[*fileIdx], *fileIdx, session, nil
 }
 
 func cleanupSessions() {

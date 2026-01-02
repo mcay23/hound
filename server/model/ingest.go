@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
+	"hound/model/providers"
 	"hound/model/sources"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
+	"strconv"
 )
 
 // Downloads torrent to server, not clients
-func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
+func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 	if streamDetails == nil {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Nil stream details passed to DownloadTorrent()")
@@ -24,18 +25,27 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
 	}
 	// check if task already exists
-	task, err := database.GetIngestTask(database.IngestTask{
+	tasks, err := database.FindIngestTasks(database.IngestTask{
 		SourceURI: &streamDetails.URI,
-		FileIdx:   streamDetails.FileIdx})
+		FileIdx:   streamDetails.FileIdx,
+	})
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
 	}
 	// if a non-terminal task exists for this file, abort
-	if task != nil && !slices.Contains(database.IngestTerminalStatuses, task.Status) {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Ingest task already exists")
+	// eg. downloading/queued
+	for _, task := range tasks {
+		if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
+			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Ingest task already exists")
+		}
 	}
 	// 1. Attempt upsert first, if failed, abort
-	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, streamDetails.SourceID)
+	tmdbID, err := strconv.Atoi(streamDetails.SourceID)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to convert source ID to int when downloading")
+	}
+	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, tmdbID)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to upsert media record when downloading")
 	}
@@ -50,12 +60,7 @@ func CreateIngestTaskDownload(streamDetails *StreamObjectFull) error {
 	}
 	// 2. Insert ingest task
 	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
-	// don't store trackers in uri
-	protocol := database.ProtocolP2P
-	if strings.HasPrefix(streamDetails.URI, "http") {
-		protocol = database.ProtocolHTTP
-	}
-	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, protocol,
+	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, streamDetails.StreamProtocol,
 		database.IngestStatusPendingDownload, streamDetails.URI, streamDetails.FileIdx)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
@@ -120,21 +125,35 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 
 func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int, infoHash *string,
 	fileIdx *int, fileExt string) (string, string, int64, error) {
-	targetPath := ""
+	targetDir := ""
 	// construct title, append this later for each type
 	// format eg. Big Buck Bunny (2001) {tmdb-123456}
-	mediaTitleStr := fmt.Sprintf("%s (%s) {%s-%s}", mediaRecord.MediaTitle, mediaRecord.ReleaseDate[0:4],
-		mediaRecord.MediaSource, mediaRecord.SourceID)
+	releaseYear := ""
+	if len(mediaRecord.ReleaseDate) >= 4 {
+		releaseYear = mediaRecord.ReleaseDate[0:4]
+	}
+	mediaTitleStr := mediaRecord.MediaTitle
+	if releaseYear != "" {
+		mediaTitleStr += " (" + releaseYear + ")"
+	}
+	mediaTitleStr += fmt.Sprintf(" {%s-%s}", mediaRecord.MediaSource, mediaRecord.SourceID)
 	mediaTitleStr = helpers.SanitizeFilename(mediaTitleStr)
 	targetFilename := mediaTitleStr
 	var targetRecordID int64
 
 	switch mediaRecord.RecordType {
 	case database.RecordTypeMovie:
-		if infoHash != nil && *infoHash != "" && fileIdx != nil && *fileIdx >= 0 {
-			targetFilename += fmt.Sprintf(" {infohash-%s[%d]}", *infoHash, *fileIdx) + fileExt
+		if infoHash != nil && *infoHash != "" {
+			// append index only if it exists,
+			// will probably not exist for http stream sources
+			targetFilename += fmt.Sprintf(" {infohash-%s", *infoHash)
+			if fileIdx != nil && *fileIdx >= 0 {
+				targetFilename += fmt.Sprintf("[%d]", *fileIdx)
+			}
+			targetFilename += "}"
 		}
-		targetPath = filepath.Join(HoundMoviesPath, targetFilename)
+		targetDir = filepath.Join(HoundMoviesPath, mediaTitleStr)
+		targetFilename += fileExt
 		targetRecordID = mediaRecord.RecordID
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
@@ -152,16 +171,20 @@ func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		targetFilename = fmt.Sprintf("%s - S%02dE%02d", mediaTitleStr, *seasonNumber, *episodeNumber)
 		// add infohash+fileidx, this just helps with multiple sources per episode
 		// eg. Big Buck Bunny (2001) {tmdb-123456} - S1E5 {tmdb-5123} {infohash-ab23ef12[2]}.mp4
-		if infoHash != nil && *infoHash != "" && fileIdx != nil && *fileIdx >= 0 {
-			targetFilename += fmt.Sprintf(" {infohash-%s[%d]}", *infoHash, *fileIdx)
+		if infoHash != nil && *infoHash != "" {
+			targetFilename += fmt.Sprintf(" {infohash-%s", *infoHash)
+			if fileIdx != nil && *fileIdx >= 0 {
+				targetFilename += fmt.Sprintf("[%d]", *fileIdx)
+			}
+			targetFilename += "}"
 		}
-		seasonStr := fmt.Sprintf("Season %02d", *seasonNumber)
+		seasonPath := fmt.Sprintf("Season %02d", *seasonNumber)
+		targetDir = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonPath)
 		targetFilename += fileExt
-		targetPath = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonStr, targetFilename)
 	default:
 		return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
 	}
-	return targetPath, targetFilename, targetRecordID, nil
+	return targetDir, targetFilename, targetRecordID, nil
 }
 
 // Helper function to copy files from downloads -> media directory

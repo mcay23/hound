@@ -1,4 +1,4 @@
-package model
+package providers
 
 import (
 	"crypto/aes"
@@ -11,12 +11,6 @@ import (
 	"io"
 	"os"
 )
-
-// to encode into JWT string
-type StreamObjectFull struct {
-	StreamMediaDetails
-	StreamObject
-}
 
 func getAESKey(salt []byte) (*[]byte, error) {
 	key, err := pbkdf2.Key(sha256.New, os.Getenv("HOUND_SECRET"), salt, 4096, 16)

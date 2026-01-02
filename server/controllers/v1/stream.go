@@ -5,6 +5,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
+	"hound/model/providers"
 	"hound/model/sources"
 	"io"
 	"log/slog"
@@ -14,7 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/anacrolix/torrent"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ import (
 Proxies links through the server
 */
 func StreamHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
+	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))
@@ -31,13 +31,15 @@ func StreamHandler(c *gin.Context) {
 	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
 		"filename", streamDetails.Filename)
 	// Torrent/P2P Streaming Case
-	if streamDetails.Cached == "false" && streamDetails.P2P == database.ProtocolP2P {
-		if streamDetails.FileIdx == nil {
+	if streamDetails.StreamProtocol == database.ProtocolP2P {
+		if streamDetails.InfoHash == "" {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"File index not provided"))
+				"Infohash not provided"))
 			return
 		}
-		file, _, err := model.GetTorrentFile(streamDetails.InfoHash,
+		// fileIdx can sometimes be null, gettorrentfile will automatically grab
+		// largest video file in that case
+		file, fileIdx, _, err := model.GetTorrentFile(streamDetails.InfoHash,
 			streamDetails.FileIdx, streamDetails.Sources)
 		if err != nil {
 			helpers.ErrorResponse(c, err)
@@ -45,8 +47,8 @@ func StreamHandler(c *gin.Context) {
 		}
 		// GetTorrentFile could return nil
 		if file == nil {
-			helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Could not find file in torrent"+streamDetails.InfoHash)
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Could not find file in torrent"+streamDetails.InfoHash))
 			return
 		}
 		c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
@@ -69,8 +71,8 @@ func StreamHandler(c *gin.Context) {
 					"File exists but size mismatch"))
 				return
 			}
-			_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
-			defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+			_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+			defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
 			defer f.Close()
 			http.ServeContent(
 				c.Writer,
@@ -88,13 +90,10 @@ func StreamHandler(c *gin.Context) {
 				closer.Close()
 			}
 		}()
-		// high prio for streaming
-		file.SetPriority(torrent.PiecePriorityHigh)
-		defer file.SetPriority(torrent.PiecePriorityNormal)
 		// add/remove active streams for this index for cleanup tracking
 		// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
-		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
-		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, *streamDetails.FileIdx)
+		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
 		slog.Info("Streaming file", "file", file.DisplayPath())
 		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
 		return
@@ -105,7 +104,7 @@ func StreamHandler(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
 	}
-	req, err := http.NewRequest("GET", videoURL, nil)
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", videoURL, nil)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Error creating URL: "+err.Error()))
@@ -147,14 +146,14 @@ func StreamHandler(c *gin.Context) {
 }
 
 func AddTorrentHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
+	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
 	// may want to be more lax in the future
-	if streamDetails.FileIdx == nil || streamDetails.Filename == "" || streamDetails.InfoHash == "" {
+	if streamDetails.FileIdx == nil || streamDetails.InfoHash == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Torrent hash, File Index and/or File name not provided"))
 		return
@@ -169,7 +168,7 @@ func AddTorrentHandler(c *gin.Context) {
 
 // This downloads the media file to the server, not the client
 func DownloadHandler(c *gin.Context) {
-	streamDetails, err := model.DecodeJsonStreamAES(c.Param("encodedString"))
+	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))

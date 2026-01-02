@@ -1,3 +1,0 @@
-rank-torrent-name
-requests
-urllib3
