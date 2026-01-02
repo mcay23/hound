@@ -1,6 +1,7 @@
 import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
+import CachedIcon from "@mui/icons-material/Cached";
 import {
   IconButton,
   Skeleton,
@@ -16,6 +17,7 @@ import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
 import HistoryModal from "../Modals/HistoryModal";
+import ConfirmRewatchModal from "../Modals/ConfirmRewatchModal";
 
 const offsetFix = {
   modifiers: [
@@ -42,6 +44,8 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 function MediaPageTV(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isConfirmRewatchModalOpen, setIsConfirmRewatchModalOpen] =
+    useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
@@ -221,6 +225,22 @@ function MediaPageTV(props: any) {
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
+                      Rewatch Show
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton
+                    onClick={() => {
+                      setIsConfirmRewatchModalOpen(true);
+                    }}
+                  >
+                    <CachedIcon />
+                  </IconButton>
+                </BootstrapTooltip>
               </div>
             </div>
           </div>
@@ -278,6 +298,14 @@ function MediaPageTV(props: any) {
         }}
         open={isHistoryModalOpen}
         data={props.data}
+      />
+      <ConfirmRewatchModal
+        onClose={() => {
+          setIsConfirmRewatchModalOpen(false);
+        }}
+        open={isConfirmRewatchModalOpen}
+        mediaSource={props.data ? props.data.media_source : undefined}
+        sourceID={props.data ? props.data.source_id : undefined}
       />
     </>
   );

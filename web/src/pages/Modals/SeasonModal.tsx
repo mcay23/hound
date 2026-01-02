@@ -393,6 +393,9 @@ function EpisodeCard(
       <div
         className="episode-card-img-container"
         onClick={() => {
+          if (isStreamButtonLoading || isStreamSelectButtonLoading) {
+            return;
+          }
           handleStreamButtonClick(
             episode.season_number,
             episode.episode_number,
@@ -420,7 +423,6 @@ function EpisodeCard(
           <>
             <div className="episode-card-progress-pill">
               <div className="episode-card-progress-pill-text">
-                {""}
                 {Math.ceil(
                   (watchProgress.total_duration_seconds -
                     watchProgress.current_progress_seconds) /
