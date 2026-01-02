@@ -5,6 +5,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
+	"hound/model/providers"
 	"hound/model/sources"
 	"strconv"
 	"strings"
@@ -27,6 +28,46 @@ func ClearCacheHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
 }
 
+func SearchProvidersTVShowsHandler(c *gin.Context) {
+	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		return
+	}
+	imdbID, err := sources.GetTVShowIMDBID(sourceID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB imdb id"+err.Error()))
+		return
+	}
+	// cannot find IMDB id
+	// TODO other providers may allow searching for query, but for now through aiostreams, only imdb id search
+	if imdbID == "" {
+		res := map[string]interface{}{
+			"results":    []interface{}{}, // empty array
+			"media_type": database.MediaTypeTVShow,
+			"message":    "No results found",
+		}
+		helpers.SuccessResponse(c, gin.H{"status": "success", "data": res}, 200)
+		return
+	}
+	seasonNumber, err := strconv.Atoi(c.Query("season"))
+	if err != nil || c.Query("season") == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid season query param"+err.Error()))
+	}
+	episodeNumber, err := strconv.Atoi(c.Query("episode"))
+	if err != nil || c.Query("episode") == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid episode query param"+err.Error()))
+	}
+	results, err := providers.GetStremioStreams(database.MediaTypeTVShow, imdbID, seasonNumber, episodeNumber)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving Stremio streams"+err.Error()))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": results}, 200)
+}
+
 func SearchProvidersHandler(c *gin.Context) {
 	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil {
@@ -35,7 +76,7 @@ func SearchProvidersHandler(c *gin.Context) {
 	}
 	mediaType := ""
 	imdbID := ""
-	path := c.FullPath() // gives the registered route path like "/api/tv/:id"
+	path := c.FullPath()
 	if strings.HasPrefix(path, "/api/v1/tv") {
 		mediaType = database.MediaTypeTVShow
 		imdbID, err = sources.GetTVShowIMDBID(sourceID)
