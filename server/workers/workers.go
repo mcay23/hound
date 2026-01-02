@@ -2,6 +2,7 @@ package workers
 
 import (
 	"hound/database"
+	"hound/helpers"
 	"hound/model"
 	"log/slog"
 	"os"
@@ -33,7 +34,8 @@ func cleanUpDownloads() {
 			if folder.IsDir() {
 				infoHash := folder.Name()
 				// check if still being ingested
-				task, err := database.GetIngestTask(database.IngestTask{SourceURI: model.GetMagnetURI(infoHash, nil)})
+				magnetURI := helpers.GetMagnetURI(infoHash, nil)
+				task, err := database.GetIngestTask(database.IngestTask{SourceURI: &magnetURI})
 				if err != nil {
 					slog.Error("Failed to get ingest task", "infohash", infoHash, "error", err)
 					continue

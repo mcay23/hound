@@ -87,9 +87,9 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 	if err != nil {
 		return nil, nil, helpers.LogErrorWithMessage(err, "Error checking episode ids for tv show:"+mediaSource+"-"+strconv.Itoa(showID))
 	}
-	var targetRewatchID *int64
+	targetRewatchID := int64(-1)
 	if watchHistoryPayload.RewatchID != nil {
-		targetRewatchID = watchHistoryPayload.RewatchID
+		targetRewatchID = *watchHistoryPayload.RewatchID
 		// check if rewatch_id exists for this user
 		rewatchRecords, err := database.GetRewatchesFromSourceID(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
@@ -97,7 +97,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		}
 		found := false
 		for _, item := range rewatchRecords {
-			if item.RewatchID == *targetRewatchID {
+			if item.RewatchID == targetRewatchID {
 				found = true
 				break
 			}
@@ -107,7 +107,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		}
 	}
 	// 4. Get most current rewatch or create new rewatch if none if rewatch payload is empty
-	if targetRewatchID == nil {
+	if targetRewatchID == -1 {
 		rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
 			return nil, nil, helpers.LogErrorWithMessage(err, "Error getting active rewatch: "+mediaSource+"-"+strconv.Itoa(showID))
@@ -120,7 +120,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 				return nil, nil, helpers.LogErrorWithMessage(err, "Error creating rewatch record")
 			}
 		}
-		targetRewatchID = &rewatchRecord.RewatchID
+		targetRewatchID = rewatchRecord.RewatchID
 	}
 	// 5. Filter cached scrobbles, since we don't want to accidentally double insert scrobbles
 	// if they are inserted within X hours of each other. Watches are fine since it's manual
@@ -173,7 +173,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 	if err := database.BatchInsertWatchEvents(pendingRecords); err != nil {
 		return nil, nil, helpers.LogErrorWithMessage(err, "Error inserting watch events records")
 	}
-	// set idempotence cache for scrobbles, 72 hours
+	// set idempotence cache for scrobbles, 48 hours
 	// only set once inserts are successful
 	insertedEpisodeIDs := make([]int, len(pendingMetadata))
 	for idx, meta := range pendingMetadata {
@@ -229,7 +229,7 @@ func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, wat
 		}
 	}
 	watchEvent := database.WatchEventsRecord{
-		RewatchID: &rewatchRecord.RewatchID,
+		RewatchID: rewatchRecord.RewatchID,
 		RecordID:  movieRecord.RecordID,
 		WatchType: actionType,
 		WatchedAt: watchTime,

@@ -31,7 +31,6 @@
   margin-right: 20px;
   margin-bottom: 20px;
   padding: 15px;
-  max-height: 200px;
   border-radius: 12px;
   box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px;
   background-color: rgba(255, 255, 255, 0.3);
@@ -42,8 +41,6 @@
   font-family: "Cabin", sans-serif;
   font-weight: 400;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,47 +55,9 @@
   font-family: "Cabin", sans-serif;
   font-size: 16px;
   color: darkslategray;
+  white-space: pre-line;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.stream-info-chip {
-  margin-right: 7px;
-  background-color: rgba(var(--hound-primary), 0.2) !important;
-}
-
-.stream-info-chip .MuiChip-label {
-  font-family: "Cabin", sans-serif;
-  font-size: 16px;
-}
-
-#stream-info-resolution {
-  background-color: rgba(201, 206, 201, 0.5);
-}
-
-#stream-info-size {
-  background-color: rgba(var(--hound-primary), 0.2);
-}
-
-#stream-info-cache-good {
-  background-color: rgba(181, 246, 181, 0.8);
-}
-
-#stream-info-codec-hevc {
-  background-color: rgb(232, 192, 192);
-}
-
-#stream-info-codec-avc {
-  background-color: rgb(232, 192, 192);
-}
-
-#stream-info-codec-generic {
-  background-color: rgb(232, 192, 192);
-}
-
-#stream-info-audio {
 }

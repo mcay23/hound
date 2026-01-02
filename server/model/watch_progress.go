@@ -24,7 +24,7 @@ This is intentional to prevent downloading too much metadata for movies users pe
 type WatchProgress struct {
 	MediaSource            string  `json:"media_source"`                                     // "tmdb"
 	ParentSourceID         string  `json:"parent_source_id"`                                 // movie/show source id
-	StreamType             string  `json:"stream_type"`                                      // p2p, http, local, etc.
+	StreamProtocol         string  `json:"stream_protocol"`                                  // p2p, http, local, etc.
 	EncodedData            string  `json:"encoded_data"`                                     // for hound-proxied sources
 	SourceURI              string  `json:"source_uri"`                                       // magnet, http link, local path
 	SeasonNumber           *int    `json:"season_number,omitempty"`                          // only defined for shows

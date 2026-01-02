@@ -24,7 +24,7 @@ function StreamModal(props: any) {
     }
     setLoading(true);
     if (streamDetails) {
-      if (streamDetails.p2p === "p2p") {
+      if (streamDetails.stream_protocol === "p2p") {
         const fetchToast = toast.loading("Fetching torrent...");
         axios
           .post("/api/v1/torrent/" + streamDetails.encoded_data)
@@ -66,7 +66,7 @@ function StreamModal(props: any) {
   const handleVideoProgress = (current: number, total: number) => {
     if (current < 300) return; // don't log before 5 minutes
     const payload = {
-      stream_type: streamDetails.p2p === "p2p" ? "p2p" : "http",
+      stream_protocol: streamDetails.stream_protocol,
       source_uri: streamDetails.uri,
       encoded_data: streamDetails.encoded_data,
       current_progress_seconds: Math.floor(current),

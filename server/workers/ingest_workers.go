@@ -37,13 +37,14 @@ func ingestWorker(id int) {
 
 func processIngestTask(workerID int, task *database.IngestTask) {
 	slog.Info("Worker picked up ingest task", "workerID", workerID, "taskID", task.IngestTaskID)
+	var infoHashStr string
 	var infoHash *string
 	// p2p case, for external ingests we don't know the source
 	if task.DownloadType == database.ProtocolP2P && task.SourceURI != nil {
 		uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
 		if err == nil {
-			hash := uri.InfoHash.HexString()
-			infoHash = &hash
+			infoHashStr = uri.InfoHash.HexString()
+			infoHash = &infoHashStr
 		}
 	}
 	// Fetch mediaRecord
