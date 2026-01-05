@@ -99,6 +99,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			return
 		}
 	}
+	// otherwise, continue to set watch progress
 	err = model.SetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), watchProgress)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error setting watch history"))

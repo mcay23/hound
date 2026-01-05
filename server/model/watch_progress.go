@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
+	"hound/model/providers"
 	"hound/model/sources"
 	"log/slog"
 	"strconv"
@@ -23,13 +24,13 @@ This is intentional to prevent downloading too much metadata for movies users pe
 */
 type WatchProgress struct {
 	MediaSource            string  `json:"media_source"`                                     // "tmdb"
-	ParentSourceID         string  `json:"parent_source_id"`                                 // movie/show source id
+	SourceID               string  `json:"source_id"`                                        // movie/show source id
 	StreamProtocol         string  `json:"stream_protocol"`                                  // p2p, http, local, etc.
 	EncodedData            string  `json:"encoded_data"`                                     // for hound-proxied sources
 	SourceURI              string  `json:"source_uri"`                                       // magnet, http link, local path
 	SeasonNumber           *int    `json:"season_number,omitempty"`                          // only defined for shows
 	EpisodeNumber          *int    `json:"episode_number,omitempty"`                         // only defined for shows
-	EpisodeID              *string `json:"episode_id,omitempty"`                             // episode source id
+	EpisodeSourceID        *string `json:"episode_source_id,omitempty"`                      // episode source id
 	CurrentProgressSeconds int     `json:"current_progress_seconds" binding:"required,gt=0"` // how many seconds in the user is
 	TotalDurationSeconds   int     `json:"total_duration_seconds" binding:"required,gt=0"`   // total duration of the media in seconds
 	LastWatchedAt          int64   `json:"last_watched_at"`                                  // last unix time when the playback progress was set
@@ -79,8 +80,31 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"invalid param: current progress is greater than total duration")
 	}
+	if watchProgress.EncodedData != "" {
+		data, err := providers.DecodeJsonStreamAES(watchProgress.EncodedData)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "failed to decode stream data")
+		}
+		// sanity checks to see if tmdb ids passed in are the same as encoded data's id
+		if data.SourceID != sourceID {
+			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"invalid param: source id mismatch between request and encodedData")
+		}
+		if data.MediaType == database.MediaTypeTVShow &&
+			data.SeasonNumber != nil && data.EpisodeNumber != nil &&
+			watchProgress.SeasonNumber != nil && watchProgress.EpisodeNumber != nil {
+			if *data.SeasonNumber != *watchProgress.SeasonNumber {
+				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+					"invalid param: season number mismatch between request and encodedData")
+			}
+			if *data.EpisodeNumber != *watchProgress.EpisodeNumber {
+				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+					"invalid param: episode number mismatch between request and encodedData")
+			}
+		}
+	}
 	watchProgress.MediaSource = mediaSource
-	watchProgress.ParentSourceID = sourceID
+	watchProgress.SourceID = sourceID
 	watchProgress.LastWatchedAt = time.Now().Unix()
 	// dyamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {
@@ -98,7 +122,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 			return helpers.LogErrorWithMessage(err, "failed to get episode id")
 		}
 		episodeIDStr := strconv.Itoa(int(targetEpisode.ID))
-		watchProgress.EpisodeID = &episodeIDStr
+		watchProgress.EpisodeSourceID = &episodeIDStr
 		cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,
 			*watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)
 		_, err = database.SetCache(cacheKey, watchProgress, watchProgressCacheTTL)
