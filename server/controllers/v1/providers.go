@@ -72,7 +72,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 		SourceID:        strconv.Itoa(sourceID),
 		SeasonNumber:    &seasonNumber,
 		EpisodeNumber:   &episodeNumber,
-		SourceEpisodeID: &sourceEpisodeIDstr,
+		EpisodeSourceID: &sourceEpisodeIDstr,
 		EpisodeGroupID:  c.Query("episode_group_id"),
 	}
 	results, err := providers.QueryProviders(query)
@@ -104,7 +104,7 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 		SourceID:        strconv.Itoa(sourceID),
 		SeasonNumber:    nil,
 		EpisodeNumber:   nil,
-		SourceEpisodeID: nil,
+		EpisodeSourceID: nil,
 		EpisodeGroupID:  "",
 	}
 	res, err := providers.QueryProviders(query)

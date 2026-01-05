@@ -18,7 +18,7 @@ type ProvidersQueryRequest struct {
 	MediaType       string   `json:"media_type"`        // movies or tvshows, etc.
 	SeasonNumber    *int     `json:"season_number,omitempty"`
 	EpisodeNumber   *int     `json:"episode_number,omitempty"`
-	SourceEpisodeID *string  `json:"source_episode_id,omitempty"`
+	EpisodeSourceID *string  `json:"source_episode_id,omitempty"`
 	EpisodeGroupID  string   `json:"episode_group_id,omitempty"`
 	Query           string   `json:"search_query,omitempty"` // not used for now
 	Params          []string `json:"params"`
@@ -39,7 +39,7 @@ type StreamMediaDetails struct {
 	IMDbID          string  `json:"imdb_id"`                 // starts with 'tt'
 	SeasonNumber    *int    `json:"season_number,omitempty"` // shows only
 	EpisodeNumber   *int    `json:"episode_number,omitempty"`
-	SourceEpisodeID *string `json:"source_episode_id,omitempty"` // tv shows only
+	EpisodeSourceID *string `json:"episode_source_id,omitempty"` // tv shows only
 }
 
 type StreamObject struct {
@@ -116,11 +116,11 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		if seasonDetails.Episodes[0].EpisodeNumber != 1 {
 			oldEp := *query.EpisodeNumber
 			firstEp := seasonDetails.Episodes[0].EpisodeNumber
-			if query.SourceEpisodeID == nil {
+			if query.EpisodeSourceID == nil {
 				return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 					"SourceEpisodeID is required for TV shows")
 			}
-			episodeID, err := strconv.Atoi(*query.SourceEpisodeID)
+			episodeID, err := strconv.Atoi(*query.EpisodeSourceID)
 			if err != nil {
 				return nil, err
 			}
@@ -146,7 +146,7 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		IMDbID:          query.IMDbID,
 		SeasonNumber:    query.SeasonNumber,
 		EpisodeNumber:   query.EpisodeNumber,
-		SourceEpisodeID: query.SourceEpisodeID,
+		EpisodeSourceID: query.EpisodeSourceID,
 	}
 	stremioStreams, err := getStremioStreams(query, streamMediaDetails)
 	if err != nil {

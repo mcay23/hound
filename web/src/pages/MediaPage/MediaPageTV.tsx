@@ -196,6 +196,8 @@ function MediaPageTV(props: any) {
           if (numStreams > 0) {
             let selectedStream = res.data.data.providers[0].streams[0];
             // if we have watch progress, set this as the main stream
+            // note this doesn't handle different hosts/protocols, eg. if
+            // the urls are different even if they are the same file, it won't match
             if (mode === "direct" && encodedData) {
               const matchingStream = res.data.data.providers[0].streams.find(
                 (stream: any) => stream.encoded_data === encodedData
