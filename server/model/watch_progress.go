@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
 const watchProgressCacheTTL = 24 * 180 * time.Hour // 180 days
@@ -23,17 +25,16 @@ This is intentional to prevent downloading too much metadata for movies users pe
 15 minutes and never watch again, for example.
 */
 type WatchProgress struct {
-	MediaSource            string  `json:"media_source"`                                     // "tmdb"
-	SourceID               string  `json:"source_id"`                                        // movie/show source id
-	StreamProtocol         string  `json:"stream_protocol"`                                  // p2p, http, local, etc.
-	EncodedData            string  `json:"encoded_data"`                                     // for hound-proxied sources
-	SourceURI              string  `json:"source_uri"`                                       // magnet, http link, local path
-	SeasonNumber           *int    `json:"season_number,omitempty"`                          // only defined for shows
-	EpisodeNumber          *int    `json:"episode_number,omitempty"`                         // only defined for shows
-	EpisodeSourceID        *string `json:"episode_source_id,omitempty"`                      // episode source id
-	CurrentProgressSeconds int     `json:"current_progress_seconds" binding:"required,gt=0"` // how many seconds in the user is
-	TotalDurationSeconds   int     `json:"total_duration_seconds" binding:"required,gt=0"`   // total duration of the media in seconds
-	LastWatchedAt          int64   `json:"last_watched_at"`                                  // last unix time when the playback progress was set
+	MediaType              string `json:"media_type"`                                       // "movie" or "tvshow"
+	MediaSource            string `json:"media_source"`                                     // "tmdb"
+	SourceID               string `json:"source_id"`                                        // movie/show source id
+	StreamProtocol         string `json:"stream_protocol"`                                  // p2p, http, local, etc.
+	EncodedData            string `json:"encoded_data"`                                     // for hound-proxied sources
+	SourceURI              string `json:"source_uri"`                                       // magnet, http link, local path
+	CurrentProgressSeconds int    `json:"current_progress_seconds" binding:"required,gt=0"` // how many seconds in the user is
+	TotalDurationSeconds   int    `json:"total_duration_seconds" binding:"required,gt=0"`   // total duration of the media in seconds
+	LastWatchedAt          int64  `json:"last_watched_at"`                                  // last unix time when the playback progress was set
+	WatchActionMetadata
 }
 
 // eg. watch_progress|userid:123|mediaType:movie|source:tmdb-123|season:nil|episode:nil
@@ -50,6 +51,31 @@ func GetWatchProgress(userID int64, mediaType string, mediaSource string,
 		keyPrefix += fmt.Sprintf("|season:%v", *seasonNumber)
 	}
 	keys, err := database.GetKeysWithPrefix(keyPrefix)
+	if err != nil {
+		return nil, err
+	} else if len(keys) == 0 {
+		return nil, nil
+	}
+	var watchProgressArray []*WatchProgress
+	for _, key := range keys {
+		item := WatchProgress{}
+		exists, err := database.GetCache(key, &item)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			watchProgressArray = append(watchProgressArray, &item)
+		}
+	}
+	return watchProgressArray, nil
+}
+
+// Gets all the user's watch progress, this is potentially expensive in some cases (?)
+// but under normal flows, a user shouldn't have many continue watches since they are flushed
+// every three months. Otherwise, detecting complete watches needs to be more accurate if
+// there are too many half-watched movies/episodes
+func GetWatchProgressUser(userID int64) ([]*WatchProgress, error) {
+	keys, err := database.GetKeysWithPrefix(fmt.Sprintf("watch_progress|userid:%d", userID))
 	if err != nil {
 		return nil, err
 	} else if len(keys) == 0 {
@@ -103,6 +129,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 			}
 		}
 	}
+	watchProgress.MediaType = mediaType
 	watchProgress.MediaSource = mediaSource
 	watchProgress.SourceID = sourceID
 	watchProgress.LastWatchedAt = time.Now().Unix()
@@ -112,15 +139,25 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"invalid param: season/episode number is nil")
 		}
-		tmdbID, err := strconv.Atoi(sourceID)
+		showID, err := strconv.Atoi(sourceID)
 		if err != nil {
 			return helpers.LogErrorWithMessage(err, "failed to parse source id")
 		}
-		targetEpisode, err := sources.GetEpisodeTMDB(tmdbID,
+		// get show details
+		showDetails, err := sources.GetTVShowFromIDTMDB(showID)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "failed to get show details")
+		}
+		watchProgress.MediaTitle = showDetails.Name
+		targetEpisode, err := sources.GetEpisodeTMDB(showID,
 			*watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)
 		if err != nil {
 			return helpers.LogErrorWithMessage(err, "failed to get episode id")
 		}
+		watchProgress.EpisodeTitle = &targetEpisode.Name
+		watchProgress.Overview = targetEpisode.Overview
+		watchProgress.ReleaseDate = targetEpisode.AirDate
+		watchProgress.ThumbnailURL = tmdb.GetImageURL(targetEpisode.StillPath, tmdb.W500)
 		episodeIDStr := strconv.Itoa(int(targetEpisode.ID))
 		watchProgress.EpisodeSourceID = &episodeIDStr
 		cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,
@@ -131,6 +168,21 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		}
 		slog.Info("Watch Progress Set", "key", cacheKey)
 		return nil
+	} else {
+		// get details and store as well, we need this for continue watching page
+		// in home screen when fetched
+		movieID, err := strconv.Atoi(sourceID)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "failed to parse source id")
+		}
+		movieDetails, err := sources.GetMovieFromIDTMDB(movieID)
+		if err != nil {
+			return helpers.LogErrorWithMessage(err, "failed to get movie details")
+		}
+		watchProgress.MediaTitle = movieDetails.Title
+		watchProgress.Overview = movieDetails.Overview
+		watchProgress.ReleaseDate = movieDetails.ReleaseDate
+		watchProgress.ThumbnailURL = tmdb.GetImageURL(movieDetails.PosterPath, tmdb.W500)
 	}
 	// for movies, don't send in season/episode number
 	cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,

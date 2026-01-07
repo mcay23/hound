@@ -6,9 +6,7 @@ import (
 	"hound/helpers"
 	"hound/model/sources"
 	"sort"
-	"strconv"
-
-	tmdb "github.com/cyruzin/golang-tmdb"
+	"strings"
 )
 
 /*
@@ -30,6 +28,7 @@ type NextEpisode struct {
 	SeasonNumber  *int    `json:"season_number,omitempty"`
 	EpisodeNumber *int    `json:"episode_number,omitempty"`
 	EpisodeID     *string `json:"episode_id,omitempty"`
+	WatchActionMetadata
 }
 
 type WatchAction struct {
@@ -37,12 +36,20 @@ type WatchAction struct {
 	MediaSource     string         `json:"media_source"`
 	SourceID        string         `json:"source_id"`
 	WatchActionType string         `json:"watch_action_type"`        // next_episode or resume
-	Title           string         `json:"title"`                    // title of episode or movie
-	Overview        string         `json:"overview"`                 // overview of episode or movie
-	AirDate         string         `json:"air_date"`                 // air date of episode
-	ThumbnailURL    string         `json:"thumbnail_url"`            // thumbnail for tile
 	NextEpisode     *NextEpisode   `json:"next_episode,omitempty"`   // only for next episode watch action type
 	WatchProgress   *WatchProgress `json:"watch_progress,omitempty"` // only for resume watch action type
+}
+
+// info about the movie/episode
+type WatchActionMetadata struct {
+	MediaTitle      string  `json:"media_title"`                 // movie/show title
+	EpisodeSourceID *string `json:"episode_source_id,omitempty"` // episode source id
+	EpisodeTitle    *string `json:"episode_title,omitempty"`
+	SeasonNumber    *int    `json:"season_number,omitempty"`  // only defined for shows
+	EpisodeNumber   *int    `json:"episode_number,omitempty"` // only defined for shows
+	Overview        string  `json:"overview"`
+	ReleaseDate     string  `json:"release_date"`
+	ThumbnailURL    string  `json:"thumbnail_url"`
 }
 
 // A nil watch action means we don't have a next watch action
@@ -61,6 +68,83 @@ func GetNextWatchAction(userID int64, mediaType string, mediaSource string, sour
 		"Invalid media type, only movie and tv show are supported at this time")
 }
 
+// gets the 10 most recent continue watching actions for the user
+// not the most efficient performance-wise, hopefully fine for now
+// evaluate if performance will be an issue for larger databases
+// in the future
+func GetContinueWatching(userID int64) ([]WatchAction, error) {
+	// create set of tmdb ids, unix time for last watched
+	tmdbIDSet := make(map[string]int64)
+	// first, get all watch progress for the user
+	watchProgress, err := GetWatchProgressUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range watchProgress {
+		key := item.MediaType + ":" + item.MediaSource + ":" + item.SourceID
+		value, ok := tmdbIDSet[key]
+		if !ok || value < item.LastWatchedAt {
+			tmdbIDSet[key] = item.LastWatchedAt
+		}
+	}
+	// get 10 most recent watch events
+	watchEvents, err := database.GetUniqueWatchParents(userID, 10, 0)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range watchEvents {
+		key := item.RecordType + ":" + item.MediaSource + ":" + item.SourceID
+		value, ok := tmdbIDSet[key]
+		if !ok || value < item.WatchedAt.Unix() {
+			tmdbIDSet[key] = item.WatchedAt.Unix()
+		}
+	}
+	// sort the map by time
+	var sortedKeys []string
+	for key := range tmdbIDSet {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Slice(sortedKeys, func(i, j int) bool {
+		return tmdbIDSet[sortedKeys[i]] > tmdbIDSet[sortedKeys[j]]
+	})
+	// get the top 10
+	var watchActions []WatchAction
+	count := 0
+	for _, key := range sortedKeys {
+		if count >= 10 {
+			break
+		}
+		mediaType := strings.Split(key, ":")[0]
+		mediaSource := strings.Split(key, ":")[1]
+		sourceID := strings.Split(key, ":")[2]
+		switch mediaType {
+		case database.MediaTypeMovie:
+			watchAction, err := getNextWatchActionMovie(userID, mediaSource, sourceID)
+			if err != nil {
+				return nil, err
+			}
+			// completed movie, no next watch action
+			if watchAction == nil {
+				continue
+			}
+			watchActions = append(watchActions, *watchAction)
+			count++
+		case database.MediaTypeTVShow:
+			watchAction, err := getNextWatchActionTVShow(userID, mediaSource, sourceID)
+			if err != nil {
+				return nil, err
+			}
+			// last episode, no next watch action
+			if watchAction == nil {
+				continue
+			}
+			watchActions = append(watchActions, *watchAction)
+			count++
+		}
+	}
+	return watchActions, nil
+}
+
 // simply checks the progress table for the next watch action
 // if there are no incomplete watches, there is no next action
 // in the future, we might want to incorporate sequels as the next action
@@ -72,24 +156,11 @@ func getNextWatchActionMovie(userID int64, mediaSource string, sourceID string) 
 	if len(watchProgress) == 0 {
 		return nil, nil
 	}
-	// network call for movie
-	movieID, err := strconv.Atoi(sourceID)
-	if err != nil {
-		return nil, err
-	}
-	movieDetails, err := sources.GetMovieFromIDTMDB(movieID)
-	if err != nil {
-		return nil, err
-	}
 	watchAction := WatchAction{
 		MediaType:       database.MediaTypeMovie,
 		MediaSource:     mediaSource,
 		SourceID:        sourceID,
 		WatchActionType: WatchActionTypeResume,
-		Title:           movieDetails.Title,
-		Overview:        movieDetails.Overview,
-		AirDate:         movieDetails.ReleaseDate,
-		ThumbnailURL:    tmdb.GetImageURL(movieDetails.BackdropPath, tmdb.W500),
 		WatchProgress:   watchProgress[0],
 	}
 	return &watchAction, nil
@@ -174,15 +245,27 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		if nextEpisodeRecord == nil {
 			return nil, nil
 		}
-		watchAction.Title = nextEpisodeRecord.MediaTitle
-		watchAction.Overview = nextEpisodeRecord.Overview
-		watchAction.AirDate = nextEpisodeRecord.ReleaseDate
-		watchAction.ThumbnailURL = tmdb.GetImageURL(nextEpisodeRecord.StillURL, tmdb.W500)
-		watchAction.NextEpisode = &NextEpisode{
+		nextEp := NextEpisode{
 			SeasonNumber:  nextEpisodeRecord.SeasonNumber,
 			EpisodeNumber: nextEpisodeRecord.EpisodeNumber,
 			EpisodeID:     &nextEpisodeRecord.SourceID,
 		}
+		// get show record
+		found, showRecord, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, showID)
+		if err != nil {
+			return nil, err
+		}
+		// shouldn't happen since every completed watch has to have a show record
+		if !found {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Show record not found in database, contact dev, this shouldn't happen")
+		}
+		nextEp.MediaTitle = showRecord.MediaTitle
+		nextEp.Overview = nextEpisodeRecord.Overview
+		nextEp.ReleaseDate = nextEpisodeRecord.ReleaseDate
+		nextEp.ThumbnailURL = nextEpisodeRecord.StillURL
+		nextEp.EpisodeTitle = &nextEpisodeRecord.MediaTitle
+		watchAction.NextEpisode = &nextEp
 		watchAction.WatchActionType = WatchActionTypeNextEpisode
 	} else {
 		// at this point, watch progress should exist
