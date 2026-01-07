@@ -109,7 +109,7 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 
 // useful to answer, what's the 10 most recent unique movies/shows the user has watched
 // we want to get the parent of the media record, so that we can group by show or movie
-func GetUniqueWatchParents(userID int64, limit int, offset int) ([]*WatchEventMediaRecord, error) {
+func GetUniqueWatchParents(userID int64, limit int, offset int, after time.Time) ([]*WatchEventMediaRecord, error) {
 	var records []*WatchEventMediaRecord
 	err := databaseEngine.
 		Table("watch_events we").
@@ -120,6 +120,7 @@ func GetUniqueWatchParents(userID int64, limit int, offset int) ([]*WatchEventMe
 		Join("LEFT", "media_records show",
 			"show.record_id = season.parent_id AND season.record_type = 'season'").
 		Where("r.user_id = ?", userID).
+		Where("we.watched_at > ?", after).
 		Omit("mr.full_data").
 		Select(`
 			DISTINCT ON (
@@ -182,7 +183,7 @@ func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*WatchEv
 	if seasonNumber != nil {
 		sess = sess.Where("media_records.season_number = ?", *seasonNumber)
 	}
-	sess = sess.Desc("watch_events.watched_at")
+	sess = sess.OrderBy("watch_events.watched_at DESC, watch_events.watch_event_id DESC")
 	err := sess.Find(&records)
 	return records, err
 }
