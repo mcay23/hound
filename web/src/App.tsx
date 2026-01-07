@@ -15,6 +15,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 // axios defaults
 axios.defaults.withCredentials = true;
@@ -74,55 +77,46 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ProtectedRoute component={<Home />} />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route
-              path="logout"
-              element={<ProtectedRoute component={<Logout />} />}
-            />
-            <Route
-              path="library"
-              element={<ProtectedRoute component={<Library />} />}
-            />
-            <Route
-              path="/tv/:id"
-              element={<ProtectedRoute component={<MediaPageLanding />} />}
-            />
-            <Route
-              path="/movie/:id"
-              element={<ProtectedRoute component={<MediaPageLanding />} />}
-            />
-            <Route
-              path="/game/:id"
-              element={<ProtectedRoute component={<MediaPageLanding />} />}
-            />
-            <Route
-              path="/search"
-              element={<ProtectedRoute component={<SearchPage />} />}
-            />
-            <Route
-              path="/collection/:id"
-              element={<ProtectedRoute component={<Collection />} />}
-            />
-            <Route
-              path="/player"
-              element={
-                <ProtectedRoute
-                  component={
-                    <>
-                      <video controls>
-                        <source src="http://localhost:8000/api/v1/stream" />
-                      </video>
-                    </>
-                  }
-                />
-              }
-            />
-          </Routes>
-        </BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <Routes>
+              <Route
+                path="/"
+                element={<ProtectedRoute component={<Home />} />}
+              />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route
+                path="logout"
+                element={<ProtectedRoute component={<Logout />} />}
+              />
+              <Route
+                path="library"
+                element={<ProtectedRoute component={<Library />} />}
+              />
+              <Route
+                path="/tv/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/movie/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/game/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/search"
+                element={<ProtectedRoute component={<SearchPage />} />}
+              />
+              <Route
+                path="/collection/:id"
+                element={<ProtectedRoute component={<Collection />} />}
+              />
+            </Routes>
+          </BrowserRouter>
+        </QueryClientProvider>
       </LocalizationProvider>
     </ThemeProvider>
   );

@@ -14,7 +14,8 @@ function HorizontalSection(props: {
     | "seasons"
     | "search"
     | "image"
-    | "comment";
+    | "comment"
+    | "watch_tile";
   itemOnClick: any | undefined;
 }) {
   if (!props.items || props.items.length === 0) {
