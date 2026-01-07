@@ -90,7 +90,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 		recordID = existingRecords[0].RecordID
 		if existingRecords[0].ContentHash != mediaRecord.ContentHash {
 			// hash changed, update record in internal library
-			_, err := databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(&mediaRecord)
+			_, err := databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(mediaRecord)
 			if err != nil {
 				return err
 			}
@@ -99,7 +99,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 		*mediaRecord = existingRecords[0]
 	} else {
 		// insert media data to library table
-		_, err := databaseEngine.Table(mediaRecordsTable).Insert(&mediaRecord)
+		_, err := databaseEngine.Table(mediaRecordsTable).Insert(mediaRecord)
 		if err != nil {
 			return err
 		}

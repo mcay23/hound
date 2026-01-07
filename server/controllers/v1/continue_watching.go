@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetNextWatchAction(c *gin.Context) {
+func GetNextWatchActionHandler(c *gin.Context) {
 	mediaType := ""
 	path := c.FullPath()
 	if strings.HasPrefix(path, "/api/v1/tv") {
@@ -27,14 +27,27 @@ func GetNextWatchAction(c *gin.Context) {
 	}
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
+	// if no watch action, we don't want to return error
+	// but ideally need to check if no watch action vs. internal error
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	watchAction, err := model.GetNextWatchAction(userID, mediaType, mediaSource, strconv.Itoa(sourceID))
+	watchAction, _ := model.GetNextWatchAction(userID, mediaType, mediaSource, strconv.Itoa(sourceID))
+	helpers.SuccessResponse(c, gin.H{"status": "success", "watch_action": watchAction}, 200)
+}
+
+func GetContinueWatchingHandler(c *gin.Context) {
+	username := c.GetHeader("X-Username")
+	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting next watch action"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "watch_action": watchAction}, 200)
+	watchActions, err := model.GetContinueWatching(userID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "failed to get continue watching"))
+		return
+	}
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchActions}, 200)
 }

@@ -107,6 +107,51 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 	return records, err
 }
 
+// useful to answer, what's the 10 most recent unique movies/shows the user has watched
+// we want to get the parent of the media record, so that we can group by show or movie
+func GetUniqueWatchParents(userID int64, limit int, offset int) ([]*WatchEventMediaRecord, error) {
+	var records []*WatchEventMediaRecord
+	err := databaseEngine.
+		Table("watch_events we").
+		Join("INNER", "rewatches r", "r.rewatch_id = we.rewatch_id").
+		Join("INNER", "media_records mr", "mr.record_id = we.record_id").
+		Join("LEFT", "media_records season",
+			"season.record_id = mr.parent_id AND mr.record_type = 'episode'").
+		Join("LEFT", "media_records show",
+			"show.record_id = season.parent_id AND season.record_type = 'season'").
+		Where("r.user_id = ?", userID).
+		Omit("mr.full_data").
+		Select(`
+			DISTINCT ON (
+				COALESCE(show.record_type,  mr.record_type),
+				COALESCE(show.media_source, mr.media_source),
+				COALESCE(show.source_id,    mr.source_id)
+			)
+			we.*,
+			COALESCE(show.record_id,    mr.record_id)      AS record_id,
+			COALESCE(show.record_type,  mr.record_type)    AS record_type,
+			COALESCE(show.media_source, mr.media_source)   AS media_source,
+			COALESCE(show.source_id,    mr.source_id)      AS source_id,
+			COALESCE(show.media_title,  mr.media_title)    AS media_title,
+			COALESCE(show.overview,     mr.overview)       AS overview,
+			COALESCE(show.thumbnail_url, mr.thumbnail_url) AS thumbnail_url,
+			COALESCE(show.backdrop_url,  mr.backdrop_url)  AS backdrop_url,
+			COALESCE(show.release_date,  mr.release_date)  AS release_date,
+			mr.season_number,
+			mr.episode_number,
+			mr.duration
+		`).
+		OrderBy(`
+			COALESCE(show.record_type,  mr.record_type),
+			COALESCE(show.media_source, mr.media_source),
+			COALESCE(show.source_id,    mr.source_id),
+			we.watched_at DESC,
+			we.watch_event_id DESC
+		`).Limit(limit, offset).
+		Find(&records)
+	return records, err
+}
+
 func InsertRewatch(rewatch RewatchRecord) (*RewatchRecord, error) {
 	_, err := databaseEngine.Table(rewatchesTable).Insert(&rewatch)
 	if err != nil {
