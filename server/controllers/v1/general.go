@@ -81,7 +81,7 @@ func GetMediaBackdrops(c *gin.Context) {
 		}
 	}
 	_, _ = database.SetCache(backdropCacheKey, backdrops, time.Hour*24)
-	helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdrops}, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": backdrops}, 200)
 }
 
 func GetCommentsHandler(c *gin.Context) {

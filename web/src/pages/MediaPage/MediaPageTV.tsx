@@ -152,7 +152,7 @@ function MediaPageTV(props: any) {
         .get(`/api/v1/tv/${mediaSource}-${sourceID}/continue_watching`)
         .then((res) => {
           if (res.data.status === "success") {
-            setContinueWatchingData(res.data.watch_action);
+            setContinueWatchingData(res.data.data);
           }
         })
         .catch((err) => {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./ItemCard.css";
 import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
 import CommentCard from "../Comments/CommentCard";
+import WatchTile from "../ContinueWatching/WatchTile";
 import { useState } from "react";
 
 const maxTitleLength = 30;
@@ -17,7 +18,8 @@ function ItemCard(props: {
     | "seasons"
     | "search"
     | "image"
-    | "comment";
+    | "comment"
+    | "watch_tile";
   showTitle: any;
   itemOnClick: any;
 }) {
@@ -272,6 +274,11 @@ function ItemCard(props: {
   function itemTypeComment() {
     return <CommentCard item={props.item} />;
   }
+  function itemTypeWatchTile() {
+    return (
+      <WatchTile item={props.item} loaded={loaded} setLoaded={setLoaded} />
+    );
+  }
   // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
   var mediaType = props.item.media_type;
   var releaseYearText = "";
@@ -303,6 +310,8 @@ function ItemCard(props: {
       return itemTypeImage();
     case "comment":
       return itemTypeComment();
+    case "watch_tile":
+      return itemTypeWatchTile();
   }
 }
 

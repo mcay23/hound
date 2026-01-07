@@ -49,7 +49,7 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 		}
 		viewArray = append(viewArray, viewObject)
 	}
-	helpers.SuccessResponse(c, viewArray, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": viewArray}, 200)
 }
 
 func GetMovieFromIDHandler(c *gin.Context) {

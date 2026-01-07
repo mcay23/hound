@@ -34,7 +34,7 @@ func GetNextWatchActionHandler(c *gin.Context) {
 		return
 	}
 	watchAction, _ := model.GetNextWatchAction(userID, mediaType, mediaSource, strconv.Itoa(sourceID))
-	helpers.SuccessResponse(c, gin.H{"status": "success", "watch_action": watchAction}, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchAction}, 200)
 }
 
 func GetContinueWatchingHandler(c *gin.Context) {

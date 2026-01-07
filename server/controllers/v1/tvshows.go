@@ -128,7 +128,7 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 		}
 		viewArray = append(viewArray, viewObject)
 	}
-	helpers.SuccessResponse(c, viewArray, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": viewArray}, 200)
 }
 
 //func GetUserTVShowLibraryHandler(c *gin.Context) {
