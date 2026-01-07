@@ -15,7 +15,7 @@ import (
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
-const watchProgressCacheTTL = 24 * 180 * time.Hour // 180 days
+const watchProgressCacheTTL = 90 * 24 * time.Hour // 90 days
 
 /*
 Watch progress is not stored in the db because it's not deemed as critical

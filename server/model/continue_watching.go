@@ -7,6 +7,7 @@ import (
 	"hound/model/sources"
 	"sort"
 	"strings"
+	"time"
 )
 
 /*
@@ -87,8 +88,9 @@ func GetContinueWatching(userID int64) ([]WatchAction, error) {
 			tmdbIDSet[key] = item.LastWatchedAt
 		}
 	}
-	// get 10 most recent watch events
-	watchEvents, err := database.GetUniqueWatchParents(userID, 10, 0)
+	// get 10 most recent watch events, within 3 months
+	now := time.Now()
+	watchEvents, err := database.GetUniqueWatchParents(userID, 10, 0, now.AddDate(0, -3, 0))
 	if err != nil {
 		return nil, err
 	}
