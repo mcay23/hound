@@ -12,14 +12,16 @@
   - Create collections (playlists)
   - Write reviews
 - WIP
-  - Stream and download media directly from p2p, http, or file serving
+  - Stream and download media directly from p2p, http, or serve files directly from Hound
+  - Manages and renames your downloads automatically
   - Download streams to device or server
   - Android Mobile and TV apps
 - Future
   - Detailed watch statistics
   - Recommendations
   - Transcoding
-  - Add your own metadata, manually add media
+  - Manually create your own movies/shows
+  - Manually add your own media files
   - Data export
   - Third-party review score integration (eg. IMDB, Metacritic, RT)
   - View actor information (eg. movies they've played)
