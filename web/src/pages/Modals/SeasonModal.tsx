@@ -184,14 +184,7 @@ function SeasonModal(props: any) {
         });
     };
     loadData();
-  }, [
-    seasonNumber,
-    mediaSource,
-    sourceID,
-    open,
-    isStreamModalOpen,
-    watchedEpisodes,
-  ]);
+  }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
 
   return (
     <>

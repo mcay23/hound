@@ -30,75 +30,83 @@ func StreamHandler(c *gin.Context) {
 	}
 	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
 		"filename", streamDetails.Filename)
-	// Torrent/P2P Streaming Case
+
 	if streamDetails.StreamProtocol == database.ProtocolP2P {
-		if streamDetails.InfoHash == "" {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Infohash not provided"))
-			return
-		}
-		// fileIdx can sometimes be null, gettorrentfile will automatically grab
-		// largest video file in that case
-		file, fileIdx, _, err := model.GetTorrentFile(streamDetails.InfoHash,
-			streamDetails.FileIdx, streamDetails.Sources)
-		if err != nil {
-			helpers.ErrorResponse(c, err)
-			return
-		}
-		// GetTorrentFile could return nil
-		if file == nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Could not find file in torrent"+streamDetails.InfoHash))
-			return
-		}
-		c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
-		// if file already exists, serve that instead
-		// this is an edge case, completed files
-		// aren't served properly by the reader if the torrent session is restarted
-		// and files are still in the download path
-		// ideally, dropped torrents should delete its download folder immediately/
-		// but on restarts, this would be an issue since we want to resume downloads
-		stat, err := os.Stat(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
-		if err == nil {
-			f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
-			if err != nil {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
-					"Failed to open file"))
-				return
-			}
-			if file.Length() != stat.Size() {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
-					"File exists but size mismatch"))
-				return
-			}
-			_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
-			defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
-			defer f.Close()
-			http.ServeContent(
-				c.Writer,
-				c.Request,
-				stat.Name(),
-				stat.ModTime(),
-				f,
-			)
-			return
-		}
-		// if file doesn't exist, serve it from torrent
-		reader := file.NewReader()
-		defer func() {
-			if closer, ok := reader.(io.Closer); ok {
-				closer.Close()
-			}
-		}()
-		// add/remove active streams for this index for cleanup tracking
-		// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
-		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
-		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
-		slog.Info("Streaming file", "file", file.DisplayPath())
-		http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
+		handleP2PStream(c, streamDetails)
 		return
 	}
 	// Direct stream case, just proxy url
+	handleProxyStream(c, streamDetails)
+}
+
+func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
+	if streamDetails.InfoHash == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Infohash not provided"))
+		return
+	}
+	// fileIdx can sometimes be null, gettorrentfile will automatically grab
+	// largest video file in that case
+	file, fileIdx, _, err := model.GetTorrentFile(streamDetails.InfoHash,
+		streamDetails.FileIdx, streamDetails.Sources)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	// GetTorrentFile could return nil
+	if file == nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Could not find file in torrent"+streamDetails.InfoHash))
+		return
+	}
+	c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
+	// if file already exists, serve that instead
+	// this is an edge case, completed files
+	// aren't served properly by the reader if the torrent session is restarted
+	// and files are still in the download path
+	// ideally, dropped torrents should delete its download folder immediately/
+	// but on restarts, this would be an issue since we want to resume downloads
+	stat, err := os.Stat(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+	if err == nil {
+		f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
+				"Failed to open file"))
+			return
+		}
+		if file.Length() != stat.Size() {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
+				"File exists but size mismatch"))
+			return
+		}
+		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+		defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+		defer f.Close()
+		http.ServeContent(
+			c.Writer,
+			c.Request,
+			stat.Name(),
+			stat.ModTime(),
+			f,
+		)
+		return
+	}
+	// if file doesn't exist, serve it from torrent
+	reader := file.NewReader()
+	defer func() {
+		if closer, ok := reader.(io.Closer); ok {
+			closer.Close()
+		}
+	}()
+	// add/remove active streams for this index for cleanup tracking
+	// remove active torrent streams extends session lifetime by a few minutes for cleanup grace
+	_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+	defer model.RemoveActiveTorrentStream(streamDetails.InfoHash, fileIdx)
+	slog.Info("Streaming file", "file", file.DisplayPath())
+	http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
+}
+
+func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
 	videoURL := streamDetails.URI
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
