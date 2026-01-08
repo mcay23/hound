@@ -27,8 +27,8 @@ function SelectStreamModal(props: any) {
           PaperProps={paperPropsGlass}
         >
           <div className="stream-info-card-container">
-            {props.streamData?.data?.providers?.[0]?.streams?.map(
-              (stream: any) => {
+            {props.streamData?.data?.providers?.map((provider: any) =>
+              provider?.streams?.map((stream: any) => {
                 return (
                   <div className="stream-info-card" key={stream.infohash}>
                     <div
@@ -45,29 +45,37 @@ function SelectStreamModal(props: any) {
                     <div className="stream-info-card-subtitle">
                       {stream.description}
                     </div>
-                    <div>
-                      <Button
-                        onClick={() => {
-                          axios
-                            .post(
-                              "/api/v1/torrent/" +
-                                stream.encoded_data +
-                                "/download"
-                            )
-                            .then((res) => {
-                              toast.success("Download added to queue");
-                            })
-                            .catch((err) => {
-                              toast.error("Download Failed! " + err);
-                            });
-                        }}
-                      >
-                        Download to Hound
-                      </Button>
-                    </div>
+                    <Chip label={provider.provider} size="small" />
+                    {provider.provider !== "Hound" ? (
+                      <div className="stream-info-card-footer mt-2">
+                        <Button
+                          className="stream-info-card-footer-buttons"
+                          variant="light"
+                          size="sm"
+                          onClick={() => {
+                            axios
+                              .post(
+                                "/api/v1/torrent/" +
+                                  stream.encoded_data +
+                                  "/download"
+                              )
+                              .then((res) => {
+                                toast.success("Download added to queue");
+                              })
+                              .catch((err) => {
+                                toast.error("Download Failed! " + err);
+                              });
+                          }}
+                        >
+                          Download to Hound
+                        </Button>
+                      </div>
+                    ) : (
+                      <></>
+                    )}
                   </div>
                 );
-              }
+              })
             )}
           </div>
         </Dialog>
