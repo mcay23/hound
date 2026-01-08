@@ -13,6 +13,8 @@
   - Write reviews
 - WIP
   - Stream and download media directly from p2p, http, or serve files directly from Hound
+  - Integration with Stremio addons
+  - Automatically track watches, generates continue watching / next episode
   - Manages and renames your downloads automatically
   - Download streams to device or server
   - Android Mobile and TV apps
