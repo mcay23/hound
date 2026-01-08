@@ -43,30 +43,18 @@ type StreamMediaDetails struct {
 }
 
 type StreamObject struct {
-	Provider       string      `json:"provider"`
-	StreamProtocol string      `json:"stream_protocol"` // http or p2p
-	URI            string      `json:"uri"`             // magnet link or http link
-	InfoHash       string      `json:"info_hash"`
-	Title          string      `json:"title"`
-	Description    string      `json:"description"`
-	Filename       *string     `json:"file_name,omitempty"` // might not be reliable
-	FileIdx        *int        `json:"file_idx,omitempty"`  // file index for p2p type
-	FileSize       *int        `json:"file_size,omitempty"` // file size in bytes
-	Sources        *[]string   `json:"sources,omitempty"`   // trackers for p2p
-	EncodedData    string      `json:"encoded_data"`        // data encoded in AES for playing streams in hound
-	ParsedData     *ParsedData `json:"parsed_data,omitempty"`
-}
-
-type ParsedData struct {
-	VideoCodec    string   `json:"codec"`
-	AudioCodec    []string `json:"audio"`
-	Subbed        bool     `json:"subbed"`
-	Dubbed        bool     `json:"dubbed"`
-	AudioChannels []string `json:"channels"`
-	FileContainer string   `json:"container"`
-	Languages     []string `json:"languages"`
-	BitDepth      string   `json:"bit_depth"` // eg. 10bit
-	HDR           []string `json:"hdr"`
+	Provider       string                  `json:"provider"`
+	StreamProtocol string                  `json:"stream_protocol"` // http or p2p
+	URI            string                  `json:"uri"`             // magnet link, http link, or file path
+	InfoHash       string                  `json:"info_hash"`
+	Title          string                  `json:"title"`
+	Description    string                  `json:"description"`
+	Filename       *string                 `json:"file_name,omitempty"` // might not be reliable
+	FileIdx        *int                    `json:"file_idx,omitempty"`  // file index for p2p type
+	FileSize       *int                    `json:"file_size,omitempty"` // file size in bytes
+	Sources        *[]string               `json:"sources,omitempty"`   // trackers for p2p
+	EncodedData    string                  `json:"encoded_data"`        // data encoded in AES for playing streams in hound
+	VideoMetadata  *database.VideoMetadata `json:"video_metadata,omitempty"`
 }
 
 type ProviderObject struct {
@@ -159,9 +147,30 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 	if err != nil {
 		return nil, err
 	}
+	// Add local streams if available
+	// append this as the first provider
+	var localStreams []*StreamObject
+	switch query.MediaType {
+	case database.MediaTypeMovie:
+		id, _ := strconv.Atoi(query.SourceID)
+		localStreams, _ = GetLocalStreamsForMovie(id)
+	case database.MediaTypeTVShow:
+		id, _ := strconv.Atoi(query.SourceID)
+		localStreams, _ = GetLocalStreamsForTVShow(id, *query.SeasonNumber, *query.EpisodeNumber)
+	}
+
+	allProviders := []*ProviderObject{}
+	if len(localStreams) > 0 {
+		allProviders = append(allProviders, &ProviderObject{
+			Provider: "Hound",
+			Streams:  localStreams,
+		})
+	}
+	allProviders = append(allProviders, stremioStreams)
+
 	result := ProviderResponseObject{
 		StreamMediaDetails: streamMediaDetails,
-		Providers:          []*ProviderObject{stremioStreams},
+		Providers:          allProviders,
 	}
 	_, err = database.SetCache(providersCacheKey, result, providersCacheTTL)
 	if err != nil {

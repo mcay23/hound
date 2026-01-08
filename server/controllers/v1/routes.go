@@ -78,12 +78,12 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
 
 	/*
-		Games Routes
+		Games Routes - games are being deprecated
 	*/
-	privateRoutes.GET("/game/search", SearchGamesHandler)
-	privateRoutes.GET("/game/:id", GetGameFromIDHandler)
-	privateRoutes.POST("/game/:id/comments", PostCommentHandler)
-	privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
+	// privateRoutes.GET("/game/search", SearchGamesHandler)
+	// privateRoutes.GET("/game/:id", GetGameFromIDHandler)
+	// privateRoutes.POST("/game/:id/comments", PostCommentHandler)
+	// privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
 
 	/*
 		Video Streaming, Downloads Routes
@@ -99,6 +99,8 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVShowsHandler)
+	privateRoutes.GET("/movie/:id/media_files", SearchMovieMediaFilesHandler)
+	privateRoutes.GET("/tv/:id/media_files", SearchTVShowMediaFilesHandler)
 
 	/*
 		Media Routes

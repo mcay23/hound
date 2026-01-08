@@ -35,8 +35,36 @@ func StreamHandler(c *gin.Context) {
 		handleP2PStream(c, streamDetails)
 		return
 	}
+	if streamDetails.StreamProtocol == database.ProtocolFileHTTP {
+		handleFileStream(c, streamDetails)
+		return
+	}
 	// Direct stream case, just proxy url
 	handleProxyStream(c, streamDetails)
+}
+
+func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
+	filePath := streamDetails.URI
+	if filePath == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"File path not provided"))
+		return
+	}
+	// Verify file exists
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"File not found: "+filePath))
+		} else {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error accessing file"))
+		}
+		return
+	}
+	c.Writer.Header().Set("Content-Type", model.GetMimeType(filePath))
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Accept-Ranges", "bytes")
+	http.ServeFile(c.Writer, c.Request, filePath)
 }
 
 func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
@@ -160,6 +188,11 @@ func AddTorrentHandler(c *gin.Context) {
 			"Failed to parse encoded string:"+c.Param("encodedString")))
 		return
 	}
+	if streamDetails.StreamProtocol != database.ProtocolP2P {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid stream protocol, has to be p2p: "+streamDetails.StreamProtocol))
+		return
+	}
 	// may want to be more lax in the future
 	if streamDetails.FileIdx == nil || streamDetails.InfoHash == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
@@ -180,6 +213,11 @@ func DownloadHandler(c *gin.Context) {
 	if err != nil || streamDetails == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Failed to parse encoded string:"+c.Param("encodedString")))
+		return
+	}
+	if streamDetails.StreamProtocol == database.ProtocolFileHTTP {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"This file should already be downloaded"))
 		return
 	}
 	if streamDetails.MediaSource != sources.MediaSourceTMDB {

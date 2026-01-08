@@ -61,3 +61,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.stream-info-card-footer-buttons {
+  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.stream-info-card-footer-buttons:hover {
+  background-color: rgba(0, 0, 0, 0.16);
+}
