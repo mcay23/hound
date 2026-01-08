@@ -33,9 +33,9 @@ type StreamObjectFull struct {
 }
 
 type StreamMediaDetails struct {
+	MediaType       string  `json:"media_type"` // movies or tvshows, etc.
 	MediaSource     string  `json:"media_source"`
 	SourceID        string  `json:"source_id"`
-	MediaType       string  `json:"media_type"`              // movies or tvshows, etc.
 	IMDbID          string  `json:"imdb_id"`                 // starts with 'tt'
 	SeasonNumber    *int    `json:"season_number,omitempty"` // shows only
 	EpisodeNumber   *int    `json:"episode_number,omitempty"`
@@ -92,6 +92,15 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 	if cacheExists {
 		return &cacheObject, nil
 	}
+	streamMediaDetails := StreamMediaDetails{
+		MediaType:       query.MediaType,
+		MediaSource:     query.MediaSource,
+		SourceID:        query.SourceID,
+		IMDbID:          query.IMDbID,
+		SeasonNumber:    query.SeasonNumber,
+		EpisodeNumber:   query.EpisodeNumber,
+		EpisodeSourceID: query.EpisodeSourceID,
+	}
 	// for TV shows,
 	// check if the season starts with episode 1
 	// some shows in tmdb don't start in episode 1
@@ -117,8 +126,15 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 			oldEp := *query.EpisodeNumber
 			firstEp := seasonDetails.Episodes[0].EpisodeNumber
 			if query.EpisodeSourceID == nil {
-				return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-					"SourceEpisodeID is required for TV shows")
+				// find episodeID
+				epItem, err := sources.GetEpisodeTMDB(showID,
+					*query.SeasonNumber, *query.EpisodeNumber)
+				if err != nil {
+					return nil, err
+				}
+				epStr := strconv.Itoa(int(epItem.ID))
+				query.EpisodeSourceID = &epStr
+				streamMediaDetails.EpisodeSourceID = &epStr
 			}
 			episodeID, err := strconv.Atoi(*query.EpisodeSourceID)
 			if err != nil {
@@ -138,15 +154,6 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 				query.EpisodeNumber = &normalizedEp
 			}
 		}
-	}
-	streamMediaDetails := StreamMediaDetails{
-		MediaSource:     query.MediaSource,
-		SourceID:        query.SourceID,
-		MediaType:       query.MediaType,
-		IMDbID:          query.IMDbID,
-		SeasonNumber:    query.SeasonNumber,
-		EpisodeNumber:   query.EpisodeNumber,
-		EpisodeSourceID: query.EpisodeSourceID,
 	}
 	stremioStreams, err := getStremioStreams(query, streamMediaDetails)
 	if err != nil {

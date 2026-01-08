@@ -100,7 +100,7 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	streamProtocol := ""
 	// http case
 	if stremioStream.URL != nil {
-		streamProtocol = database.ProtocolHTTP
+		streamProtocol = database.ProtocolProxyHTTP
 		uri = *stremioStream.URL
 		tempInfoHash, ok := helpers.ExtractInfoHashFromURL(*stremioStream.URL)
 		if ok {
