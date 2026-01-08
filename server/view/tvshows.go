@@ -78,6 +78,7 @@ type TVShowFullObject struct {
 	Genres           []tmdb.Genre               `json:"genres"`
 	OriginalLanguage string                     `json:"original_language"`
 	BackdropURL      string                     `json:"backdrop_url"`
+	LogoURL          string                     `json:"logo_url"`
 	Overview         string                     `json:"overview"`
 	OriginCountry    []string                   `json:"origin_country"`
 	TVCredits        *tmdb.TVCredits            `json:"credits"`

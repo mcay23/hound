@@ -58,6 +58,10 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			SeasonNumber: item.SeasonNumber,
 		})
 	}
+	logoURL := ""
+	if len(showDetails.Images.Logos) > 0 {
+		logoURL = GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+	}
 	returnObject := view.TVShowFullObject{
 		MediaSource:      sources.MediaSourceTMDB,
 		MediaType:        database.MediaTypeTVShow,
@@ -67,6 +71,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		VoteCount:        showDetails.VoteCount,
 		VoteAverage:      showDetails.VoteAverage,
 		PosterURL:        GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+		LogoURL:          logoURL,
 		NumberOfEpisodes: showDetails.NumberOfEpisodes,
 		NumberOfSeasons:  showDetails.NumberOfSeasons,
 		Seasons:          viewSeasons,

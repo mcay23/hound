@@ -72,6 +72,10 @@ func GetMovieFromIDHandler(c *gin.Context) {
 			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 		}
 	}
+	logoURL := ""
+	if len(movieDetails.Images.Logos) > 0 {
+		logoURL = GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
+	}
 	returnObject := view.MovieFullObject{
 		MediaSource:         sources.MediaSourceTMDB,
 		MediaType:           database.MediaTypeMovie,
@@ -79,6 +83,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		MediaTitle:          movieDetails.Title,
 		BackdropURL:         GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
 		PosterURL:           GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
+		LogoURL:             logoURL,
 		Budget:              movieDetails.Budget,
 		Genres:              &movieDetails.Genres,
 		Homepage:            movieDetails.Homepage,
