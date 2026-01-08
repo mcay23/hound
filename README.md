@@ -1,24 +1,23 @@
 # Hound
- Track TV Shows, Movies, etc. Self-hosted version of Trakt, Simkl, etc.
+ Track and Watch TV Shows, Movies, etc. Self-hosted version of Plex + Trakt, Simkl, etc. Hound aims to be a complete ecosystem of watching, tracking, downloading, and archiving media.
  
-# Demo
-Access the demo [here](http://107.174.11.52/)
-```
-username: demo
-password: demodemo
-```
 # Features
 - Current
-  - Search Movies, TV Shows, and Games
-  - Multiple users
-  - Create collections (playlists)
+  - Search Movies and TV Shows
   - Add watch data
+  - Rewatch Shows from the beginning
+  - View your watch history
+  - Multi-user
+  - Create collections (playlists)
   - Write reviews
+- WIP
+  - Stream and download media from p2p sources
+  - Download streams to device or server
+  - Android Mobile and TV apps
 - Future
-  - Integrate more media types (books, manga, etc.)
-  - Third-party integrations (plex, jellyfin)
-  - Add more views/information to each page (eg. DLCs for games)
+  - Detailed watch statistics
   - Recommendations
+  - Transcoding
   - Add your own metadata, manually add media
   - Data export
   - Third-party review score integration (eg. IMDB, Metacritic, RT)
