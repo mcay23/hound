@@ -77,8 +77,7 @@ func GetActiveRewatchFromSourceID(recordType string, mediaSource string, sourceI
 		return nil, err
 	}
 	if !has {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"No Media Record Found for "+recordType+":"+mediaSource+"-"+sourceID)
+		return nil, nil
 	}
 	var rewatchRecord RewatchRecord
 	has, err = databaseEngine.Table(rewatchesTable).
