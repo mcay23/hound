@@ -38,11 +38,11 @@ func GeneralSearchHandler(c *gin.Context) {
 	// search igdb
 	//gameResults, _ := sources.SearchGameIGDB(queryString)
 
-	helpers.SuccessResponse(c, view.GeneralSearchResponse{
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": view.GeneralSearchResponse{
 		TVShowSearchResults: tvResults,
 		MovieSearchResults:  movieResults,
 		GameSearchResults:   nil,
-	}, 200)
+	}}, 200)
 }
 
 func GetMediaBackdrops(c *gin.Context) {

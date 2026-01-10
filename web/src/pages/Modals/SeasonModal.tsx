@@ -166,7 +166,7 @@ function SeasonModal(props: any) {
           if (progressRes.data.data) {
             const progressMap = new Map<number, WatchProgressItem>();
             progressRes.data.data.forEach((item: any) => {
-              const episodeIDNum = parseInt(item.episode_id, 10);
+              const episodeIDNum = parseInt(item.episode_source_id, 10);
               progressMap.set(episodeIDNum, {
                 current_progress_seconds: item.current_progress_seconds,
                 total_duration_seconds: item.total_duration_seconds,
