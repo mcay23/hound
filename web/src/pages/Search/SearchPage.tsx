@@ -29,7 +29,7 @@ function SearchPage(props: any) {
     axios
       .get(`/api/v1/search?q=${query}`)
       .then((res) => {
-        setData(res.data);
+        setData(res.data.data);
         setIsLoaded(true);
       })
       .catch((err) => {

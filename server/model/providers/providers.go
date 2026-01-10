@@ -18,7 +18,7 @@ type ProvidersQueryRequest struct {
 	MediaType       string   `json:"media_type"`        // movies or tvshows, etc.
 	SeasonNumber    *int     `json:"season_number,omitempty"`
 	EpisodeNumber   *int     `json:"episode_number,omitempty"`
-	EpisodeSourceID *string  `json:"source_episode_id,omitempty"`
+	EpisodeSourceID *string  `json:"episode_source_id,omitempty"`
 	EpisodeGroupID  string   `json:"episode_group_id,omitempty"`
 	Query           string   `json:"search_query,omitempty"` // not used for now
 	Params          []string `json:"params"`

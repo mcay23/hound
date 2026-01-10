@@ -26,9 +26,9 @@ const (
 )
 
 type NextEpisode struct {
-	SeasonNumber  *int    `json:"season_number,omitempty"`
-	EpisodeNumber *int    `json:"episode_number,omitempty"`
-	EpisodeID     *string `json:"episode_id,omitempty"`
+	SeasonNumber    *int    `json:"season_number,omitempty"`
+	EpisodeNumber   *int    `json:"episode_number,omitempty"`
+	EpisodeSourceID *string `json:"episode_source_id,omitempty"`
 	WatchActionMetadata
 }
 
@@ -248,9 +248,9 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 			return nil, nil
 		}
 		nextEp := NextEpisode{
-			SeasonNumber:  nextEpisodeRecord.SeasonNumber,
-			EpisodeNumber: nextEpisodeRecord.EpisodeNumber,
-			EpisodeID:     &nextEpisodeRecord.SourceID,
+			SeasonNumber:    nextEpisodeRecord.SeasonNumber,
+			EpisodeNumber:   nextEpisodeRecord.EpisodeNumber,
+			EpisodeSourceID: &nextEpisodeRecord.SourceID,
 		}
 		// get show record
 		found, showRecord, err := database.GetMediaRecord(database.RecordTypeTVShow, mediaSource, showID)

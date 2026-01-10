@@ -20,7 +20,7 @@ func SearchTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to search for tv show"))
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	helpers.SuccessResponse(c, gin.H{"status": "success", "data": results}, 200)
 }
 
 func GetTVShowFromIDHandler(c *gin.Context) {

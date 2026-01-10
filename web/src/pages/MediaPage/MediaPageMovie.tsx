@@ -84,7 +84,7 @@ function MediaPageMovie(props: any) {
       .catch((err) => {
         console.log(err);
       });
-  }, [isStreamModalOpen]);
+  }, [isStreamModalOpen, props.data.media_source, props.data.source_id]);
   var styles = {
     noBackdrop: {
       background:

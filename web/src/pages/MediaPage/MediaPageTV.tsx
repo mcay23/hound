@@ -243,7 +243,7 @@ function MediaPageTV(props: any) {
         let encodedData = "";
         if (progressRes.data?.data && episodeID !== -1) {
           const episodeProgress = progressRes.data.data.find(
-            (item: any) => parseInt(item.episode_id, 10) === episodeID
+            (item: any) => parseInt(item.episode_source_id, 10) === episodeID
           );
           if (episodeProgress) {
             startTime = episodeProgress.current_progress_seconds || 0;
@@ -280,7 +280,7 @@ function MediaPageTV(props: any) {
         watch_progress.season_number,
         watch_progress.episode_number,
         mode,
-        parseInt(watch_progress.episode_id, 10),
+        parseInt(watch_progress.episode_source_id, 10),
         watch_progress.current_progress_seconds,
         watch_progress.encoded_data
       );
@@ -289,7 +289,7 @@ function MediaPageTV(props: any) {
         next_episode.season_number,
         next_episode.episode_number,
         mode,
-        parseInt(next_episode.episode_id, 10)
+        parseInt(next_episode.episode_source_id, 10)
       );
     } else {
       // Fallback, episodeID is only used to find progress

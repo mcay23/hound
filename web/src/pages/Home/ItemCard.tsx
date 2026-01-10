@@ -207,7 +207,7 @@ function ItemCard(props: {
     return (
       <a href={mediaPagePath}>
         {props.item.poster_url ? (
-          <a href={mediaPagePath} className="itemcard-img-poster-container">
+          <div className="itemcard-img-poster-container">
             {!loaded && (
               <Skeleton
                 variant="rounded"
@@ -226,7 +226,7 @@ function ItemCard(props: {
                 transition: "opacity 0.5s ease",
               }}
             />
-          </a>
+          </div>
         ) : (
           <div
             className={
