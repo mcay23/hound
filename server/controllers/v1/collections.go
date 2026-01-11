@@ -118,7 +118,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		return
 	}
 	query := database.CollectionRecordQuery{
-		OwnerID: &userID,
+		OwnerUserID: &userID,
 	}
 	records, _, err := database.SearchForCollection(query, -1, -1)
 	if err != nil {
@@ -159,7 +159,7 @@ func CreateCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	body.OwnerID = userID
+	body.OwnerUserID = userID
 	collectionID, err := database.CreateCollection(body)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error creating colection"+err.Error()))
@@ -221,7 +221,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		viewArray = append(viewArray, viewObject)
 	}
 	// note collection owner can be different from calling user (public collections)
-	collectionOwner, err := database.GetUsernameFromID(collection.OwnerID)
+	collectionOwner, err := database.GetUsernameFromID(collection.OwnerUserID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return

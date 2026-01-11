@@ -147,6 +147,9 @@ function Collection(props: any) {
                   <br />
                   <br />
                   <br />
+                  <br />
+                  <br />
+                  <br />
                 </span>
               )}
             </div>

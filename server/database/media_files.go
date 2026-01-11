@@ -10,7 +10,7 @@ type MediaFile struct {
 	FileID           int64   `xorm:"pk autoincr 'file_id'" json:"file_id"`
 	Filepath         string  `xorm:"text not null unique 'file_path'" json:"file_path"`
 	OriginalFilename string  `xorm:"text 'original_file_name'" json:"original_file_name"`
-	RecordID         int64   `xorm:"'record_id'" json:"record_id"`
+	RecordID         int64   `xorm:"index 'record_id'" json:"record_id"`
 	SourceURI        *string `xorm:"text 'source_uri'" json:"source_uri"`
 	FileIdx          *int    `xorm:"'file_idx'" json:"file_idx"`
 	VideoMetadata    `xorm:"extends"`

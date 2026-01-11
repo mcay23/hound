@@ -93,8 +93,8 @@ function MediaItem(props: any) {
           </div>
           <div className="media-item-secondary">{mediaTypeReadable}</div>
           <div className="media-item-description">
-            {props.item.description
-              ? props.item.description
+            {props.item.overview
+              ? props.item.overview
               : "No description available."}
           </div>
         </div>

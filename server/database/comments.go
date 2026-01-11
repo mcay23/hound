@@ -23,7 +23,7 @@ type CommentRecord struct {
 	CommentID    int64     `xorm:"pk autoincr 'comment_id'" json:"id"`
 	CommentType  string    `json:"comment_type"`
 	UserID       int64     `xorm:"'user_id'" json:"user_id"`
-	RecordID     int64     `xorm:"'record_id'" json:"record_id"`
+	RecordID     int64     `xorm:"index 'record_id'" json:"record_id"`
 	IsPrivate    bool      `json:"is_private"`
 	CommentTitle string    `json:"title"`
 	Comment      []byte    `json:"comment"`  // actual content of comment, review

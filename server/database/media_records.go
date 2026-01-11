@@ -33,7 +33,7 @@ type MediaRecord struct {
 	RecordType       string       `xorm:"unique(primary) not null 'record_type'" json:"record_type"`   // movie,tvshow,season,episode
 	MediaSource      string       `xorm:"unique(primary) not null 'media_source'" json:"media_source"` // tmdb, openlibrary, etc. the main metadata provider
 	SourceID         string       `xorm:"unique(primary) not null 'source_id'" json:"source_id"`       // tmdb id, episode/season tmdb id
-	ParentID         *int64       `xorm:"'parent_id'" json:"parent_id,omitempty"`                      // reference to fk record_id, null for movie, tvshow
+	ParentID         *int64       `xorm:"index 'parent_id'" json:"parent_id,omitempty"`                // reference to fk record_id, null for movie, tvshow
 	MediaTitle       string       `xorm:"text 'media_title'" json:"media_title"`                       // movie, tvshow, season or episode title
 	OriginalTitle    string       `xorm:"text 'original_title'" json:"original_title"`                 // original title in release language
 	OriginalLanguage string       `xorm:"text 'original_language'" json:"original_language"`

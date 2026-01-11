@@ -42,7 +42,7 @@ type CollectionRecord struct {
 	CollectionID    int64        `xorm:"pk autoincr 'collection_id'" json:"collection_id"`
 	CollectionTitle string       `xorm:"not null" json:"collection_title"` // my collection, etc.
 	Description     []byte       `json:"description"`
-	OwnerID         int64        `xorm:"not null 'owner_user_id'" json:"owner_user_id"`
+	OwnerUserID     int64        `xorm:"index not null 'owner_user_id'" json:"owner_user_id"`
 	IsPrimary       bool         `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool         `json:"is_public"`
 	Tags            *[]TagObject `json:"tags"`
@@ -54,14 +54,14 @@ type CollectionRecord struct {
 type CollectionRecordQuery struct {
 	CollectionID *int64
 	SearchQuery  *string
-	OwnerID      *int64
+	OwnerUserID  *int64
 	IsPrimary    *bool
 	IsPublic     *bool
 	Tags         *[]TagObject `json:"tags"`
 }
 
 type CreateCollectionRequest struct {
-	OwnerID         int64  `json:"owner_id"`
+	OwnerUserID     int64  `json:"owner_user_id"`
 	CollectionTitle string `json:"collection_title"` // my collection, etc.
 	Description     string `json:"description"`
 	IsPrimary       bool   `json:"is_primary"` // is the user's primary collection, not deletable
@@ -86,7 +86,7 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	if !found {
 		return nil, nil, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "getCollectionRecords(): No collection with this ID")
 	}
-	if !collection.IsPublic && collection.OwnerID != userID {
+	if !collection.IsPublic && collection.OwnerUserID != userID {
 		return nil, nil, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "user does not have access to collection")
 	}
 	sess := databaseEngine.Table(mediaRecordsTable)
@@ -133,7 +133,7 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection not found")
 		}
 		// check if user is authorized to add to collection
-		if collectionRecord.OwnerID != userID {
+		if collectionRecord.OwnerUserID != userID {
 			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
 		}
 	}
@@ -165,7 +165,7 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection not found")
 	}
 	// check if user is authorized to add to collection
-	if collectionRecord.OwnerID != userID {
+	if collectionRecord.OwnerUserID != userID {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
 	}
 	// if user authenticated, remove
@@ -183,8 +183,8 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 func CreateCollection(record CreateCollectionRequest) (*int64, error) {
 	if record.IsPrimary == true {
 		_, int64, err := SearchForCollection(CollectionRecordQuery{
-			OwnerID:   &record.OwnerID,
-			IsPrimary: &record.IsPrimary,
+			OwnerUserID: &record.OwnerUserID,
+			IsPrimary:   &record.IsPrimary,
 		}, 1, 0)
 		if err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func CreateCollection(record CreateCollectionRequest) (*int64, error) {
 	insert := CollectionRecord{
 		CollectionTitle: record.CollectionTitle,
 		Description:     []byte(record.Description),
-		OwnerID:         record.OwnerID,
+		OwnerUserID:     record.OwnerUserID,
 		IsPrimary:       record.IsPrimary,
 		IsPublic:        record.IsPublic,
 		Tags:            nil,
@@ -224,7 +224,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	// primary collections can't be deleted
 	affected, err := session.Table(collectionsTable).Where("is_primary = ?", false).Delete(&CollectionRecord{
 		CollectionID: collectionID,
-		OwnerID:      userID,
+		OwnerUserID:  userID,
 	})
 	if err != nil {
 		_ = session.Rollback()
@@ -245,8 +245,8 @@ func DeleteCollection(userID int64, collectionID int64) error {
 func SearchForCollection(record CollectionRecordQuery, limit int, offset int) ([]CollectionRecord, int, error) {
 	var records []CollectionRecord
 	sess := databaseEngine.Table(collectionsTable)
-	if record.OwnerID != nil {
-		sess = sess.Where("owner_user_id = ?", record.OwnerID)
+	if record.OwnerUserID != nil {
+		sess = sess.Where("owner_user_id = ?", record.OwnerUserID)
 	}
 	if record.IsPrimary != nil {
 		sess = sess.Where("is_primary = ?", record.IsPrimary)
@@ -266,8 +266,8 @@ func SearchForCollection(record CollectionRecordQuery, limit int, offset int) ([
 	}
 	// restart session to get total count
 	sess = databaseEngine.Table(collectionsTable)
-	if record.OwnerID != nil {
-		sess = sess.Where("owner_user_id = ?", record.OwnerID)
+	if record.OwnerUserID != nil {
+		sess = sess.Where("owner_user_id = ?", record.OwnerUserID)
 	}
 	if record.IsPrimary != nil {
 		sess = sess.Where("is_primary = ?", record.IsPrimary)
