@@ -20,8 +20,8 @@ const (
 // stores completed watches of movies or episodes
 type WatchEventsRecord struct {
 	WatchEventID int64     `xorm:"pk autoincr 'watch_event_id'" json:"watch_event_id"`
-	RewatchID    int64     `xorm:"'rewatch_id'" json:"rewatch_id"`
-	RecordID     int64     `xorm:"'record_id'" json:"record_id"`
+	RewatchID    int64     `xorm:"index 'rewatch_id'" json:"rewatch_id"`
+	RecordID     int64     `xorm:"index 'record_id'" json:"record_id"`
 	WatchType    string    `xorm:"'watch_type'" json:"watch_type"` // watch, scrobble
 	WatchedAt    time.Time `xorm:"'watched_at'" json:"watched_at"`
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
@@ -34,8 +34,8 @@ type WatchEventsRecord struct {
 // this is only used for tv shows
 type RewatchRecord struct {
 	RewatchID  int64     `xorm:"pk autoincr 'rewatch_id'" json:"rewatch_id"`
-	UserID     int64     `xorm:"'user_id'" json:"user_id"`
-	RecordID   int64     `xorm:"'record_id'" json:"record_id"` // record id for movie/show
+	UserID     int64     `xorm:"index 'user_id'" json:"user_id"`
+	RecordID   int64     `xorm:"index 'record_id'" json:"record_id"` // record id for movie/show
 	StartedAt  time.Time `xorm:"'started_at'" json:"rewatch_started_at"`
 	FinishedAt time.Time `xorm:"'finished_at'" json:"rewatch_finished_at"`
 	CreatedAt  time.Time `xorm:"timestampz created" json:"created_at"`

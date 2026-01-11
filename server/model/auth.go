@@ -49,7 +49,7 @@ func RegisterNewUser(user *RegistrationUser) error {
 	}
 	// create primary collection for user
 	primaryCollection := database.CreateCollectionRequest{
-		OwnerID:         *userID,
+		OwnerUserID:     *userID,
 		CollectionTitle: "My Library",
 		Description:     "Your main collection",
 		IsPrimary:       true,

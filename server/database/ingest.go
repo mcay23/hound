@@ -38,8 +38,8 @@ type IngestTask struct {
 	IngestTaskID     int64     `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
 	DownloadPriority int       `xorm:"'download_priority'" json:"download_priority"` // priority of task, not used for now
 	CopyPriority     int       `xorm:"'copy_priority'" json:"copy_priority"`
-	RecordID         int64     `xorm:"'record_id'" json:"record_id"`                    // episode or movie to be ingested
-	Status           string    `xorm:"'status'" json:"status"`                          // pending_insert, processing, completed
+	RecordID         int64     `xorm:"index 'record_id'" json:"record_id"`              // episode or movie to be ingested
+	Status           string    `xorm:"index 'status'" json:"status"`                    // pending_insert, processing, completed
 	DownloadType     string    `xorm:"'download_type'" json:"download_type"`            // p2p, http, external (not downloaded by hound)
 	SourceURI        *string   `xorm:"text 'source_uri'" json:"source_uri"`             // magnet uri with trackers / http link
 	FileIdx          *int      `xorm:"'file_idx'" json:"file_idx"`                      // index for  only
@@ -54,7 +54,7 @@ type IngestTask struct {
 	LastSeen         time.Time `xorm:"timestampz last_seen" json:"last_seen"`   // track stale download/copy jobs
 	StartedAt        time.Time `xorm:"timestampz started_at" json:"started_at"` // time queued task was started
 	FinishedAt       time.Time `xorm:"timestampz finished_at" json:"finished_at"`
-	CreatedAt        time.Time `xorm:"timestampz created" json:"created_at"`
+	CreatedAt        time.Time `xorm:"timestampz index created" json:"created_at"`
 	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
