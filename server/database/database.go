@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"hound/helpers"
 	"log/slog"
 	"os"
@@ -21,15 +22,27 @@ var databaseEngine *xorm.Engine
 func InstantiateDB() {
 	var err error
 	slog.Info("DB loaded", "driver", DriverPostgres)
-	databaseEngine, err = xorm.NewEngine(DriverPostgres, os.Getenv("DB_CONNECTION_STRING"))
+	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_DB"),
+	)
+
+	slog.Info("Attempting DB connection", "uri", connectionString)
+	databaseEngine, err = xorm.NewEngine(DriverPostgres, connectionString)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
 		panic(err)
 	}
+	slog.Info("DB Connection successful")
+
 	// always use UTC for timestamps
 	tz, _ := time.LoadLocation("UTC")
 	databaseEngine.SetTZDatabase(tz)
 	databaseEngine.SetTZLocation(tz)
+
 	err = instantiateUsersTable()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate users table")

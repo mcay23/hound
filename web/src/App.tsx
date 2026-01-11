@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./pages/Home/Home";
 import Logout from "./pages/Logout";
-import houndConfig from "./config.json";
 import axios from "axios";
 import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
 import SearchPage from "./pages/Search/SearchPage";
@@ -16,17 +15,17 @@ import Register from "./pages/Login/Register";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
 
 const queryClient = new QueryClient();
 
 // axios defaults
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = houndConfig.server_host;
+axios.defaults.baseURL = SERVER_URL;
 // TODO REVISE LATER
 axios.defaults.headers.common["Content-Type"] =
-  houndConfig.axios_config.headers["Content-Type"];
-axios.defaults.headers.common["X-Client"] =
-  houndConfig.axios_config.headers["X-Client"];
+  AXIOS_CONFIG.headers["Content-Type"];
+axios.defaults.headers.common["X-Client"] = AXIOS_CONFIG.headers["X-Client"];
 // Add a request interceptor
 axios.interceptors.request.use(
   function (config) {
