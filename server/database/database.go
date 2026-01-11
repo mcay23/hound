@@ -13,14 +13,15 @@ const (
 	MediaTypeTVShow = "tvshow"
 	MediaTypeMovie  = "movie"
 	MediaTypeGame   = "game"
+	DriverPostgres  = "postgres"
 )
 
 var databaseEngine *xorm.Engine
 
 func InstantiateDB() {
 	var err error
-	slog.Info("DB loaded", "driver", os.Getenv("DB_DRIVER"))
-	databaseEngine, err = xorm.NewEngine(os.Getenv("DB_DRIVER"), os.Getenv("DB_CONNECTION_STRING"))
+	slog.Info("DB loaded", "driver", DriverPostgres)
+	databaseEngine, err = xorm.NewEngine(DriverPostgres, os.Getenv("DB_CONNECTION_STRING"))
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
 		panic(err)
