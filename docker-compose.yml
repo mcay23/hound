@@ -1,62 +1,42 @@
-version: '3.8'
 services:
-  db:
-    image: mysql:8.0
-    container_name: hound-db
-    cap_add:
-      - SYS_NICE
-    restart: always
+  hound-postgres:
+    container_name: hound-postgres
+    image: postgres:18
     environment:
-      - MYSQL_DATABASE=hound
-      - MYSQL_ROOT_PASSWORD=password
-    ports:
-      - '9207:3306'
+      POSTGRES_USER: hound
+      POSTGRES_PASSWORD: hound_password
+      POSTGRES_DB: hound_db
     volumes:
-      - db:/var/lib/mysql
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: hound-pma
-    links:
-      - db
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_ARBITRARY: 1
-    restart: always
-    ports:
-      - 8081:80
-  server:
-    build:
-      context: ./server
-    volumes:
-      - "./server:/go/src/app"
-    environment:
-      PORT: 8080
-      JWT_SECRET_KEY: 2gN-uNOr:Xqed+sr.,8O%]D")(p>Jnn-Z%E(,@rX~<CFDT}f7{M&N]p3D)=OZS3
-      DB_DRIVER: mysql
-      DB_CONNECTION_STRING: root:password@tcp(db:3306)/hound?charset=utf8
-      TMDB_API_KEY: <API KEY HERE>
-      IGDB_CLIENT_ID: <CLIENT ID HERE>
-      IGDB_CLIENT_SECRET: <CLIENT SECRET HERE>
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hound -d hound_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  hound-server:
     container_name: hound-server
-    ports:
-      - "8080:8080"
-    tty: true
+    build: 
+      context: .
+      dockerfile: Dockerfile
     depends_on:
-      - db
-  web:
-    build:
-      context: ./web
+      hound-postgres:
+        condition: service_healthy
+    ports:
+      - "2323:2323"
+    environment:
+      - APP_ENV=production
+      - POSTGRES_HOST=hound-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=hound # make sure user and password are the same as postgres service
+      - POSTGRES_PASSWORD=hound_password
+      - POSTGRES_DB=hound_db
+      - SERVER_PORT=2323 # try not to change
+      - TMDB_API_KEY=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMDZkMDdiOTk1ZmY2NjQxNjY0OWMzNjA4YzllMGE2NyIsIm5iZiI6MTYzMjc1Nzg2MS4zMDA5OTk5LCJzdWIiOiI2MTUxZTg2NTFjNjM1YjAwMmExMGNmNTciLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.xTmUqmj38ElN1n0UWfsaL-1IJ46SAhCd1WtBD_Of_2A
+      - CACHE_GC_INTERVAL=600
     volumes:
-      - .:/usr/app/
-      - /usr/app/node_modules
-    container_name: hound-web
-    ports:
-      - "3000:3000"
-    tty: true
-    depends_on:
-      - server
-      - db
+      - ./docker/Hound Data:/app/Hound Data
+      - ./docker/config:/app/config
+
 volumes:
-  db:
-    driver: local
+  postgres_data:

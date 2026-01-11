@@ -3,7 +3,7 @@ import "./StreamModal.css";
 import { ArrowBack } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
-import houndConfig from "./../../config.json";
+import { SERVER_URL } from "./../../config/axios_config";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -31,9 +31,7 @@ function StreamModal(props: any) {
           .then(() => {
             toast.dismiss(fetchToast);
             setVideoURL(
-              houndConfig.server_host +
-                "/api/v1/stream/" +
-                streamDetails.encoded_data
+              SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data
             );
             setLoading(false);
           })
@@ -42,9 +40,7 @@ function StreamModal(props: any) {
           });
       } else {
         setVideoURL(
-          houndConfig.server_host +
-            "/api/v1/stream/" +
-            streamDetails.encoded_data
+          SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data
         );
         setLoading(false);
       }
