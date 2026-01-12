@@ -16,7 +16,7 @@ eg. for tmdb-1234 -> play next episode, or resume episode X.
 For movies, this will just be resume if progress exists
 
 Continue Watching collects Next watch actions and collates them to
-show in the home screen, ala Netflix. The principle is one tile per,
+show in the home screen, ala Netflix. The principle is one tile per
 show/movie, with the next watch action as the tile action.
 */
 
