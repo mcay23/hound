@@ -9,10 +9,6 @@
     "@mui/material": "^5.11.1",
     "@mui/x-date-pickers": "^6.0.4",
     "@tanstack/react-query": "^5.90.16",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.5.2",
     "@types/node": "^16.18.3",
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.9",
@@ -27,21 +23,19 @@
     "react-horizontal-scrolling-menu": "^4.0.1",
     "react-hot-toast": "^2.4.0",
     "react-responsive-masonry": "^2.1.7",
-    "react-scripts": "^5.0.1",
     "typescript": "^4.9.3",
     "video.js": "^8.23.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "browserslist": {
@@ -59,6 +53,9 @@
   "devDependencies": {
     "@types/mui-datatables": "^4.3.4",
     "@types/react-responsive-masonry": "^2.1.0",
-    "react-router-dom": "^6.4.3"
+    "@vitejs/plugin-react": "^5.1.2",
+    "react-router-dom": "^6.4.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.0.4"
   }
 }
