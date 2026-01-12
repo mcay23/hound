@@ -24,7 +24,7 @@ func SetupRoutes() {
 		r.StaticFile("/avatar-placeholder.png", "./build/avatar-placeholder.png")
 		r.StaticFile("/landscape-placeholder.jpg", "./build/landscape-placeholder.jpg")
 		r.StaticFile("/login-bg.jpg", "./build/login-bg.jpg")
-		r.StaticFile("/asset-manifest.json", "./build/asset-manifest.json")
+		// r.StaticFile("/asset-manifest.json", "./build/asset-manifest.json")
 		r.StaticFile("/robots.txt", "./build/robots.txt")
 		r.NoRoute(func(c *gin.Context) {
 			c.File("./build/index.html")
