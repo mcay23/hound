@@ -9,6 +9,7 @@ import (
 const InternalServerError = "internalServerError"
 const BadRequest = "badRequest"
 const Unauthorized = "unauthorized"
+const VideoDurationTooShort = "videoDurationTooShort"
 
 var (
 	InfoMsg  = Teal

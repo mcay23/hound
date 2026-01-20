@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"time"
 )
 
 // Downloads torrent to server, not clients
@@ -81,11 +82,25 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	if !IsVideoFile(filepath.Ext(sourcePath)) {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File is not a video file")
 	}
+	// ffprobe video
+	videoMetadata, err := ProbeVideoFromURI(sourcePath)
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to probe video + "+sourcePath)
+	}
+	// less than 1 min is invalid, used by some providers to display
+	// video not cached message, might want to explore fallback to p2p
+	// in this case
+	if videoMetadata.Duration < 1*time.Minute {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.VideoDurationTooShort),
+			fmt.Sprintf("Video duration too short: %v (<1 minute)", videoMetadata.Duration))
+	}
+
 	targetDir, targetFilename, targetRecordID, err := GetMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
 		infoHash, fileIdx, filepath.Ext(sourcePath))
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get media destination dir")
 	}
+
 	// rename, should be atomic since same filesystem
 	err = os.MkdirAll(targetDir, 0755)
 	if err != nil {
@@ -102,10 +117,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			return nil, helpers.LogErrorWithMessage(linkErr, "Failed to rename+link file")
 		}
 	}
-	videoMetadata, err := ProbeVideoFromURI(filepath.Join(targetDir, targetFilename))
-	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to probe video + "+filepath.Join(targetDir, targetFilename))
-	}
+
 	mediaFile := database.MediaFile{
 		Filepath:         filepath.Join(targetDir, targetFilename),
 		OriginalFilename: filepath.Base(sourcePath),
