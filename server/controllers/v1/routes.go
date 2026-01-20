@@ -24,6 +24,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/search", GeneralSearchHandler)
 	privateRoutes.GET("/backdrops", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
+	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
@@ -32,7 +33,6 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
-
 	/*
 		Watch History Routes
 	*/
