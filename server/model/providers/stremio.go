@@ -42,17 +42,17 @@ type StremioStreamResponse struct {
 	Streams []StremioStreamObject `json:"streams,omitempty"`
 }
 
-func getStremioStreams(request ProvidersQueryRequest, details StreamMediaDetails) (*ProviderObject, error) {
+func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) (*ProviderObject, error) {
 	url := ""
 	providerName := "Stremio"
-	switch request.MediaType {
+	switch query.MediaType {
 	case database.MediaTypeMovie:
-		url = BASE_URL + fmt.Sprintf(MOVIE_STREAMS_PATH, request.IMDbID)
+		url = BASE_URL + fmt.Sprintf(MOVIE_STREAMS_PATH, query.IMDbID)
 	case database.MediaTypeTVShow:
-		if request.SeasonNumber == nil || request.EpisodeNumber == nil {
+		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid season/episode number")
 		}
-		url = BASE_URL + fmt.Sprintf(TV_STREAMS_PATH, request.IMDbID, *request.SeasonNumber, *request.EpisodeNumber)
+		url = BASE_URL + fmt.Sprintf(TV_STREAMS_PATH, query.IMDbID, *query.SeasonNumber, *query.EpisodeNumber)
 	default:
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid media type")
 	}
