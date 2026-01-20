@@ -38,11 +38,11 @@ func GeneralSearchHandler(c *gin.Context) {
 	// search igdb
 	//gameResults, _ := sources.SearchGameIGDB(queryString)
 
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": view.GeneralSearchResponse{
+	helpers.SuccessResponse(c, view.GeneralSearchResponse{
 		TVShowSearchResults: tvResults,
 		MovieSearchResults:  movieResults,
 		GameSearchResults:   nil,
-	}}, 200)
+	}, 200)
 }
 
 func GetMediaBackdrops(c *gin.Context) {
@@ -50,7 +50,7 @@ func GetMediaBackdrops(c *gin.Context) {
 	var backdropsCache []string
 	cacheExists, _ := database.GetCache(backdropCacheKey, &backdropsCache)
 	if cacheExists {
-		helpers.SuccessResponse(c, gin.H{"backdrop_urls": backdropsCache}, 200)
+		helpers.SuccessResponse(c, backdropsCache, 200)
 		return
 	}
 	shows, err := sources.GetTrendingTVShowsTMDB("1")
@@ -81,7 +81,7 @@ func GetMediaBackdrops(c *gin.Context) {
 		}
 	}
 	_, _ = database.SetCache(backdropCacheKey, backdrops, time.Hour*24)
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": backdrops}, 200)
+	helpers.SuccessResponse(c, backdrops, 200)
 }
 
 func GetCommentsHandler(c *gin.Context) {
@@ -286,7 +286,7 @@ func DeleteCommentHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param/query"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 func GetCommentsCore(username string, recordID int64, commentType *string) (*[]view.CommentObject, error) {

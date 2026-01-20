@@ -29,7 +29,7 @@ function SearchPage(props: any) {
     axios
       .get(`/api/v1/search?q=${query}`)
       .then((res) => {
-        setData(res.data.data);
+        setData(res.data);
         setIsLoaded(true);
       })
       .catch((err) => {
@@ -42,9 +42,7 @@ function SearchPage(props: any) {
         .get("/api/v1/backdrops")
         .then((res) => {
           var randomBackdrop =
-            res.data.backdrop_urls[
-              Math.floor(Math.random() * res.data.backdrop_urls.length)
-            ];
+            res.data[Math.floor(Math.random() * res.data.length)];
           setBackdropURL(randomBackdrop);
         })
         .catch((err) => {

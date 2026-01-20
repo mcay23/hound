@@ -51,8 +51,7 @@ func IngestFileHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{
-		"status": "success",
-		"file":   mediaFile,
+		"file": mediaFile,
 	}, 200)
 }
 
@@ -63,7 +62,7 @@ func GetMetadataHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "metadata": metadata}, 200)
+	helpers.SuccessResponse(c, gin.H{"metadata": metadata}, 200)
 }
 
 func GetTVEpisodesHandler(c *gin.Context) {
@@ -78,7 +77,7 @@ func GetTVEpisodesHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episodes"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "episodes": episodeRecords}, 200)
+	helpers.SuccessResponse(c, gin.H{"episodes": episodeRecords}, 200)
 }
 
 func GetDownloadsHandler(c *gin.Context) {
@@ -92,5 +91,5 @@ func GetDownloadsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get downloads"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "downloads": tasks}, 200)
+	helpers.SuccessResponse(c, gin.H{"downloads": tasks}, 200)
 }

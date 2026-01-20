@@ -20,7 +20,7 @@ func SearchTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to search for tv show"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": results}, 200)
+	helpers.SuccessResponse(c, results, 200)
 }
 
 func GetTVShowFromIDHandler(c *gin.Context) {
@@ -133,7 +133,7 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 		}
 		viewArray = append(viewArray, viewObject)
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": viewArray}, 200)
+	helpers.SuccessResponse(c, viewArray, 200)
 }
 
 //func GetUserTVShowLibraryHandler(c *gin.Context) {
@@ -250,7 +250,7 @@ func GetTVEpisodeGroupsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"episode_groups": episodeGroups.Results}, 200)
+	helpers.SuccessResponse(c, episodeGroups.Results, 200)
 }
 
 func GetTMDBImageURL(path string, size string) string {

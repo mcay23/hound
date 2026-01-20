@@ -7,7 +7,7 @@ import (
 )
 
 func SuccessResponse(c *gin.Context, payload interface{}, statusCode int) {
-	c.JSON(statusCode, payload)
+	c.JSON(statusCode, gin.H{"status": "success", "data": payload})
 }
 
 func ErrorResponse(c *gin.Context, err error) {

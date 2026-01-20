@@ -89,7 +89,7 @@ function SeasonModal(props: any) {
   const handleWatchEpisode = (
     season: number,
     episode: number,
-    episodeID: number
+    episodeID: number,
   ) => {
     // don't send in episode_id array, since this doesn't delete
     // resume progress if mark as watched
@@ -138,14 +138,14 @@ function SeasonModal(props: any) {
       // get watch data
       axios
         .get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`,
         )
         .then((historyRes) => {
-          if (historyRes.data.data) {
-            const latest = historyRes.data.data.reduce((a: any, b: any) =>
+          if (historyRes.data) {
+            const latest = historyRes.data.reduce((a: any, b: any) =>
               new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
                 ? a
-                : b
+                : b,
             );
             const sourceIDs = (latest.watch_events || [])
               .map((event: any) => parseInt(event.source_id, 10))
@@ -159,13 +159,13 @@ function SeasonModal(props: any) {
       // get watch progress
       axios
         .get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`,
         )
         .then((progressRes) => {
           // overwrite state each time
-          if (progressRes.data.data) {
+          if (progressRes.data) {
             const progressMap = new Map<number, WatchProgressItem>();
-            progressRes.data.data.forEach((item: any) => {
+            progressRes.data.forEach((item: any) => {
               const episodeIDNum = parseInt(item.episode_source_id, 10);
               progressMap.set(episodeIDNum, {
                 current_progress_seconds: item.current_progress_seconds,
@@ -283,7 +283,7 @@ function SeasonModal(props: any) {
                   handleWatchEpisode,
                   props.handleStreamButtonClick,
                   props.isStreamButtonLoading,
-                  props.isStreamSelectButtonLoading
+                  props.isStreamSelectButtonLoading,
                 );
               })}
             </div>
@@ -311,14 +311,14 @@ function EpisodeCard(
   handleWatchEpisode: Function,
   handleStreamButtonClick: Function,
   isStreamButtonLoading: boolean,
-  isStreamSelectButtonLoading: boolean
+  isStreamSelectButtonLoading: boolean,
 ) {
   var episodeNumber =
     episode.season_number.toString() &&
     episode.episode_number.toString() &&
     `S${episode.season_number}E${episode.episode_number}`.replace(
       "S0E",
-      "Special #"
+      "Special #",
     );
   return (
     <div className="episode-card-container" key={episode.id}>
@@ -332,7 +332,7 @@ function EpisodeCard(
             episode.season_number,
             episode.episode_number,
             "direct",
-            episode.id
+            episode.id,
           );
         }}
       >
@@ -358,7 +358,7 @@ function EpisodeCard(
                 {Math.ceil(
                   (watchProgress.total_duration_seconds -
                     watchProgress.current_progress_seconds) /
-                    60
+                    60,
                 )}
                 {"m left"}
               </div>
@@ -413,7 +413,7 @@ function EpisodeCard(
                   episode.season_number,
                   episode.episode_number,
                   "direct",
-                  episode.id
+                  episode.id,
                 );
               }}
             >
@@ -438,7 +438,7 @@ function EpisodeCard(
                   episode.season_number,
                   episode.episode_number,
                   "select",
-                  episode.id
+                  episode.id,
                 );
               }}
             >
@@ -478,7 +478,7 @@ function EpisodeCard(
                 handleWatchEpisode(
                   episode.season_number,
                   episode.episode_number,
-                  episode.id
+                  episode.id,
                 );
               }}
             >

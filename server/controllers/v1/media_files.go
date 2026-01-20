@@ -36,7 +36,7 @@ func SearchMovieMediaFilesHandler(c *gin.Context) {
 			},
 		},
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": res}, 200)
+	helpers.SuccessResponse(c, res, 200)
 }
 
 func SearchTVShowMediaFilesHandler(c *gin.Context) {
@@ -86,5 +86,5 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 			},
 		},
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": res}, 200)
+	helpers.SuccessResponse(c, res, 200)
 }

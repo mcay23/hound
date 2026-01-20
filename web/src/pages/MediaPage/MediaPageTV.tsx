@@ -105,7 +105,7 @@ function MediaPageTV(props: any) {
   var creators = lf.format(
     props.data.created_by.map((item: any) => {
       return item.name;
-    })
+    }),
   );
   if (props.data.episode_run_time.length > 0) {
     if (props.data.episode_run_time[0] >= 60) {
@@ -151,9 +151,7 @@ function MediaPageTV(props: any) {
       axios
         .get(`/api/v1/tv/${mediaSource}-${sourceID}/continue_watching`)
         .then((res) => {
-          if (res.data.status === "success") {
-            setContinueWatchingData(res.data.data);
-          }
+          setContinueWatchingData(res.data);
         })
         .catch((err) => {
           console.error("Failed to fetch continue watching data", err);
@@ -172,7 +170,7 @@ function MediaPageTV(props: any) {
     mode: string,
     episodeID: number,
     overrideStartTime?: number,
-    overrideEncodedData?: string
+    overrideEncodedData?: string,
   ) => {
     if (mode === "direct") {
       setIsStreamButtonLoading(true);
@@ -187,20 +185,20 @@ function MediaPageTV(props: any) {
       setStreamStartTime(startTime);
       return axios
         .get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`
+          `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`,
         )
         .then((res) => {
           toast.dismiss(searchProvidersToast);
           setStreams(res.data);
-          let numStreams = res.data?.data?.providers[0]?.streams?.length;
+          let numStreams = res.data?.providers[0]?.streams?.length;
           if (numStreams > 0) {
-            let selectedStream = res.data.data.providers[0].streams[0];
+            let selectedStream = res.data.providers[0].streams[0];
             // if we have watch progress, set this as the main stream
             // note this doesn't handle different hosts/protocols, eg. if
             // the urls are different even if they are the same file, it won't match
             if (mode === "direct" && encodedData) {
-              const matchingStream = res.data.data.providers[0].streams.find(
-                (stream: any) => stream.encoded_data === encodedData
+              const matchingStream = res.data.providers[0].streams.find(
+                (stream: any) => stream.encoded_data === encodedData,
               );
               if (matchingStream) {
                 selectedStream = matchingStream;
@@ -225,7 +223,7 @@ function MediaPageTV(props: any) {
     if (overrideStartTime !== undefined) {
       requestProviderStream(
         overrideStartTime,
-        overrideEncodedData || ""
+        overrideEncodedData || "",
       ).finally(() => {
         if (mode === "direct") {
           setIsStreamButtonLoading(false);
@@ -241,9 +239,9 @@ function MediaPageTV(props: any) {
       .then((progressRes) => {
         let startTime = 0;
         let encodedData = "";
-        if (progressRes.data?.data && episodeID !== -1) {
-          const episodeProgress = progressRes.data.data.find(
-            (item: any) => parseInt(item.episode_source_id, 10) === episodeID
+        if (progressRes.data && episodeID !== -1) {
+          const episodeProgress = progressRes.data.find(
+            (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
           );
           if (episodeProgress) {
             startTime = episodeProgress.current_progress_seconds || 0;
@@ -282,14 +280,14 @@ function MediaPageTV(props: any) {
         mode,
         parseInt(watch_progress.episode_source_id, 10),
         watch_progress.current_progress_seconds,
-        watch_progress.encoded_data
+        watch_progress.encoded_data,
       );
     } else if (watch_action_type === "next_episode" && next_episode) {
       handleStreamButtonClick(
         next_episode.season_number,
         next_episode.episode_number,
         mode,
-        parseInt(next_episode.episode_source_id, 10)
+        parseInt(next_episode.episode_source_id, 10),
       );
     } else {
       // Fallback, episodeID is only used to find progress
@@ -536,7 +534,7 @@ function MediaPageTV(props: any) {
         open={isStreamModalOpen}
         streamDetails={mainStream}
         startTime={streamStartTime}
-        streams={streams?.data}
+        streams={streams}
       />
       <SelectStreamModal
         setOpen={setIsSelectStreamModalOpen}
