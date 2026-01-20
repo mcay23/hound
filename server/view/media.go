@@ -14,6 +14,13 @@ type CollectionView struct {
 	Offset       int                   `json:"offset"`
 }
 
+type WatchActivityResponse struct {
+	WatchActivity []*database.WatchEventMediaRecord `json:"watch_activity"`
+	TotalRecords  int64                             `json:"total_records"`
+	Limit         int                               `json:"limit"`
+	Offset        int                               `json:"offset"`
+}
+
 // store user saved libraries
 type MediaRecordView struct {
 	MediaType    string      `json:"media_type"`    // books,tvshows, etc.

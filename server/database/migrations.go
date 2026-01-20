@@ -9,7 +9,7 @@ import (
 // IDs Should follow YYYYMMDD_id_description
 var addForeignKeys = &migrate.Migration{
 	// xorm doesn't support foreign keys automatically
-	ID: "20250101_01_add_foreign_keys",
+	ID: "20250101_02_add_foreign_keys",
 	Migrate: func(tx *xorm.Engine) error {
 		// drop first if exists, safer
 		query :=
@@ -77,6 +77,7 @@ var addComplexIndexes = &migrate.Migration{
 			CREATE INDEX IF NOT EXISTS idx_watch_events_history ON watch_events (rewatch_id, watched_at DESC);
 			CREATE INDEX IF NOT EXISTS idx_rewatches_user_record ON rewatches (user_id, record_id, started_at DESC);
 			CREATE INDEX IF NOT EXISTS idx_ingest_tasks_status_id ON ingest_tasks (status, ingest_task_id ASC);
+			CREATE INDEX IF NOT EXISTS idx_collection_relations_user_record_created ON collection_relations (user_id, record_id, created_at DESC);
 		`
 		_, err := tx.Exec(query)
 		return err
@@ -86,6 +87,7 @@ var addComplexIndexes = &migrate.Migration{
 			DROP INDEX IF EXISTS idx_watch_events_history;
 			DROP INDEX IF EXISTS idx_rewatches_user_record;
 			DROP INDEX IF EXISTS idx_ingest_tasks_status_id;
+			DROP INDEX IF EXISTS idx_collection_relations_user_record_created;
 		`
 		_, err := tx.Exec(query)
 		return err

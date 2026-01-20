@@ -250,3 +250,55 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 		"inserted_source_id": insertedSourceID,
 	}, 200)
 }
+
+func GetWatchActivityHandler(c *gin.Context) {
+	username := c.GetHeader("X-Username")
+	userID, err := database.GetUserIDFromUsername(username)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		return
+	}
+	limitQuery := c.DefaultQuery("limit", "100")
+	offsetQuery := c.DefaultQuery("offset", "0")
+	startQuery := c.Query("startTime")
+	endQuery := c.Query("endTime")
+	limit, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid limit query"))
+		return
+	}
+	offset, err := strconv.Atoi(offsetQuery)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid offset query"))
+		return
+	}
+	var startTime, endTime *time.Time
+	if startQuery != "" {
+		t, err := time.Parse(time.RFC3339, startQuery)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid start time format"))
+			return
+		}
+		startTime = &t
+	}
+	if endQuery != "" {
+		t, err := time.Parse(time.RFC3339, endQuery)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid end time format"))
+			return
+		}
+		endTime = &t
+	}
+	activity, total, err := database.GetWatchActivity(userID, startTime, endTime, limit, offset)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to fetch watch events"))
+		return
+	}
+	res := view.WatchActivityResponse{
+		WatchActivity: activity,
+		Limit:         limit,
+		Offset:        offset,
+		TotalRecords:  total,
+	}
+	helpers.SuccessResponse(c, res, 200)
+}
