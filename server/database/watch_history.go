@@ -4,6 +4,8 @@ import (
 	"errors"
 	"hound/helpers"
 	"time"
+
+	"xorm.io/xorm"
 )
 
 const (
@@ -66,6 +68,36 @@ func instantiateWatchTables() error {
 		return err
 	}
 	return nil
+}
+
+// gets a users watch activity (list of events) between start and end time
+// if nil, return all activity
+func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, limit int, offset int) ([]*WatchEventMediaRecord, int64, error) {
+	var records []*WatchEventMediaRecord
+	query := func() *xorm.Session {
+		sess := databaseEngine.Table(watchEventsTable).Alias("we").
+			Join("INNER", rewatchesTable+" r", "r.rewatch_id = we.rewatch_id").
+			Join("INNER", mediaRecordsTable+" mr", "mr.record_id = we.record_id").
+			Where("r.user_id = ?", userID)
+		if startTime != nil {
+			sess = sess.Where("we.watched_at >= ?", *startTime)
+		}
+		if endTime != nil {
+			sess = sess.Where("we.watched_at <= ?", *endTime)
+		}
+		return sess
+	}
+	totalRecords, err := query().Count()
+	if err != nil {
+		return nil, 0, err
+	}
+	sess := query()
+	if limit > 0 {
+		sess = sess.Limit(limit, offset)
+	}
+	sess = sess.OrderBy("we.watched_at DESC, we.watch_event_id DESC")
+	err = sess.Find(&records)
+	return records, totalRecords, err
 }
 
 // Gets the current active rewatch

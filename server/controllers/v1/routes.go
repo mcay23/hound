@@ -45,6 +45,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/:id/history", GetWatchHistoryHandler)        // shared function w/ tv show history
 	privateRoutes.POST("/movie/:id/history", AddWatchHistoryMovieHandler)
 	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryHandler)
+	privateRoutes.GET("/watch_history/activity", GetWatchActivityHandler) // returns user watch activity between two dates
 
 	/*
 		Playback Progress Routes
