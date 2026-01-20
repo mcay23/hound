@@ -18,12 +18,12 @@ func DecodeTestHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": obj}, 200)
+	helpers.SuccessResponse(c, obj, 200)
 }
 
 func ClearCacheHandler(c *gin.Context) {
 	database.ClearCache()
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 func SearchProvidersTVShowsHandler(c *gin.Context) {
@@ -45,7 +45,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 			"media_type": database.MediaTypeTVShow,
 			"message":    "No results found",
 		}
-		helpers.SuccessResponse(c, gin.H{"status": "success", "data": res}, 200)
+		helpers.SuccessResponse(c, res, 200)
 		return
 	}
 	seasonNumber, err := strconv.Atoi(c.Query("season"))
@@ -81,7 +81,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 			"Error retrieving Stremio streams"+err.Error()))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": results}, 200)
+	helpers.SuccessResponse(c, results, 200)
 }
 
 func SearchProvidersMovieHandler(c *gin.Context) {
@@ -113,5 +113,5 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": res}, 200)
+	helpers.SuccessResponse(c, res, 200)
 }

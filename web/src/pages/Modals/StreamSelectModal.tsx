@@ -27,7 +27,7 @@ function SelectStreamModal(props: any) {
           PaperProps={paperPropsGlass}
         >
           <div className="stream-info-card-container">
-            {props.streamData?.data?.providers?.map((provider: any) =>
+            {props.streamData?.providers?.map((provider: any) =>
               provider?.streams?.map((stream: any) => {
                 return (
                   <div className="stream-info-card" key={stream.infohash}>
@@ -57,7 +57,7 @@ function SelectStreamModal(props: any) {
                               .post(
                                 "/api/v1/torrent/" +
                                   stream.encoded_data +
-                                  "/download"
+                                  "/download",
                               )
                               .then((res) => {
                                 toast.success("Download added to queue");
@@ -75,7 +75,7 @@ function SelectStreamModal(props: any) {
                     )}
                   </div>
                 );
-              })
+              }),
             )}
           </div>
         </Dialog>

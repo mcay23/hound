@@ -66,7 +66,7 @@ func AddToCollectionHandler(c *gin.Context) {
 			return
 		}
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 func DeleteFromCollectionHandler(c *gin.Context) {
@@ -108,7 +108,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete collection record"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 func GetUserCollectionsHandler(c *gin.Context) {
@@ -165,7 +165,7 @@ func CreateCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error creating colection"+err.Error()))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "collection_id": collectionID}, 200)
+	helpers.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
 }
 
 func GetCollectionContentsHandler(c *gin.Context) {
@@ -226,7 +226,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	helpers.SuccessResponse(c, view.CollectionView{
+	res := view.CollectionView{
 		Results: &viewArray,
 		Collection: &view.CollectionRecordView{
 			CollectionID:    collection.CollectionID,
@@ -243,7 +243,8 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		TotalRecords: totalRecords,
 		Limit:        limit,
 		Offset:       offset,
-	}, 200)
+	}
+	helpers.SuccessResponse(c, res, 200)
 }
 
 func DeleteCollectionHandler(c *gin.Context) {
@@ -266,5 +267,5 @@ func DeleteCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }

@@ -69,7 +69,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			}
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil)
-			helpers.SuccessResponse(c, gin.H{"status": "success", "watched": true}, 200)
+			helpers.SuccessResponse(c, gin.H{"watched": true}, 200)
 			return
 		case database.MediaTypeTVShow:
 			if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
@@ -95,7 +95,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
 				watchProgress.SeasonNumber, watchProgress.EpisodeNumber, nil)
-			helpers.SuccessResponse(c, gin.H{"status": "success", "watched": true}, 200)
+			helpers.SuccessResponse(c, gin.H{"watched": true}, 200)
 			return
 		}
 	}
@@ -105,7 +105,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error setting watch history"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "watched": false}, 200)
+	helpers.SuccessResponse(c, gin.H{"watched": false}, 200)
 }
 
 func GetPlaybackProgressHandler(c *gin.Context) {
@@ -138,10 +138,10 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 			return
 		}
 		if len(watchProgress) == 0 {
-			helpers.SuccessResponse(c, gin.H{"status": "success", "data": nil}, 200)
+			helpers.SuccessResponse(c, nil, 200)
 			return
 		}
-		helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchProgress[0]}, 200)
+		helpers.SuccessResponse(c, watchProgress[0], 200)
 		return
 	}
 	// tv show case
@@ -155,7 +155,7 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch history"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": watchProgress}, 200)
+	helpers.SuccessResponse(c, watchProgress, 200)
 }
 
 func DeletePlaybackProgressHandler(c *gin.Context) {
@@ -186,7 +186,7 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting watch history"))
 			return
 		}
-		helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+		helpers.SuccessResponse(c, nil, 200)
 		return
 	}
 	// tv show case
@@ -204,5 +204,5 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting some watch histories"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }

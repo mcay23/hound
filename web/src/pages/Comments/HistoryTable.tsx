@@ -16,11 +16,11 @@ function HistoryTable(props: any) {
     if (!isDataLoaded) {
       axios
         .get(
-          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history`
+          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history`,
         )
         .then((res) => {
           var temp: any[][] = [];
-          res.data.data.forEach((rewatch: any) => {
+          res.data.forEach((rewatch: any) => {
             rewatch?.watch_events?.forEach((item: any) => {
               temp.push([
                 item.media_title,
@@ -50,7 +50,7 @@ function HistoryTable(props: any) {
       axios
         .post(
           `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history/delete`,
-          payload
+          payload,
         )
         .catch((err) => {
           console.log(err);

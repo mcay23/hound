@@ -204,7 +204,7 @@ func AddTorrentHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 // This downloads the media file to the server, not the client

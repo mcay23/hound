@@ -28,5 +28,5 @@ func GetWatchStatsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get watch stats"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": stats}, 200)
+	helpers.SuccessResponse(c, stats, 200)
 }

@@ -45,11 +45,7 @@ func GetWatchHistoryHandler(c *gin.Context) {
 	}
 	// exit early if rewatch record doesn't exist, since this means no watch history
 	if len(rewatchRecords) == 0 {
-		helpers.SuccessResponse(c,
-			gin.H{
-				"status": "success",
-				"data":   nil,
-			}, 200)
+		helpers.SuccessResponse(c, nil, 200)
 		return
 	}
 	var targetSeason *int
@@ -79,11 +75,7 @@ func GetWatchHistoryHandler(c *gin.Context) {
 			WatchEvents:   watchEvents,
 		})
 	}
-	helpers.SuccessResponse(c,
-		gin.H{
-			"status": "success",
-			"data":   rewatchObjects,
-		}, 200)
+	helpers.SuccessResponse(c, rewatchObjects, 200)
 }
 
 /*
@@ -170,7 +162,7 @@ func DeleteWatchHistoryHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting watch history records"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success"}, 200)
+	helpers.SuccessResponse(c, nil, 200)
 }
 
 // Create new rewatch for tv show
@@ -218,11 +210,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
 		return
 	}
-	helpers.SuccessResponse(c,
-		gin.H{
-			"status": "success",
-			"data":   rewatchRecord,
-		}, 200)
+	helpers.SuccessResponse(c, rewatchRecord, 200)
 }
 
 /*
@@ -257,7 +245,6 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{
-		"status":             "success",
 		"media_source":       mediaSource,
 		"action_type":        strings.ToLower(watchHistoryPayload.ActionType),
 		"inserted_source_id": insertedSourceID,

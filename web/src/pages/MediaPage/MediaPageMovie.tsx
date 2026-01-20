@@ -74,11 +74,11 @@ function MediaPageMovie(props: any) {
     axios
       .get(
         "/api/v1/movie/" +
-          `${props.data.media_source}-${props.data.source_id}/playback`
+          `${props.data.media_source}-${props.data.source_id}/playback`,
       )
       .then((res) => {
-        if (res.data?.data) {
-          setWatchProgress(res.data.data);
+        if (res.data) {
+          setWatchProgress(res.data);
         }
       })
       .catch((err) => {
@@ -135,7 +135,7 @@ function MediaPageMovie(props: any) {
         .filter((item: any) => item.job === "Director")
         .map((item: any) => {
           return item.name;
-        })
+        }),
     );
   } catch {}
   if (props.data.runtime > 0) {
@@ -173,18 +173,18 @@ function MediaPageMovie(props: any) {
       const searchProvidersToast = toast.loading("Searching providers...");
       axios
         .get(
-          `/api/v1/movie/${props.data.media_source}-${props.data.source_id}/providers`
+          `/api/v1/movie/${props.data.media_source}-${props.data.source_id}/providers`,
         )
         .then((res) => {
           toast.dismiss(searchProvidersToast);
           setStreams(res.data);
-          let numStreams = res.data.data?.providers[0]?.streams?.length;
+          let numStreams = res.data?.providers[0]?.streams?.length;
           if (numStreams > 0) {
-            let selectedStream = res.data.data.providers[0].streams[0];
+            let selectedStream = res.data.providers[0].streams[0];
             if (mode === "direct" && watchProgress) {
-              const matchingStream = res.data.data.providers[0].streams.find(
+              const matchingStream = res.data.providers[0].streams.find(
                 (stream: any) =>
-                  stream.encoded_data === watchProgress.encoded_data
+                  stream.encoded_data === watchProgress.encoded_data,
               );
               if (matchingStream) {
                 selectedStream = matchingStream;
@@ -213,7 +213,7 @@ function MediaPageMovie(props: any) {
             setIsStreamSelectButtonLoading(false);
           }
         });
-    } else if (streams.data?.providers[0]?.streams?.length > 0) {
+    } else if (streams?.providers[0]?.streams?.length > 0) {
       if (mode === "direct") {
         setIsStreamModalOpen(true);
         setIsStreamButtonLoading(false);
@@ -438,7 +438,7 @@ function MediaPageMovie(props: any) {
         setOpen={setIsStreamModalOpen}
         open={isStreamModalOpen}
         streamDetails={mainStream}
-        streams={streams?.data}
+        streams={streams}
         startTime={watchProgress?.current_progress_seconds || 0}
       />
       <SelectStreamModal

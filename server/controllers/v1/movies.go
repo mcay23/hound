@@ -20,7 +20,7 @@ func SearchMoviesHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": results}, 200)
+	helpers.SuccessResponse(c, results, 200)
 }
 
 func GetTrendingMoviesHandler(c *gin.Context) {
@@ -49,7 +49,7 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 		}
 		viewArray = append(viewArray, viewObject)
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "data": viewArray}, 200)
+	helpers.SuccessResponse(c, viewArray, 200)
 }
 
 func GetMovieFromIDHandler(c *gin.Context) {

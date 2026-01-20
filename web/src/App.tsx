@@ -33,11 +33,18 @@ axios.interceptors.request.use(
   },
   function (error) {
     return Promise.reject(error);
-  }
+  },
 );
 // Add a response interceptor
 axios.interceptors.response.use(
   function (response) {
+    if (
+      response.data &&
+      response.data.status === "success" &&
+      response.data.data !== undefined
+    ) {
+      return { ...response, data: response.data.data };
+    }
     return response;
   },
   function (error) {
@@ -49,7 +56,7 @@ axios.interceptors.response.use(
       win.location = "/logout";
     }
     return Promise.reject(error);
-  }
+  },
 );
 ModuleRegistry.registerModules([AllCommunityModule]);
 
