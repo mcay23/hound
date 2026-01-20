@@ -71,8 +71,12 @@ const providersCacheTTL = time.Hour * 2
 
 func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
 	providersCacheKey := fmt.Sprintf("providers|%s|%s-%s", query.MediaType, query.MediaSource, query.SourceID)
+	originalEpisode := -1
+	originalSeason := -1
 	if query.MediaType == database.MediaTypeTVShow {
 		providersCacheKey += fmt.Sprintf("|S%d|E%d|episode_group_id:%s", *query.SeasonNumber, *query.EpisodeNumber, query.EpisodeGroupID)
+		originalEpisode = *query.EpisodeNumber
+		originalSeason = *query.SeasonNumber
 	}
 	// get cache
 	var cacheObject ProviderResponseObject
@@ -108,9 +112,12 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		if err != nil {
 			return nil, err
 		}
+		// check if episode group mapping is available
+		// this is manually curated list
+		manualGroupID, _ := GetEpisodeGroupMapping(query.MediaSource, query.SourceID)
 		// if season doesn't start with 1, check if media has
 		// tvdb ordering available
-		if seasonDetails.Episodes[0].EpisodeNumber != 1 {
+		if seasonDetails.Episodes[0].EpisodeNumber != 1 || query.EpisodeGroupID != "" || manualGroupID != "" {
 			oldEp := *query.EpisodeNumber
 			firstEp := seasonDetails.Episodes[0].EpisodeNumber
 			if query.EpisodeSourceID == nil {
@@ -128,15 +135,20 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 			if err != nil {
 				return nil, err
 			}
+			// no episodeGroupID, use manualGroupID if available
+			if query.EpisodeGroupID == "" {
+				query.EpisodeGroupID = manualGroupID
+			}
 			// if empty string is passed, automatically searches for tvdb ordering
+			// at this point, groupID not supplied so we attempt to search for tvdb ordering
 			tvdbSeasonNumber, tvdbEpisodeNumber, err :=
 				getSeasonEpisodeFromEpisodeGroup(showID, episodeID, query.EpisodeGroupID)
 			if err == nil {
 				query.SeasonNumber = &tvdbSeasonNumber
 				query.EpisodeNumber = &tvdbEpisodeNumber
 			} else {
-				// otherwise, normalize episode numbers so they start from 1 anyway
-				// we do this since this is more likely to align to tvdb standards,
+				// search unsuccessful, normalize episode numbers so they start from 1 anyway
+				// we do this since this is more likely to align to tvdb standards (unconfirmed?),
 				// which many providers use
 				normalizedEp := oldEp - firstEp + 1
 				query.EpisodeNumber = &normalizedEp
@@ -156,7 +168,7 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		localStreams, _ = GetLocalStreamsForMovie(id)
 	case database.MediaTypeTVShow:
 		id, _ := strconv.Atoi(query.SourceID)
-		localStreams, _ = GetLocalStreamsForTVShow(id, *query.SeasonNumber, *query.EpisodeNumber)
+		localStreams, _ = GetLocalStreamsForTVShow(id, originalSeason, originalEpisode)
 	}
 
 	allProviders := []*ProviderObject{}
@@ -172,10 +184,20 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		StreamMediaDetails: streamMediaDetails,
 		Providers:          allProviders,
 	}
-	_, err = database.SetCache(providersCacheKey, result, providersCacheTTL)
-	if err != nil {
-		// just log error, no failed return
-		_ = helpers.LogErrorWithMessage(err, "Failed to set cache")
+	// only set cache if we have results
+	hasResults := false
+	for _, p := range allProviders {
+		if p != nil && len(p.Streams) > 0 {
+			hasResults = true
+			break
+		}
+	}
+	if hasResults {
+		_, err = database.SetCache(providersCacheKey, result, providersCacheTTL)
+		if err != nil {
+			// just log error, no failed return
+			_ = helpers.LogErrorWithMessage(err, "Failed to set cache")
+		}
 	}
 	return &result, nil
 }
@@ -206,12 +228,24 @@ func getSeasonEpisodeFromEpisodeGroup(sourceID int, episodeID int, episodeGroupI
 				break
 			}
 		}
+		// search using "seasons (production)", which some episode groups for animes are named
+		// this is not perfect, sometimes it doesn't align with tvdb
+		if episodeGroupID == "tvdb" {
+			for _, item := range episodeGroups.Results {
+				if strings.Contains(strings.ToLower(item.Name), "seasons") ||
+					strings.Contains(strings.ToLower(item.Description), "seasons") {
+					episodeGroupID = item.ID
+					break
+				}
+			}
+		}
 	}
 	// not found case, episodeGroupID isn't updated yet
 	if episodeGroupID == "tvdb" {
 		return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Could not find tvdb episode group for id tmdb-"+strconv.Itoa(sourceID))
 	}
+	// search using episodeGroupID
 	episodeGroupDetails, err := sources.GetTVEpisodeGroupsDetailsTMDB(episodeGroupID)
 	if err != nil {
 		return -1, -1, helpers.LogErrorWithMessage(err, "Could not retrieve episode group details for id: tmdb-"+episodeGroupID)
@@ -231,7 +265,10 @@ outerLoop:
 			if episode.ID == int64(episodeID) {
 				targetSeason = group.Order
 				targetEpisode = episode.Order
-				// orders are 0 indexed, seasons are already correct if "Specials" exist
+				// order is 0-indexed by default
+				// if specials exist, this will yield incorrect season, since order is
+				// already equal to season number, so we fix below
+				targetSeason++
 				targetEpisode++
 				found = true
 				break outerLoop
@@ -242,9 +279,14 @@ outerLoop:
 		return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Episode not found in episode group tmdb-"+episodeGroupID)
 	}
-	// If specials (season number 0) don't exist, fix order's 0-index
-	if episodeGroupDetails.Groups[0].Episodes[0].SeasonNumber != 0 {
-		targetSeason++
+	// If specials (season number 0) exist, fix order's 0-index
+	// specials will be season 0
+	for _, group := range episodeGroupDetails.Groups {
+		if group.Order == 0 {
+			if len(group.Episodes) > 0 && group.Episodes[0].SeasonNumber == 0 {
+				targetSeason--
+			}
+		}
 	}
 	return targetSeason, targetEpisode, nil
 }
