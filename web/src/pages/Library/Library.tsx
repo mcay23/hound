@@ -1,7 +1,6 @@
 import "./Library.css";
 import Topnav from "../Topnav";
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import CollectionCard from "./CollectionCover";
 import HorizontalSection from "../Home/HorizontalSection";
@@ -14,11 +13,19 @@ import {
   TextField,
 } from "@mui/material";
 import Footer from "../Footer";
+import {
+  useCollections,
+  useCollectionContents,
+  useRecentCollectionItems,
+  useCreateCollection,
+} from "../../api/hooks/collections";
 
 function Library(props: any) {
-  const [collections, setCollections] = useState([]);
-  const [primaryCollection, setPrimaryCollection] = useState<any[]>([]);
-  const [isCollectionsLoaded, setIsCollectionsLoaded] = useState(false);
+  const { data: collections = [], isLoading: isCollectionsLoading } =
+    useCollections();
+  const { data: recentItems = [], isLoading: isRecentLoading } =
+    useRecentCollectionItems();
+  const createMutation = useCreateCollection();
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] =
     useState(false);
   const [createCollectionData, setCreateCollectionData] = useState({
@@ -26,6 +33,7 @@ function Library(props: any) {
     description: "",
     is_public: true,
   });
+
   const handleCollectionDialogClose = () => {
     setCreateCollectionData({
       collection_title: "",
@@ -34,12 +42,14 @@ function Library(props: any) {
     });
     setIsCreateCollectionDialogOpen(false);
   };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setCreateCollectionData({
       ...createCollectionData,
       [event.target.name]: event.target.value,
     });
   };
+
   const handleCreateCollection = () => {
     if (createCollectionData.collection_title === "") {
       toast.error("Title required");
@@ -49,62 +59,34 @@ function Library(props: any) {
       toast.error("Description required");
       return;
     }
-    axios
-      .post(`/api/v1/collection/new`, createCollectionData)
-      .then(() => {
+    createMutation.mutate(createCollectionData, {
+      onSuccess: () => {
         handleCollectionDialogClose();
         window.scrollTo(0, 0);
-        window.location.reload();
-      })
-      .catch((err) => {
+      },
+      onError: (err) => {
         console.log(err);
         toast.error("Error creating collection");
-      });
+      },
+    });
   };
-  document.title = "My Collections - Hound";
 
-  useEffect(() => {
-    if (!isCollectionsLoaded) {
-      const fetchData = async () => {
-        var primaryCollectionID;
-        await axios
-          .get(`/api/v1/collection/all`)
-          .then((res) => {
-            setCollections(res.data);
-            primaryCollectionID = res.data.find((item: any) => {
-              return item.is_primary;
-            }).collection_id;
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-        axios
-          .get(`/api/v1/collection/${primaryCollectionID}?limit=20&offset=0`)
-          .then((res) => {
-            setPrimaryCollection(res.data.results);
-            setIsCollectionsLoaded(true);
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      };
-      fetchData();
-    }
-  });
+  document.title = "My Collections - Hound";
+  const isLoaded = !isCollectionsLoading && !isRecentLoading;
 
   return (
     <>
       <Topnav />
-      {isCollectionsLoaded ? (
+      {isLoaded ? (
         <div className="library-main-container">
           <div className="library-top-section-container">
             <HorizontalSection
-              items={primaryCollection}
-              header="From Your Library"
+              items={recentItems}
+              header="Recently Added"
               itemType="poster"
               itemOnClick={undefined}
             />
-            {primaryCollection ? (
+            {recentItems.length > 0 ? (
               ""
             ) : (
               <div className="horizontal-section-header">
@@ -112,31 +94,29 @@ function Library(props: any) {
               </div>
             )}
           </div>
-          {
-            <div className="library-collections-section">
-              <div className="library-collections-header">Your Collections</div>
-              <div className="library-collections-container">
-                <div
-                  className={"rounded collection-card-cover"}
-                  id="library-collection-create-cover"
-                  onClick={() => {
-                    setIsCreateCollectionDialogOpen(true);
-                  }}
-                >
-                  <div className={"collection-card-cover-inner"}>
-                    Add New collection
-                  </div>
+          <div className="library-collections-section">
+            <div className="library-collections-header">Your Collections</div>
+            <div className="library-collections-container">
+              <div
+                className={"rounded collection-card-cover"}
+                id="library-collection-create-cover"
+                onClick={() => {
+                  setIsCreateCollectionDialogOpen(true);
+                }}
+              >
+                <div className={"collection-card-cover-inner"}>
+                  Add New collection
                 </div>
-                {collections.map((item) => (
-                  <CollectionCard
-                    data={item}
-                    key={item["collection_id"]}
-                    showCaption={true}
-                  />
-                ))}
               </div>
+              {collections.map((item: any) => (
+                <CollectionCard
+                  data={item}
+                  key={item["collection_id"]}
+                  showCaption={true}
+                />
+              ))}
             </div>
-          }
+          </div>
         </div>
       ) : (
         <LinearProgress className="progress-margin" />

@@ -27,6 +27,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
+	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
 	privateRoutes.POST("/collection/new", CreateCollectionHandler)          // add new collection
