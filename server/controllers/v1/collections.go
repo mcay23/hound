@@ -247,6 +247,36 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
+func GetRecentCollectionContentsHandler(c *gin.Context) {
+	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		return
+	}
+	// return 20 most recent
+	records, err := database.GetRecentCollectionRecords(userID, 20)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get recent collection records"))
+		return
+	}
+	var viewArray []view.MediaRecordView
+	for _, item := range records {
+		viewObject := view.MediaRecordView{
+			MediaType:    item.RecordType,
+			MediaSource:  item.MediaSource,
+			SourceID:     item.SourceID,
+			MediaTitle:   item.MediaTitle,
+			ReleaseDate:  item.ReleaseDate,
+			Overview:     item.Overview,
+			ThumbnailURL: item.ThumbnailURL,
+			Tags:         item.Tags,
+			UserTags:     item.UserTags,
+		}
+		viewArray = append(viewArray, viewObject)
+	}
+	helpers.SuccessResponse(c, viewArray, 200)
+}
+
 func DeleteCollectionHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	collectionID, err := strconv.ParseInt(idParam, 10, 64)

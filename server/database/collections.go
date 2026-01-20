@@ -109,6 +109,24 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	return recordGroups, &collection, totalRecords, nil
 }
 
+func GetRecentCollectionRecords(userID int64, limit int) ([]MediaRecordGroup, error) {
+	var recordGroups []MediaRecordGroup
+	// distinct on to deduplicate, grab most recent
+	query := fmt.Sprintf(`
+		SELECT * FROM (
+			SELECT DISTINCT ON (mr.record_id) mr.*, cr.user_id, cr.collection_id, cr.created_at as added_at
+			FROM %s mr
+			INNER JOIN %s cr ON mr.record_id = cr.record_id
+			WHERE cr.user_id = ?
+			ORDER BY mr.record_id, cr.created_at DESC
+		) sub
+		ORDER BY added_at DESC
+		LIMIT ?
+	`, mediaRecordsTable, collectionRelationsTable)
+	err := databaseEngine.SQL(query, userID, limit).Find(&recordGroups)
+	return recordGroups, err
+}
+
 func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64) error {
 	// if collectionID not supplied, add to user's primary collection
 	if collectionID == nil {
