@@ -71,7 +71,7 @@ func downloadWorker(id int) {
 
 func processTask(workerID int, task *database.IngestTask) {
 	slog.Info("Worker picked up download task", "workerID", workerID,
-		"taskID", task.IngestTaskID, "infoHash", task.SourceURI)
+		"taskID", task.IngestTaskID, "sourceURI", *task.SourceURI)
 	if strings.HasPrefix(*task.SourceURI, "http") {
 		// http case
 		startHTTPDownload(workerID, task)

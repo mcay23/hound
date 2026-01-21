@@ -166,7 +166,7 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 		if errors.As(err, &pqErr) {
 			// unique key failed
 			if pqErr.Code == "23505" {
-				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Record already exists in collection")
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "Record already exists in collection")
 			}
 		}
 	}
