@@ -35,7 +35,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
 			continue
 		}
-		streamObj, err := mapMediaFileToStreamObject(file, record, title)
+		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
 		if err != nil {
 			continue
 		}
@@ -70,7 +70,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber int, episodeNumber int) (
 			continue
 		}
 
-		streamObj, err := mapMediaFileToStreamObject(file, episodeRecord, title)
+		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(showID), file, episodeRecord, title)
 		if err != nil {
 			continue
 		}
@@ -81,7 +81,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber int, episodeNumber int) (
 
 // we don't need to include everything in the encode, since uri is usually enough
 // re-add metadata for the json response
-func mapMediaFileToStreamObject(file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObject, error) {
+func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObject, error) {
 	fileSize := int(file.Filesize)
 	if title == "" {
 		title = file.VideoMetadata.Filename
@@ -98,13 +98,13 @@ func mapMediaFileToStreamObject(file *database.MediaFile, record *database.Media
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,
 		MediaSource: record.MediaSource,
-		SourceID:    record.SourceID,
-		IMDbID:      record.SourceID,
+		SourceID:    sourceID,
 	}
 	if record.RecordType == database.RecordTypeEpisode {
 		details.MediaType = database.MediaTypeTVShow
 		details.SeasonNumber = record.SeasonNumber
 		details.EpisodeNumber = record.EpisodeNumber
+		details.EpisodeSourceID = &record.SourceID
 		epID := strconv.Itoa(int(record.RecordID))
 		details.EpisodeSourceID = &epID
 	}

@@ -10,6 +10,7 @@ const InternalServerError = "internalServerError"
 const BadRequest = "badRequest"
 const Unauthorized = "unauthorized"
 const VideoDurationTooShort = "videoDurationTooShort"
+const AlreadyExists = "alreadyExists"
 
 var (
 	InfoMsg  = Teal
@@ -40,6 +41,10 @@ func GetErrorStatusCode(err error) int {
 		statusCode = http.StatusBadRequest
 	case Unauthorized:
 		statusCode = http.StatusUnauthorized
+	case VideoDurationTooShort:
+		statusCode = http.StatusInternalServerError
+	case AlreadyExists:
+		statusCode = http.StatusConflict
 	}
 	return statusCode
 }
