@@ -36,8 +36,7 @@ var (
 
 type IngestTask struct {
 	IngestTaskID     int64     `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
-	DownloadPriority int       `xorm:"'download_priority'" json:"download_priority"` // priority of task, not used for now
-	CopyPriority     int       `xorm:"'copy_priority'" json:"copy_priority"`
+	DownloadPriority int       `xorm:"'download_priority'" json:"download_priority"`    // priority of task, not used for now
 	RecordID         int64     `xorm:"index 'record_id'" json:"record_id"`              // episode or movie to be ingested
 	Status           string    `xorm:"index 'status'" json:"status"`                    // pending_insert, processing, completed
 	DownloadType     string    `xorm:"'download_type'" json:"download_type"`            // p2p, http, external (not downloaded by hound)
@@ -58,6 +57,14 @@ type IngestTask struct {
 	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
+type IngestTaskFullRecord struct {
+	IngestTask         `xorm:"extends"`
+	MediaType          string       `json:"media_type"`
+	MovieMediaRecord   *MediaRecord `json:"movie_media_record,omitempty"`
+	EpisodeMediaRecord *MediaRecord `json:"episode_media_record,omitempty"`
+	ShowMediaRecord    *MediaRecord `json:"show_media_record,omitempty"`
+}
+
 // ingest_jobs track ingestion of files from download -> inserted into hound
 // external files are inserted at the pending_insert stage
 func instantiateIngestTasksTable() error {
@@ -74,7 +81,7 @@ func FindIngestTasks(task IngestTask) ([]IngestTask, error) {
 	return tasks, err
 }
 
-func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []IngestTask, error) {
+func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []IngestTaskFullRecord, error) {
 	// if no statuses given, return all tasks
 	if len(status) == 0 {
 		ct, err := databaseEngine.Table(IngestTasksTable).Count()
@@ -86,11 +93,11 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 		if limit > 0 && offset >= 0 {
 			sess = sess.Limit(limit, offset)
 		}
-		err = sess.Find(&tasks)
+		err = sess.Omit("full_data").Find(&tasks)
 		if err != nil {
 			return 0, nil, err
 		}
-		return int(ct), tasks, err
+		return int(ct), enrichIngestTasks(tasks), err
 	}
 	// status given, find tasks with status
 	ct := databaseEngine.Table(IngestTasksTable).In("status", status)
@@ -105,11 +112,86 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 	if limit > 0 && offset >= 0 {
 		sess = sess.Limit(limit, offset)
 	}
-	err = sess.Find(&tasks)
+	err = sess.Omit("full_data").Find(&tasks)
 	if err != nil {
 		return 0, nil, err
 	}
-	return int(totalRecords), tasks, err
+	return int(totalRecords), enrichIngestTasks(tasks), err
+}
+
+// this gets the movie record, or both the episode and show record for tv shows
+// a bit computationally expensive, might need a better solution
+func enrichIngestTasks(tasks []IngestTask) []IngestTaskFullRecord {
+	const reducedFields = "record_id, record_type, media_source, source_id, parent_id, media_title, original_title, original_language, origin_country, release_date, last_air_date, next_air_date, season_number, episode_number, sort_index, status, overview, duration, thumbnail_url, backdrop_url, still_url, tags, user_tags, created_at, updated_at"
+	if len(tasks) == 0 {
+		return []IngestTaskFullRecord{}
+	}
+	// collect record ids
+	recordIDs := make([]int64, len(tasks))
+	for i, t := range tasks {
+		recordIDs[i] = t.RecordID
+	}
+	// fetch records
+	var allRecords []MediaRecord
+	databaseEngine.Table(mediaRecordsTable).Select(reducedFields).In("record_id", recordIDs).Find(&allRecords)
+	// map records by id
+	recordMap := make(map[int64]MediaRecord)
+	parentIDs := make([]int64, 0)
+	for _, r := range allRecords {
+		recordMap[r.RecordID] = r
+		if r.ParentID != nil {
+			parentIDs = append(parentIDs, *r.ParentID)
+		}
+	}
+	// fetch parent records (for seasons/episodes)
+	var parentRecords []MediaRecord
+	if len(parentIDs) > 0 {
+		databaseEngine.Table(mediaRecordsTable).In("record_id", parentIDs).Select(reducedFields).Find(&parentRecords)
+	}
+	parentMap := make(map[int64]MediaRecord)
+	for _, p := range parentRecords {
+		parentMap[p.RecordID] = p
+	}
+
+	// fetch show records for episodes (hierarchy: episode -> season -> show)
+	// we need to go up two levels
+	showIDs := make([]int64, 0)
+	for _, p := range parentRecords {
+		if p.RecordType == RecordTypeSeason && p.ParentID != nil {
+			showIDs = append(showIDs, *p.ParentID)
+		}
+	}
+	var showRecords []MediaRecord
+	if len(showIDs) > 0 {
+		databaseEngine.Table(mediaRecordsTable).In("record_id", showIDs).Select(reducedFields).Find(&showRecords)
+	}
+	showMap := make(map[int64]MediaRecord)
+	for _, s := range showRecords {
+		showMap[s.RecordID] = s
+	}
+
+	enriched := make([]IngestTaskFullRecord, len(tasks))
+	for i, t := range tasks {
+		er := IngestTaskFullRecord{IngestTask: t}
+		if r, ok := recordMap[t.RecordID]; ok {
+			switch r.RecordType {
+			case RecordTypeMovie:
+				er.MovieMediaRecord = &r
+				er.MediaType = MediaTypeMovie
+			case RecordTypeEpisode:
+				er.EpisodeMediaRecord = &r
+				er.MediaType = MediaTypeTVShow
+				// check for show record (parent of season)
+				if season, ok := parentMap[*r.ParentID]; ok {
+					if show, ok := showMap[*season.ParentID]; ok {
+						er.ShowMediaRecord = &show
+					}
+				}
+			}
+		}
+		enriched[i] = er
+	}
+	return enriched
 }
 
 func GetIngestTask(task IngestTask) (*IngestTask, error) {
@@ -125,7 +207,6 @@ func InsertIngestTask(recordID int64, downloadType string, status string,
 	task := IngestTask{
 		RecordID:         recordID,
 		DownloadPriority: 1,
-		CopyPriority:     1,
 		DownloadType:     downloadType,
 		Status:           status,
 		SourceURI:        &sourceURI,

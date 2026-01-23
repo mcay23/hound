@@ -31,7 +31,7 @@ function ItemCard(props: {
         <a href={mediaPagePath} className="itemcard-img-poster-container">
           <div
             className={
-              "rounded itemcard-img-poster item-card-no-thumbnail border border-primary"
+              "rounded w-100 h-100 itemcard-img-poster item-card-no-thumbnail border border-primary"
             }
           >
             {props.item.media_title + releaseYearText}
@@ -228,13 +228,15 @@ function ItemCard(props: {
             />
           </div>
         ) : (
-          <div
-            className={
-              "rounded itemcard-img-poster item-card-no-thumbnail " +
-              gameAspectRatioClass
-            }
-          >
-            {props.item.media_title + releaseYearText}
+          <div className="itemcard-img-poster-container">
+            <div
+              className={
+                "rounded itemcard-img-poster item-card-no-thumbnail " +
+                gameAspectRatioClass
+              }
+            >
+              {props.item.media_title + releaseYearText}
+            </div>
           </div>
         )}
       </a>

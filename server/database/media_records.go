@@ -52,22 +52,16 @@ type MediaRecord struct {
 	StillURL         string       `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
 	Tags             *[]TagObject `xorm:"'tags'" json:"tags,omitempty"`         // to store genres, tags
 	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags,omitempty"`
-	FullData         []byte       `xorm:"'full_data'" json:"full_data"`       // full data from tmdb
-	ContentHash      string       `xorm:"'content_hash'" json:"content_hash"` // checksum to compare changes/updates
 	CreatedAt        time.Time    `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time    `xorm:"timestampz updated" json:"updated_at"`
+	FullData         []byte       `xorm:"'full_data'" json:"full_data,omitempty"`       // full data from tmdb
+	ContentHash      string       `xorm:"'content_hash'" json:"content_hash,omitempty"` // checksum to compare changes/updates
 }
 
 type MediaRecordGroup struct {
 	MediaRecord  `xorm:"extends"`
 	UserID       int64
 	CollectionID int64
-}
-
-// For recursive entry
-type MediaRecordNode struct {
-	Root     *MediaRecord
-	Children []*MediaRecordNode
 }
 
 func instantiateMediaTables() error {
