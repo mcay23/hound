@@ -68,3 +68,10 @@ type CommentObject struct {
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
+
+type MediaFilesResponse struct {
+	TotalRecords int                   `json:"total_records"`
+	Limit        int                   `json:"limit"`
+	Offset       int                   `json:"offset"`
+	Files        []*database.MediaFile `json:"files"`
+}

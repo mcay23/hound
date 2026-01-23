@@ -69,3 +69,24 @@ func GetMediaFileByRecordID(recordID int64) ([]*MediaFile, error) {
 		Where("record_id = ?", recordID).Find(&metadata)
 	return metadata, err
 }
+
+func GetMediaFiles(limit *int, offset *int) (int, []*MediaFile, error) {
+	var files []*MediaFile
+	sess := databaseEngine.Table(mediaFilesTable)
+	// total number of all media files
+	count, err := sess.Count()
+	if err != nil {
+		return 0, nil, err
+	}
+	// necessary for second run
+	sess = sess.Table(mediaFilesTable)
+	if limit != nil {
+		if offset != nil {
+			sess = sess.Limit(*limit, *offset)
+		} else {
+			sess = sess.Limit(*limit, 0)
+		}
+	}
+	err = sess.Find(&files)
+	return int(count), files, err
+}

@@ -6,6 +6,7 @@ import (
 	"hound/helpers"
 	"hound/model/providers"
 	"hound/model/sources"
+	"hound/view"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -85,6 +86,37 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 				Streams:  streamObjects,
 			},
 		},
+	}
+	helpers.SuccessResponse(c, res, 200)
+}
+
+func GetMediaFilesHandler(c *gin.Context) {
+	limit := c.Query("limit")
+	offset := c.Query("offset")
+	limitNum, err := strconv.Atoi(limit)
+	if err != nil && limit != "" {
+		helpers.LogErrorWithMessage(err, "Invalid limit query param")
+	}
+	offsetNum, err := strconv.Atoi(offset)
+	if err != nil && offset != "" {
+		helpers.LogErrorWithMessage(err, "Invalid offset query param")
+	}
+	if limit == "" {
+		limitNum = 100
+	}
+	if offset == "" {
+		offsetNum = 0
+	}
+	totalRecords, files, err := database.GetMediaFiles(&limitNum, &offsetNum)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get media files"))
+		return
+	}
+	res := &view.MediaFilesResponse{
+		Files:        files,
+		TotalRecords: totalRecords,
+		Limit:        limitNum,
+		Offset:       offsetNum,
 	}
 	helpers.SuccessResponse(c, res, 200)
 }
