@@ -16,6 +16,7 @@ import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
+import Settings from "./pages/Settings/Settings";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,10 @@ function App() {
               <Route
                 path="logout"
                 element={<ProtectedRoute component={<Logout />} />}
+              />
+              <Route
+                path="settings"
+                element={<ProtectedRoute component={<Settings />} />}
               />
               <Route
                 path="library"

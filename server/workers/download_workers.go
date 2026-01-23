@@ -43,7 +43,7 @@ func InitializeDownloadWorkers(n int) {
 		return
 	}
 	for _, task := range tasks {
-		failTask(&task, fmt.Errorf("invalid download task - process crashed during download"))
+		failTask(&task.IngestTask, fmt.Errorf("invalid download task - process crashed during download"))
 	}
 
 	slog.Info("Starting download workers", "count", n)

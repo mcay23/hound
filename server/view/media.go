@@ -77,8 +77,8 @@ type MediaFilesResponse struct {
 }
 
 type IngestTaskResponse struct {
-	TotalRecords int                   `json:"total_records"`
-	Limit        int                   `json:"limit"`
-	Offset       int                   `json:"offset"`
-	Tasks        []database.IngestTask `json:"tasks"`
+	TotalRecords int                             `json:"total_records"`
+	Limit        int                             `json:"limit"`
+	Offset       int                             `json:"offset"`
+	Tasks        []database.IngestTaskFullRecord `json:"tasks"`
 }
