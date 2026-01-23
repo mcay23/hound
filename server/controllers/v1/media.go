@@ -6,6 +6,7 @@ import (
 	"hound/helpers"
 	"hound/model"
 	"hound/model/sources"
+	"hound/view"
 	"strconv"
 	"strings"
 
@@ -80,16 +81,38 @@ func GetTVEpisodesHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"episodes": episodeRecords}, 200)
 }
 
-func GetDownloadsHandler(c *gin.Context) {
+func GetIngestTasksHandler(c *gin.Context) {
 	status := c.Query("status")
 	statusSlice := strings.Split(status, ",")
 	if status == "" {
 		statusSlice = []string{}
 	}
-	tasks, err := database.FindIngestTasksForStatus(statusSlice)
+	limit := c.Query("limit")
+	offset := c.Query("offset")
+	if limit == "" {
+		limit = "100"
+	}
+	if offset == "" {
+		offset = "0"
+	}
+	limitNum, err := strconv.Atoi(limit)
+	if err != nil {
+		helpers.LogErrorWithMessage(err, "Invalid limit query param")
+	}
+	offsetNum, err := strconv.Atoi(offset)
+	if err != nil {
+		helpers.LogErrorWithMessage(err, "Invalid offset query param")
+	}
+	totalRecords, tasks, err := database.FindIngestTasksForStatus(statusSlice, limitNum, offsetNum)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get downloads"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"downloads": tasks}, 200)
+	response := view.IngestTaskResponse{
+		TotalRecords: totalRecords,
+		Limit:        limitNum,
+		Offset:       offsetNum,
+		Tasks:        tasks,
+	}
+	helpers.SuccessResponse(c, response, 200)
 }

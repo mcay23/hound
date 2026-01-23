@@ -93,19 +93,19 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 func GetMediaFilesHandler(c *gin.Context) {
 	limit := c.Query("limit")
 	offset := c.Query("offset")
+	if limit == "" {
+		limit = "100"
+	}
+	if offset == "" {
+		offset = "0"
+	}
 	limitNum, err := strconv.Atoi(limit)
-	if err != nil && limit != "" {
+	if err != nil {
 		helpers.LogErrorWithMessage(err, "Invalid limit query param")
 	}
 	offsetNum, err := strconv.Atoi(offset)
-	if err != nil && offset != "" {
+	if err != nil {
 		helpers.LogErrorWithMessage(err, "Invalid offset query param")
-	}
-	if limit == "" {
-		limitNum = 100
-	}
-	if offset == "" {
-		offsetNum = 0
 	}
 	totalRecords, files, err := database.GetMediaFiles(&limitNum, &offsetNum)
 	if err != nil {

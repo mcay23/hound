@@ -74,17 +74,42 @@ func FindIngestTasks(task IngestTask) ([]IngestTask, error) {
 	return tasks, err
 }
 
-func FindIngestTasksForStatus(status []string) ([]IngestTask, error) {
+func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []IngestTask, error) {
 	// if no statuses given, return all tasks
 	if len(status) == 0 {
-		return FindIngestTasks(IngestTask{})
+		ct, err := databaseEngine.Table(IngestTasksTable).Count()
+		if err != nil {
+			return 0, nil, err
+		}
+		var tasks []IngestTask
+		sess := databaseEngine.Table(IngestTasksTable).Desc("created_at")
+		if limit > 0 && offset >= 0 {
+			sess = sess.Limit(limit, offset)
+		}
+		err = sess.Find(&tasks)
+		if err != nil {
+			return 0, nil, err
+		}
+		return int(ct), tasks, err
+	}
+	// status given, find tasks with status
+	ct := databaseEngine.Table(IngestTasksTable).In("status", status)
+	totalRecords, err := ct.Count()
+	if err != nil {
+		return 0, nil, err
 	}
 	var tasks []IngestTask
-	err := databaseEngine.Table(IngestTasksTable).In("status", status).Desc("created_at").Find(&tasks)
-	if err != nil {
-		return nil, err
+	sess := databaseEngine.Table(IngestTasksTable).
+		In("status", status).
+		Desc("created_at")
+	if limit > 0 && offset >= 0 {
+		sess = sess.Limit(limit, offset)
 	}
-	return tasks, err
+	err = sess.Find(&tasks)
+	if err != nil {
+		return 0, nil, err
+	}
+	return int(totalRecords), tasks, err
 }
 
 func GetIngestTask(task IngestTask) (*IngestTask, error) {

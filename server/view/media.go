@@ -75,3 +75,10 @@ type MediaFilesResponse struct {
 	Offset       int                   `json:"offset"`
 	Files        []*database.MediaFile `json:"files"`
 }
+
+type IngestTaskResponse struct {
+	TotalRecords int                   `json:"total_records"`
+	Limit        int                   `json:"limit"`
+	Offset       int                   `json:"offset"`
+	Tasks        []database.IngestTask `json:"tasks"`
+}

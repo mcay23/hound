@@ -239,7 +239,8 @@ func DownloadHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "started"}, 200)
 }
 
-func CancelDownloadHandler(c *gin.Context) {
+// Cancel downloads
+func CancelIngestTaskHandler(c *gin.Context) {
 	taskIDStr := c.Param("taskID")
 	taskID, err := strconv.Atoi(taskIDStr)
 	if err != nil {
