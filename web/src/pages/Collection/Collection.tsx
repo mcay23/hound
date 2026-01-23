@@ -28,7 +28,7 @@ function Collection(props: any) {
       description: "",
       is_public: false,
       is_primary: true,
-      owner_user_id: "",
+      owner_username: "",
     },
     total_records: 0,
   });
@@ -39,7 +39,7 @@ function Collection(props: any) {
   const navigate = useNavigate();
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
-    value: number
+    value: number,
   ) => {
     setPage(value);
   };
@@ -54,7 +54,8 @@ function Collection(props: any) {
   var showDeleteButton = false;
   if (
     isCollectionDataLoaded &&
-    collectionData.collection.owner_user_id === localStorage.getItem("username")
+    collectionData.collection.owner_username ===
+      localStorage.getItem("username")
   ) {
     showDeleteButton = true;
   }
@@ -76,7 +77,7 @@ function Collection(props: any) {
       .get(
         `/api/v1/collection/${collectionID}?limit=${itemsPerPage}&offset=${
           itemsPerPage * (page - 1)
-        }`
+        }`,
       )
       .then((res) => {
         setCollectionData(res.data);
@@ -111,7 +112,7 @@ function Collection(props: any) {
                       {collectionData.collection.collection_title}
                     </div>
                     <div className="collection-cover-date">
-                      {`by ${collectionData.collection.owner_user_id}`}
+                      {`by ${collectionData.collection.owner_username}`}
                     </div>
                     <hr />
                     <div className="collection-cover-main-description">
