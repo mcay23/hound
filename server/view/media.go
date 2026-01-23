@@ -44,7 +44,7 @@ type CollectionRecordView struct {
 	CollectionID    int64                 `json:"collection_id"`
 	CollectionTitle string                `json:"collection_title"` // my collection, etc.
 	Description     string                `json:"description"`
-	Username        string                `json:"owner_user_id"`
+	OwnerUsername   string                `json:"owner_username"`
 	IsPrimary       bool                  `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool                  `json:"is_public"`
 	Tags            *[]database.TagObject `json:"tags"`

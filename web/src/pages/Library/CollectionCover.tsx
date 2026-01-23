@@ -31,7 +31,7 @@ function CollectionCover(props: any) {
               {props.data.collection_title}
             </div>
             <div className="itemcard-item-caption-secondary">
-              {"by " + props.data.owner_user_id}
+              {"by " + props.data.owner_username}
             </div>
           </figcaption>
         ) : (
