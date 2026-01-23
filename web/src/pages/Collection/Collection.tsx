@@ -42,6 +42,11 @@ function Collection(props: any) {
     value: number,
   ) => {
     setPage(value);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
   };
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const handleDeleteClickOpen = () => {
