@@ -124,7 +124,7 @@ func GetTrendingTVShowsHandler(c *gin.Context) {
 			MediaType:    database.MediaTypeTVShow,
 			MediaSource:  sources.MediaSourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.OriginalName,
+			MediaTitle:   item.Name,
 			ReleaseDate:  item.FirstAirDate,
 			Overview:     item.Overview,
 			ThumbnailURL: thumbnailURL,
