@@ -5,18 +5,39 @@ import {
   Chip,
   ChipProps,
   LinearProgress,
+  Pagination,
 } from "@mui/material";
 import { useDownloads } from "../../api/hooks/media";
 import "./SettingsDownloads.css";
 import { cancelDownload } from "../../api/services/media";
+import { useState } from "react";
 
 function SettingsDownloads() {
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const itemsPerPage = 10;
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number,
+  ) => {
+    setPage(value);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
+  };
   // fetch every 2 seconds
   const { data: downloads, isLoading: isDownloadsLoading } = useDownloads(
-    30,
-    0,
+    itemsPerPage,
+    (page - 1) * itemsPerPage,
     2000,
   );
+  if (downloads && downloads.total_records !== totalRecords) {
+    setTotalRecords(downloads.total_records);
+    setTotalPages(Math.ceil(downloads.total_records / itemsPerPage));
+  }
   return (
     <div>
       <h2>Downloads</h2>
@@ -27,6 +48,16 @@ function SettingsDownloads() {
           return <DownloadCard item={item} />;
         })
       )}
+      <div className="paginator-container shadow-lg">
+        <Pagination
+          id="paginator-component"
+          defaultPage={1}
+          page={page}
+          onChange={handlePageChange}
+          count={totalPages}
+          size="large"
+        />
+      </div>
     </div>
   );
 }
