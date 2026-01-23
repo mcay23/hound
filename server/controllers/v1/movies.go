@@ -40,7 +40,7 @@ func GetTrendingMoviesHandler(c *gin.Context) {
 			MediaType:    database.MediaTypeMovie,
 			MediaSource:  sources.MediaSourceTMDB,
 			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.OriginalTitle,
+			MediaTitle:   item.Title,
 			ReleaseDate:  item.ReleaseDate,
 			Overview:     item.Overview,
 			ThumbnailURL: thumbnailURL,
