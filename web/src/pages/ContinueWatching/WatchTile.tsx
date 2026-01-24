@@ -46,6 +46,37 @@ export default function WatchTile(props: any) {
             transition: "opacity 0.5s ease",
           }}
         />
+        {props.item?.watch_progress && (
+          <>
+            <div className="episode-card-progress-pill">
+              <div className="episode-card-progress-pill-text">
+                {Math.ceil(
+                  (props.item?.watch_progress.total_duration_seconds -
+                    props.item?.watch_progress.current_progress_seconds) /
+                    60,
+                )}
+                {"m left"}
+              </div>
+            </div>
+            <div className="episode-card-progress-bar-container">
+              <div
+                className="episode-card-progress-bar"
+                style={{
+                  width: `${
+                    (props.item?.watch_progress.current_progress_seconds /
+                      props.item?.watch_progress.total_duration_seconds) *
+                    100
+                  }%`,
+                }}
+              />
+            </div>
+          </>
+        )}
+        {props.item?.next_episode && (
+          <div className="episode-card-progress-pill">
+            <div className="episode-card-progress-pill-text">{"Next Up"}</div>
+          </div>
+        )}
       </a>
       <figcaption className="watch-tile-caption">
         <div className="itemcard-item-caption-primary">{primaryCaption}</div>
