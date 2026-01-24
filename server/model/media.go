@@ -5,6 +5,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/services"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -52,6 +53,29 @@ func InitializeMedia() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to create http downloads directory")
 		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
 	}
+}
+
+func DeleteMediaFile(fileID int) error {
+	// delete file first
+	file, err := database.GetMediaFile(fileID)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(file.Filepath)
+	if err != nil {
+		// if file doesn't exist, continue to delete mediafile record
+		if !os.IsNotExist(err) {
+			return err
+		} else {
+			slog.Info("File doesn't exist in dir, deleting media_file db record", "filepath", file.Filepath)
+		}
+	}
+	err = database.DeleteMediaFileRecord(fileID)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to delete media_file db record")
+	}
+	slog.Info("Deleted media_file record", "file_id", fileID, "filepath", file.Filepath)
+	return nil
 }
 
 func ProbeVideoFromURI(uri string) (*database.VideoMetadata, error) {

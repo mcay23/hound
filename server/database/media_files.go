@@ -1,6 +1,11 @@
 package database
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"hound/helpers"
+	"time"
+)
 
 const (
 	mediaFilesTable = "media_files"
@@ -56,14 +61,14 @@ func InsertMediaFile(mediaFileMetadata *MediaFile) (*MediaFile, error) {
 	return mediaFileMetadata, err
 }
 
-func GetMediaFile(fileID int64) (*MediaFile, error) {
+func GetMediaFile(fileID int) (*MediaFile, error) {
 	var metadata MediaFile
 	_, err := databaseEngine.Table(mediaFilesTable).Where("file_id = ?", fileID).
 		Get(&metadata)
 	return &metadata, err
 }
 
-func GetMediaFileByRecordID(recordID int64) ([]*MediaFile, error) {
+func GetMediaFileByRecordID(recordID int) ([]*MediaFile, error) {
 	var metadata []*MediaFile
 	err := databaseEngine.Table(mediaFilesTable).
 		Where("record_id = ?", recordID).Find(&metadata)
@@ -89,4 +94,13 @@ func GetMediaFiles(limit *int, offset *int) (int, []*MediaFile, error) {
 	}
 	err = sess.Find(&files)
 	return int(count), files, err
+}
+
+func DeleteMediaFileRecord(fileID int) error {
+	affected, err := databaseEngine.Table(mediaFilesTable).ID(fileID).Delete(&MediaFile{})
+	if affected == 0 {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			fmt.Sprintf("Media file with id %d not found", fileID))
+	}
+	return err
 }
