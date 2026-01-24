@@ -26,6 +26,11 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
 	}
 	// check if task already exists
+	if streamDetails.FileIdx == nil {
+		fmt.Println("nil file idx")
+	} else {
+		fmt.Println("in", *streamDetails.FileIdx)
+	}
 	tasks, err := database.FindIngestTasks(database.IngestTask{
 		SourceURI: &streamDetails.URI,
 		FileIdx:   streamDetails.FileIdx,
@@ -36,11 +41,22 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 	// if a non-terminal task exists for this file, abort
 	// eg. downloading/queued
 	for _, task := range tasks {
-		if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+		if task.FileIdx == nil {
+			fmt.Println("out nil")
+		} else {
+			fmt.Println("out", *task.FileIdx)
+		}
+		if streamDetails.FileIdx == nil || task.FileIdx == nil {
+			fmt.Println("in nil")
+			return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
+				"Ingest task already exists - nil file idx")
+		}
+		if !slices.Contains(database.IngestTerminalStatuses, task.Status) && *task.FileIdx == *streamDetails.FileIdx {
+			return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
 				"Ingest task already exists")
 		}
 	}
+
 	// 1. Attempt upsert first, if failed, abort
 	tmdbID, err := strconv.Atoi(streamDetails.SourceID)
 	if err != nil {

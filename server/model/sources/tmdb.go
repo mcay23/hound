@@ -9,6 +9,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"log/slog"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -62,6 +63,9 @@ func InitializeTMDB() {
 		panic(err)
 	}
 	tmdbClient.SetClientAutoRetry()
+	tmdbClient.SetClientConfig(http.Client{
+		Timeout: time.Second * 30,
+	})
 	err = populateTMDBTVGenres()
 	if err != nil {
 		panic(err)

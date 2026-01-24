@@ -47,11 +47,10 @@ type IngestTask struct {
 	DestinationPath  string    `xorm:"text 'destination_path'" json:"destination_path"` // path to final destination in hound media dir
 	TotalBytes       int64     `xorm:"'total_bytes'" json:"total_bytes"`                // total bytes to be downloaded
 	DownloadedBytes  int64     `xorm:"'downloaded_bytes'" json:"downloaded_bytes"`
-	CopiedBytes      int64     `xorm:"'copied_bytes'" json:"copied_bytes"`      // bytes copied to final dir
-	DownloadSpeed    int64     `xorm:"'download_speed'" json:"download_speed"`  // bytes per second
-	CopySpeed        int64     `xorm:"'copy_speed'" json:"copy_speed"`          // bytes per second
-	LastSeen         time.Time `xorm:"timestampz last_seen" json:"last_seen"`   // track stale download/copy jobs
-	StartedAt        time.Time `xorm:"timestampz started_at" json:"started_at"` // time queued task was started
+	DownloadSpeed    int64     `xorm:"'download_speed'" json:"download_speed"`       // bytes per second
+	ConnectedSeeders *int      `xorm:"'connected_seeders'" json:"connected_seeders"` // number of seeders (p2p only)
+	LastSeen         time.Time `xorm:"timestampz last_seen" json:"last_seen"`        // track stale download/copy jobs
+	StartedAt        time.Time `xorm:"timestampz started_at" json:"started_at"`      // time queued task was started
 	FinishedAt       time.Time `xorm:"timestampz finished_at" json:"finished_at"`
 	CreatedAt        time.Time `xorm:"timestampz index created" json:"created_at"`
 	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
