@@ -4,6 +4,7 @@ import {
   CardContent,
   Chip,
   ChipProps,
+  Divider,
   LinearProgress,
   Pagination,
 } from "@mui/material";
@@ -41,6 +42,7 @@ function SettingsDownloads() {
   return (
     <div>
       <h2>Downloads</h2>
+      <hr />
       {isDownloadsLoading ? (
         <div>Loading...</div>
       ) : (
@@ -65,7 +67,7 @@ function SettingsDownloads() {
 function DownloadCard({ item }: { item: any }) {
   const mainRecord =
     item.media_type === "movie" ? "movie_media_record" : "show_media_record";
-  let title = item[mainRecord].media_title;
+  let title = item[mainRecord]?.media_title;
   if (item.media_type === "tvshow") {
     title +=
       " - S" +
@@ -87,13 +89,14 @@ function DownloadCard({ item }: { item: any }) {
       key={item.ingest_task_id}
       className="mb-2 download-card"
     >
-      <CardContent>
+      <CardContent className="download-card-content">
         <h5>{title}</h5>
         <div className="text-muted">
           {"Download Type: " + item.download_type}
         </div>
         <div>{statusLabel}</div>
         {item.status === "downloading" && downloadingUI({ item })}
+        {item.status === "done" && doneUI({ item })}
       </CardContent>
     </Card>
   );
@@ -112,13 +115,15 @@ function downloadingUI({ item }: { item: any }) {
         <div className="text-muted">
           {total > 0 && (
             <>
-              {downloaded.toFixed(2)} / {total.toFixed(0)} MB (
+              {downloaded.toFixed(2)} / {total.toFixed(2)} MB (
               {progress.toFixed(0)}
               %)
             </>
           )}
         </div>
         <div className="text-muted">
+          {item.connected_seeders > 0 &&
+            "(" + item.connected_seeders + " seeders) "}
           {item.download_speed > 0 &&
             (item.download_speed / 1000000).toFixed(2) + " MB/s"}
         </div>
@@ -135,6 +140,19 @@ function downloadingUI({ item }: { item: any }) {
         >
           Cancel
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function doneUI({ item }: { item: any }) {
+  return (
+    <div className="mt-1">
+      <div className="d-flex justify-content-between mb-1">
+        <div className="text-muted">
+          {(item.downloaded_bytes / 1000000).toFixed(2)} /{" "}
+          {(item.total_bytes / 1000000).toFixed(2)} MB
+        </div>
       </div>
     </div>
   );

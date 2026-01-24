@@ -227,18 +227,22 @@ func startP2PDownload(workerID int, task *database.IngestTask) {
 		failTask(task, err)
 		return
 	}
-	file, _, _, err := model.GetTorrentFile(infoHash, task.FileIdx, nil)
+	file, newIdx, _, err := model.GetTorrentFile(infoHash, task.FileIdx, nil)
 	if err != nil {
 		slog.Error("Failed to get torrent file", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
 		return
 	}
 	relativePath := filepath.FromSlash(file.Path())
+	if task.FileIdx == nil {
+		task.FileIdx = &newIdx
+	}
 	task.SourcePath = filepath.Join(model.HoundP2PDownloadsPath, strings.ToLower(infoHash), relativePath)
 	task.TotalBytes = file.Length()
 	database.UpdateIngestTask(task)
 
 	file.Download()
+	file.SetPriority(torrent.PiecePriorityNormal)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
@@ -269,6 +273,9 @@ func startP2PDownload(workerID int, task *database.IngestTask) {
 		lastBytesCompleted = file.BytesCompleted()
 		newTask.LastSeen = time.Now().UTC()
 
+		var connectedSeeders int
+		connectedSeeders = file.Torrent().Stats().ConnectedSeeders
+		newTask.ConnectedSeeders = &connectedSeeders
 		_, err = database.UpdateIngestTask(newTask)
 		if err != nil {
 			slog.Error("Failed to update task progress", "taskID", newTask.IngestTaskID, "error", err)
@@ -318,12 +325,20 @@ func cancelTask(task *database.IngestTask) {
 	// if no one is using, set piece priority to none
 	// evaluate: this may not be required, since if the client requests the
 	// stream, the piece should be newly requested again
-	if session != nil && *task.FileIdx < len(session.Torrent.Files()) {
+	if session != nil && session.Torrent != nil && task.FileIdx != nil && *task.FileIdx < len(session.Torrent.Files()) {
 		numStreams, ok := session.ActiveStreams[*task.FileIdx]
 		// active streams key doesn't exist, or no active streams
 		if !ok || numStreams <= 0 {
-			slog.Info("Setting piece priority to none", "uri", *task.SourceURI, "fileIdx", *task.FileIdx)
-			session.Torrent.Files()[*task.FileIdx].SetPriority(torrent.PiecePriorityNone)
+			// check if torrent is being downloaded by anyone else
+			tasks, err := database.FindIngestTasks(database.IngestTask{SourceURI: task.SourceURI, Status: database.IngestStatusDownloading})
+			if err != nil {
+				slog.Error("Failed to find ingest tasks", "taskID", task.IngestTaskID, "error", err)
+				return
+			}
+			if len(tasks) == 0 {
+				slog.Info("Setting piece priority to none", "uri", *task.SourceURI, "fileIdx", *task.FileIdx)
+				session.Torrent.Files()[*task.FileIdx].SetPriority(torrent.PiecePriorityNone)
+			}
 		}
 	}
 }
