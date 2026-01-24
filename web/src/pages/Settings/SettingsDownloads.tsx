@@ -50,15 +50,17 @@ function SettingsDownloads() {
           return <DownloadCard item={item} />;
         })
       )}
-      <div className="paginator-container shadow-lg">
-        <Pagination
-          id="paginator-component"
-          defaultPage={1}
-          page={page}
-          onChange={handlePageChange}
-          count={totalPages}
-          size="large"
-        />
+      <div className="d-flex w-100 mt-3 justify-content-center">
+        <div className="paginator-container shadow-lg">
+          <Pagination
+            id="paginator-component"
+            defaultPage={1}
+            page={page}
+            onChange={handlePageChange}
+            count={totalPages}
+            size="large"
+          />
+        </div>
       </div>
     </div>
   );
