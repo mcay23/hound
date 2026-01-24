@@ -121,7 +121,7 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 // this gets the movie record, or both the episode and show record for tv shows
 // a bit computationally expensive, might need a better solution
 func enrichIngestTasks(tasks []IngestTask) []IngestTaskFullRecord {
-	const reducedFields = "record_id, record_type, media_source, source_id, parent_id, media_title, original_title, original_language, origin_country, release_date, last_air_date, next_air_date, season_number, episode_number, sort_index, status, overview, duration, thumbnail_url, backdrop_url, still_url, tags, user_tags, created_at, updated_at"
+	const reducedFields = "record_id, record_type, media_source, source_id, parent_id, ancestor_id, media_title, original_title, original_language, origin_country, release_date, last_air_date, next_air_date, season_number, episode_number, sort_index, status, overview, duration, thumbnail_url, backdrop_url, still_url, tags, user_tags, created_at, updated_at"
 	if len(tasks) == 0 {
 		return []IngestTaskFullRecord{}
 	}
@@ -133,33 +133,16 @@ func enrichIngestTasks(tasks []IngestTask) []IngestTaskFullRecord {
 	// fetch records
 	var allRecords []MediaRecord
 	databaseEngine.Table(mediaRecordsTable).Select(reducedFields).In("record_id", recordIDs).Find(&allRecords)
-	// map records by id
+	// map records by id and collect ancestor (show) ids for episodes
 	recordMap := make(map[int64]MediaRecord)
-	parentIDs := make([]int64, 0)
+	showIDs := make([]int64, 0)
 	for _, r := range allRecords {
 		recordMap[r.RecordID] = r
-		if r.ParentID != nil {
-			parentIDs = append(parentIDs, *r.ParentID)
+		if r.RecordType == RecordTypeEpisode && r.AncestorID != nil {
+			showIDs = append(showIDs, *r.AncestorID)
 		}
 	}
-	// fetch parent records (for seasons/episodes)
-	var parentRecords []MediaRecord
-	if len(parentIDs) > 0 {
-		databaseEngine.Table(mediaRecordsTable).In("record_id", parentIDs).Select(reducedFields).Find(&parentRecords)
-	}
-	parentMap := make(map[int64]MediaRecord)
-	for _, p := range parentRecords {
-		parentMap[p.RecordID] = p
-	}
-
-	// fetch show records for episodes (hierarchy: episode -> season -> show)
-	// we need to go up two levels
-	showIDs := make([]int64, 0)
-	for _, p := range parentRecords {
-		if p.RecordType == RecordTypeSeason && p.ParentID != nil {
-			showIDs = append(showIDs, *p.ParentID)
-		}
-	}
+	// fetch show records (for episodes)
 	var showRecords []MediaRecord
 	if len(showIDs) > 0 {
 		databaseEngine.Table(mediaRecordsTable).In("record_id", showIDs).Select(reducedFields).Find(&showRecords)
@@ -180,9 +163,9 @@ func enrichIngestTasks(tasks []IngestTask) []IngestTaskFullRecord {
 			case RecordTypeEpisode:
 				er.EpisodeMediaRecord = &r
 				er.MediaType = MediaTypeTVShow
-				// check for show record (parent of season)
-				if season, ok := parentMap[*r.ParentID]; ok {
-					if show, ok := showMap[*season.ParentID]; ok {
+				// check for show record (ancestor)
+				if r.AncestorID != nil {
+					if show, ok := showMap[*r.AncestorID]; ok {
 						er.ShowMediaRecord = &show
 					}
 				}

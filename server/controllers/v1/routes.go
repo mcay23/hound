@@ -93,9 +93,9 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
-	privateRoutes.POST("/torrent/:encodedString/download", DownloadHandler) // downloads to the server, not the client
-	privateRoutes.GET("/media/ingest", GetIngestTasksHandler)
-	privateRoutes.POST("/media/ingest/:taskID/cancel", CancelIngestTaskHandler)
+	privateRoutes.POST("/stream/:encodedString/download", DownloadHandler) // downloads to the server, not the client
+	privateRoutes.GET("/ingest", GetIngestTasksHandler)
+	privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
 
 	/*
 		Query Providers Routes
@@ -108,8 +108,13 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Media Routes
 	*/
-	privateRoutes.GET("/media/files", GetMediaFilesHandler) // list all downloaded media files in hound
-	privateRoutes.POST("/media/ingest", IngestFileHandler)
+	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound
+	privateRoutes.POST("/ingest", IngestFileHandler)
+
+	/*
+		Media Files Routes
+	*/
+	privateRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
 
 	/*
 		Metadata Routes

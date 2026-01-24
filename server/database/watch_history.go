@@ -146,10 +146,8 @@ func GetUniqueWatchParents(userID int64, limit int, offset int, after time.Time)
 		Table("watch_events we").
 		Join("INNER", "rewatches r", "r.rewatch_id = we.rewatch_id").
 		Join("INNER", "media_records mr", "mr.record_id = we.record_id").
-		Join("LEFT", "media_records season",
-			"season.record_id = mr.parent_id AND mr.record_type = 'episode'").
 		Join("LEFT", "media_records show",
-			"show.record_id = season.parent_id AND season.record_type = 'season'").
+			"show.record_id = mr.ancestor_id AND mr.record_type = 'episode'").
 		Where("r.user_id = ?", userID).
 		Where("we.watched_at > ?", after).
 		Omit("mr.full_data").

@@ -12,7 +12,10 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/anacrolix/torrent/metainfo"
 )
 
 // Downloads torrent to server, not clients
@@ -25,38 +28,6 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
 	}
-	// check if task already exists
-	if streamDetails.FileIdx == nil {
-		fmt.Println("nil file idx")
-	} else {
-		fmt.Println("in", *streamDetails.FileIdx)
-	}
-	tasks, err := database.FindIngestTasks(database.IngestTask{
-		SourceURI: &streamDetails.URI,
-		FileIdx:   streamDetails.FileIdx,
-	})
-	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
-	}
-	// if a non-terminal task exists for this file, abort
-	// eg. downloading/queued
-	for _, task := range tasks {
-		if task.FileIdx == nil {
-			fmt.Println("out nil")
-		} else {
-			fmt.Println("out", *task.FileIdx)
-		}
-		if streamDetails.FileIdx == nil || task.FileIdx == nil {
-			fmt.Println("in nil")
-			return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
-				"Ingest task already exists - nil file idx")
-		}
-		if !slices.Contains(database.IngestTerminalStatuses, task.Status) && *task.FileIdx == *streamDetails.FileIdx {
-			return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
-				"Ingest task already exists")
-		}
-	}
-
 	// 1. Attempt upsert first, if failed, abort
 	tmdbID, err := strconv.Atoi(streamDetails.SourceID)
 	if err != nil {
@@ -75,7 +46,50 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 		}
 		ingestRecordID = episodeRecord.RecordID
 	}
-	// 2. Insert ingest task
+	// 2. Check if a non-terminal (downloading, queued) task already exists
+	tasks, err := database.FindIngestTasks(database.IngestTask{
+		SourceURI: &streamDetails.URI,
+		RecordID:  ingestRecordID,
+	})
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
+	}
+	for _, task := range tasks {
+		// note that we don't check for 'done' state since the file may have been deleted afterwards
+		if !slices.Contains(database.IngestTerminalStatuses, task.Status) && task.SourceURI != nil {
+			uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
+			if err != nil {
+				continue
+			}
+			infoHash := uri.InfoHash.HexString()
+			if strings.ToLower(infoHash) == strings.ToLower(streamDetails.InfoHash) {
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
+					"Ingest task already exists - downloading/queued")
+			}
+		}
+	}
+	// 3. Check if media file already exists for this movie/episode record
+	mediaFiles, err := database.GetMediaFileByRecordID(int(ingestRecordID))
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to get media files when downloading")
+	}
+	for _, mediaFile := range mediaFiles {
+		if mediaFile.SourceURI != nil {
+			uri, err := metainfo.ParseMagnetUri(*mediaFile.SourceURI)
+			if err != nil {
+				continue
+			}
+			infoHash := uri.InfoHash.HexString()
+			// matching infohash, same file
+			// there's an unhandled edge case where a single torrent may have
+			// multiple versions of the same movie/episode, which is unhandled here
+			if strings.ToLower(infoHash) == strings.ToLower(streamDetails.InfoHash) {
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
+					"Ingest task already exists - file already downloaded")
+			}
+		}
+	}
+	// 3. Insert ingest task
 	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
 	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, streamDetails.StreamProtocol,
 		database.IngestStatusPendingDownload, streamDetails.URI, streamDetails.FileIdx)
@@ -111,12 +125,11 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			fmt.Sprintf("Video duration too short: %v (<1 minute)", videoMetadata.Duration))
 	}
 
-	targetDir, targetFilename, targetRecordID, err := GetMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
+	targetDir, targetFilename, targetRecordID, err := getMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
 		infoHash, fileIdx, filepath.Ext(sourcePath))
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get media destination dir")
 	}
-
 	// rename, should be atomic since same filesystem
 	err = os.MkdirAll(targetDir, 0755)
 	if err != nil {
@@ -133,7 +146,6 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			return nil, helpers.LogErrorWithMessage(linkErr, "Failed to rename+link file")
 		}
 	}
-
 	mediaFile := database.MediaFile{
 		Filepath:         filepath.Join(targetDir, targetFilename),
 		OriginalFilename: filepath.Base(sourcePath),
@@ -151,8 +163,12 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	return insertedMediaFile, nil
 }
 
-func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int, infoHash *string,
+func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int, infoHash *string,
 	fileIdx *int, fileExt string) (string, string, int64, error) {
+	if fileExt == "" || fileExt[0] != '.' {
+		return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"File extension is empty or does not include .")
+	}
 	targetDir := ""
 	// construct title, append this later for each type
 	// format eg. Big Buck Bunny (2001) {tmdb-123456}
@@ -173,7 +189,7 @@ func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 	case database.RecordTypeMovie:
 		if infoHash != nil && *infoHash != "" {
 			// append index only if it exists,
-			// will probably not exist for http stream sources
+			// will often not exist for http stream sources
 			targetFilename += fmt.Sprintf(" {infohash-%s", *infoHash)
 			if fileIdx != nil && *fileIdx >= 0 {
 				targetFilename += fmt.Sprintf("[%d]", *fileIdx)
@@ -181,14 +197,13 @@ func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 			targetFilename += "}"
 		}
 		targetDir = filepath.Join(HoundMoviesPath, mediaTitleStr)
-		targetFilename += fileExt
 		targetRecordID = mediaRecord.RecordID
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
 			return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"Season number or episode number is nil")
 		}
-		// check if season/episode pair actually exists, and get record id if episode
+		// check if season/episode pair actually exists, and get record id of episode
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
 			mediaRecord.SourceID, seasonNumber, *episodeNumber)
 		if err != nil || episodeRecord == nil {
@@ -208,9 +223,32 @@ func GetMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		}
 		seasonPath := fmt.Sprintf("Season %02d", *seasonNumber)
 		targetDir = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonPath)
-		targetFilename += fileExt
 	default:
 		return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
+	}
+	name := targetFilename
+	targetFilename += fileExt
+	// check if the filename already exists, if so append a number
+	// this is to solve the edge case -> no infohash provided, trying to
+	// download the same movie/episode
+	for i := 0; ; i++ {
+		var candidate string
+		if i == 0 {
+			candidate = targetFilename
+		} else {
+			candidate = fmt.Sprintf("%s (%d)%s", name, i, fileExt)
+		}
+		path := filepath.Join(targetDir, candidate)
+		_, err := os.Stat(path)
+		if err == nil {
+			continue
+		} else if os.IsNotExist(err) {
+			// file does not exist, therefore candidate is good
+			targetFilename = candidate
+			break
+		} else {
+			return "", "", 0, helpers.LogErrorWithMessage(err, "Failed to stat file: "+path)
+		}
 	}
 	return targetDir, targetFilename, targetRecordID, nil
 }

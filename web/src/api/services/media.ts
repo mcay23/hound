@@ -31,7 +31,7 @@ interface IngestTaskFullRecord {
 }
 
 export const fetchDownloads = async (limit: number, offset: number) => {
-  const { data } = await axios.get<GetIngestTasksResponse>("/api/v1/media/ingest", {
+  const { data } = await axios.get<GetIngestTasksResponse>("/api/v1/ingest", {
     params: {
       limit: limit,
       offset: offset,
@@ -41,6 +41,6 @@ export const fetchDownloads = async (limit: number, offset: number) => {
 };
 
 export const cancelDownload = async (taskID: number) => {
-  const { data } = await axios.post(`/api/v1/media/ingest/${taskID}/cancel`);
+  const { data } = await axios.post(`/api/v1/ingest/${taskID}/cancel`);
   return data;
 };

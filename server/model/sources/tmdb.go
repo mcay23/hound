@@ -753,6 +753,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 				StillURL:         stillURL,
 				Tags:             nil,
 				UserTags:         nil,
+				AncestorID:       &showRecord.RecordID,
 				FullData:         showJson,
 			}
 			episodeEntry.ContentHash = hashRecordTMDB(episodeEntry, "")

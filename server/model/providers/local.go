@@ -26,7 +26,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	if !has {
 		return []*StreamObject{}, nil
 	}
-	mediaFiles, err := database.GetMediaFileByRecordID(record.RecordID)
+	mediaFiles, err := database.GetMediaFileByRecordID(int(record.RecordID))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber int, episodeNumber int) (
 	if err != nil {
 		return nil, err
 	}
-	mediaFiles, err := database.GetMediaFileByRecordID(episodeRecord.RecordID)
+	mediaFiles, err := database.GetMediaFileByRecordID(int(episodeRecord.RecordID))
 	if err != nil {
 		return nil, err
 	}

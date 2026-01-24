@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
+	"hound/model"
 	"hound/model/providers"
 	"hound/model/sources"
 	"hound/view"
@@ -119,4 +120,24 @@ func GetMediaFilesHandler(c *gin.Context) {
 		Offset:       offsetNum,
 	}
 	helpers.SuccessResponse(c, res, 200)
+}
+
+func DeleteMediaFileHandler(c *gin.Context) {
+	mediaFileID := c.Param("id")
+	if mediaFileID == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Media file ID not provided"))
+		return
+	}
+	fileID, err := strconv.Atoi(mediaFileID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid media file ID"))
+		return
+	}
+	err = model.DeleteMediaFile(fileID)
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete media file"))
+		return
+	}
+	helpers.SuccessResponse(c, nil, 200)
 }

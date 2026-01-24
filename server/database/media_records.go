@@ -52,6 +52,7 @@ type MediaRecord struct {
 	StillURL         string       `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
 	Tags             *[]TagObject `xorm:"'tags'" json:"tags,omitempty"`         // to store genres, tags
 	UserTags         *[]TagObject `xorm:"'user_tags'" json:"user_tags,omitempty"`
+	AncestorID       *int64       `xorm:"index 'ancestor_id'" json:"ancestor_id,omitempty"` // reference to fk record_id of the show, for episodes
 	CreatedAt        time.Time    `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time    `xorm:"timestampz updated" json:"updated_at"`
 	FullData         []byte       `xorm:"'full_data'" json:"full_data,omitempty"`       // full data from tmdb
@@ -160,7 +161,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		"season_number", "episode_number",
 		"sort_index", "status", "overview", "duration",
 		"thumbnail_url", "backdrop_url", "still_url",
-		"tags", "user_tags", "full_data", "content_hash", "created_at", "updated_at",
+		"tags", "user_tags", "full_data", "content_hash", "ancestor_id", "created_at", "updated_at",
 	}
 
 	var sb strings.Builder
@@ -213,6 +214,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			encodeJSONDB(record.UserTags),
 			record.FullData,
 			record.ContentHash,
+			record.AncestorID,
 			now, // created_at
 			now, // updated_at
 		)
@@ -239,6 +241,7 @@ DO UPDATE SET
 	user_tags       = EXCLUDED.user_tags,
 	full_data       = EXCLUDED.full_data,
 	content_hash    = EXCLUDED.content_hash,
+	ancestor_id     = EXCLUDED.ancestor_id,
 	updated_at      = date_trunc('second', NOW())
 WHERE media_records.content_hash IS DISTINCT FROM EXCLUDED.content_hash;
 `)
@@ -325,12 +328,8 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 	err := databaseEngine.SQL(`
         SELECT e.source_id, e.record_id
         FROM media_records AS show
-        JOIN media_records AS season
-            ON  season.parent_id = show.record_id
-            AND season.record_type = 'season'
-            AND season.media_source = show.media_source
         JOIN media_records AS e
-            ON  e.parent_id = season.record_id
+            ON  e.ancestor_id = show.record_id
             AND e.record_type = 'episode'
             AND e.media_source = show.media_source
         WHERE show.record_type = 'tvshow'
@@ -390,15 +389,13 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 	`
 	sess = sess.Table(mediaRecordsTable).Alias("show").
 		Select(columns).
-		Join("INNER", []string{"media_records", "season"}, "season.parent_id = show.record_id").
-		Join("INNER", []string{"media_records", "episode"}, "episode.parent_id = season.record_id").
+		Join("INNER", []string{"media_records", "episode"}, "episode.ancestor_id = show.record_id").
 		Where("show.media_source = ?", mediaSource).
 		Where("show.source_id = ?", showSourceID).
 		Where("show.record_type = ?", "tvshow").
-		Where("season.record_type = ?", "season").
 		Where("episode.record_type = ?", "episode")
 	if seasonNumber != nil {
-		sess = sess.Where("season.season_number = ?", *seasonNumber)
+		sess = sess.Where("episode.season_number = ?", *seasonNumber)
 	}
 	if episodeNumber != nil {
 		sess = sess.Where("episode.episode_number = ?", *episodeNumber)

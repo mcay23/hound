@@ -55,7 +55,7 @@ function SelectStreamModal(props: any) {
                           onClick={() => {
                             axios
                               .post(
-                                "/api/v1/torrent/" +
+                                "/api/v1/stream/" +
                                   stream.encoded_data +
                                   "/download",
                               )
