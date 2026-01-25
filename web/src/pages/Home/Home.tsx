@@ -30,14 +30,12 @@ function Home() {
         animation: "backgroundScroll 150s linear infinite",
       },
     }),
-    [backdropURL]
+    [backdropURL],
   );
 
   useEffect(() => {
     if (backdropsData && !backdropURL) {
-      const urls = backdropsData;
-      const randomBackdrop = urls[Math.floor(Math.random() * urls.length)];
-      setBackdropURL(randomBackdrop);
+      setBackdropURL(backdropsData);
     }
   }, [backdropsData, backdropURL]);
 

@@ -39,11 +39,9 @@ function SearchPage(props: any) {
       });
     if (backdropURL === "") {
       axios
-        .get("/api/v1/backdrops")
+        .get("/api/v1/backdrop")
         .then((res) => {
-          var randomBackdrop =
-            res.data[Math.floor(Math.random() * res.data.length)];
-          setBackdropURL(randomBackdrop);
+          setBackdropURL(res.data);
         })
         .catch((err) => {
           if (err.response.status === 500) {

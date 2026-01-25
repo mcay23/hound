@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
+	"hound/model"
 	"hound/sources"
 	"hound/view"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 
 func SearchMoviesHandler(c *gin.Context) {
 	queryString := c.Query("query")
-	results, err := SearchMoviesCore(queryString)
+	results, err := model.SearchMovies(queryString)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
 		helpers.ErrorResponse(c, err)
@@ -37,23 +38,23 @@ func GetMovieFromIDHandler(c *gin.Context) {
 	// get profile, video urls
 	if movieDetails.Credits.MovieCredits != nil {
 		for num, item := range movieDetails.Credits.MovieCredits.Cast {
-			movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+			movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 		}
 		for num, item := range movieDetails.Credits.MovieCredits.Crew {
-			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 		}
 	}
 	logoURL := ""
 	if len(movieDetails.Images.Logos) > 0 {
-		logoURL = GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURL = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	returnObject := view.MovieFullObject{
 		MediaSource:         sources.MediaSourceTMDB,
 		MediaType:           database.MediaTypeMovie,
 		SourceID:            movieDetails.ID,
 		MediaTitle:          movieDetails.Title,
-		BackdropURL:         GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
-		PosterURL:           GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
+		BackdropURL:         helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
+		PosterURL:           helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
 		LogoURL:             logoURL,
 		Budget:              movieDetails.Budget,
 		Genres:              &movieDetails.Genres,
@@ -88,34 +89,4 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		returnObject.Comments = comments
 	}
 	helpers.SuccessResponse(c, returnObject, 200)
-}
-
-func SearchMoviesCore(queryString string) (*[]view.MediaCatalogObject, error) {
-	results, err := sources.SearchMoviesTMDB(queryString)
-	if err != nil {
-		return nil, err
-	}
-	// convert url results
-	var convertedResults []view.MediaCatalogObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		resultObject := view.MediaCatalogObject{
-			MediaType:        database.MediaTypeMovie,
-			MediaSource:      sources.MediaSourceTMDB,
-			OriginalName:     item.OriginalTitle,
-			SourceID:         strconv.Itoa(int(item.ID)),
-			MediaTitle:       item.Title,
-			VoteCount:        item.VoteCount,
-			VoteAverage:      item.VoteAverage,
-			ThumbnailURL:     GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			ReleaseDate:      item.ReleaseDate,
-			Popularity:       item.Popularity,
-			Genres:           genreArray,
-			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      GetTMDBImageURL(item.BackdropPath, tmdb.Original),
-			Overview:         item.Overview,
-		}
-		convertedResults = append(convertedResults, resultObject)
-	}
-	return &convertedResults, nil
 }

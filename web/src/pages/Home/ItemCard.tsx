@@ -206,7 +206,7 @@ function ItemCard(props: {
       mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
       <a href={mediaPagePath}>
-        {props.item.poster_url ? (
+        {props.item.thumbnail_url ? (
           <div className="itemcard-img-poster-container">
             {!loaded && (
               <Skeleton
@@ -217,7 +217,7 @@ function ItemCard(props: {
             )}
             <img
               className={"rounded itemcard-img-poster"}
-              src={props.item.poster_url}
+              src={props.item.thumbnail_url}
               alt={props.item.media_title}
               loading="lazy"
               onLoad={() => setLoaded(true)}
@@ -281,19 +281,14 @@ function ItemCard(props: {
       <WatchTile item={props.item} loaded={loaded} setLoaded={setLoaded} />
     );
   }
-  // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
   var mediaType = props.item.media_type;
-  var releaseYearText = "";
   if (mediaType === "tvshow") {
     mediaType = "tv";
-    if (props.item.first_air_date) {
-      releaseYearText = ` (${props.item.first_air_date.slice(0, 4)})`;
-    }
-  } else if (mediaType === "movie" || mediaType === "game") {
-    if (props.item.release_date) {
-      releaseYearText = ` (${props.item.release_date.slice(0, 4)})`;
-    }
   }
+  // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
+  var releaseYearText = props.item.release_date
+    ? ` (${props.item.release_date.slice(0, 4)})`
+    : "";
   const navigate = useNavigate();
   switch (props.itemType) {
     case "poster":

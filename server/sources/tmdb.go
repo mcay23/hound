@@ -50,11 +50,6 @@ type TVShowObject struct {
 	PosterURL string
 }
 
-type GenreObject struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-}
-
 func InitializeTMDB() {
 	var err error
 	tmdbClient, err = tmdb.InitV4(os.Getenv("TMDB_API_KEY"))
@@ -382,18 +377,19 @@ func populateTMDBMovieGenres() error {
 	return nil
 }
 
-func GetGenresMap(genreIds []int64, mediaType string) *[]GenreObject {
+func GetGenresMap(genreIds []int64, mediaType string) []database.GenreObject {
 	var genreList tmdb.GenreMovieList
-	if mediaType == database.MediaTypeTVShow {
+	switch mediaType {
+	case database.MediaTypeTVShow:
 		genreList = tmdbTVGenres
-	} else if mediaType == database.MediaTypeMovie {
+	case database.MediaTypeMovie:
 		genreList = tmdbMovieGenres
-	} else {
+	default:
 		_ = helpers.LogErrorWithMessage(errors.New("invalid param: mediaType"),
 			"Invalid media type supplied to tmdb.GetGenresMap()")
 		return nil
 	}
-	var ret []GenreObject
+	var ret []database.GenreObject
 	for _, id := range genreIds {
 		genreName := ""
 		for _, obj := range genreList.Genres {
@@ -412,13 +408,13 @@ func GetGenresMap(genreIds []int64, mediaType string) *[]GenreObject {
 				}
 			}
 		}
-		insert := GenreObject{
+		insert := database.GenreObject{
 			ID:   id,
 			Name: genreName,
 		}
 		ret = append(ret, insert)
 	}
-	return &ret
+	return ret
 }
 
 /*
@@ -507,11 +503,11 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// import tmdb genres
-	var tagsArray []database.TagObject
+	var genreArray []database.GenreObject
 	for _, genre := range movie.Genres {
-		tagsArray = append(tagsArray, database.TagObject{
-			TagID:   genre.ID,
-			TagName: genre.Name,
+		genreArray = append(genreArray, database.GenreObject{
+			ID:   genre.ID,
+			Name: genre.Name,
 		})
 	}
 	// parse image keys -> links
@@ -544,7 +540,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		ThumbnailURL:     posterURL,
 		BackdropURL:      backdropURL,
 		StillURL:         "", // don't use stills for movies
-		Tags:             &tagsArray,
+		Genres:           genreArray,
 		UserTags:         nil,
 		FullData:         movieJson,
 	}
@@ -570,11 +566,11 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// import tmdb genres
-	var tagsArray []database.TagObject
+	var genreArray []database.GenreObject
 	for _, genre := range showData.Genres {
-		tagsArray = append(tagsArray, database.TagObject{
-			TagID:   genre.ID,
-			TagName: genre.Name,
+		genreArray = append(genreArray, database.GenreObject{
+			ID:   genre.ID,
+			Name: genre.Name,
 		})
 	}
 	posterURL := tmdb.GetImageURL(showData.PosterPath, tmdb.W300)
@@ -607,7 +603,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		ThumbnailURL:     posterURL,
 		BackdropURL:      backdropURL,
 		StillURL:         "", // don't use stills for tv show parent
-		Tags:             &tagsArray,
+		Genres:           genreArray,
 		UserTags:         nil,
 		FullData:         showJson,
 	}
@@ -687,7 +683,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			ThumbnailURL:     posterURL,
 			BackdropURL:      "",
 			StillURL:         "",  // don't use stills for season
-			Tags:             nil, // just reuse
+			Genres:           nil, // just reuse
 			UserTags:         nil,
 			FullData:         seasonJson,
 		}
@@ -751,7 +747,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 				ThumbnailURL:     "",
 				BackdropURL:      "",
 				StillURL:         stillURL,
-				Tags:             nil,
+				Genres:           nil,
 				UserTags:         nil,
 				AncestorID:       &showRecord.RecordID,
 				FullData:         showJson,

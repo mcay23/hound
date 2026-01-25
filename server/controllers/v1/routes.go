@@ -22,7 +22,7 @@ func SetupRoutes(r *gin.Engine) {
 		General Routes
 	*/
 	privateRoutes.GET("/search", GeneralSearchHandler)
-	privateRoutes.GET("/backdrops", GetMediaBackdrops)
+	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
@@ -34,6 +34,11 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
+
+	/*
+		Catalog Routes
+	*/
+	privateRoutes.GET("/catalog/:id", GetCatalogHandler)
 
 	/*
 		Watch History Routes
@@ -62,7 +67,6 @@ func SetupRoutes(r *gin.Engine) {
 		TV Show Routes
 	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
-	privateRoutes.GET("/tv/trending", GetTrendingTVShowsHandler)
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
@@ -74,7 +78,6 @@ func SetupRoutes(r *gin.Engine) {
 		Movies Routes
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
-	privateRoutes.GET("/movie/trending", GetTrendingMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)

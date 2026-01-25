@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
+	"hound/model"
 	"hound/sources"
 	"hound/view"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 
 func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
-	results, err := SearchTVShowCore(queryString)
+	results, err := model.SearchTVShows(queryString)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to search for tv show"))
 		return
@@ -38,13 +39,13 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	for num := range showDetails.Seasons {
 		// this doesn't work, pointer stuff
 		// item.PosterPath = tmdb.GetImageURL(item.PosterPath, tmdb.W500)
-		showDetails.Seasons[num].PosterPath = GetTMDBImageURL(showDetails.Seasons[num].PosterPath, tmdb.W500)
+		showDetails.Seasons[num].PosterPath = helpers.GetTMDBImageURL(showDetails.Seasons[num].PosterPath, tmdb.W500)
 	}
 	for num, item := range showDetails.Credits.TVCredits.Cast {
-		showDetails.Credits.TVCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+		showDetails.Credits.TVCredits.Cast[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 	}
 	for num, item := range showDetails.Credits.TVCredits.Crew {
-		showDetails.Credits.TVCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+		showDetails.Credits.TVCredits.Crew[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 	}
 	var viewSeasons []view.SeasonObjectPartial
 	for _, item := range showDetails.Seasons {
@@ -54,13 +55,13 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			ID:           item.ID,
 			Name:         item.Name,
 			Overview:     item.Overview,
-			PosterURL:    GetTMDBImageURL(item.PosterPath, tmdb.W500),
+			PosterURL:    helpers.GetTMDBImageURL(item.PosterPath, tmdb.W500),
 			SeasonNumber: item.SeasonNumber,
 		})
 	}
 	logoURL := ""
 	if len(showDetails.Images.Logos) > 0 {
-		logoURL = GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURL = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	returnObject := view.TVShowFullObject{
 		MediaSource:      sources.MediaSourceTMDB,
@@ -70,7 +71,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		MediaTitle:       showDetails.Name,
 		VoteCount:        showDetails.VoteCount,
 		VoteAverage:      showDetails.VoteAverage,
-		PosterURL:        GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+		PosterURL:        helpers.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
 		LogoURL:          logoURL,
 		NumberOfEpisodes: showDetails.NumberOfEpisodes,
 		NumberOfSeasons:  showDetails.NumberOfSeasons,
@@ -84,7 +85,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Popularity:       showDetails.Popularity,
 		Genres:           showDetails.Genres,
 		OriginalLanguage: showDetails.OriginalLanguage,
-		BackdropURL:      GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
+		BackdropURL:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
 		Overview:         showDetails.Overview,
 		OriginCountry:    showDetails.OriginCountry,
 		Videos:           showDetails.Videos,
@@ -106,61 +107,6 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, returnObject, 200)
 }
 
-//func GetUserTVShowLibraryHandler(c *gin.Context) {
-//	username := c.GetHeader("X-Username")
-//	limitQuery := c.Query("limit")
-//	offsetQuery := c.Query("offset")
-//	limit := 0
-//	offset := 0
-//	if limitQuery != "" && offsetQuery != "" {
-//		var err error
-//		limit, err = strconv.Atoi(limitQuery)
-//		if err != nil {
-//			_ = helpers.LogErrorWithMessage(err, "Invalid limit query param")
-//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//			return
-//		}
-//		offset, err = strconv.Atoi(offsetQuery)
-//		if err != nil {
-//			_ = helpers.LogErrorWithMessage(err, "Invalid offset query param")
-//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//			return
-//		}
-//	}
-//	if username == "" {
-//		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//		return
-//	}
-//	userID, err := database.GetUserIDFromUsername(username)
-//	if err != nil {
-//		helpers.ErrorResponse(c, err)
-//		return
-//	}
-//	records, totalRecords, err := database.GetCollectionRecords(userID, 3, limit, offset)
-//	if err != nil {
-//		_ = helpers.LogErrorWithMessage(err, "Error retrieving user library")
-//		helpers.ErrorResponse(c, err)
-//		return
-//	}
-//	var viewArray []view.LibraryObject
-//	for _, item := range records {
-//		viewObject := view.LibraryObject{
-//			MediaType:    item.MediaType,
-//			MediaSource:  item.MediaSource,
-//			SourceID:     item.SourceID,
-//			MediaTitle:   item.MediaTitle,
-//			ReleaseDate:  item.ReleaseDate,
-//			Description:  string(item.Description),
-//			ThumbnailURL: item.ThumbnailURL,
-//			Tags:         item.Tags,
-//			UserTags:     item.UserTags,
-//		}
-//		viewArray = append(viewArray, viewObject)
-//	}
-//	returnObject := view.CollectionContentsView{Results: &viewArray, TotalRecords: totalRecords, Limit: limit, Offset: offset}
-//	helpers.SuccessResponse(c, returnObject, 200)
-//}
-
 func GetTVSeasonHandler(c *gin.Context) {
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
@@ -179,9 +125,9 @@ func GetTVSeasonHandler(c *gin.Context) {
 	}
 	// overwrite paths
 	for num, item := range tvSeason.Episodes {
-		tvSeason.Episodes[num].StillPath = GetTMDBImageURL(item.StillPath, tmdb.W500)
+		tvSeason.Episodes[num].StillPath = helpers.GetTMDBImageURL(item.StillPath, tmdb.W500)
 	}
-	tvSeason.PosterPath = GetTMDBImageURL(tvSeason.PosterPath, tmdb.W500)
+	tvSeason.PosterPath = helpers.GetTMDBImageURL(tvSeason.PosterPath, tmdb.W500)
 
 	response := view.TVSeasonResponseObject{
 		MediaSource: sources.MediaSourceTMDB,
@@ -221,43 +167,4 @@ func GetTVEpisodeGroupsHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, episodeGroups.Results, 200)
-}
-
-func GetTMDBImageURL(path string, size string) string {
-	if path == "" {
-		return ""
-	}
-	return tmdb.GetImageURL(path, size)
-}
-
-func SearchTVShowCore(queryString string) (*[]view.MediaCatalogObject, error) {
-	results, err := sources.SearchTVShowTMDB(queryString)
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
-		return nil, err
-	}
-	// convert url results
-	var convertedResults []view.MediaCatalogObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		resultObject := view.MediaCatalogObject{
-			MediaSource:      sources.MediaSourceTMDB,
-			MediaType:        database.MediaTypeTVShow,
-			OriginalName:     item.OriginalName,
-			SourceID:         strconv.Itoa(int(item.ID)),
-			MediaTitle:       item.Name,
-			VoteCount:        item.VoteCount,
-			VoteAverage:      item.VoteAverage,
-			ThumbnailURL:     GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			FirstAirDate:     item.FirstAirDate,
-			Popularity:       item.Popularity,
-			Genres:           genreArray,
-			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      GetTMDBImageURL(item.BackdropPath, tmdb.Original),
-			Overview:         item.Overview,
-			OriginCountry:    item.OriginCountry,
-		}
-		convertedResults = append(convertedResults, resultObject)
-	}
-	return &convertedResults, nil
 }

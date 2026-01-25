@@ -74,9 +74,10 @@
 .item-card-no-thumbnail {
   padding: 10px;
   font-family: "Roboto Condensed", sans-serif;
+  overflow: hidden;
   color: rgba(var(--hound-secondary), 1);
   background-color: rgba(var(--hound-primary), 1);
-  font-size: 35px;
+  font-size: 24px;
   display: flex;
   justify-content: center;
   text-align: center;

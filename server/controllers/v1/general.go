@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
+	"hound/model"
 	"hound/sources"
 	"hound/view"
 	"strconv"
@@ -33,8 +34,8 @@ type CommentRequest struct {
 func GeneralSearchHandler(c *gin.Context) {
 	queryString := c.Query("q")
 	// search tmdb
-	tvResults, _ := SearchTVShowCore(queryString)
-	movieResults, _ := SearchMoviesCore(queryString)
+	tvResults, _ := model.SearchTVShows(queryString)
+	movieResults, _ := model.SearchMovies(queryString)
 	// search igdb
 	//gameResults, _ := sources.SearchGameIGDB(queryString)
 
@@ -45,12 +46,13 @@ func GeneralSearchHandler(c *gin.Context) {
 	}, 200)
 }
 
+// gets the current most popular backdrop from tmdb
 func GetMediaBackdrops(c *gin.Context) {
 	// refresh backdrop every 24 hours, store data in cache
-	var backdropsCache []string
-	cacheExists, _ := database.GetCache(backdropCacheKey, &backdropsCache)
+	var backdropCache string
+	cacheExists, _ := database.GetCache(backdropCacheKey, &backdropCache)
 	if cacheExists {
-		helpers.SuccessResponse(c, backdropsCache, 200)
+		helpers.SuccessResponse(c, backdropCache, 200)
 		return
 	}
 	shows, err := sources.GetTrendingTVShowsTMDB("1")
@@ -58,30 +60,29 @@ func GetMediaBackdrops(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
 		return
 	}
-	var backdrops []string
-	if shows != nil {
-		for _, item := range shows.Results {
-			url := GetTMDBImageURL(item.BackdropPath, tmdb.Original)
-			if url != "" {
-				backdrops = append(backdrops, url)
-			}
-		}
-	}
 	movies, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
 		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
 		return
 	}
-	if movies != nil {
-		for _, item := range movies.Results {
-			url := GetTMDBImageURL(item.BackdropPath, tmdb.Original)
-			if url != "" {
-				backdrops = append(backdrops, url)
+	candidateURL := ""
+	if shows != nil && movies != nil {
+		concat := append(shows.Results, movies.Results...)
+		var popularity float32 = 0
+		for _, item := range concat {
+			if item.Popularity > popularity {
+				popularity = item.Popularity
+				candidateURL = helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original)
 			}
 		}
 	}
-	_, _ = database.SetCache(backdropCacheKey, backdrops, time.Hour*24)
-	helpers.SuccessResponse(c, backdrops, 200)
+	if candidateURL == "" {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"failed to get backdrop"))
+		return
+	}
+	_, _ = database.SetCache(backdropCacheKey, candidateURL, time.Hour*24)
+	helpers.SuccessResponse(c, candidateURL, 200)
 }
 
 func GetCommentsHandler(c *gin.Context) {
