@@ -4,7 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
-	"hound/model/sources"
+	"hound/sources"
 	"hound/view"
 	"strconv"
 	"strings"
@@ -104,36 +104,6 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		returnObject.Comments = comments
 	}
 	helpers.SuccessResponse(c, returnObject, 200)
-}
-
-func GetTrendingTVShowsHandler(c *gin.Context) {
-	// pagination locked for now
-	results, err := sources.GetTrendingTVShowsTMDB("1")
-	//results2, err := sources.GetTrendingTVShowsTMDB("2")
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting popular tv shows"))
-		return
-	}
-	//results.Results = append(results.Results, results2.Results...)
-	var viewArray []view.MediaRecordView
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		// convert url
-		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.MediaRecordView{
-			MediaType:    database.MediaTypeTVShow,
-			MediaSource:  sources.MediaSourceTMDB,
-			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.Name,
-			ReleaseDate:  item.FirstAirDate,
-			Overview:     item.Overview,
-			ThumbnailURL: thumbnailURL,
-			Tags:         genreArray,
-			UserTags:     nil,
-		}
-		viewArray = append(viewArray, viewObject)
-	}
-	helpers.SuccessResponse(c, viewArray, 200)
 }
 
 //func GetUserTVShowLibraryHandler(c *gin.Context) {
@@ -260,25 +230,25 @@ func GetTMDBImageURL(path string, size string) string {
 	return tmdb.GetImageURL(path, size)
 }
 
-func SearchTVShowCore(queryString string) (*[]view.TMDBSearchResultObject, error) {
+func SearchTVShowCore(queryString string) (*[]view.MediaCatalogObject, error) {
 	results, err := sources.SearchTVShowTMDB(queryString)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
 		return nil, err
 	}
 	// convert url results
-	var convertedResults []view.TMDBSearchResultObject
+	var convertedResults []view.MediaCatalogObject
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		resultObject := view.TMDBSearchResultObject{
+		resultObject := view.MediaCatalogObject{
 			MediaSource:      sources.MediaSourceTMDB,
 			MediaType:        database.MediaTypeTVShow,
 			OriginalName:     item.OriginalName,
-			SourceID:         item.ID,
+			SourceID:         strconv.Itoa(int(item.ID)),
 			MediaTitle:       item.Name,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			PosterURL:        GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURL:     GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			FirstAirDate:     item.FirstAirDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
-	"hound/model/sources"
+	"hound/sources"
 	"hound/view"
 	"strconv"
 

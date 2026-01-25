@@ -6,7 +6,7 @@ import (
 	"hound/helpers"
 	"hound/model"
 	"hound/model/providers"
-	"hound/model/sources"
+	"hound/sources"
 	"io"
 	"log/slog"
 	"net/http"

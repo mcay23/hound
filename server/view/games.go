@@ -1,8 +1,8 @@
 package view
 
-import "hound/model/sources"
+import "hound/sources"
 
 type GameFullObject struct {
 	*sources.IGDBGameObject
-	Comments         *[]CommentObject         `json:"comments"`
+	Comments *[]CommentObject `json:"comments"`
 }

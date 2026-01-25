@@ -9,7 +9,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
-	"hound/model/sources"
+	"hound/sources"
 	"hound/view"
 
 	"github.com/gin-gonic/gin"

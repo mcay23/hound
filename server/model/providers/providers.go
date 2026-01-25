@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
-	"hound/model/sources"
+	"hound/sources"
 	"strconv"
 	"strings"
 	"time"

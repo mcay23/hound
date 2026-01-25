@@ -2,7 +2,7 @@ package view
 
 import (
 	"hound/database"
-	"hound/model/sources"
+	"hound/sources"
 	"time"
 )
 
@@ -35,8 +35,8 @@ type MediaRecordView struct {
 }
 
 type GeneralSearchResponse struct {
-	TVShowSearchResults *[]TMDBSearchResultObject       `json:"tv_results"`
-	MovieSearchResults  *[]TMDBSearchResultObject       `json:"movie_results"`
+	TVShowSearchResults *[]MediaCatalogObject           `json:"tv_results"`
+	MovieSearchResults  *[]MediaCatalogObject           `json:"movie_results"`
 	GameSearchResults   *sources.IGDBSearchResultObject `json:"game_results"`
 }
 
