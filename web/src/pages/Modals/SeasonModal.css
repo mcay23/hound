@@ -160,11 +160,14 @@
   background-color: rgba(255,255,255,0.7);
   border-radius: 4px;
   padding: 2px;
+  padding-left: 4px;
+  padding-right: 4px;
   overflow: hidden;
   z-index: 5;
 }
 
 .episode-card-progress-pill-text {
+  color: black;
   font-size: 12px;
 }
 
