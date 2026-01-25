@@ -2,7 +2,7 @@ package providers
 
 import (
 	"hound/database"
-	"hound/model/sources"
+	"hound/sources"
 	"os"
 	"strconv"
 )

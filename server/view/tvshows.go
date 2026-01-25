@@ -2,32 +2,9 @@ package view
 
 import (
 	"hound/database"
-	"hound/model/sources"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
-
-type TVGenre struct {
-}
-
-type TMDBSearchResultObject struct {
-	MediaSource      string                 `json:"media_source" binding:"required"` // tmdb, openlibrary, etc
-	MediaType        string                 `json:"media_type" binding:"required"`
-	SourceID         int64                  `json:"source_id" binding:"required"`
-	MediaTitle       string                 `json:"media_title" binding:"required"`
-	OriginalName     string                 `json:"original_name"`
-	VoteCount        int64                  `json:"vote_count"`
-	VoteAverage      float32                `json:"vote_average"`
-	PosterURL        string                 `json:"poster_url"`
-	FirstAirDate     string                 `json:"first_air_date"`
-	ReleaseDate      string                 `json:"release_date"`
-	Popularity       float32                `json:"popularity"`
-	Genres           *[]sources.GenreObject `json:"genres"`
-	OriginalLanguage string                 `json:"original_language"`
-	BackdropURL      string                 `json:"backdrop_url"`
-	Overview         string                 `json:"overview"`
-	OriginCountry    []string               `json:"origin_country"`
-}
 
 type TVSeasonResponseObject struct {
 	MediaSource     string                `json:"media_source"` // tmdb, openlibrary, etc
@@ -37,7 +14,7 @@ type TVSeasonResponseObject struct {
 }
 
 type TVShowResults struct {
-	Results []TMDBSearchResultObject `json:"results"`
+	Results []MediaCatalogObject `json:"results"`
 }
 
 type TVShowDetails struct {

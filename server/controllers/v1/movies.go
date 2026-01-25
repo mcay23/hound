@@ -4,7 +4,7 @@ import (
 	"errors"
 	"hound/database"
 	"hound/helpers"
-	"hound/model/sources"
+	"hound/sources"
 	"hound/view"
 	"strconv"
 
@@ -21,35 +21,6 @@ func SearchMoviesHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)
-}
-
-func GetTrendingMoviesHandler(c *gin.Context) {
-	// pagination locked for now
-	results, err := sources.GetTrendingMoviesTMDB("1")
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	// convert url results
-	var viewArray []view.MediaRecordView
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.MediaRecordView{
-			MediaType:    database.MediaTypeMovie,
-			MediaSource:  sources.MediaSourceTMDB,
-			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.Title,
-			ReleaseDate:  item.ReleaseDate,
-			Overview:     item.Overview,
-			ThumbnailURL: thumbnailURL,
-			Tags:         genreArray,
-			UserTags:     nil,
-		}
-		viewArray = append(viewArray, viewObject)
-	}
-	helpers.SuccessResponse(c, viewArray, 200)
 }
 
 func GetMovieFromIDHandler(c *gin.Context) {
@@ -119,24 +90,24 @@ func GetMovieFromIDHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, returnObject, 200)
 }
 
-func SearchMoviesCore(queryString string) (*[]view.TMDBSearchResultObject, error) {
+func SearchMoviesCore(queryString string) (*[]view.MediaCatalogObject, error) {
 	results, err := sources.SearchMoviesTMDB(queryString)
 	if err != nil {
 		return nil, err
 	}
 	// convert url results
-	var convertedResults []view.TMDBSearchResultObject
+	var convertedResults []view.MediaCatalogObject
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		resultObject := view.TMDBSearchResultObject{
+		resultObject := view.MediaCatalogObject{
 			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
 			OriginalName:     item.OriginalTitle,
-			SourceID:         item.ID,
+			SourceID:         strconv.Itoa(int(item.ID)),
 			MediaTitle:       item.Title,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			PosterURL:        GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURL:     GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			ReleaseDate:      item.ReleaseDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,
