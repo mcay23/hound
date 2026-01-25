@@ -66,7 +66,7 @@ function MediaItem(props: any) {
                 loading="lazy"
               />
             ) : (
-              <div className="rounded media-item-img-poster item-card-no-thumbnail item-card-no-thumbnail-small">
+              <div className="rounded media-item-img-poster item-card-no-thumbnail">
                 {props.item.media_title}
               </div>
             )}

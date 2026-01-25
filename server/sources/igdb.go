@@ -345,11 +345,11 @@ func GetRecordObjectIGDB(igdbID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// import igdb genres
-	var tagsArray []database.TagObject
+	var tagsArray []database.GenreObject
 	for _, genre := range game.Genres {
-		tagsArray = append(tagsArray, database.TagObject{
-			TagID:   int64(genre.ID),
-			TagName: genre.Name,
+		tagsArray = append(tagsArray, database.GenreObject{
+			ID:   int64(genre.ID),
+			Name: genre.Name,
 		})
 	}
 	record := database.MediaRecord{
@@ -361,7 +361,7 @@ func GetRecordObjectIGDB(igdbID int) (*database.MediaRecord, error) {
 		Overview:     game.Summary,
 		FullData:     gameJson,
 		ThumbnailURL: game.Cover.ImageURL,
-		Tags:         &tagsArray,
+		Genres:       tagsArray,
 		UserTags:     nil,
 	}
 	return &record, nil

@@ -13,10 +13,6 @@ type TVSeasonResponseObject struct {
 	SeasonWatchInfo *[]CommentObject      `json:"watch_info"`
 }
 
-type TVShowResults struct {
-	Results []MediaCatalogObject `json:"results"`
-}
-
 type TVShowDetails struct {
 	*tmdb.TVDetails
 	BackdropURL string `json:"backdrop_url"`

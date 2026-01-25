@@ -1,17 +1,17 @@
 import axios from "axios";
 
 export const fetchTrendingTVShows = async () => {
-  const { data } = await axios.get("/api/v1/tv/trending");
+  const { data } = await axios.get("/api/v1/catalog/trending-shows");
   return data;
 };
 
 export const fetchTrendingMovies = async () => {
-  const { data } = await axios.get("/api/v1/movie/trending");
+  const { data } = await axios.get("/api/v1/catalog/trending-movies");
   return data;
 };
 
 export const fetchBackdrops = async () => {
-  const { data } = await axios.get("/api/v1/backdrops");
+  const { data } = await axios.get("/api/v1/backdrop");
   return data;
 };
 

@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
 var invalidFilenameChars = regexp.MustCompile(`[<>:"/\\|?*]`)
@@ -68,4 +70,11 @@ func ExtractInfoHashFromURL(url string) (string, bool) {
 		return "", false
 	}
 	return strings.ToLower(m[1]), true
+}
+
+func GetTMDBImageURL(path string, size string) string {
+	if path == "" {
+		return ""
+	}
+	return tmdb.GetImageURL(path, size)
 }

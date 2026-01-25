@@ -125,9 +125,9 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error searching collection"))
 		return
 	}
-	var collectionResponse []view.CollectionRecordView
+	var collectionResponse []view.CollectionObject
 	for _, record := range records {
-		temp := view.CollectionRecordView{
+		temp := view.CollectionObject{
 			CollectionID:    record.CollectionID,
 			CollectionTitle: record.CollectionTitle,
 			Description:     string(record.Description),
@@ -205,18 +205,21 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get collection records"))
 		return
 	}
-	var viewArray []view.MediaRecordView
+	var viewArray []database.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := view.MediaRecordView{
-			MediaType:    item.RecordType,
-			MediaSource:  item.MediaSource,
-			SourceID:     item.SourceID,
-			MediaTitle:   item.MediaTitle,
-			ReleaseDate:  item.ReleaseDate,
-			Overview:     item.Overview,
-			ThumbnailURL: item.ThumbnailURL,
-			Tags:         item.Tags,
-			UserTags:     item.UserTags,
+		viewObject := database.MediaRecordCatalog{
+			RecordType:       item.RecordType,
+			MediaSource:      item.MediaSource,
+			SourceID:         item.SourceID,
+			MediaTitle:       item.MediaTitle,
+			OriginalTitle:    item.OriginalTitle,
+			ReleaseDate:      item.ReleaseDate,
+			Overview:         item.Overview,
+			ThumbnailURL:     item.ThumbnailURL,
+			BackdropURL:      item.BackdropURL,
+			Genres:           item.Genres,
+			OriginalLanguage: item.OriginalLanguage,
+			OriginCountry:    item.OriginCountry,
 		}
 		viewArray = append(viewArray, viewObject)
 	}
@@ -227,8 +230,8 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		return
 	}
 	res := view.CollectionView{
-		Results: &viewArray,
-		Collection: &view.CollectionRecordView{
+		Results: viewArray,
+		Collection: &view.CollectionObject{
 			CollectionID:    collection.CollectionID,
 			CollectionTitle: collection.CollectionTitle,
 			Description:     string(collection.Description),
@@ -259,18 +262,28 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get recent collection records"))
 		return
 	}
-	var viewArray []view.MediaRecordView
+	var viewArray []database.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := view.MediaRecordView{
-			MediaType:    item.RecordType,
-			MediaSource:  item.MediaSource,
-			SourceID:     item.SourceID,
-			MediaTitle:   item.MediaTitle,
-			ReleaseDate:  item.ReleaseDate,
-			Overview:     item.Overview,
-			ThumbnailURL: item.ThumbnailURL,
-			Tags:         item.Tags,
-			UserTags:     item.UserTags,
+		viewObject := database.MediaRecordCatalog{
+			RecordType:       item.RecordType,
+			MediaSource:      item.MediaSource,
+			SourceID:         item.SourceID,
+			MediaTitle:       item.MediaTitle,
+			OriginalTitle:    item.OriginalTitle,
+			Status:           item.Status,
+			Overview:         item.Overview,
+			Duration:         item.Duration,
+			ReleaseDate:      item.ReleaseDate,
+			LastAirDate:      item.LastAirDate,
+			NextAirDate:      item.NextAirDate,
+			SeasonNumber:     item.SeasonNumber,
+			EpisodeNumber:    item.EpisodeNumber,
+			ThumbnailURL:     item.ThumbnailURL,
+			BackdropURL:      item.BackdropURL,
+			StillURL:         item.StillURL,
+			Genres:           item.Genres,
+			OriginalLanguage: item.OriginalLanguage,
+			OriginCountry:    item.OriginCountry,
 		}
 		viewArray = append(viewArray, viewObject)
 	}
