@@ -56,7 +56,6 @@ function MediaPageTV(props: any) {
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
-
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
@@ -77,7 +76,7 @@ function MediaPageTV(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -87,49 +86,36 @@ function MediaPageTV(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
     },
   };
   // handle variables for display
-  var releaseYear = props.data.first_air_date.slice(0, 4);
+  var releaseYear = props.data.release_date.slice(0, 4);
   var genres = props.data.genres
     .map((item: any) => {
       return item.name;
     })
     .join(", ");
   var runtime = "";
-  const lf = new Intl.ListFormat("en");
-  var creators = lf.format(
-    props.data.created_by.map((item: any) => {
-      return item.name;
-    }),
-  );
-  if (props.data.episode_run_time.length > 0) {
-    if (props.data.episode_run_time[0] >= 60) {
+  var creators = "";
+  try {
+    const lf = new Intl.ListFormat("en");
+    creators = lf.format(props.data.creators.map((item: any) => item.name));
+  } catch {}
+  if (props.data.duration > 0) {
+    if (props.data.duration >= 60) {
       runtime =
-        Math.floor(props.data.episode_run_time[0] / 60) +
+        Math.floor(props.data.duration / 60) +
         "h " +
-        (props.data.episode_run_time[0] % 60) +
+        (props.data.duration % 60) +
         "m";
     } else {
-      runtime = props.data.episode_run_time[0] + "m";
+      runtime = props.data.duration + "m";
     }
   }
-  // handle actor profiles
-  var creditsList = props.data.credits.cast.map((item: any) => {
-    return {
-      thumbnail_url: item.profile_path,
-      credits: {
-        name: item.name,
-        character: item.character,
-        id: item.id,
-      },
-      id: item.credit_id,
-    };
-  });
   // if specials exist (season number 0), move to end of array for displaying
   // if (props.data.seasons && props.data.seasons[0].season_number === 0) {
   //   props.data.seasons.push(props.data.seasons.shift());
@@ -316,25 +302,25 @@ function MediaPageTV(props: any) {
       <div
         className="media-page-tv-header"
         style={
-          props.data.backdrop_url ? styles.withBackdrop : styles.noBackdrop
+          props.data.backdrop_uri ? styles.withBackdrop : styles.noBackdrop
         }
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
-              {!isPosterLoaded && props.data.poster_url && (
+              {!isPosterLoaded && props.data.thumbnail_uri && (
                 <Skeleton
                   variant="rounded"
                   className="rounded media-page-tv-poster-skeleton"
                   animation="wave"
                 />
               )}
-              {props.data.poster_url ? (
+              {props.data.thumbnail_uri ? (
                 <img
                   className={
                     "media-page-tv-poster " + (!isPosterLoaded && "d-none")
                   }
-                  src={props.data.poster_url}
+                  src={props.data.thumbnail_uri}
                   alt={props.data.media_title}
                   onLoad={() => setIsPosterLoaded(true)}
                 />
@@ -466,13 +452,13 @@ function MediaPageTV(props: any) {
       </div>
       <div className="media-page-tv-main" style={styles.opacityBackdrop}>
         <HorizontalSection
-          items={creditsList}
+          items={props.data.cast}
           header={"Cast"}
           itemType="cast"
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos.results}
+          items={props.data.videos?.results}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}

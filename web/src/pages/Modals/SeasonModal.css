@@ -77,7 +77,8 @@
   background-color: rgba(var(--hound-primary), 1);
   object-fit: cover;
   margin-right: 15px;
-  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+  box-shadow:
+    rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
     rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 }
 
@@ -112,9 +113,9 @@
 }
 
 .episode-card-img {
-  min-width: 304px;
-  width: 304px;
-  height: 171px;
+  width: 300px;
+  height: 169px;
+  min-width: 300px;
   border-radius: 12px;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   object-fit: cover;
@@ -146,7 +147,7 @@
 
 .episode-card-img-play-icon {
   color: white;
-  transform: scale(.85);
+  transform: scale(0.85);
 }
 
 .episode-card-img-container:hover .episode-card-img-play-icon {
@@ -157,7 +158,7 @@
   position: absolute;
   bottom: 18px;
   right: 12px;
-  background-color: rgba(255,255,255,0.7);
+  background-color: rgba(255, 255, 255, 0.7);
   border-radius: 4px;
   padding: 2px;
   padding-left: 4px;
@@ -177,7 +178,7 @@
   left: 12px;
   right: 12px;
   height: 5px;
-  background-color: rgba(255,255,255,0.7);
+  background-color: rgba(255, 255, 255, 0.7);
   border-radius: 4px;
   overflow: hidden;
   z-index: 5;
@@ -185,7 +186,7 @@
 
 .episode-card-progress-bar {
   height: 100%;
-  background-color: rgba(var(--hound-primary),0.8);
+  background-color: rgba(var(--hound-primary), 0.8);
   border-radius: 4px;
 }
 

@@ -20,13 +20,13 @@ function ItemCard(props: {
     | "image"
     | "comment"
     | "watch_tile";
-  showTitle: any;
-  itemOnClick: any;
+  showTitle?: any;
+  itemOnClick?: any;
 }) {
   const [loaded, setLoaded] = useState(false);
   function itemTypePoster() {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
-    if (!props.item.thumbnail_url) {
+    if (!props.item.thumbnail_uri) {
       return (
         <a href={mediaPagePath} className="itemcard-img-poster-container">
           <div
@@ -50,7 +50,7 @@ function ItemCard(props: {
         )}
         <img
           className="rounded itemcard-img-poster"
-          src={props.item.thumbnail_url}
+          src={props.item.thumbnail_uri}
           alt={props.item.media_title}
           loading="lazy"
           onLoad={() => setLoaded(true)}
@@ -63,11 +63,11 @@ function ItemCard(props: {
     );
   }
   function itemTypeCast() {
-    var primaryCaption = props.item.credits.name;
-    var secondaryCaption = props.item.credits.character;
+    var primaryCaption = props.item.name;
+    var secondaryCaption = props.item.character;
     return (
       <figure>
-        {props.item.thumbnail_url ? (
+        {props.item.thumbnail_uri ? (
           <>
             <div className="itemcard-img-cast-container">
               {!loaded && (
@@ -79,8 +79,8 @@ function ItemCard(props: {
               )}
               <img
                 className="rounded itemcard-img-cast"
-                src={props.item.thumbnail_url}
-                alt={props.item.media_title}
+                src={props.item.thumbnail_uri}
+                alt={props.item.name}
                 loading="lazy"
                 onLoad={() => setLoaded(true)}
                 style={{
@@ -105,14 +105,14 @@ function ItemCard(props: {
     );
   }
   function itemTypeSeason() {
-    let primaryCaption = props.item.name;
+    let primaryCaption = props.item.media_title;
     let secondaryCaption = props.item.episode_count
       ? props.item.episode_count + " episodes"
       : "";
     return (
       <figure>
         <div className="itemcard-img-poster-container">
-          {props.item.poster_url ? (
+          {props.item.thumbnail_uri ? (
             <>
               {!loaded && (
                 <Skeleton
@@ -123,7 +123,7 @@ function ItemCard(props: {
               )}
               <img
                 className={"rounded itemcard-img-poster"}
-                src={props.item.poster_url}
+                src={props.item.thumbnail_uri}
                 alt={props.item.media_title}
                 onClick={() => {
                   props.itemOnClick(props.item.season_number);
@@ -166,11 +166,11 @@ function ItemCard(props: {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
     return (
       <>
-        {props.item.thumbnail_url ? (
+        {props.item.thumbnail_uri ? (
           <ImageListItem key={props.item.source_id}>
             <img
               className="rounded itemcard-img-poster"
-              src={props.item.thumbnail_url}
+              src={props.item.thumbnail_uri}
               alt={props.item.media_title}
               onClick={() => navigate(mediaPagePath)}
               loading="lazy"
@@ -206,7 +206,7 @@ function ItemCard(props: {
       mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
       <a href={mediaPagePath}>
-        {props.item.thumbnail_url ? (
+        {props.item.thumbnail_uri ? (
           <div className="itemcard-img-poster-container">
             {!loaded && (
               <Skeleton
@@ -217,7 +217,7 @@ function ItemCard(props: {
             )}
             <img
               className={"rounded itemcard-img-poster"}
-              src={props.item.thumbnail_url}
+              src={props.item.thumbnail_uri}
               alt={props.item.media_title}
               loading="lazy"
               onLoad={() => setLoaded(true)}

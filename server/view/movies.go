@@ -7,9 +7,9 @@ type MovieFullObject struct {
 	MediaType           string                     `json:"media_type"`   // tmdb, openlibrary, etc
 	SourceID            int64                      `json:"source_id"`
 	MediaTitle          string                     `json:"media_title"`
-	BackdropURL         string                     `json:"backdrop_url"`
-	PosterURL           string                     `json:"poster_url"`
-	LogoURL             string                     `json:"logo_url"`
+	BackdropURI         string                     `json:"backdrop_uri"`
+	ThumbnailURI        string                     `json:"poster_uri"`
+	LogoURI             string                     `json:"logo_uri"`
 	Budget              int64                      `json:"budget"`
 	Homepage            string                     `json:"homepage"`
 	IMDbID              string                     `json:"imdb_id"`

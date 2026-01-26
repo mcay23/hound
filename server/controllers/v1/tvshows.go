@@ -48,9 +48,9 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			Name: genre.Name,
 		})
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(showDetails.Images.Logos) > 0 {
-		logoURL = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	showObject := view.TVShowCatalogObject{
 		MediaRecordCatalog: view.MediaRecordCatalog{
@@ -73,7 +73,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			Genres:           genreArray,
 			OriginalLanguage: showDetails.OriginalLanguage,
 			BackdropURI:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
-			LogoURI:          logoURL,
+			LogoURI:          logoURI,
 			Overview:         showDetails.Overview,
 			OriginCountry:    showDetails.OriginCountry,
 		},
@@ -88,7 +88,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			Name:         cast.Name,
 			OriginalName: cast.OriginalName,
 			Character:    &cast.Character,
-			ProfileURI:   helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			ThumbnailURI: helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
 			Job:          "Cast",
 		})
 		if idx == 20 {
@@ -104,7 +104,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			CreditID:     creator.CreditID,
 			Name:         creator.Name,
 			OriginalName: creator.Name,
-			ProfileURI:   helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
+			ThumbnailURI: helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
 			Job:          "Creator",
 		})
 	}
@@ -118,6 +118,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			SourceID:     strconv.Itoa(int(season.ID)),
 			Overview:     season.Overview,
 			MediaTitle:   season.Name,
+			SeasonNumber: &season.SeasonNumber,
 			EpisodeCount: &season.EpisodeCount,
 			ThumbnailURI: helpers.GetTMDBImageURL(season.PosterPath, tmdb.W500),
 			ReleaseDate:  season.AirDate,
@@ -158,13 +159,13 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			ID:           item.ID,
 			Name:         item.Name,
 			Overview:     item.Overview,
-			PosterURL:    helpers.GetTMDBImageURL(item.PosterPath, tmdb.W500),
+			ThumbnailURI: helpers.GetTMDBImageURL(item.PosterPath, tmdb.W500),
 			SeasonNumber: item.SeasonNumber,
 		})
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(showDetails.Images.Logos) > 0 {
-		logoURL = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	returnObject := view.TVShowFullObject{
 		MediaSource:      sources.MediaSourceTMDB,
@@ -174,8 +175,8 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		MediaTitle:       showDetails.Name,
 		VoteCount:        showDetails.VoteCount,
 		VoteAverage:      showDetails.VoteAverage,
-		PosterURL:        helpers.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
-		LogoURL:          logoURL,
+		ThumbnailURI:     helpers.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+		LogoURI:          logoURI,
 		NumberOfEpisodes: showDetails.NumberOfEpisodes,
 		NumberOfSeasons:  showDetails.NumberOfSeasons,
 		Seasons:          viewSeasons,
@@ -188,7 +189,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Popularity:       showDetails.Popularity,
 		Genres:           showDetails.Genres,
 		OriginalLanguage: showDetails.OriginalLanguage,
-		BackdropURL:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
+		BackdropURI:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
 		Overview:         showDetails.Overview,
 		OriginCountry:    showDetails.OriginCountry,
 		Videos:           showDetails.Videos,
@@ -255,12 +256,12 @@ func GetTVSeasonHandlerV2(c *gin.Context) {
 		guestStarsArr := []view.Credit{}
 		for idx, item := range item.GuestStars {
 			guestStarsArr = append(guestStarsArr, view.Credit{
-				MediaSource: sources.MediaSourceTMDB,
-				SourceID:    strconv.Itoa(int(item.ID)),
-				CreditID:    item.CreditID,
-				Name:        item.Name,
-				Character:   &item.Character,
-				ProfileURI:  helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
+				MediaSource:  sources.MediaSourceTMDB,
+				SourceID:     strconv.Itoa(int(item.ID)),
+				CreditID:     item.CreditID,
+				Name:         item.Name,
+				Character:    &item.Character,
+				ThumbnailURI: helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
 			})
 			if idx == 20 {
 				break

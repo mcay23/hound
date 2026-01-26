@@ -121,7 +121,7 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 // this gets the movie record, or both the episode and show record for tv shows
 // a bit computationally expensive, might need a better solution
 func enrichIngestTasks(tasks []IngestTask) []IngestTaskFullRecord {
-	const reducedFields = "record_id, record_type, media_source, source_id, parent_id, ancestor_id, media_title, original_title, original_language, origin_country, release_date, last_air_date, next_air_date, season_number, episode_number, sort_index, status, overview, duration, thumbnail_url, backdrop_url, still_url, tags, user_tags, created_at, updated_at"
+	const reducedFields = "record_id, record_type, media_source, source_id, parent_id, ancestor_id, media_title, original_title, original_language, origin_country, release_date, last_air_date, next_air_date, season_number, episode_number, sort_index, status, overview, duration, thumbnail_uri, backdrop_uri, logo_uri, genres, tags, created_at, updated_at"
 	if len(tasks) == 0 {
 		return []IngestTaskFullRecord{}
 	}

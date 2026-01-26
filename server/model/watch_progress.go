@@ -157,7 +157,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		watchProgress.EpisodeTitle = &targetEpisode.Name
 		watchProgress.Overview = targetEpisode.Overview
 		watchProgress.ReleaseDate = targetEpisode.AirDate
-		watchProgress.ThumbnailURL = tmdb.GetImageURL(targetEpisode.StillPath, tmdb.W500)
+		watchProgress.ThumbnailURI = tmdb.GetImageURL(targetEpisode.StillPath, tmdb.W500)
 		episodeIDStr := strconv.Itoa(int(targetEpisode.ID))
 		watchProgress.EpisodeSourceID = &episodeIDStr
 		cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,
@@ -182,7 +182,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		watchProgress.MediaTitle = movieDetails.Title
 		watchProgress.Overview = movieDetails.Overview
 		watchProgress.ReleaseDate = movieDetails.ReleaseDate
-		watchProgress.ThumbnailURL = tmdb.GetImageURL(movieDetails.BackdropPath, tmdb.W500)
+		watchProgress.ThumbnailURI = tmdb.GetImageURL(movieDetails.BackdropPath, tmdb.W500)
 	}
 	// for movies, don't send in season/episode number
 	cacheKey := fmt.Sprintf(WATCH_PROGRESS_CACHE_KEY, userID, mediaType, mediaSource, sourceID,

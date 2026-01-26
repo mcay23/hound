@@ -95,7 +95,7 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -105,7 +105,7 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -130,13 +130,7 @@ function MediaPageMovie(props: any) {
   // get creators (directors)
   try {
     const lf = new Intl.ListFormat("en");
-    creators = lf.format(
-      props.data.credits.crew
-        .filter((item: any) => item.job === "Director")
-        .map((item: any) => {
-          return item.name;
-        }),
-    );
+    creators = lf.format(props.data.creators.map((item: any) => item.name));
   } catch {}
   if (props.data.runtime > 0) {
     if (props.data.runtime >= 60) {
@@ -149,18 +143,6 @@ function MediaPageMovie(props: any) {
       runtime = props.data.runtime + "m";
     }
   }
-  // handle actor profiles
-  var creditsList = props.data.credits.cast.map((item: any) => {
-    return {
-      thumbnail_url: item.profile_path,
-      credits: {
-        name: item.name,
-        character: item.character,
-        id: item.id,
-      },
-      id: item.credit_id,
-    };
-  });
   // mode is either "direct" or "select"
   // direct plays the stream directly, select opens the stream selection modal
   const handleStreamButtonClick = (mode: string) => {
@@ -242,25 +224,25 @@ function MediaPageMovie(props: any) {
       <div
         className="media-page-tv-header"
         style={
-          props.data.backdrop_url ? styles.withBackdrop : styles.noBackdrop
+          props.data.backdrop_uri ? styles.withBackdrop : styles.noBackdrop
         }
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
-              {!isPosterLoaded && props.data.poster_url && (
+              {!isPosterLoaded && props.data.thumbnail_uri && (
                 <Skeleton
                   variant="rounded"
                   className="rounded media-page-tv-poster-skeleton"
                   animation="wave"
                 />
               )}
-              {props.data.poster_url ? (
+              {props.data.thumbnail_uri ? (
                 <img
                   className={
                     "media-page-tv-poster " + (!isPosterLoaded && "d-none")
                   }
-                  src={props.data.poster_url}
+                  src={props.data.thumbnail_uri}
                   alt={props.data.media_title}
                   onLoad={() => setIsPosterLoaded(true)}
                 />
@@ -394,18 +376,6 @@ function MediaPageMovie(props: any) {
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
-                {/* <BootstrapTooltip
-                  title={
-                    <span className="media-page-tv-header-button-tooltip-title">
-                      Track Show
-                    </span>
-                  }
-                  PopperProps={offsetFix}
-                >
-                  <IconButton>
-                    <BookmarkIcon id="media-page-tv-header-track-button" />
-                  </IconButton>
-                </BootstrapTooltip> */}
               </div>
             </div>
           </div>
@@ -413,13 +383,13 @@ function MediaPageMovie(props: any) {
       </div>
       <div className="media-page-tv-main" style={styles.opacityBackdrop}>
         <HorizontalSection
-          items={creditsList}
+          items={props.data.cast}
           header={"Cast"}
           itemType="cast"
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos.results}
+          items={props.data.videos?.results}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}

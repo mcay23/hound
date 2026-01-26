@@ -38,12 +38,12 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 }));
 
 function MediaPageGame(props: any) {
-  // get backdropURL from artwork or screenshots if available
-  var backdropURL = "";
+  // get backdropURI from artwork or screenshots if available
+  var backdropURI = "";
   if (props.data.artworks) {
-    backdropURL = props.data.artworks[0].image_url;
+    backdropURI = props.data.artworks[0].image_url;
   } else if (props.data.screenshots) {
-    backdropURL = props.data.screenshots[0].image_url;
+    backdropURI = props.data.screenshots[0].image_url;
   }
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -81,7 +81,7 @@ function MediaPageGame(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        backdropURL +
+        backdropURI +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -91,7 +91,7 @@ function MediaPageGame(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        backdropURL +
+        backdropURI +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -119,7 +119,7 @@ function MediaPageGame(props: any) {
     credits = lf.format(
       props.data.involved_companies
         .filter((item: any) => item.developer || item.publisher)
-        .map((item: any) => item.company.name)
+        .map((item: any) => item.company.name),
     );
   }
   let images = [
@@ -136,15 +136,15 @@ function MediaPageGame(props: any) {
     <>
       <div
         className="media-page-tv-header"
-        style={backdropURL ? styles.withBackdrop : styles.noBackdrop}
+        style={backdropURI ? styles.withBackdrop : styles.noBackdrop}
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
-              {props.data.poster_url ? (
+              {props.data.thumbnail_uri ? (
                 <img
                   className="media-page-tv-poster"
-                  src={props.data.poster_url}
+                  src={props.data.thumbnail_uri}
                   alt={props.data.media_title}
                 />
               ) : (

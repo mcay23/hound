@@ -34,6 +34,7 @@ type MediaRecord struct {
 	MediaSource      string        `xorm:"unique(primary) not null 'media_source'" json:"media_source"` // tmdb, openlibrary, etc. the main metadata provider
 	SourceID         string        `xorm:"unique(primary) not null 'source_id'" json:"source_id"`       // tmdb id, episode/season tmdb id
 	ParentID         *int64        `xorm:"index 'parent_id'" json:"parent_id,omitempty"`                // reference to fk record_id, null for movie, tvshow
+	AncestorID       *int64        `xorm:"index 'ancestor_id'" json:"ancestor_id,omitempty"`            // reference to fk record_id of the show, for episodes
 	MediaTitle       string        `xorm:"text 'media_title'" json:"media_title"`                       // movie, tvshow, season or episode title
 	OriginalTitle    string        `xorm:"text 'original_title'" json:"original_title"`                 // original title in release language
 	OriginalLanguage string        `xorm:"text 'original_language'" json:"original_language"`
@@ -43,17 +44,15 @@ type MediaRecord struct {
 	NextAirDate      string        `xorm:"'next_air_date'" json:"next_air_date"` // for shows, next scheduled episode air date
 	SeasonNumber     *int          `xorm:"'season_number'" json:"season_number,omitempty"`
 	EpisodeNumber    *int          `xorm:"'episode_number'" json:"episode_number,omitempty"`
-	SortIndex        int           `xorm:"'sort_index'" json:"sort_index"`       // not in use yet, used to sort based on user preferences
-	Status           string        `xorm:"'status'" json:"status"`               // Returning Series, Released, etc.
-	Overview         string        `xorm:"text 'overview'" json:"overview"`      // game of thrones is a show about ...
-	Duration         int           `xorm:"'duration'" json:"duration"`           // duration/runtime in minutes
-	ThumbnailURL     string        `xorm:"'thumbnail_url'" json:"thumbnail_url"` // poster image for tmdb
-	BackdropURL      string        `xorm:"'backdrop_url'" json:"backdrop_url"`   // backgrounds
-	StillURL         string        `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
-	LogoURL          string        `xorm:"'logo_url'" json:"logo_url"`           // logo for the show/movie
-	Genres           []GenreObject `xorm:"'tags'" json:"tags,omitempty"`         // to store genres, tags
-	UserTags         []TagObject   `xorm:"'user_tags'" json:"user_tags,omitempty"`
-	AncestorID       *int64        `xorm:"index 'ancestor_id'" json:"ancestor_id,omitempty"` // reference to fk record_id of the show, for episodes
+	SortIndex        int           `xorm:"'sort_index'" json:"sort_index"`            // not in use yet, used to sort based on user preferences
+	Status           string        `xorm:"'status'" json:"status"`                    // Returning Series, Released, etc.
+	Overview         string        `xorm:"text 'overview'" json:"overview"`           // game of thrones is a show about ...
+	Duration         int           `xorm:"'duration'" json:"duration"`                // duration/runtime in minutes
+	ThumbnailURI     string        `xorm:"text 'thumbnail_uri'" json:"thumbnail_uri"` // poster image for shows/movies, still image for episode
+	BackdropURI      string        `xorm:"text 'backdrop_uri'" json:"backdrop_uri"`   // backgrounds
+	LogoURI          string        `xorm:"text 'logo_uri'" json:"logo_uri"`           // logo for the show/movie
+	Genres           []GenreObject `xorm:"'genres'" json:"genres,omitempty"`          // to store genres, tags
+	Tags             []TagObject   `xorm:"'tags'" json:"tags,omitempty"`
 	CreatedAt        time.Time     `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time     `xorm:"timestampz updated" json:"updated_at"`
 	FullData         []byte        `xorm:"'full_data'" json:"full_data,omitempty"`       // full data from tmdb
@@ -140,34 +139,30 @@ func BatchUpsertMediaRecords(sess *xorm.Session, records []*MediaRecord) error {
 	if len(records) == 0 {
 		return nil
 	}
-	// don't want to run out of memory
-	// we need to batch
-	const batchSize = 100
+	// don't want to run out of memory, batch by 500s
+	const batchSize = 500
 	for start := 0; start < len(records); start += batchSize {
 		end := start + batchSize
 		if end > len(records) {
 			end = len(records)
 		}
-
 		batch := records[start:end]
-
 		if err := batchUpsertChunk(sess, batch); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
 func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 	columns := []string{
-		"record_type", "media_source", "source_id", "parent_id",
+		"record_type", "media_source", "source_id", "parent_id", "ancestor_id",
 		"media_title", "original_title", "original_language",
 		"origin_country", "release_date", "last_air_date", "next_air_date",
 		"season_number", "episode_number",
 		"sort_index", "status", "overview", "duration",
-		"thumbnail_url", "backdrop_url", "still_url", "logo_url",
-		"tags", "user_tags", "full_data", "content_hash", "ancestor_id", "created_at", "updated_at",
+		"thumbnail_uri", "backdrop_uri", "logo_uri",
+		"genres", "tags", "full_data", "content_hash", "created_at", "updated_at",
 	}
 
 	var sb strings.Builder
@@ -200,6 +195,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.MediaSource,
 			record.SourceID,
 			record.ParentID,
+			record.AncestorID,
 			record.MediaTitle,
 			record.OriginalTitle,
 			record.OriginalLanguage,
@@ -213,15 +209,13 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.Status,
 			record.Overview,
 			record.Duration,
-			record.ThumbnailURL,
-			record.BackdropURL,
-			record.StillURL,
-			record.LogoURL,
+			record.ThumbnailURI,
+			record.BackdropURI,
+			record.LogoURI,
 			encodeJSONDB(record.Genres),
-			encodeJSONDB(record.UserTags),
+			encodeJSONDB(record.Tags),
 			record.FullData,
 			record.ContentHash,
-			record.AncestorID,
 			now, // created_at
 			now, // updated_at
 		)
@@ -241,12 +235,11 @@ DO UPDATE SET
 	status          = EXCLUDED.status,
 	overview        = EXCLUDED.overview,
 	duration        = EXCLUDED.duration,
-	thumbnail_url   = EXCLUDED.thumbnail_url,
-	backdrop_url    = EXCLUDED.backdrop_url,
-	still_url       = EXCLUDED.still_url,
-	logo_url        = EXCLUDED.logo_url,
+	thumbnail_uri   = EXCLUDED.thumbnail_uri,
+	backdrop_uri    = EXCLUDED.backdrop_uri,
+	logo_uri        = EXCLUDED.logo_uri,
+	genres          = EXCLUDED.genres,
 	tags            = EXCLUDED.tags,
-	user_tags       = EXCLUDED.user_tags,
 	full_data       = EXCLUDED.full_data,
 	content_hash    = EXCLUDED.content_hash,
 	ancestor_id     = EXCLUDED.ancestor_id,
@@ -392,7 +385,6 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 		episode.sort_index,
 		episode.overview,
 		episode.duration,
-		episode.still_url,
 		episode.content_hash
 	`
 	sess = sess.Table(mediaRecordsTable).Alias("show").

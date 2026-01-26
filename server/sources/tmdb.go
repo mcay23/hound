@@ -45,11 +45,6 @@ type TMDBEpisode struct {
 	StillPath      string `json:"still_path"`
 }
 
-type TVShowObject struct {
-	TMDBData  *tmdb.SearchTVShowsResults
-	PosterURL string
-}
-
 func InitializeTMDB() {
 	var err error
 	tmdbClient, err = tmdb.InitV4(os.Getenv("TMDB_API_KEY"))
@@ -439,8 +434,8 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		sb.WriteString(record.ReleaseDate)
 		sb.WriteString(record.Overview)
 		sb.WriteString(fmt.Sprintf("%d", record.Duration))
-		sb.WriteString(record.ThumbnailURL)
-		sb.WriteString(record.BackdropURL)
+		sb.WriteString(record.ThumbnailURI)
+		sb.WriteString(record.BackdropURI)
 	case "tvshow":
 		sb.WriteString(record.MediaSource)
 		sb.WriteString(record.SourceID)
@@ -451,8 +446,8 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		sb.WriteString(record.NextAirDate)
 		sb.WriteString(record.Status)
 		sb.WriteString(record.Overview)
-		sb.WriteString(record.ThumbnailURL)
-		sb.WriteString(record.BackdropURL)
+		sb.WriteString(record.ThumbnailURI)
+		sb.WriteString(record.BackdropURI)
 	case "season":
 		sb.WriteString(record.MediaSource)
 		sb.WriteString(record.SourceID) // tmdb seasonid
@@ -461,8 +456,8 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		}
 		sb.WriteString(record.Overview)
 		sb.WriteString(record.ReleaseDate)
-		sb.WriteString(record.ThumbnailURL)
-		sb.WriteString(record.BackdropURL)
+		sb.WriteString(record.ThumbnailURI)
+		sb.WriteString(record.BackdropURI)
 	case "episode":
 		sb.WriteString(record.MediaSource)
 		sb.WriteString(record.SourceID) // tmdb episodeid
@@ -473,8 +468,7 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		sb.WriteString(record.Overview)
 		sb.WriteString(fmt.Sprintf("%d", record.Duration))
 		sb.WriteString(record.ReleaseDate) // air_date
-		sb.WriteString(record.ThumbnailURL)
-		sb.WriteString(record.StillURL)
+		sb.WriteString(record.ThumbnailURI)
 	}
 	hash := md5.Sum([]byte(sb.String() + additionalKey))
 	return hex.EncodeToString(hash[:])
@@ -511,17 +505,17 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		})
 	}
 	// parse image keys -> links
-	posterURL := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
+	thumbnailURI := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
 	if movie.PosterPath == "" {
-		posterURL = ""
+		thumbnailURI = ""
 	}
-	backdropURL := tmdb.GetImageURL(movie.BackdropPath, tmdb.W1280)
+	backdropURI := tmdb.GetImageURL(movie.BackdropPath, tmdb.W1280)
 	if movie.BackdropPath == "" {
-		backdropURL = ""
+		backdropURI = ""
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(movie.Images.Logos) > 0 {
-		logoURL = tmdb.GetImageURL(movie.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = tmdb.GetImageURL(movie.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	entry := database.MediaRecord{
 		RecordType:       database.RecordTypeMovie,
@@ -541,12 +535,11 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		Status:           movie.Status,
 		Overview:         movie.Overview,
 		Duration:         movie.Runtime,
-		ThumbnailURL:     posterURL,
-		BackdropURL:      backdropURL,
-		StillURL:         "", // don't use stills for movies
-		LogoURL:          logoURL,
+		ThumbnailURI:     thumbnailURI,
+		BackdropURI:      backdropURI,
+		LogoURI:          logoURI,
 		Genres:           genreArray,
-		UserTags:         nil,
+		Tags:             nil,
 		FullData:         movieJson,
 	}
 	entry.ContentHash = hashRecordTMDB(entry, "")
@@ -578,17 +571,17 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			Name: genre.Name,
 		})
 	}
-	posterURL := tmdb.GetImageURL(showData.PosterPath, tmdb.W300)
+	thumbnailURI := tmdb.GetImageURL(showData.PosterPath, tmdb.W300)
 	if showData.PosterPath == "" {
-		posterURL = ""
+		thumbnailURI = ""
 	}
-	backdropURL := tmdb.GetImageURL(showData.BackdropPath, tmdb.W1280)
+	backdropURI := tmdb.GetImageURL(showData.BackdropPath, tmdb.W1280)
 	if showData.BackdropPath == "" {
-		backdropURL = ""
+		backdropURI = ""
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(showData.Images.Logos) > 0 {
-		logoURL = tmdb.GetImageURL(showData.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = tmdb.GetImageURL(showData.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	// construct show (parent)
 	tvShowEntry := database.MediaRecord{
@@ -609,12 +602,11 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		Status:           showData.Status,
 		Overview:         showData.Overview,
 		Duration:         -1, // not used in tv show parent
-		ThumbnailURL:     posterURL,
-		BackdropURL:      backdropURL,
-		StillURL:         "", // don't use stills for tv show parent
-		LogoURL:          logoURL,
+		ThumbnailURI:     thumbnailURI,
+		BackdropURI:      backdropURI,
+		LogoURI:          logoURI,
 		Genres:           genreArray,
-		UserTags:         nil,
+		Tags:             nil,
 		FullData:         showJson,
 	}
 	// include next/last episode data to hash
@@ -668,9 +660,9 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		if err != nil {
 			return nil, err
 		}
-		posterURL := tmdb.GetImageURL(seasonData.PosterPath, tmdb.W300)
+		thumbnailURI := tmdb.GetImageURL(seasonData.PosterPath, tmdb.W300)
 		if showData.PosterPath == "" {
-			posterURL = ""
+			thumbnailURI = ""
 		}
 		seasonEntry := database.MediaRecord{
 			RecordType:       database.RecordTypeSeason,
@@ -690,11 +682,10 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			Status:           "",
 			Overview:         seasonData.Overview,
 			Duration:         -1, // not used in season
-			ThumbnailURL:     posterURL,
-			BackdropURL:      "",
-			StillURL:         "",  // don't use stills for season
+			ThumbnailURI:     thumbnailURI,
+			BackdropURI:      "",
 			Genres:           nil, // just reuse
-			UserTags:         nil,
+			Tags:             nil,
 			FullData:         seasonJson,
 		}
 		// add more hash info for seasons
@@ -730,9 +721,9 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		}
 		// upsert all children
 		for _, episode := range seasonData.Episodes {
-			stillURL := tmdb.GetImageURL(episode.StillPath, tmdb.W1280)
+			thumbnailURL := tmdb.GetImageURL(episode.StillPath, tmdb.W1280)
 			if episode.StillPath == "" {
-				stillURL = ""
+				thumbnailURL = ""
 			}
 			seasonNum := seasonData.SeasonNumber
 			episodeNum := episode.EpisodeNumber
@@ -754,11 +745,10 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 				Status:           "",
 				Overview:         episode.Overview,
 				Duration:         episode.Runtime, // not used in season
-				ThumbnailURL:     "",
-				BackdropURL:      "",
-				StillURL:         stillURL,
+				ThumbnailURI:     thumbnailURL,
+				BackdropURI:      "",
 				Genres:           nil,
-				UserTags:         nil,
+				Tags:             nil,
 				AncestorID:       &showRecord.RecordID,
 				FullData:         showJson,
 			}

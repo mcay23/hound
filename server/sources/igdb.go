@@ -35,13 +35,13 @@ type IGDBAuthenticateResponse struct {
 }
 
 type IGDBSearchObject struct {
-	ID          int    `json:"id"`
-	MediaTitle  string `json:"media_title"`
-	MediaType   string `json:"media_type"`
-	MediaSource string `json:"media_source"`
-	SourceID    int    `json:"source_id"`
-	PosterURL   string `json:"poster_url"`
-	Cover       struct {
+	ID           int    `json:"id"`
+	MediaTitle   string `json:"media_title"`
+	MediaType    string `json:"media_type"`
+	MediaSource  string `json:"media_source"`
+	SourceID     int    `json:"source_id"`
+	ThumbnailURI string `json:"thumbnail_uri"`
+	Cover        struct {
 		ID       int    `json:"id"`
 		ImageURL string `json:"image_url"`
 		ImageID  string `json:"image_id"`
@@ -73,8 +73,8 @@ type IGDBGameObject struct {
 		ImageURL string `json:"image_url"`
 		Width    int    `json:"width"`
 	} `json:"artworks"`
-	PosterURL string `json:"poster_url"`
-	Cover     struct {
+	ThumbnailURI string `json:"thumbnail_uri"`
+	Cover        struct {
 		ID       int    `json:"id"`
 		ImageID  string `json:"image_id"`
 		ImageURL string `json:"image_url"`
@@ -252,7 +252,7 @@ func SearchGameIGDB(query string) (IGDBSearchResultObject, error) {
 		games[num].MediaSource = SourceIGDB
 		games[num].SourceID = game.ID
 		games[num].Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
-		games[num].PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+		games[num].ThumbnailURI = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 		if game.FirstReleaseDate != 0 {
 			games[num].ReleaseDate = time.Unix(int64(game.FirstReleaseDate), 0).Format("2006-01-02")
 		}
@@ -279,7 +279,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	game := response[0]
 	// get image urls
 	game.Cover.ImageURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
-	game.PosterURL = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
+	game.ThumbnailURI = getIGDBImageURL(game.Cover.ImageID, IGDBImageCover)
 	game.MediaTitle = game.Name
 	game.MediaType = database.MediaTypeGame
 	game.MediaSource = SourceIGDB
@@ -360,9 +360,9 @@ func GetRecordObjectIGDB(igdbID int) (*database.MediaRecord, error) {
 		ReleaseDate:  releaseDate,
 		Overview:     game.Summary,
 		FullData:     gameJson,
-		ThumbnailURL: game.Cover.ImageURL,
+		ThumbnailURI: game.Cover.ImageURL,
 		Genres:       tagsArray,
-		UserTags:     nil,
+		Tags:         nil,
 	}
 	return &record, nil
 }
