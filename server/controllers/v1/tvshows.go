@@ -55,7 +55,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 	showObject := view.TVShowCatalogObject{
 		MediaRecordCatalog: view.MediaRecordCatalog{
 			MediaSource:      sources.MediaSourceTMDB,
-			RecordType:       database.RecordTypeTVShow,
+			MediaType:        database.RecordTypeTVShow,
 			SourceID:         strconv.Itoa(int(showID)),
 			MediaTitle:       showDetails.Name,
 			OriginalTitle:    showDetails.OriginalName,
@@ -87,7 +87,8 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			CreditID:     cast.CreditID,
 			Name:         cast.Name,
 			OriginalName: cast.OriginalName,
-			ProfileURL:   helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			Character:    &cast.Character,
+			ProfileURI:   helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
 			Job:          "Cast",
 		})
 		if idx == 20 {
@@ -103,7 +104,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 			CreditID:     creator.CreditID,
 			Name:         creator.Name,
 			OriginalName: creator.Name,
-			ProfileURL:   helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
+			ProfileURI:   helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
 			Job:          "Creator",
 		})
 	}
@@ -113,7 +114,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 	for _, season := range showDetails.Seasons {
 		seasonArray = append(seasonArray, view.MediaRecordCatalog{
 			MediaSource:  sources.MediaSourceTMDB,
-			RecordType:   database.RecordTypeSeason,
+			MediaType:    database.RecordTypeSeason,
 			SourceID:     strconv.Itoa(int(season.ID)),
 			Overview:     season.Overview,
 			MediaTitle:   season.Name,
@@ -207,6 +208,69 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		returnObject.Comments = comments
 	}
 	helpers.SuccessResponse(c, returnObject, 200)
+}
+
+func GetTVSeasonHandlerV2(c *gin.Context) {
+	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		return
+	}
+	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
+	if err != nil {
+		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		return
+	}
+	seasonDetails, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	seasonObject := view.TVSeasonCatalogObject{
+		MediaRecordCatalog: view.MediaRecordCatalog{
+			MediaType:    database.RecordTypeSeason,
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(seasonDetails.ID)),
+			SeasonNumber: &seasonDetails.SeasonNumber,
+			ReleaseDate:  seasonDetails.AirDate,
+			MediaTitle:   seasonDetails.Name,
+			Overview:     seasonDetails.Overview,
+			ThumbnailURI: helpers.GetTMDBImageURL(seasonDetails.PosterPath, tmdb.W500),
+		},
+	}
+	episodesArray := []view.MediaRecordCatalog{}
+	for _, item := range seasonDetails.Episodes {
+		epRecord := view.MediaRecordCatalog{
+			MediaSource:   sources.MediaSourceTMDB,
+			MediaType:     database.RecordTypeEpisode,
+			SourceID:      strconv.Itoa(int(item.ID)),
+			SeasonNumber:  &item.SeasonNumber,
+			EpisodeNumber: &item.EpisodeNumber,
+			MediaTitle:    item.Name,
+			Overview:      item.Overview,
+			Duration:      item.Runtime,
+			ReleaseDate:   item.AirDate,
+			ThumbnailURI:  helpers.GetTMDBImageURL(item.StillPath, tmdb.W500),
+		}
+		guestStarsArr := []view.Credit{}
+		for idx, item := range item.GuestStars {
+			guestStarsArr = append(guestStarsArr, view.Credit{
+				MediaSource: sources.MediaSourceTMDB,
+				SourceID:    strconv.Itoa(int(item.ID)),
+				CreditID:    item.CreditID,
+				Name:        item.Name,
+				Character:   &item.Character,
+				ProfileURI:  helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
+			})
+			if idx == 20 {
+				break
+			}
+		}
+		epRecord.GuestStars = &guestStarsArr
+		episodesArray = append(episodesArray, epRecord)
+	}
+	seasonObject.Episodes = episodesArray
+	helpers.SuccessResponse(c, seasonObject, 200)
 }
 
 func GetTVSeasonHandler(c *gin.Context) {

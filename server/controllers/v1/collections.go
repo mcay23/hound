@@ -208,7 +208,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
 		viewObject := view.MediaRecordCatalog{
-			RecordType:       item.RecordType,
+			MediaType:        item.RecordType,
 			MediaSource:      item.MediaSource,
 			SourceID:         item.SourceID,
 			MediaTitle:       item.MediaTitle,
@@ -265,7 +265,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
 		viewObject := view.MediaRecordCatalog{
-			RecordType:       item.RecordType,
+			MediaType:        item.RecordType,
 			MediaSource:      item.MediaSource,
 			SourceID:         item.SourceID,
 			MediaTitle:       item.MediaTitle,
