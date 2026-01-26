@@ -35,7 +35,7 @@ type CollectionObject struct {
 	IsPrimary       bool                  `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool                  `json:"is_public"`
 	Tags            *[]database.TagObject `json:"tags"`
-	ThumbnailURL    *string               `json:"thumbnail_url"` // url for media thumbnails
+	ThumbnailURI    *string               `json:"thumbnail_uri"` // url for media thumbnails
 	CreatedAt       time.Time             `json:"created_at"`
 	UpdatedAt       time.Time             `json:"updated_at"`
 }

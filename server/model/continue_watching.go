@@ -50,7 +50,7 @@ type WatchActionMetadata struct {
 	EpisodeNumber   *int    `json:"episode_number,omitempty"` // only defined for shows
 	Overview        string  `json:"overview"`
 	ReleaseDate     string  `json:"release_date"`
-	ThumbnailURL    string  `json:"thumbnail_url"`
+	ThumbnailURI    string  `json:"thumbnail_uri"`
 }
 
 // A nil watch action means we don't have a next watch action
@@ -265,7 +265,7 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		nextEp.MediaTitle = showRecord.MediaTitle
 		nextEp.Overview = nextEpisodeRecord.Overview
 		nextEp.ReleaseDate = nextEpisodeRecord.ReleaseDate
-		nextEp.ThumbnailURL = nextEpisodeRecord.StillURL
+		nextEp.ThumbnailURI = nextEpisodeRecord.ThumbnailURI
 		nextEp.EpisodeTitle = &nextEpisodeRecord.MediaTitle
 		watchAction.NextEpisode = &nextEp
 		watchAction.WatchActionType = WatchActionTypeNextEpisode

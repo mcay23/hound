@@ -43,9 +43,9 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 			Name: genre.Name,
 		})
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(movieDetails.Images.Logos) > 0 {
-		logoURL = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	movieObject := view.MediaRecordCatalog{
 		MediaType:        database.RecordTypeMovie,
@@ -64,7 +64,7 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 		OriginalLanguage: movieDetails.OriginalLanguage,
 		ThumbnailURI:     helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
 		BackdropURI:      helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
-		LogoURI:          logoURL,
+		LogoURI:          logoURI,
 		OriginCountry:    movieDetails.OriginCountry,
 	}
 	castArray := []view.Credit{}
@@ -76,7 +76,7 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 			Name:         cast.Name,
 			OriginalName: cast.OriginalName,
 			Character:    &cast.Character,
-			ProfileURI:   helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			ThumbnailURI: helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
 		})
 	}
 	movieObject.Cast = &castArray
@@ -89,7 +89,7 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 				CreditID:     crew.CreditID,
 				Name:         crew.Name,
 				OriginalName: crew.OriginalName,
-				ProfileURI:   helpers.GetTMDBImageURL(crew.ProfilePath, tmdb.W500),
+				ThumbnailURI: helpers.GetTMDBImageURL(crew.ProfilePath, tmdb.W500),
 				Job:          "Director",
 			})
 		}
@@ -118,18 +118,18 @@ func GetMovieFromIDHandler(c *gin.Context) {
 			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
 		}
 	}
-	logoURL := ""
+	logoURI := ""
 	if len(movieDetails.Images.Logos) > 0 {
-		logoURL = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	returnObject := view.MovieFullObject{
 		MediaSource:         sources.MediaSourceTMDB,
 		MediaType:           database.MediaTypeMovie,
 		SourceID:            movieDetails.ID,
 		MediaTitle:          movieDetails.Title,
-		BackdropURL:         helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
-		PosterURL:           helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
-		LogoURL:             logoURL,
+		BackdropURI:         helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
+		ThumbnailURI:        helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
+		LogoURI:             logoURI,
 		Budget:              movieDetails.Budget,
 		Genres:              &movieDetails.Genres,
 		Homepage:            movieDetails.Homepage,

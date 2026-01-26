@@ -26,10 +26,9 @@ type MediaRecordCatalog struct {
 	VoteCount        int64                  `json:"vote_count"`
 	VoteAverage      float32                `json:"vote_average"`
 	Popularity       float32                `json:"popularity"`
-	ThumbnailURI     string                 `json:"thumbnail_url"`
-	BackdropURI      string                 `json:"backdrop_url"`
-	StillURI         string                 `json:"still_url"`
-	LogoURI          string                 `json:"logo_url"`
+	ThumbnailURI     string                 `json:"thumbnail_uri"`
+	BackdropURI      string                 `json:"backdrop_uri"`
+	LogoURI          string                 `json:"logo_uri"`
 	Genres           []database.GenreObject `json:"genres"`
 	OriginalLanguage string                 `json:"original_language"`
 	OriginCountry    []string               `json:"origin_country"`
@@ -45,6 +44,6 @@ type Credit struct {
 	Name         string  `json:"name"`
 	OriginalName string  `json:"original_name"`
 	Character    *string `json:"character,omitempty"`
-	ProfileURI   string  `json:"profile_uri"`
-	Job          string  `json:"job"` // cast, director, etc.
+	ThumbnailURI string  `json:"thumbnail_uri"` // profile pic of person
+	Job          string  `json:"job"`           // cast, director, etc.
 }

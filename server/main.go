@@ -25,6 +25,7 @@ func main() {
 	model.InitializeP2P()
 	model.InitializeMedia()
 	services.InitializeFFMPEG()
+	model.InitializeOnboarding()
 	workers.InitializeWorkers(model.MaxConcurrentDownloads, 3)
 	controllers.SetupRoutes()
 }

@@ -20,31 +20,31 @@ function Home() {
   const { data: continueWatchingData, isLoading: isContinueWatchingLoading } =
     useContinueWatching();
 
-  const [backdropURL, setBackdropURL] = useState("");
+  const [backdropURI, setBackdropURI] = useState("");
 
   const styles = useMemo(
     () => ({
       withBackdrop: {
-        backgroundImage: "url(" + backdropURL + ")",
+        backgroundImage: "url(" + backdropURI + ")",
         backgroundSize: "cover",
         animation: "backgroundScroll 150s linear infinite",
       },
     }),
-    [backdropURL],
+    [backdropURI],
   );
 
   useEffect(() => {
-    if (backdropsData && !backdropURL) {
-      setBackdropURL(backdropsData);
+    if (backdropsData && !backdropURI) {
+      setBackdropURI(backdropsData);
     }
-  }, [backdropsData, backdropURL]);
+  }, [backdropsData, backdropURI]);
 
   return (
     <>
       <Topnav />
       <div
         className="home-page-search-section"
-        style={backdropURL ? styles.withBackdrop : {}}
+        style={backdropURI ? styles.withBackdrop : {}}
       >
         <SearchBar />
       </div>

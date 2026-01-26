@@ -23,7 +23,7 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	err := model.RegisterNewUser(&userPayload)
+	err := model.RegisterNewUser(&userPayload, false)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return

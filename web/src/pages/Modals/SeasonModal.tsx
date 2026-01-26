@@ -68,20 +68,18 @@ function SeasonModal(props: any) {
   const [seasonData, setSeasonData] = useState({
     media_source: "",
     source_id: -1,
-    season: {
-      air_date: "",
-      episodes: [],
-      id: -1,
-      name: "",
-      poster_path: "",
-      season_number: -1,
-      overview: "",
-    },
+    release_date: "",
+    episodes: [],
+    id: -1,
+    media_title: "",
+    thumbnail_uri: "",
+    season_number: -1,
+    overview: "",
     watch_info: [],
   });
-  const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
+  const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [watchProgress, setWatchProgress] = useState<
-    Map<number, WatchProgressItem>
+    Map<string, WatchProgressItem>
   >(() => new Map());
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
@@ -89,7 +87,7 @@ function SeasonModal(props: any) {
   const handleWatchEpisode = (
     season: number,
     episode: number,
-    episodeID: number,
+    episodeID: string,
   ) => {
     // don't send in episode_id array, since this doesn't delete
     // resume progress if mark as watched
@@ -113,8 +111,8 @@ function SeasonModal(props: any) {
   };
   var seasonOverviewPlaceholder = "No description available.";
   if (isSeasonDataLoaded) {
-    seasonOverviewPlaceholder = `Season ${seasonData.season.season_number} of ${props.mediaTitle}`;
-    if (seasonData.season.season_number === 0) {
+    seasonOverviewPlaceholder = `Season ${seasonData.season_number} of ${props.mediaTitle}`;
+    if (seasonData.season_number === 0) {
       seasonOverviewPlaceholder = "Special Episodes";
     }
   }
@@ -147,9 +145,9 @@ function SeasonModal(props: any) {
                 ? a
                 : b,
             );
-            const sourceIDs = (latest.watch_events || [])
-              .map((event: any) => parseInt(event.source_id, 10))
-              .filter((tmdbID: number) => !isNaN(tmdbID));
+            const sourceIDs = (latest.watch_events || []).map(
+              (event: any) => event.source_id,
+            );
             setWatchedEpisodes(sourceIDs);
           }
         })
@@ -164,10 +162,9 @@ function SeasonModal(props: any) {
         .then((progressRes) => {
           // overwrite state each time
           if (progressRes.data) {
-            const progressMap = new Map<number, WatchProgressItem>();
+            const progressMap = new Map<string, WatchProgressItem>();
             progressRes.data.forEach((item: any) => {
-              const episodeIDNum = parseInt(item.episode_source_id, 10);
-              progressMap.set(episodeIDNum, {
+              progressMap.set(item.episode_source_id, {
                 current_progress_seconds: item.current_progress_seconds,
                 total_duration_seconds: item.total_duration_seconds,
                 encoded_data: item.encoded_data,
@@ -202,21 +199,21 @@ function SeasonModal(props: any) {
         >
           <div className="season-modal-container">
             <div className="season-modal-info-container">
-              {seasonData.season.poster_path ? (
+              {seasonData.thumbnail_uri ? (
                 <img
                   className="season-modal-poster"
-                  src={seasonData.season.poster_path}
-                  alt={seasonData.season.name}
+                  src={seasonData.thumbnail_uri}
+                  alt={seasonData.media_title}
                 />
               ) : (
                 <div className={"season-modal-poster item-card-no-thumbnail"}>
-                  {seasonData.season.name}
+                  {seasonData.media_title}
                 </div>
               )}
               <div className="season-modal-info-inner">
                 <div className="season-modal-info-title">
-                  {seasonData.season.name}
-                  {seasonData.season.air_date ? (
+                  {seasonData.media_title}
+                  {seasonData.release_date ? (
                     <>
                       <span
                         className="media-item-separator"
@@ -225,7 +222,7 @@ function SeasonModal(props: any) {
                         |
                       </span>
                       <span className="season-modal-info-date">
-                        {seasonData.season.air_date.slice(0, 4)}
+                        {seasonData.release_date?.slice(0, 4)}
                       </span>
                     </>
                   ) : (
@@ -234,8 +231,8 @@ function SeasonModal(props: any) {
                 </div>
                 <hr className="" />
                 <div className="season-modal-info-description">
-                  {seasonData.season.overview
-                    ? seasonData.season.overview
+                  {seasonData.overview
+                    ? seasonData.overview
                     : seasonOverviewPlaceholder}
                 </div>
                 <div className="season-modal-actions-container">
@@ -275,11 +272,11 @@ function SeasonModal(props: any) {
               </div>
             </div>
             <div className="season-episode-card-container">
-              {seasonData.season.episodes.map((episode) => {
+              {seasonData.episodes.map((episode) => {
                 return EpisodeCard(
                   episode,
-                  watchedEpisodes.includes(episode["id"]),
-                  watchProgress.get(episode["id"]),
+                  watchedEpisodes.includes(episode["source_id"]),
+                  watchProgress.get(episode["source_id"]),
                   handleWatchEpisode,
                   props.handleStreamButtonClick,
                   props.isStreamButtonLoading,
@@ -294,7 +291,7 @@ function SeasonModal(props: any) {
             }}
             open={isCreateHistoryModalOpen}
             type={"season"}
-            seasonNumber={seasonData.season.season_number}
+            seasonNumber={seasonData.season_number}
           />
         </Dialog>
       ) : (
@@ -321,7 +318,10 @@ function EpisodeCard(
       "Special #",
     );
   return (
-    <div className="episode-card-container" key={episode.id}>
+    <div
+      className="episode-card-container"
+      key={episode.media_source + "-" + episode.source_id}
+    >
       <div
         className="episode-card-img-container"
         onClick={() => {
@@ -332,13 +332,13 @@ function EpisodeCard(
             episode.season_number,
             episode.episode_number,
             "direct",
-            episode.id,
+            episode.source_id,
           );
         }}
       >
         <img
-          src={episode.still_path}
-          alt={episode.name}
+          src={episode.thumbnail_uri}
+          alt={episode.media_title}
           className="episode-card-img hide-alt"
           loading="lazy"
           onError={({ currentTarget }) => {
@@ -379,12 +379,12 @@ function EpisodeCard(
         )}
       </div>
       <div className="episode-card-content">
-        <div className="episode-card-title">{episode.name}</div>
-        {episode.air_date && (
+        <div className="episode-card-title">{episode.media_title}</div>
+        {episode.release_date && (
           <div className="episode-card-date">
             {episodeNumber}
-            {episodeNumber && episode.air_date && "     ⸱     "}
-            {convertDateToReadable(episode.air_date)}
+            {episodeNumber && episode.release_date && "     ⸱     "}
+            {convertDateToReadable(episode.release_date)}
           </div>
         )}
         <div className="episode-card-description">
@@ -413,7 +413,7 @@ function EpisodeCard(
                   episode.season_number,
                   episode.episode_number,
                   "direct",
-                  episode.id,
+                  episode.source_id,
                 );
               }}
             >
@@ -438,7 +438,7 @@ function EpisodeCard(
                   episode.season_number,
                   episode.episode_number,
                   "select",
-                  episode.id,
+                  episode.source_id,
                 );
               }}
             >
@@ -457,7 +457,6 @@ function EpisodeCard(
                 "Select Stream..."
               )}
             </Dropdown.Item>
-            <Dropdown.Item>Mark as Watched</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
         {watched ? (
@@ -478,7 +477,7 @@ function EpisodeCard(
                 handleWatchEpisode(
                   episode.season_number,
                   episode.episode_number,
-                  episode.id,
+                  episode.source_id,
                 );
               }}
             >

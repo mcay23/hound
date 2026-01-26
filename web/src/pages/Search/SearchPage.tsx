@@ -15,11 +15,11 @@ function SearchPage(props: any) {
     game_results: [],
   });
   const [isLoaded, setIsLoaded] = useState(false);
-  const [backdropURL, setBackdropURL] = useState("");
+  const [backdropURI, setBackdropURI] = useState("");
   var styles = {
     withBackdrop: {
       // backgroundColor: "blue",
-      backgroundImage: "url(" + backdropURL + ")",
+      backgroundImage: "url(" + backdropURI + ")",
       backgroundSize: "cover",
       animation: "backgroundScroll 150s linear infinite",
     },
@@ -37,11 +37,11 @@ function SearchPage(props: any) {
           alert("500");
         }
       });
-    if (backdropURL === "") {
+    if (backdropURI === "") {
       axios
         .get("/api/v1/backdrop")
         .then((res) => {
-          setBackdropURL(res.data);
+          setBackdropURI(res.data);
         })
         .catch((err) => {
           if (err.response.status === 500) {
@@ -49,7 +49,7 @@ function SearchPage(props: any) {
           }
         });
     }
-  }, [backdropURL, query]);
+  }, [backdropURI, query]);
   if (isLoaded) {
     document.title = query + " - Hound";
   }
@@ -58,7 +58,7 @@ function SearchPage(props: any) {
       <Topnav />
       <div
         className="search-page-search-section"
-        style={backdropURL ? styles.withBackdrop : {}}
+        style={backdropURI ? styles.withBackdrop : {}}
       >
         <SearchBar />
       </div>

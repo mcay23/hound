@@ -3,14 +3,14 @@ import "./WatchTile.css";
 
 export default function WatchTile(props: any) {
   // check if it's a resume or next_episode object
-  let thumbnailURL = "";
+  let thumbnailURI = "";
   let primaryCaption = "";
   let secondaryCaption = "";
   let path = props.item?.media_type === "movie" ? "movie" : "tv";
   let href = `/${path}/${props.item?.media_source}-${props.item?.source_id}`;
   if (props.item?.watch_action_type === "resume") {
     let watch_progress = props.item?.watch_progress;
-    thumbnailURL = watch_progress.thumbnail_url;
+    thumbnailURI = watch_progress.thumbnail_uri;
     primaryCaption = watch_progress.media_title;
     if (props.item?.media_type === "tvshow") {
       primaryCaption += ` - S${watch_progress.season_number}E${watch_progress.episode_number}`;
@@ -18,7 +18,7 @@ export default function WatchTile(props: any) {
     }
   } else {
     let next_episode = props.item?.next_episode;
-    thumbnailURL = next_episode.thumbnail_url;
+    thumbnailURI = next_episode.thumbnail_uri;
     primaryCaption = next_episode.media_title;
     if (props.item?.media_type === "tvshow") {
       primaryCaption += ` - S${next_episode.season_number}E${next_episode.episode_number}`;
@@ -28,7 +28,7 @@ export default function WatchTile(props: any) {
   return (
     <figure>
       <a className="itemcard-watch-tile-container" href={href}>
-        {!props.loaded && (
+        {!props.loaded && thumbnailURI && (
           <Skeleton
             variant="rounded"
             className="rounded w-100 h-100"
@@ -36,13 +36,13 @@ export default function WatchTile(props: any) {
           />
         )}
         <img
-          className="rounded itemcard-watch-tile"
-          src={thumbnailURL}
+          className="rounded itemcard-watch-tile hide-alt"
+          src={thumbnailURI}
           alt={props.item.media_title}
           loading="lazy"
           onLoad={() => props.setLoaded(true)}
           style={{
-            opacity: props.loaded ? 1 : 0,
+            opacity: props.loaded || !thumbnailURI ? 1 : 0,
             transition: "opacity 0.5s ease",
           }}
         />

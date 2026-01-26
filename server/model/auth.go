@@ -31,7 +31,7 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func RegisterNewUser(user *RegistrationUser) error {
+func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Bcrypt failed to hash password")

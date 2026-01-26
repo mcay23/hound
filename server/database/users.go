@@ -28,6 +28,7 @@ type User struct {
 
 func instantiateUsersTable() error {
 	err := databaseEngine.Table(usersTable).Sync2(new(User))
+	// if no user exists, insert a default admin user
 	return err
 }
 
@@ -77,4 +78,10 @@ func GetUsernameFromID(userID int64) (string, error) {
 		return "", err
 	}
 	return user.Username, nil
+}
+
+func GetUsers() ([]User, error) {
+	var users []User
+	err := databaseEngine.Table(usersTable).Find(&users)
+	return users, err
 }

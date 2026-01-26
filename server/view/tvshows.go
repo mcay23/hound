@@ -13,19 +13,13 @@ type TVSeasonResponseObject struct {
 	SeasonWatchInfo *[]CommentObject      `json:"watch_info"`
 }
 
-type TVShowDetails struct {
-	*tmdb.TVDetails
-	BackdropURL string `json:"backdrop_url"`
-	PosterURL   string `json:"poster_url"`
-}
-
 type SeasonObjectPartial struct {
 	AirDate      string `json:"air_date"`
 	EpisodeCount int    `json:"episode_count"`
 	ID           int64  `json:"id"`
 	Name         string `json:"name"`
 	Overview     string `json:"overview"`
-	PosterURL    string `json:"poster_url"`
+	ThumbnailURI string `json:"thumbnail_uri"`
 	SeasonNumber int    `json:"season_number"`
 }
 
@@ -37,7 +31,7 @@ type TVShowFullObject struct {
 	OriginalName     string                     `json:"original_name"`
 	VoteCount        int64                      `json:"vote_count"`
 	VoteAverage      float32                    `json:"vote_average"`
-	PosterURL        string                     `json:"poster_url"`
+	ThumbnailURI     string                     `json:"thumbnail_uri"`
 	NumberOfEpisodes int                        `json:"number_of_episodes"`
 	NumberOfSeasons  int                        `json:"number_of_seasons"`
 	Seasons          []SeasonObjectPartial      `json:"seasons"`
@@ -50,8 +44,8 @@ type TVShowFullObject struct {
 	Popularity       float32                    `json:"popularity"`
 	Genres           []tmdb.Genre               `json:"genres"`
 	OriginalLanguage string                     `json:"original_language"`
-	BackdropURL      string                     `json:"backdrop_url"`
-	LogoURL          string                     `json:"logo_url"`
+	BackdropURI      string                     `json:"backdrop_uri"`
+	LogoURI          string                     `json:"logo_uri"`
 	Overview         string                     `json:"overview"`
 	OriginCountry    []string                   `json:"origin_country"`
 	TVCredits        *tmdb.TVCredits            `json:"credits"`

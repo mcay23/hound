@@ -46,7 +46,7 @@ type CollectionRecord struct {
 	IsPrimary       bool         `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool         `json:"is_public"`
 	Tags            *[]TagObject `json:"tags"`
-	ThumbnailURL    *string      `xorm:"'thumbnail_url'" json:"thumbnail_url"` // url for media thumbnails
+	ThumbnailURI    *string      `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
 	CreatedAt       time.Time    `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt       time.Time    `xorm:"timestampz updated" json:"updated_at"`
 }
@@ -219,7 +219,7 @@ func CreateCollection(record CreateCollectionRequest) (*int64, error) {
 		IsPrimary:       record.IsPrimary,
 		IsPublic:        record.IsPublic,
 		Tags:            nil,
-		ThumbnailURL:    nil,
+		ThumbnailURI:    nil,
 	}
 	_, err := databaseEngine.Table(collectionsTable).Insert(&insert)
 	if err != nil {

@@ -86,7 +86,7 @@ function Library(props: any) {
               itemType="poster"
               itemOnClick={undefined}
             />
-            {recentItems.length > 0 ? (
+            {recentItems?.length > 0 ? (
               ""
             ) : (
               <div className="horizontal-section-header">
