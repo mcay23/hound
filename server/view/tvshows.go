@@ -62,6 +62,17 @@ type TVShowFullObject struct {
 	Comments         *[]CommentObject           `json:"comments"`
 }
 
+type TVShowCatalogObject struct {
+	MediaRecordCatalog
+	Seasons []MediaRecordCatalog `json:"seasons"`
+}
+
+// for full season queries, tv show details queries doesn't include episode
+type SeasonCatalogObject struct {
+	MediaRecordCatalog
+	Episodes []MediaRecordCatalog `json:"episodes"`
+}
+
 type MediaRewatchRecordWatchEvents struct {
 	database.RewatchRecord
 	TargetSeason *int                              `json:"target_season,omitempty"`

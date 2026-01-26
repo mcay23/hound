@@ -50,6 +50,7 @@ type MediaRecord struct {
 	ThumbnailURL     string        `xorm:"'thumbnail_url'" json:"thumbnail_url"` // poster image for tmdb
 	BackdropURL      string        `xorm:"'backdrop_url'" json:"backdrop_url"`   // backgrounds
 	StillURL         string        `xorm:"'still_url'" json:"still_url"`         // episodes, still frame for thumbnail
+	LogoURL          string        `xorm:"'logo_url'" json:"logo_url"`           // logo for the show/movie
 	Genres           []GenreObject `xorm:"'tags'" json:"tags,omitempty"`         // to store genres, tags
 	UserTags         []TagObject   `xorm:"'user_tags'" json:"user_tags,omitempty"`
 	AncestorID       *int64        `xorm:"index 'ancestor_id'" json:"ancestor_id,omitempty"` // reference to fk record_id of the show, for episodes
@@ -165,7 +166,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 		"origin_country", "release_date", "last_air_date", "next_air_date",
 		"season_number", "episode_number",
 		"sort_index", "status", "overview", "duration",
-		"thumbnail_url", "backdrop_url", "still_url",
+		"thumbnail_url", "backdrop_url", "still_url", "logo_url",
 		"tags", "user_tags", "full_data", "content_hash", "ancestor_id", "created_at", "updated_at",
 	}
 
@@ -215,6 +216,7 @@ func batchUpsertChunk(sess *xorm.Session, records []*MediaRecord) error {
 			record.ThumbnailURL,
 			record.BackdropURL,
 			record.StillURL,
+			record.LogoURL,
 			encodeJSONDB(record.Genres),
 			encodeJSONDB(record.UserTags),
 			record.FullData,
@@ -242,6 +244,7 @@ DO UPDATE SET
 	thumbnail_url   = EXCLUDED.thumbnail_url,
 	backdrop_url    = EXCLUDED.backdrop_url,
 	still_url       = EXCLUDED.still_url,
+	logo_url        = EXCLUDED.logo_url,
 	tags            = EXCLUDED.tags,
 	user_tags       = EXCLUDED.user_tags,
 	full_data       = EXCLUDED.full_data,

@@ -5,12 +5,13 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
+	"hound/view"
 	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
-func GetInternalCatalog(catalogID string, page *int) ([]database.MediaRecordCatalog, error) {
+func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog, error) {
 	switch catalogID {
 	case "trending-shows":
 		return getTrendingTVShows(*page)
@@ -21,15 +22,15 @@ func GetInternalCatalog(catalogID string, page *int) ([]database.MediaRecordCata
 	}
 }
 
-func getTrendingTVShows(page int) ([]database.MediaRecordCatalog, error) {
+func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
 	}
-	var viewArray []database.MediaRecordCatalog
+	var viewArray []view.MediaRecordCatalog
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		obj := database.MediaRecordCatalog{
+		obj := view.MediaRecordCatalog{
 			RecordType:       database.MediaTypeTVShow,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
@@ -39,8 +40,8 @@ func getTrendingTVShows(page int) ([]database.MediaRecordCatalog, error) {
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
 			Popularity:       item.Popularity,
-			ThumbnailURL:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			BackdropURL:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			ReleaseDate:      item.FirstAirDate,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
@@ -51,16 +52,16 @@ func getTrendingTVShows(page int) ([]database.MediaRecordCatalog, error) {
 	return viewArray, nil
 }
 
-func getTrendingMovies(page int) ([]database.MediaRecordCatalog, error) {
+func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
 	}
 	// convert url results
-	var viewArray []database.MediaRecordCatalog
+	var viewArray []view.MediaRecordCatalog
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		viewObject := database.MediaRecordCatalog{
+		viewObject := view.MediaRecordCatalog{
 			RecordType:       database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
@@ -70,8 +71,8 @@ func getTrendingMovies(page int) ([]database.MediaRecordCatalog, error) {
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
 			Popularity:       item.Popularity,
-			ThumbnailURL:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			BackdropURL:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			ReleaseDate:      item.ReleaseDate,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,

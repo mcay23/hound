@@ -4,21 +4,22 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
+	"hound/view"
 	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
-func SearchMovies(queryString string) (*[]database.MediaRecordCatalog, error) {
+func SearchMovies(queryString string) (*[]view.MediaRecordCatalog, error) {
 	results, err := sources.SearchMoviesTMDB(queryString)
 	if err != nil {
 		return nil, err
 	}
 	// convert url results
-	var convertedResults []database.MediaRecordCatalog
+	var convertedResults []view.MediaRecordCatalog
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		resultObject := database.MediaRecordCatalog{
+		resultObject := view.MediaRecordCatalog{
 			RecordType:       database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
@@ -26,12 +27,12 @@ func SearchMovies(queryString string) (*[]database.MediaRecordCatalog, error) {
 			MediaTitle:       item.Title,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			ThumbnailURL:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			ReleaseDate:      item.ReleaseDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			Overview:         item.Overview,
 		}
 		convertedResults = append(convertedResults, resultObject)
@@ -39,17 +40,17 @@ func SearchMovies(queryString string) (*[]database.MediaRecordCatalog, error) {
 	return &convertedResults, nil
 }
 
-func SearchTVShows(queryString string) (*[]database.MediaRecordCatalog, error) {
+func SearchTVShows(queryString string) (*[]view.MediaRecordCatalog, error) {
 	results, err := sources.SearchTVShowTMDB(queryString)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
 		return nil, err
 	}
 	// convert url results
-	var convertedResults []database.MediaRecordCatalog
+	var convertedResults []view.MediaRecordCatalog
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		resultObject := database.MediaRecordCatalog{
+		resultObject := view.MediaRecordCatalog{
 			MediaSource:      sources.MediaSourceTMDB,
 			RecordType:       database.MediaTypeTVShow,
 			SourceID:         strconv.Itoa(int(item.ID)),
@@ -57,12 +58,12 @@ func SearchTVShows(queryString string) (*[]database.MediaRecordCatalog, error) {
 			OriginalTitle:    item.OriginalName,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			ThumbnailURL:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			ReleaseDate:      item.FirstAirDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			Overview:         item.Overview,
 			OriginCountry:    item.OriginCountry,
 		}

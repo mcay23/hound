@@ -205,9 +205,9 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get collection records"))
 		return
 	}
-	var viewArray []database.MediaRecordCatalog
+	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := database.MediaRecordCatalog{
+		viewObject := view.MediaRecordCatalog{
 			RecordType:       item.RecordType,
 			MediaSource:      item.MediaSource,
 			SourceID:         item.SourceID,
@@ -215,8 +215,8 @@ func GetCollectionContentsHandler(c *gin.Context) {
 			OriginalTitle:    item.OriginalTitle,
 			ReleaseDate:      item.ReleaseDate,
 			Overview:         item.Overview,
-			ThumbnailURL:     item.ThumbnailURL,
-			BackdropURL:      item.BackdropURL,
+			ThumbnailURI:     item.ThumbnailURL,
+			BackdropURI:      item.BackdropURL,
 			Genres:           item.Genres,
 			OriginalLanguage: item.OriginalLanguage,
 			OriginCountry:    item.OriginCountry,
@@ -262,9 +262,9 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get recent collection records"))
 		return
 	}
-	var viewArray []database.MediaRecordCatalog
+	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := database.MediaRecordCatalog{
+		viewObject := view.MediaRecordCatalog{
 			RecordType:       item.RecordType,
 			MediaSource:      item.MediaSource,
 			SourceID:         item.SourceID,
@@ -278,9 +278,9 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 			NextAirDate:      item.NextAirDate,
 			SeasonNumber:     item.SeasonNumber,
 			EpisodeNumber:    item.EpisodeNumber,
-			ThumbnailURL:     item.ThumbnailURL,
-			BackdropURL:      item.BackdropURL,
-			StillURL:         item.StillURL,
+			ThumbnailURI:     item.ThumbnailURL,
+			BackdropURI:      item.BackdropURL,
+			StillURI:         item.StillURL,
 			Genres:           item.Genres,
 			OriginalLanguage: item.OriginalLanguage,
 			OriginCountry:    item.OriginCountry,
