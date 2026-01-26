@@ -68,7 +68,7 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandlerV2)
-	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandlerV2)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
 	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
 	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
@@ -78,7 +78,7 @@ func SetupRoutes(r *gin.Engine) {
 		Movies Routes
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
-	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
+	privateRoutes.GET("/movie/:id", GetMovieFromIDHandlerV2)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
 	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)

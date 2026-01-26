@@ -68,7 +68,7 @@ type TVShowCatalogObject struct {
 }
 
 // for full season queries, tv show details queries doesn't include episode
-type SeasonCatalogObject struct {
+type TVSeasonCatalogObject struct {
 	MediaRecordCatalog
 	Episodes []MediaRecordCatalog `json:"episodes"`
 }

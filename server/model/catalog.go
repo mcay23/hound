@@ -31,7 +31,7 @@ func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		obj := view.MediaRecordCatalog{
-			RecordType:       database.MediaTypeTVShow,
+			MediaType:        database.MediaTypeTVShow,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
 			MediaTitle:       item.Name,
@@ -62,7 +62,7 @@ func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		viewObject := view.MediaRecordCatalog{
-			RecordType:       database.MediaTypeMovie,
+			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
 			MediaTitle:       item.Title,

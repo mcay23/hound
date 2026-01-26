@@ -20,7 +20,7 @@ func SearchMovies(queryString string) (*[]view.MediaRecordCatalog, error) {
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		resultObject := view.MediaRecordCatalog{
-			RecordType:       database.MediaTypeMovie,
+			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
 			SourceID:         strconv.Itoa(int(item.ID)),
 			OriginalTitle:    item.OriginalTitle,
@@ -52,7 +52,7 @@ func SearchTVShows(queryString string) (*[]view.MediaRecordCatalog, error) {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		resultObject := view.MediaRecordCatalog{
 			MediaSource:      sources.MediaSourceTMDB,
-			RecordType:       database.MediaTypeTVShow,
+			MediaType:        database.MediaTypeTVShow,
 			SourceID:         strconv.Itoa(int(item.ID)),
 			MediaTitle:       item.Name,
 			OriginalTitle:    item.OriginalName,

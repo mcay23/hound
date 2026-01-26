@@ -5,7 +5,7 @@ import (
 )
 
 type MediaRecordCatalog struct {
-	RecordType       string                 `json:"media_type" binding:"required"`
+	MediaType        string                 `json:"media_type" binding:"required"`
 	MediaSource      string                 `json:"media_source" binding:"required"` // tmdb, openlibrary, etc
 	SourceID         string                 `json:"source_id" binding:"required"`
 	MediaTitle       string                 `json:"media_title" binding:"required"`
@@ -20,8 +20,9 @@ type MediaRecordCatalog struct {
 	EpisodeNumber    *int                   `json:"episode_number,omitempty"`
 	SeasonCount      *int                   `json:"season_count,omitempty"`
 	EpisodeCount     *int                   `json:"episode_count,omitempty"`
-	Cast             *[]Credit              `json:"cast"`
-	Creators         *[]Credit              `json:"creators"`
+	Cast             *[]Credit              `json:"cast,omitempty"`
+	Creators         *[]Credit              `json:"creators,omitempty"`
+	GuestStars       *[]Credit              `json:"guest_stars,omitempty"`
 	VoteCount        int64                  `json:"vote_count"`
 	VoteAverage      float32                `json:"vote_average"`
 	Popularity       float32                `json:"popularity"`
@@ -32,17 +33,18 @@ type MediaRecordCatalog struct {
 	Genres           []database.GenreObject `json:"genres"`
 	OriginalLanguage string                 `json:"original_language"`
 	OriginCountry    []string               `json:"origin_country"`
-	ExtraData        map[string]interface{} `json:"extra_data"`
+	ExtraData        map[string]interface{} `json:"extra_data,omitempty"`
 }
 
 // to simplify, we typically only return top 20 cast members
 // and the creators for tv show, director for movies
 type Credit struct {
-	MediaSource  string `json:"meta_source" binding:"required"`
-	SourceID     string `json:"source_id" binding:"required"`
-	CreditID     string `json:"credit_id"`
-	Name         string `json:"name"`
-	OriginalName string `json:"original_name"`
-	ProfileURL   string `json:"profile_url"`
-	Job          string `json:"job"` // cast, director, etc.
+	MediaSource  string  `json:"meta_source" binding:"required"`
+	SourceID     string  `json:"source_id" binding:"required"`
+	CreditID     string  `json:"credit_id"`
+	Name         string  `json:"name"`
+	OriginalName string  `json:"original_name"`
+	Character    *string `json:"character,omitempty"`
+	ProfileURI   string  `json:"profile_uri"`
+	Job          string  `json:"job"` // cast, director, etc.
 }
