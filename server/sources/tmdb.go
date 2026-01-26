@@ -438,7 +438,7 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		sb.WriteString(record.OriginalLanguage)
 		sb.WriteString(record.ReleaseDate)
 		sb.WriteString(record.Overview)
-		sb.WriteString(string(record.Duration))
+		sb.WriteString(fmt.Sprintf("%d", record.Duration))
 		sb.WriteString(record.ThumbnailURL)
 		sb.WriteString(record.BackdropURL)
 	case "tvshow":
@@ -471,7 +471,7 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 		}
 		sb.WriteString(record.MediaTitle) // episode title
 		sb.WriteString(record.Overview)
-		sb.WriteString(string(record.Duration))
+		sb.WriteString(fmt.Sprintf("%d", record.Duration))
 		sb.WriteString(record.ReleaseDate) // air_date
 		sb.WriteString(record.ThumbnailURL)
 		sb.WriteString(record.StillURL)
@@ -519,6 +519,10 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	if movie.BackdropPath == "" {
 		backdropURL = ""
 	}
+	logoURL := ""
+	if len(movie.Images.Logos) > 0 {
+		logoURL = tmdb.GetImageURL(movie.Images.Logos[0].FilePath, tmdb.W500)
+	}
 	entry := database.MediaRecord{
 		RecordType:       database.RecordTypeMovie,
 		MediaSource:      MediaSourceTMDB,
@@ -540,6 +544,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		ThumbnailURL:     posterURL,
 		BackdropURL:      backdropURL,
 		StillURL:         "", // don't use stills for movies
+		LogoURL:          logoURL,
 		Genres:           genreArray,
 		UserTags:         nil,
 		FullData:         movieJson,
@@ -581,6 +586,10 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	if showData.BackdropPath == "" {
 		backdropURL = ""
 	}
+	logoURL := ""
+	if len(showData.Images.Logos) > 0 {
+		logoURL = tmdb.GetImageURL(showData.Images.Logos[0].FilePath, tmdb.W500)
+	}
 	// construct show (parent)
 	tvShowEntry := database.MediaRecord{
 		RecordType:       database.RecordTypeTVShow,
@@ -603,6 +612,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		ThumbnailURL:     posterURL,
 		BackdropURL:      backdropURL,
 		StillURL:         "", // don't use stills for tv show parent
+		LogoURL:          logoURL,
 		Genres:           genreArray,
 		UserTags:         nil,
 		FullData:         showJson,

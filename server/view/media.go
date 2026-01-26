@@ -7,11 +7,11 @@ import (
 )
 
 type CollectionView struct {
-	Results      []database.MediaRecordCatalog `json:"results"`
-	Collection   *CollectionObject             `json:"collection"`
-	TotalRecords int64                         `json:"total_records"`
-	Limit        int                           `json:"limit"`
-	Offset       int                           `json:"offset"`
+	Results      []MediaRecordCatalog `json:"results"`
+	Collection   *CollectionObject    `json:"collection"`
+	TotalRecords int64                `json:"total_records"`
+	Limit        int                  `json:"limit"`
+	Offset       int                  `json:"offset"`
 }
 
 type WatchActivityResponse struct {
@@ -22,8 +22,8 @@ type WatchActivityResponse struct {
 }
 
 type GeneralSearchResponse struct {
-	TVShowSearchResults *[]database.MediaRecordCatalog  `json:"tv_results"`
-	MovieSearchResults  *[]database.MediaRecordCatalog  `json:"movie_results"`
+	TVShowSearchResults *[]MediaRecordCatalog           `json:"tv_results"`
+	MovieSearchResults  *[]MediaRecordCatalog           `json:"movie_results"`
 	GameSearchResults   *sources.IGDBSearchResultObject `json:"game_results"`
 }
 

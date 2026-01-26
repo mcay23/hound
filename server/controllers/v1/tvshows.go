@@ -24,6 +24,108 @@ func SearchTVShowHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, results, 200)
 }
 
+// returns a tmdb-like response but with media record catalog structure
+func GetTVShowFromIDHandlerV2(c *gin.Context) {
+	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		return
+	}
+	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
+	// create top level show
+	duration := 0
+	if len(showDetails.EpisodeRunTime) > 0 {
+		duration = showDetails.EpisodeRunTime[0]
+	}
+	genreArray := []database.GenreObject{}
+	for _, genre := range showDetails.Genres {
+		genreArray = append(genreArray, database.GenreObject{
+			ID:   genre.ID,
+			Name: genre.Name,
+		})
+	}
+	logoURL := ""
+	if len(showDetails.Images.Logos) > 0 {
+		logoURL = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+	}
+	showObject := view.TVShowCatalogObject{
+		MediaRecordCatalog: view.MediaRecordCatalog{
+			MediaSource:      sources.MediaSourceTMDB,
+			RecordType:       database.RecordTypeTVShow,
+			SourceID:         strconv.Itoa(int(showID)),
+			MediaTitle:       showDetails.Name,
+			OriginalTitle:    showDetails.OriginalName,
+			VoteCount:        showDetails.VoteCount,
+			VoteAverage:      showDetails.VoteAverage,
+			Popularity:       showDetails.Popularity,
+			ThumbnailURI:     helpers.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+			SeasonCount:      &showDetails.NumberOfSeasons,
+			EpisodeCount:     &showDetails.NumberOfEpisodes,
+			LastAirDate:      showDetails.LastAirDate,
+			NextAirDate:      showDetails.NextEpisodeToAir.AirDate,
+			ReleaseDate:      showDetails.FirstAirDate,
+			Duration:         duration,
+			Status:           showDetails.Status,
+			Genres:           genreArray,
+			OriginalLanguage: showDetails.OriginalLanguage,
+			BackdropURI:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
+			LogoURI:          logoURL,
+			Overview:         showDetails.Overview,
+			OriginCountry:    showDetails.OriginCountry,
+		},
+	}
+	// append top 20 cast members
+	castArray := []view.Credit{}
+	for idx, cast := range showDetails.Credits.TVCredits.Cast {
+		castArray = append(castArray, view.Credit{
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(cast.ID)),
+			CreditID:     cast.CreditID,
+			Name:         cast.Name,
+			OriginalName: cast.OriginalName,
+			ProfileURL:   helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			Job:          "Cast",
+		})
+		if idx == 20 {
+			break
+		}
+	}
+	showObject.Cast = &castArray
+	creatorsArray := []view.Credit{}
+	for _, creator := range showDetails.CreatedBy {
+		creatorsArray = append(creatorsArray, view.Credit{
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(creator.ID)),
+			CreditID:     creator.CreditID,
+			Name:         creator.Name,
+			OriginalName: creator.Name,
+			ProfileURL:   helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
+			Job:          "Creator",
+		})
+	}
+	showObject.Creators = &creatorsArray
+	// continue to append seasons
+	seasonArray := []view.MediaRecordCatalog{}
+	for _, season := range showDetails.Seasons {
+		seasonArray = append(seasonArray, view.MediaRecordCatalog{
+			MediaSource:  sources.MediaSourceTMDB,
+			RecordType:   database.RecordTypeSeason,
+			SourceID:     strconv.Itoa(int(season.ID)),
+			Overview:     season.Overview,
+			MediaTitle:   season.Name,
+			EpisodeCount: &season.EpisodeCount,
+			ThumbnailURI: helpers.GetTMDBImageURL(season.PosterPath, tmdb.W500),
+			ReleaseDate:  season.AirDate,
+		})
+	}
+	showObject.Seasons = seasonArray
+	helpers.SuccessResponse(c, showObject, 200)
+}
+
 func GetTVShowFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
