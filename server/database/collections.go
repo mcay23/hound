@@ -11,18 +11,11 @@ import (
 
 /*
 	Collection - contains collection/list definitions
-	Managed Collections - created by Hound, not deletable -> eg. Hound Library
-						  which is a collection of downloaded media, recommendations
-	Smart Collections - created by user, but automatically updated by Hound, eg. genre collections
-	User Collections - created by user, deletable
 */
 
 const (
 	collectionsTable         = "collections"
 	collectionRelationsTable = "collection_relations"
-	CollectionTypeManaged    = "managed"
-	CollectionTypeSmart      = "smart"
-	CollectionTypeUser       = "user"
 )
 
 // stores watch/read history for media types by user
@@ -45,16 +38,14 @@ type CollectionRelation struct {
 }
 
 type CollectionRecord struct {
-	CollectionID    int64        `xorm:"pk autoincr 'collection_id'" json:"collection_id"`
-	CollectionTitle string       `xorm:"not null" json:"collection_title"` // my collection, etc.
-	Description     []byte       `json:"description"`
-	OwnerUserID     int64        `xorm:"index not null 'owner_user_id'" json:"owner_user_id"`
-	IsPrimary       bool         `json:"is_primary"` // is the user's primary collection, not deletable
-	IsPublic        bool         `json:"is_public"`
-	Tags            *[]TagObject `json:"tags"`
-	ThumbnailURI    *string      `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
-	CreatedAt       time.Time    `xorm:"timestampz created" json:"created_at"`
-	UpdatedAt       time.Time    `xorm:"timestampz updated" json:"updated_at"`
+	CollectionID    int64     `xorm:"pk autoincr 'collection_id'" json:"collection_id"`
+	CollectionTitle string    `xorm:"not null" json:"collection_title"` // my collection, etc.
+	Description     string    `xorm:"text 'description'" json:"description"`
+	OwnerUserID     int64     `xorm:"index 'owner_user_id'" json:"owner_user_id"`
+	IsPublic        bool      `json:"is_public"`
+	ThumbnailURI    string    `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
+	CreatedAt       time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt       time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 func instantiateCollectionTables() error {
@@ -188,19 +179,6 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 }
 
 func CreateCollection(record CollectionRecord) (*int64, error) {
-	if record.IsPrimary == true {
-		_, int64, err := FindCollection(CollectionRecord{
-			OwnerUserID: record.OwnerUserID,
-			IsPrimary:   true,
-		}, 1, 0)
-		if err != nil {
-			return nil, err
-		}
-		// primary record already exists
-		if int64 != 0 {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Primary col already exists")
-		}
-	}
 	_, err := databaseEngine.Table(collectionsTable).Insert(&record)
 	if err != nil {
 		return nil, err

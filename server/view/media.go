@@ -7,7 +7,7 @@ import (
 )
 
 type CollectionView struct {
-	Results      []MediaRecordCatalog `json:"results"`
+	Records      []MediaRecordCatalog `json:"records"`
 	Collection   *CollectionObject    `json:"collection"`
 	TotalRecords int64                `json:"total_records"`
 	Limit        int                  `json:"limit"`
@@ -32,10 +32,9 @@ type CollectionObject struct {
 	CollectionTitle string                `json:"collection_title"` // my collection, etc.
 	Description     string                `json:"description"`
 	OwnerUsername   string                `json:"owner_username"`
-	IsPrimary       bool                  `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool                  `json:"is_public"`
 	Tags            *[]database.TagObject `json:"tags"`
-	ThumbnailURI    *string               `json:"thumbnail_uri"` // url for media thumbnails
+	ThumbnailURI    string                `json:"thumbnail_uri,omitempty"` // url for media thumbnails
 	CreatedAt       time.Time             `json:"created_at"`
 	UpdatedAt       time.Time             `json:"updated_at"`
 }

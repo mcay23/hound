@@ -257,7 +257,7 @@ func MarkTVSeasonAsWatchedTMDB(userID int64, recordID int64, seasonNumber int, m
 			RecordID:     recordID,
 			IsPrivate:    true,
 			CommentTitle: "",
-			Comment:      nil,
+			Comment:      "",
 			TagData:      tagData,
 			StartDate:    date,
 			EndDate:      date,

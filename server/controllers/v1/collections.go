@@ -22,7 +22,6 @@ type CreateCollectionRequest struct {
 	OwnerUserID     int64  `json:"owner_user_id"`
 	CollectionTitle string `json:"collection_title"` // my collection, etc.
 	Description     string `json:"description"`
-	IsPrimary       bool   `json:"is_primary"` // is the user's primary collection, not deletable
 	IsPublic        bool   `json:"is_public"`
 }
 
@@ -137,9 +136,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 			CollectionTitle: record.CollectionTitle,
 			Description:     string(record.Description),
 			OwnerUsername:   c.GetHeader("X-Username"),
-			IsPrimary:       record.IsPrimary,
 			IsPublic:        record.IsPublic,
-			Tags:            record.Tags,
 			ThumbnailURI:    record.ThumbnailURI,
 			CreatedAt:       record.CreatedAt,
 			UpdatedAt:       record.UpdatedAt,
@@ -155,10 +152,6 @@ func CreateCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
 		return
 	}
-	if body.IsPrimary {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid isPrimary"))
-		return
-	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
@@ -166,12 +159,10 @@ func CreateCollectionHandler(c *gin.Context) {
 	}
 	record := database.CollectionRecord{
 		CollectionTitle: body.CollectionTitle,
-		Description:     []byte(body.Description),
+		Description:     body.Description,
 		OwnerUserID:     userID,
-		IsPrimary:       body.IsPrimary,
 		IsPublic:        body.IsPublic,
-		Tags:            nil,
-		ThumbnailURI:    nil,
+		ThumbnailURI:    "",
 	}
 	collectionID, err := database.CreateCollection(record)
 	if err != nil {
@@ -220,20 +211,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := view.MediaRecordCatalog{
-			MediaType:        item.RecordType,
-			MediaSource:      item.MediaSource,
-			SourceID:         item.SourceID,
-			MediaTitle:       item.MediaTitle,
-			OriginalTitle:    item.OriginalTitle,
-			ReleaseDate:      item.ReleaseDate,
-			Overview:         item.Overview,
-			ThumbnailURI:     item.ThumbnailURI,
-			BackdropURI:      item.BackdropURI,
-			Genres:           item.Genres,
-			OriginalLanguage: item.OriginalLanguage,
-			OriginCountry:    item.OriginCountry,
-		}
+		viewObject := createMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	// note collection owner can be different from calling user (public collections)
@@ -243,15 +221,13 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		return
 	}
 	res := view.CollectionView{
-		Results: viewArray,
+		Records: viewArray,
 		Collection: &view.CollectionObject{
 			CollectionID:    collection.CollectionID,
 			CollectionTitle: collection.CollectionTitle,
 			Description:     string(collection.Description),
 			OwnerUsername:   collectionOwner,
-			IsPrimary:       collection.IsPrimary,
 			IsPublic:        collection.IsPublic,
-			Tags:            collection.Tags,
 			ThumbnailURI:    collection.ThumbnailURI,
 			CreatedAt:       collection.CreatedAt,
 			UpdatedAt:       collection.UpdatedAt,
@@ -261,6 +237,14 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		Offset:       offset,
 	}
 	helpers.SuccessResponse(c, res, 200)
+}
+
+// Gets a list of all tv shows and movies which have files
+// this is in collections.go because it mocks a collection response
+// even if there's only one episode downloaded, a tvshow will show
+// up here
+func GetHoundDownloadsHandler(c *gin.Context) {
+
 }
 
 func GetRecentCollectionContentsHandler(c *gin.Context) {
@@ -277,26 +261,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := view.MediaRecordCatalog{
-			MediaType:        item.RecordType,
-			MediaSource:      item.MediaSource,
-			SourceID:         item.SourceID,
-			MediaTitle:       item.MediaTitle,
-			OriginalTitle:    item.OriginalTitle,
-			Status:           item.Status,
-			Overview:         item.Overview,
-			Duration:         item.Duration,
-			ReleaseDate:      item.ReleaseDate,
-			LastAirDate:      item.LastAirDate,
-			NextAirDate:      item.NextAirDate,
-			SeasonNumber:     item.SeasonNumber,
-			EpisodeNumber:    item.EpisodeNumber,
-			ThumbnailURI:     item.ThumbnailURI,
-			BackdropURI:      item.BackdropURI,
-			Genres:           item.Genres,
-			OriginalLanguage: item.OriginalLanguage,
-			OriginCountry:    item.OriginCountry,
-		}
+		viewObject := createMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	helpers.SuccessResponse(c, viewArray, 200)
@@ -323,4 +288,27 @@ func DeleteCollectionHandler(c *gin.Context) {
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)
+}
+
+func createMediaRecordCatalogObject(record database.MediaRecordGroup) view.MediaRecordCatalog {
+	return view.MediaRecordCatalog{
+		MediaType:        record.RecordType,
+		MediaSource:      record.MediaSource,
+		SourceID:         record.SourceID,
+		MediaTitle:       record.MediaTitle,
+		OriginalTitle:    record.OriginalTitle,
+		Status:           record.Status,
+		Overview:         record.Overview,
+		Duration:         record.Duration,
+		ReleaseDate:      record.ReleaseDate,
+		LastAirDate:      record.LastAirDate,
+		NextAirDate:      record.NextAirDate,
+		SeasonNumber:     record.SeasonNumber,
+		EpisodeNumber:    record.EpisodeNumber,
+		ThumbnailURI:     record.ThumbnailURI,
+		BackdropURI:      record.BackdropURI,
+		Genres:           record.Genres,
+		OriginalLanguage: record.OriginalLanguage,
+		OriginCountry:    record.OriginCountry,
+	}
 }

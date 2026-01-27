@@ -55,8 +55,8 @@ type MediaRecord struct {
 	Tags             []TagObject   `xorm:"'tags'" json:"tags,omitempty"`
 	CreatedAt        time.Time     `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time     `xorm:"timestampz updated" json:"updated_at"`
-	FullData         []byte        `xorm:"'full_data'" json:"full_data,omitempty"`       // full data from tmdb
-	ContentHash      string        `xorm:"'content_hash'" json:"content_hash,omitempty"` // checksum to compare changes/updates
+	FullData         []byte        `xorm:"'full_data'" json:"full_data,omitempty"`            // full data from tmdb
+	ContentHash      string        `xorm:"text 'content_hash'" json:"content_hash,omitempty"` // checksum to compare changes/updates
 }
 
 type GenreObject struct {
