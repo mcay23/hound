@@ -11,12 +11,18 @@ import (
 
 /*
 	Collection - contains collection/list definitions
-	Primary Collection - every user has a master collection which cannot be deleted
+	Managed Collections - created by Hound, not deletable -> eg. Hound Library
+						  which is a collection of downloaded media, recommendations
+	Smart Collections - created by user, but automatically updated by Hound, eg. genre collections
+	User Collections - created by user, deletable
 */
 
 const (
 	collectionsTable         = "collections"
 	collectionRelationsTable = "collection_relations"
+	CollectionTypeManaged    = "managed"
+	CollectionTypeSmart      = "smart"
+	CollectionTypeUser       = "user"
 )
 
 // stores watch/read history for media types by user
@@ -49,23 +55,6 @@ type CollectionRecord struct {
 	ThumbnailURI    *string      `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
 	CreatedAt       time.Time    `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt       time.Time    `xorm:"timestampz updated" json:"updated_at"`
-}
-
-type CollectionRecordQuery struct {
-	CollectionID *int64
-	SearchQuery  *string
-	OwnerUserID  *int64
-	IsPrimary    *bool
-	IsPublic     *bool
-	Tags         *[]TagObject `json:"tags"`
-}
-
-type CreateCollectionRequest struct {
-	OwnerUserID     int64  `json:"owner_user_id"`
-	CollectionTitle string `json:"collection_title"` // my collection, etc.
-	Description     string `json:"description"`
-	IsPrimary       bool   `json:"is_primary"` // is the user's primary collection, not deletable
-	IsPublic        bool   `json:"is_public"`
 }
 
 func instantiateCollectionTables() error {
@@ -198,11 +187,11 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	return nil
 }
 
-func CreateCollection(record CreateCollectionRequest) (*int64, error) {
+func CreateCollection(record CollectionRecord) (*int64, error) {
 	if record.IsPrimary == true {
-		_, int64, err := SearchForCollection(CollectionRecordQuery{
-			OwnerUserID: &record.OwnerUserID,
-			IsPrimary:   &record.IsPrimary,
+		_, int64, err := FindCollection(CollectionRecord{
+			OwnerUserID: record.OwnerUserID,
+			IsPrimary:   true,
 		}, 1, 0)
 		if err != nil {
 			return nil, err
@@ -212,20 +201,11 @@ func CreateCollection(record CreateCollectionRequest) (*int64, error) {
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Primary col already exists")
 		}
 	}
-	insert := CollectionRecord{
-		CollectionTitle: record.CollectionTitle,
-		Description:     []byte(record.Description),
-		OwnerUserID:     record.OwnerUserID,
-		IsPrimary:       record.IsPrimary,
-		IsPublic:        record.IsPublic,
-		Tags:            nil,
-		ThumbnailURI:    nil,
-	}
-	_, err := databaseEngine.Table(collectionsTable).Insert(&insert)
+	_, err := databaseEngine.Table(collectionsTable).Insert(&record)
 	if err != nil {
 		return nil, err
 	}
-	return &insert.CollectionID, nil
+	return &record.CollectionID, nil
 }
 
 func DeleteCollection(userID int64, collectionID int64) error {
@@ -260,43 +240,19 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	return nil
 }
 
-func SearchForCollection(record CollectionRecordQuery, limit int, offset int) ([]CollectionRecord, int, error) {
+func FindCollection(query CollectionRecord, limit int, offset int) ([]CollectionRecord, int, error) {
 	var records []CollectionRecord
 	sess := databaseEngine.Table(collectionsTable)
-	if record.OwnerUserID != nil {
-		sess = sess.Where("owner_user_id = ?", record.OwnerUserID)
-	}
-	if record.IsPrimary != nil {
-		sess = sess.Where("is_primary = ?", record.IsPrimary)
-	}
-	if record.CollectionID != nil {
-		sess = sess.Where("collection_id = ?", record.CollectionID)
-	}
-	if record.IsPublic != nil {
-		sess = sess.Where("is_public = ?", record.IsPublic)
-	}
 	if limit > 0 && offset >= 0 {
 		sess = sess.Limit(limit, offset)
 	}
-	err := sess.Find(&records)
+	err := sess.Find(&records, &query)
 	if err != nil {
 		return nil, 0, err
 	}
 	// restart session to get total count
 	sess = databaseEngine.Table(collectionsTable)
-	if record.OwnerUserID != nil {
-		sess = sess.Where("owner_user_id = ?", record.OwnerUserID)
-	}
-	if record.IsPrimary != nil {
-		sess = sess.Where("is_primary = ?", record.IsPrimary)
-	}
-	if record.CollectionID != nil {
-		sess = sess.Where("collection_id = ?", record.CollectionID)
-	}
-	if record.IsPublic != nil {
-		sess = sess.Where("is_public = ?", record.IsPublic)
-	}
-	totalRecords, err := sess.Count(new(CollectionRecord))
+	totalRecords, err := sess.Count(&query)
 	if err != nil {
 		return nil, 0, err
 	}
