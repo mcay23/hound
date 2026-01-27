@@ -48,10 +48,10 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
 		return helpers.LogErrorWithMessage(err, "Failed to insert user to database")
 	}
 	// create primary collection for user
-	primaryCollection := database.CreateCollectionRequest{
+	primaryCollection := database.CollectionRecord{
 		OwnerUserID:     *userID,
 		CollectionTitle: "My Library",
-		Description:     "Your main collection",
+		Description:     []byte("Your main collection"),
 		IsPrimary:       true,
 		IsPublic:        false,
 	}

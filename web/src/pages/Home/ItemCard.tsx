@@ -143,7 +143,11 @@ function ItemCard(props: {
                 props.itemOnClick(props.item.season_number);
               }}
             >
-              {props.item.name}
+              {props.item.name
+                ? props.item.name
+                : props.item.season_number === 0
+                  ? "Specials"
+                  : "Season " + props.item.season_number}
             </div>
           )}
         </div>

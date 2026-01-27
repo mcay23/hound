@@ -73,7 +73,7 @@
 
 .item-card-no-thumbnail {
   padding: 10px;
-  font-family: "Roboto Condensed", sans-serif;
+  font-family: "Cabin", sans-serif;
   overflow: hidden;
   color: rgba(var(--hound-secondary), 1);
   background-color: rgba(var(--hound-primary), 1);
