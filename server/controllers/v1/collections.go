@@ -18,6 +18,14 @@ type AddToCollectionRequest struct {
 	CollectionID *int64 `json:"collection_id"`
 }
 
+type CreateCollectionRequest struct {
+	OwnerUserID     int64  `json:"owner_user_id"`
+	CollectionTitle string `json:"collection_title"` // my collection, etc.
+	Description     string `json:"description"`
+	IsPrimary       bool   `json:"is_primary"` // is the user's primary collection, not deletable
+	IsPublic        bool   `json:"is_public"`
+}
+
 func AddToCollectionHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	body := AddToCollectionRequest{}
@@ -117,10 +125,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	query := database.CollectionRecordQuery{
-		OwnerUserID: &userID,
-	}
-	records, _, err := database.SearchForCollection(query, -1, -1)
+	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, -1)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error searching collection"))
 		return
@@ -145,7 +150,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 }
 
 func CreateCollectionHandler(c *gin.Context) {
-	body := database.CreateCollectionRequest{}
+	body := CreateCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
 		return
@@ -159,8 +164,16 @@ func CreateCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
-	body.OwnerUserID = userID
-	collectionID, err := database.CreateCollection(body)
+	record := database.CollectionRecord{
+		CollectionTitle: body.CollectionTitle,
+		Description:     []byte(body.Description),
+		OwnerUserID:     userID,
+		IsPrimary:       body.IsPrimary,
+		IsPublic:        body.IsPublic,
+		Tags:            nil,
+		ThumbnailURI:    nil,
+	}
+	collectionID, err := database.CreateCollection(record)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error creating colection"+err.Error()))
 		return
