@@ -53,7 +53,7 @@ function MediaItem(props: any) {
   return (
     <>
       <div className="media-item-container">
-        <div>
+        <div className="media-item-img-container">
           <ItemCard item={props.item} itemType={"poster"} />
         </div>
         <div className="media-item-main-container">

@@ -110,7 +110,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
 	}
 	if !IsVideoFile(filepath.Ext(sourcePath)) {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File is not a video file")
+		return nil, helpers.LogErrorWithMessage(fmt.Errorf("File is not a video file %s", sourcePath), "File is not a video file")
 	}
 	// ffprobe video
 	videoMetadata, err := ProbeVideoFromURI(sourcePath)

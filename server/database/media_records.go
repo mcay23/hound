@@ -420,3 +420,40 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 	}
 	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
 }
+
+// This returns the movie/show-level record, not the episodes
+// For shows, if you have at least 1 downloaded episode
+// it will be included
+func GetDownloadedParentRecords(limit int, offset int) ([]MediaRecordGroup, int64, error) {
+	var recordGroups []MediaRecordGroup
+	// find movies with files OR shows with episodes that have files
+	query := fmt.Sprintf(`
+		SELECT mr.*
+		FROM %s mr
+		WHERE (
+			mr.record_type = 'movie' AND EXISTS (
+				SELECT 1 FROM %s mf WHERE mf.record_id = mr.record_id
+			)
+		) OR (
+			mr.record_type = 'tvshow' AND EXISTS (
+				SELECT 1 
+				FROM %s ep 
+				JOIN %s mf ON mf.record_id = ep.record_id
+				WHERE ep.ancestor_id = mr.record_id AND ep.record_type = 'episode'
+			)
+		)
+		ORDER BY mr.updated_at DESC
+	`, mediaRecordsTable, mediaFilesTable, mediaRecordsTable, mediaFilesTable)
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS sub", query)
+	var totalRecords int64
+	_, err := databaseEngine.SQL(countQuery).Get(&totalRecords)
+	if err != nil {
+		return nil, 0, err
+	}
+	if limit > 0 && offset >= 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+	}
+	err = databaseEngine.SQL(query).Find(&recordGroups)
+	return recordGroups, totalRecords, err
+}

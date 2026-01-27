@@ -43,21 +43,21 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
 	}
-	_, err = database.InsertUser(insertUser)
+	userID, err := database.InsertUser(insertUser)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert user to database")
 	}
-	// create primary collection for user
-	// primaryCollection := database.CollectionRecord{
-	// 	OwnerUserID:     *userID,
-	// 	CollectionTitle: "My Library",
-	// 	Description:     "Your main collection",
-	// 	IsPublic:        false,
-	// }
-	// _, err = database.CreateCollection(primaryCollection)
-	// if err != nil {
-	// 	return err
-	// }
+	// create 'My Library' collection for user
+	userLibrary := database.CollectionRecord{
+		OwnerUserID:     *userID,
+		CollectionTitle: "My Library",
+		Description:     "Your main collection",
+		IsPublic:        false,
+	}
+	_, err = database.CreateCollection(userLibrary)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
