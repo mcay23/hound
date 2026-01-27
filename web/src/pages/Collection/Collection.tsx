@@ -22,7 +22,7 @@ import Footer from "../Footer";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
-    results: [],
+    records: [],
     collection: {
       collection_title: "",
       description: "",
@@ -134,8 +134,8 @@ function Collection(props: any) {
                   </div>
                 </div>
               </div>
-              {collectionData.results ? (
-                collectionData.results.map((item) => (
+              {collectionData.records ? (
+                collectionData.records.map((item) => (
                   <MediaItem
                     item={item}
                     collectionID={collectionID}
@@ -160,7 +160,7 @@ function Collection(props: any) {
               )}
             </div>
           </div>
-          {collectionData.results ? (
+          {collectionData.records ? (
             <div className="d-flex justify-content-center mb-4 mt-2">
               <div className="paginator-container shadow-lg">
                 <Pagination

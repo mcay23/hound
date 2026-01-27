@@ -15,12 +15,12 @@ type UserMeta struct {
 }
 
 type User struct {
-	UserID         int64  `xorm:"pk autoincr 'user_id'"`
-	Username       string `xorm:"not null unique"`
-	IsAdmin        bool   `xorm:"not null default false 'is_admin'"`
-	FirstName      string
-	LastName       string
-	HashedPassword string
+	UserID         int64     `xorm:"pk autoincr 'user_id'"`
+	Username       string    `xorm:"not null unique"`
+	IsAdmin        bool      `xorm:"not null default false 'is_admin'"`
+	FirstName      string    `xorm:"'first_name'"`
+	LastName       string    `xorm:"'last_name'"`
+	HashedPassword string    `xorm:"text 'hashed_password'"`
 	UserMeta       UserMeta  `xorm:"json 'user_meta'"`
 	CreatedAt      time.Time `xorm:"timestampz created"`
 	UpdatedAt      time.Time `xorm:"timestampz updated"`

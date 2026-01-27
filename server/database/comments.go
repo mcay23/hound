@@ -24,13 +24,13 @@ type CommentRecord struct {
 	CommentType  string    `json:"comment_type"`
 	UserID       int64     `xorm:"'user_id'" json:"user_id"`
 	RecordID     int64     `xorm:"index 'record_id'" json:"record_id"`
-	IsPrivate    bool      `json:"is_private"`
-	CommentTitle string    `json:"title"`
-	Comment      []byte    `json:"comment"`  // actual content of comment, review
-	TagData      string    `json:"tag_data"` // extra tag info, eg. season, episode
-	Score        int       `json:"score"`
-	StartDate    time.Time `json:"start_date"`
-	EndDate      time.Time `json:"end_date"`
+	IsPrivate    bool      `xorm:"'is_private'" json:"is_private"`
+	CommentTitle string    `xorm:"'title'" json:"title"`
+	Comment      string    `xorm:"text 'comment'" json:"comment"` // actual content of comment, review
+	TagData      string    `xorm:"'tag_data'" json:"tag_data"`    // extra tag info, eg. season, episode
+	Score        int       `xorm:"'score'" json:"score"`
+	StartDate    time.Time `xorm:"timestampz 'start_date'" json:"start_date"`
+	EndDate      time.Time `xorm:"timestampz 'end_date'" json:"end_date"`
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
