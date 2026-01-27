@@ -86,11 +86,9 @@ function Library(props: any) {
               itemType="poster"
               itemOnClick={undefined}
             />
-            {recentItems?.length > 0 ? (
-              ""
-            ) : (
+            {!(recentItems?.length > 0) && (
               <div className="horizontal-section-header">
-                Your library is empty. Try adding some items!
+                Your collections are empty. Try adding some items!
               </div>
             )}
           </div>

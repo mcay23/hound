@@ -378,6 +378,7 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 		episode.parent_id,
 		episode.media_title,
 		episode.original_title,
+		episode.thumbnail_uri,
 		episode.origin_country,
 		episode.release_date,
 		episode.season_number,
