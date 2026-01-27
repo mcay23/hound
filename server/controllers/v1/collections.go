@@ -194,14 +194,25 @@ func GetCollectionContentsHandler(c *gin.Context) {
 			return
 		}
 	}
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
-		return
-	}
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
+		return
+	}
+	// collectionID of -1 is a global Hound Library faux collection
+	// might need a better solution for this
+	if collectionID == -1 {
+		collectionView, err := GetHoundDownloadedRecords(limit, offset)
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
+			return
+		}
+		helpers.SuccessResponse(c, collectionView, 200)
+		return
+	}
+	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	if err != nil {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
 	records, collection, totalRecords, err := database.GetCollectionRecords(userID, int64(collectionID), limit, offset)
@@ -257,6 +268,33 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 		viewArray = append(viewArray, viewObject)
 	}
 	helpers.SuccessResponse(c, viewArray, 200)
+}
+
+func GetHoundDownloadedRecords(limit int, offset int) (view.CollectionView, error) {
+	records, total_records, err := database.GetDownloadedParentRecords(limit, offset)
+	if err != nil {
+		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
+	}
+	var viewArray []view.MediaRecordCatalog
+	for _, item := range records {
+		viewObject := createMediaRecordCatalogObject(item)
+		viewArray = append(viewArray, viewObject)
+	}
+	collectionView := view.CollectionView{
+		Records: viewArray,
+		Collection: &view.CollectionObject{
+			CollectionID:    -1,
+			CollectionTitle: "Hound Library",
+			Description:     "Downloaded Content in Hound",
+			OwnerUsername:   "Hound",
+			IsPublic:        true,
+			ThumbnailURI:    "",
+		},
+		TotalRecords: total_records,
+		Limit:        limit,
+		Offset:       offset,
+	}
+	return collectionView, nil
 }
 
 func DeleteCollectionHandler(c *gin.Context) {
