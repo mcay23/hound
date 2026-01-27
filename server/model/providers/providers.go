@@ -67,7 +67,7 @@ type ProviderResponseObject struct {
 	Providers []*ProviderObject `json:"providers"`
 }
 
-const providersCacheTTL = time.Hour * 1
+const providersCacheTTL = time.Second * 1
 
 func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
 	providersCacheKey := fmt.Sprintf("providers|%s|%s-%s", query.MediaType, query.MediaSource, query.SourceID)

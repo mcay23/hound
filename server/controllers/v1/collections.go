@@ -239,14 +239,6 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
-// Gets a list of all tv shows and movies which have files
-// this is in collections.go because it mocks a collection response
-// even if there's only one episode downloaded, a tvshow will show
-// up here
-func GetHoundDownloadsHandler(c *gin.Context) {
-
-}
-
 func GetRecentCollectionContentsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {

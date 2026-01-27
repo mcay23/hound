@@ -74,7 +74,7 @@ func processTask(workerID int, task *database.IngestTask) {
 		"taskID", task.IngestTaskID, "sourceURI", *task.SourceURI)
 	if strings.HasPrefix(*task.SourceURI, "http") {
 		// http case
-		startHTTPDownload(workerID, task)
+		startHTTPDownloadV2(workerID, task)
 	} else {
 		// p2p download case
 		startP2PDownload(workerID, task)
@@ -92,23 +92,38 @@ func startHTTPDownload(workerID int, task *database.IngestTask) {
 	}
 	// mock browsers, some sites block requests without user agent
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
-	req.Header.Set("Sec-Fetch-Site", "none")
-	req.Header.Set("Sec-Fetch-User", "?1")
+	// req.Header.Set("Accept", "*/*")
+	// req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	// req.Header.Set("Connection", "keep-alive")
+	// req.Header.Set("Upgrade-Insecure-Requests", "1")
+	// req.Header.Set("Sec-Fetch-Dest", "document")
+	// req.Header.Set("Sec-Fetch-Mode", "navigate")
+	// req.Header.Set("Sec-Fetch-Site", "none")
+	// req.Header.Set("Sec-Fetch-User", "?1")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Transport: &http.Transport{
+			ForceAttemptHTTP2: false,
+		},
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Failed to get HTTP download", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
 		return
 	}
 	defer resp.Body.Close()
+	slog.Info("HTTP info",
+		"proto", resp.Proto,
+		"contentLength", resp.ContentLength,
+		"transferEncoding", resp.TransferEncoding,
+	)
 	if resp.StatusCode != http.StatusOK {
+		slog.Info("fail headers",
+			"status", resp.Status,
+			"contentLength", resp.ContentLength,
+			"transferEncoding", resp.TransferEncoding,
+		)
 		err = fmt.Errorf("bad status: %s", resp.Status)
 		slog.Error("Failed to get HTTP download", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
@@ -187,6 +202,155 @@ func startHTTPDownload(workerID int, task *database.IngestTask) {
 	}
 }
 
+/*
+Allows downloading with range requests, useful for CDNs which don't
+allow one-shot downloads
+*/
+func startHTTPDownloadV2(workerID int, task *database.IngestTask) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			ForceAttemptHTTP2: false,
+		},
+	}
+
+	// filename := path.Base(*task.SourceURI)
+	// sourcePath := filepath.Join(model.HoundHttpDownloadsPath, filename)
+
+	// out, err := os.OpenFile(sourcePath, os.O_CREATE|os.O_WRONLY, 0644)
+	// if err != nil {
+	// 	failTask(task, err)
+	// 	return
+	// }
+	// defer out.Close()
+
+	// var downloaded int64
+	// stat, _ := out.Stat()
+	// downloaded = stat.Size()
+	// task.SourcePath = sourcePath
+	// task.DownloadedBytes = downloaded
+	// database.UpdateIngestTask(task)
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	var downloaded int64 = 0
+	var out *os.File
+	lastBytesCompleted := downloaded
+	for {
+		req, err := http.NewRequestWithContext(ctx, "GET", *task.SourceURI, nil)
+		if err != nil {
+			failTask(task, err)
+			return
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0")
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", downloaded))
+		resp, err := client.Do(req)
+		if err != nil {
+			failTask(task, err)
+			return
+		}
+		// first request, open file
+		if out == nil {
+			filename, err := getHTTPFilename(resp, *task.SourceURI)
+			if err != nil {
+				failTask(task, fmt.Errorf("failed to get HTTP filename: %s", err))
+				return
+			}
+			if !model.IsVideoFile(filepath.Ext(filename)) {
+				failTask(task, fmt.Errorf("file is not a video file: %s", filename))
+				return
+			}
+			sourcePath := filepath.Join(model.HoundHttpDownloadsPath, filename)
+			out, err = os.OpenFile(sourcePath, os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				failTask(task, fmt.Errorf("failed to open file: %s - %s", sourcePath, err))
+				return
+			}
+			defer out.Close()
+			stat, _ := out.Stat()
+			downloaded = stat.Size()
+			task.SourcePath = sourcePath
+			task.TotalBytes = resp.ContentLength
+			task.DownloadedBytes = downloaded
+			database.UpdateIngestTask(task)
+		}
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+			resp.Body.Close()
+			failTask(task, fmt.Errorf("bad status: %s", resp.Status))
+			return
+		}
+		if _, err := out.Seek(downloaded, io.SeekStart); err != nil {
+			resp.Body.Close()
+			failTask(task, err)
+			return
+		}
+		pw := &countingWriter{Writer: out, count: &downloaded}
+		copyDone := make(chan error, 1)
+		go func() {
+			_, err := io.Copy(pw, resp.Body)
+			copyDone <- err
+		}()
+		for {
+			select {
+			case err := <-copyDone:
+				resp.Body.Close()
+				// EOF, retry with next range
+				if err == io.ErrUnexpectedEOF || err == io.EOF {
+					if downloaded > lastBytesCompleted {
+						lastBytesCompleted = downloaded
+						goto retry
+					}
+					failTask(task, fmt.Errorf("stalled download at %d bytes:"+err.Error(), downloaded))
+					return
+				}
+				if err != nil {
+					failTask(task, err)
+					return
+				}
+				// file complete
+				task.DownloadedBytes = downloaded
+				task.Status = database.IngestStatusPendingInsert
+				task.FinishedAt = time.Now().UTC()
+				database.UpdateIngestTask(task)
+
+				slog.Info("HTTP download finished",
+					"workerID", workerID,
+					"taskID", task.IngestTaskID,
+					"bytes", downloaded,
+				)
+				return
+
+			case <-ticker.C:
+				newTask, err := database.GetIngestTask(database.IngestTask{IngestTaskID: task.IngestTaskID})
+				if err != nil {
+					failTask(task, err)
+					return
+				}
+				if newTask.Status == database.IngestStatusCanceled {
+					cancel()
+					cancelTask(newTask)
+					// delete file
+					slog.Info("Download cancelled, removing file", "taskID", task.IngestTaskID, "sourcePath", task.SourcePath)
+					err = os.Remove(task.SourcePath)
+					if err != nil {
+						slog.Error("Failed to delete file", "taskID", task.IngestTaskID, "error", err)
+					}
+					return
+				}
+				current := atomic.LoadInt64(&downloaded)
+				newTask.DownloadedBytes = current
+				newTask.DownloadSpeed = (current - lastBytesCompleted) / 2
+				lastBytesCompleted = current
+				newTask.LastSeen = time.Now().UTC()
+				database.UpdateIngestTask(newTask)
+			}
+		}
+	retry:
+	}
+}
+
 // get filename from http url
 func getHTTPFilename(resp *http.Response, rawURL string) (string, error) {
 	cd := resp.Header.Get("Content-Disposition")
@@ -200,10 +364,18 @@ func getHTTPFilename(resp *http.Response, rawURL string) (string, error) {
 			}
 		}
 	}
+	// fallback to url after redirects
+	if resp.Request != nil && resp.Request.URL != nil {
+		if base := path.Base(resp.Request.URL.Path); base != "" && base != "/" {
+			return base, nil
+		}
+	}
+	// fallback #2
 	u, err := url.Parse(rawURL)
 	if err == nil && u.Path != "" {
 		return path.Base(u.Path), nil
 	}
+	// at this point, no clue what the file extension is
 	return "", errors.New(helpers.BadRequest)
 }
 
