@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/pbkdf2"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -17,17 +16,18 @@ func getAESKey(salt []byte) (*[]byte, error) {
 	return &key, err
 }
 
+var fixedSalt = "my-random-hound-salt-123"
+var fixedNonce = "hound*nonce*"
+
 /*
 Encodes a stream into a string using AES
 This also protects api keys in urls from being
 exposed if hound link is shared
+
+For our purposes, we want a stable hash, so we use a fixed salt and nonce
 */
 func EncodeJsonStreamAES(streamObject StreamObjectFull) (string, error) {
-	salt := make([]byte, 16)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		return "", err
-	}
-	key, err := getAESKey(salt)
+	key, err := getAESKey([]byte(fixedSalt))
 	if err != nil {
 		return "", err
 	}
@@ -43,10 +43,8 @@ func EncodeJsonStreamAES(streamObject StreamObjectFull) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	nonce := make([]byte, gcm.NonceSize())
-	io.ReadFull(rand.Reader, nonce)
-	ciphertext := gcm.Seal(nonce, nonce, bytes, nil)
-	final := append(salt, ciphertext...)
+	ciphertext := gcm.Seal([]byte(fixedNonce), []byte(fixedNonce), bytes, nil)
+	final := append([]byte(fixedSalt), ciphertext...)
 
 	return base64.URLEncoding.EncodeToString(final), nil
 }
@@ -59,11 +57,12 @@ func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(fullCiphertext) < 16 {
+	saltLen := len(fixedSalt)
+	if len(fullCiphertext) < saltLen {
 		return nil, io.ErrUnexpectedEOF
 	}
-	salt := fullCiphertext[:16]
-	ciphertext := fullCiphertext[16:]
+	salt := fullCiphertext[:saltLen]
+	ciphertext := fullCiphertext[saltLen:]
 
 	key, err := getAESKey(salt)
 	if err != nil {

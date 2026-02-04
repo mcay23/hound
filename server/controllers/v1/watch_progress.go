@@ -99,6 +99,8 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			return
 		}
 	}
+	// set client platform
+	watchProgress.ClientPlatform = c.GetHeader("X-Client-Platform")
 	// otherwise, continue to set watch progress
 	err = model.SetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), watchProgress)
 	if err != nil {

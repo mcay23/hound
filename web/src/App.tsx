@@ -26,7 +26,11 @@ axios.defaults.baseURL = SERVER_URL;
 // TODO REVISE LATER
 axios.defaults.headers.common["Content-Type"] =
   AXIOS_CONFIG.headers["Content-Type"];
-axios.defaults.headers.common["X-Client"] = AXIOS_CONFIG.headers["X-Client"];
+axios.defaults.headers.common["X-Client-Id"] =
+  AXIOS_CONFIG.headers["X-Client-Id"];
+axios.defaults.headers.common["X-Client-Platform"] =
+  AXIOS_CONFIG.headers["X-Client-Platform"];
+
 // Add a request interceptor
 axios.interceptors.request.use(
   function (config) {

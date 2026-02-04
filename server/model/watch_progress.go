@@ -8,6 +8,7 @@ import (
 	"hound/model/providers"
 	"hound/sources"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,13 @@ import (
 )
 
 const watchProgressCacheTTL = 90 * 24 * time.Hour // 90 days
+const (
+	PlayerWeb       = "web"
+	PlayerExoplayer = "exoplayer"
+	PlayerMPV       = "mpv"
+)
+
+var SupportedPlayers = []string{PlayerWeb, PlayerExoplayer, PlayerMPV}
 
 /*
 Watch progress is not stored in the db because it's not deemed as critical
@@ -25,16 +33,28 @@ This is intentional to prevent downloading too much metadata for movies users pe
 15 minutes and never watch again, for example.
 */
 type WatchProgress struct {
-	MediaType              string `json:"media_type"`                                       // "movie" or "tvshow"
-	MediaSource            string `json:"media_source"`                                     // "tmdb"
-	SourceID               string `json:"source_id"`                                        // movie/show source id
-	StreamProtocol         string `json:"stream_protocol"`                                  // p2p, http, local, etc.
-	EncodedData            string `json:"encoded_data"`                                     // for hound-proxied sources
-	SourceURI              string `json:"source_uri"`                                       // magnet, http link, local path
-	CurrentProgressSeconds int    `json:"current_progress_seconds" binding:"required,gt=0"` // how many seconds in the user is
-	TotalDurationSeconds   int    `json:"total_duration_seconds" binding:"required,gt=0"`   // total duration of the media in seconds
-	LastWatchedAt          int64  `json:"last_watched_at"`                                  // last unix time when the playback progress was set
+	ClientPlatform         string          `json:"client_platform,omitempty"`                        // android-tv, etc.
+	MediaType              string          `json:"media_type"`                                       // "movie" or "tvshow"
+	MediaSource            string          `json:"media_source"`                                     // "tmdb"
+	SourceID               string          `json:"source_id"`                                        // movie/show source id
+	StreamProtocol         string          `json:"stream_protocol"`                                  // p2p, http, local, etc.
+	EncodedData            string          `json:"encoded_data"`                                     // for hound-proxied sources
+	SourceURI              string          `json:"source_uri"`                                       // magnet, http link, local path
+	CurrentProgressSeconds int             `json:"current_progress_seconds" binding:"required,gt=0"` // how many seconds in the user is
+	TotalDurationSeconds   int             `json:"total_duration_seconds" binding:"required,gt=0"`   // total duration of the media in seconds
+	LastWatchedAt          int64           `json:"last_watched_at"`                                  // last unix time when the playback progress was set
+	PlayerSettings         *PlayerSettings `json:"player_settings,omitempty"`                        // player, audio, subtitle selections, etc.
 	WatchActionMetadata
+}
+
+// settings to help resume playback
+type PlayerSettings struct {
+	Player       string `json:"player,omitempty"` // mpv, exoplayer, etc.
+	AudioIdx     *int   `json:"audio_idx,omitempty"`
+	AudioLang    string `json:"audio_lang,omitempty"`
+	SubtitleIdx  *int   `json:"subtitle_idx,omitempty"`
+	SubtitleLang string `json:"subtitle_lang,omitempty"`
+	ResizeMode   string `json:"resize_mode,omitempty"` // whether the video is zoomed to fill/normal, etc.
 }
 
 // eg. watch_progress|userid:123|mediaType:movie|source:tmdb-123|season:nil|episode:nil
@@ -105,6 +125,19 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	if watchProgress.CurrentProgressSeconds > watchProgress.TotalDurationSeconds {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"invalid param: current progress is greater than total duration")
+	}
+	watchProgress.ClientPlatform = strings.ToLower(watchProgress.ClientPlatform)
+	if watchProgress.ClientPlatform != "" && !slices.Contains(SupportedClientPlatforms, watchProgress.ClientPlatform) {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"invalid param: X-Client-Platform is invalid: "+watchProgress.ClientPlatform)
+	}
+	// validate player settings correct
+	if watchProgress.PlayerSettings != nil {
+		watchProgress.PlayerSettings.Player = strings.ToLower(watchProgress.PlayerSettings.Player)
+		if watchProgress.PlayerSettings.Player != "" && !slices.Contains(SupportedPlayers, watchProgress.PlayerSettings.Player) {
+			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"invalid param: player is not supported")
+		}
 	}
 	if watchProgress.EncodedData != "" {
 		data, err := providers.DecodeJsonStreamAES(watchProgress.EncodedData)

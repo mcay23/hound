@@ -36,10 +36,13 @@ func JWTMiddleware(c *gin.Context) {
 		return
 	}
 	// set headers from auth token, overwrite current headers
-	//c.Request.Header.Del("X-Username")
-	//c.Request.Header.Del("X-Client")
+	c.Request.Header.Del("X-Username")
+	c.Request.Header.Del("X-Client-Id")
+	c.Request.Header.Del("X-Client-Platform")
+
 	c.Request.Header.Add("X-Username", claims.Username)
-	c.Request.Header.Add("X-Client", claims.Client)
+	c.Request.Header.Add("X-Client-Id", claims.ClientID)
+	c.Request.Header.Add("X-Client-Platform", claims.ClientPlatform)
 	c.Next()
 }
 
@@ -51,7 +54,7 @@ func CORSMiddleware(c *gin.Context) {
 	// }
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "User-Agent, Content-Type, Content-Length, Accept-Ranges, Content-Range, Range, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Client")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "User-Agent, Content-Type, Content-Length, Accept-Ranges, Content-Range, Range, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Client-Id, X-Client-Platform")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, HEAD")
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
 

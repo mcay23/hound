@@ -11,6 +11,7 @@ export const AXIOS_CONFIG = {
   "withCredentials": true,
   "headers": {
     "Content-Type": "application/json;charset=UTF-8",
-    "X-Client": "desktop"
+    "X-Client-Id": "hound-web",
+    "X-Client-Platform": "web"
   }
 }

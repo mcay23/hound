@@ -12,6 +12,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	ClientIDWeb                 = "hound-web"
+	ClientIDApp                 = "hound-app"
+	ClientPlatformAndroidMobile = "android-mobile"
+	ClientPlatformAndroidTV     = "android-tv"
+	ClientPlatformWeb           = "web"
+)
+
+var SupportedClientPlatforms = []string{ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientIDs = []string{ClientIDWeb, ClientIDApp}
+
 type RegistrationUser struct {
 	Username  string `json:"username" binding:"required,gt=0"`
 	FirstName string `json:"first_name" binding:"required,gt=0"`
@@ -26,8 +37,9 @@ type LoginUser struct {
 }
 
 type JWTClaims struct {
-	Username string `json:"username"`
-	Client   string `json:"client"`
+	Username       string `json:"username"`
+	ClientID       string `json:"client_id"`
+	ClientPlatform string `json:"client_platform"`
 	jwt.RegisteredClaims
 }
 
@@ -62,7 +74,7 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
 }
 
 // GenerateAccessToken JWT access token
-func GenerateAccessToken(user LoginUser, client string) (string, error) {
+func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string) (string, error) {
 	jwtKey := []byte(os.Getenv("HOUND_SECRET"))
 	dbUser, err := database.GetUser(user.Username)
 	if err != nil {
@@ -75,8 +87,9 @@ func GenerateAccessToken(user LoginUser, client string) (string, error) {
 	// expiration time in seconds
 	expirationTime := time.Now().Add(time.Duration(viper.GetInt("auth.jwt-access-token-expiration")) * time.Second)
 	claims := &JWTClaims{
-		Username: user.Username,
-		Client:   client,
+		Username:       user.Username,
+		ClientID:       clientID,
+		ClientPlatform: clientPlatform,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

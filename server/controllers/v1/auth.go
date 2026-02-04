@@ -5,6 +5,8 @@ import (
 	"hound/helpers"
 	"hound/model"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -28,12 +30,16 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	client := c.GetHeader("X-Client")
+	clientID, clientPlatform, err := validateClientHeaders(c)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
 	tokenPayload := model.LoginUser{
 		Username: userPayload.Username,
 		Password: userPayload.Password,
 	}
-	token, err := model.GenerateAccessToken(tokenPayload, client)
+	token, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -49,14 +55,12 @@ func LoginHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	client := c.GetHeader("X-Client")
-	if client == "" {
-		err := errors.New(helpers.BadRequest)
-		_ = helpers.LogErrorWithMessage(err, "Failed to get client from header")
+	clientID, clientPlatform, err := validateClientHeaders(c)
+	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	token, err := model.GenerateAccessToken(userPayload, client)
+	token, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -72,4 +76,20 @@ func LoginHandler(c *gin.Context) {
 	}
 	http.SetCookie(c.Writer, cookie)
 	helpers.SuccessResponse(c, gin.H{"username": userPayload.Username, "token": token}, 200)
+}
+
+func validateClientHeaders(c *gin.Context) (string, string, error) {
+	clientID := strings.ToLower(c.GetHeader("X-Client-Id"))
+	if !slices.Contains(model.SupportedClientIDs, clientID) {
+		err := errors.New(helpers.BadRequest)
+		_ = helpers.LogErrorWithMessage(err, "Invalid or missing X-Client-Id header")
+		return "", "", err
+	}
+	clientPlatform := strings.ToLower(c.GetHeader("X-Client-Platform"))
+	if !slices.Contains(model.SupportedClientPlatforms, clientPlatform) {
+		err := errors.New(helpers.BadRequest)
+		_ = helpers.LogErrorWithMessage(err, "Invalid or missing X-Client-Platform header")
+		return "", "", err
+	}
+	return clientID, clientPlatform, nil
 }
