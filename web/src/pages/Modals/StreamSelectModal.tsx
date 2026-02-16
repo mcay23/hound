@@ -69,6 +69,29 @@ function SelectStreamModal(props: any) {
                         >
                           Download to Hound
                         </Button>
+                        <Button
+                          className="stream-info-card-footer-buttons ms-2"
+                          variant="light"
+                          size="sm"
+                          onClick={() => {
+                            const handleCopy = async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  window.location.origin +
+                                    "/api/v1/stream/" +
+                                    stream.encoded_data,
+                                );
+                                toast.success("Link copied to clipboard");
+                              } catch (err) {
+                                console.error("Failed to copy text: ", err);
+                                toast.error("Copy to clipboard failed! " + err);
+                              }
+                            };
+                            handleCopy();
+                          }}
+                        >
+                          Copy Link
+                        </Button>
                       </div>
                     ) : (
                       <></>
