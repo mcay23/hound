@@ -53,10 +53,10 @@ function MediaItem(props: any) {
   return (
     <>
       <div className="media-item-container">
-        <div className="media-item-img-container">
+        <div className="media-item-img-container d-flex">
           <ItemCard item={props.item} itemType={"poster"} />
         </div>
-        <div className="media-item-main-container">
+        <div className="media-item-content-container">
           <div className="media-item-title-container">
             <a
               href={`/${mediaType}/${props.item.media_source}-${props.item.source_id}`}

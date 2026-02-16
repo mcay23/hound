@@ -173,7 +173,7 @@ function SeasonModal(props: any) {
             setWatchProgress(progressMap);
           } else {
             // null progress is also a valid response
-            setWatchProgress(new Map<number, WatchProgressItem>());
+            setWatchProgress(new Map<string, WatchProgressItem>());
           }
         })
         .catch((err) => {
