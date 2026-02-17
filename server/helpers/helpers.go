@@ -64,7 +64,6 @@ func ExtractInfoHashFromURL(url string) (string, bool) {
 	re := regexp.MustCompile(
 		`(?i)[-/\[\(;:&]([a-f0-9]{40})[-\]\)/:;&]`,
 	)
-
 	m := re.FindStringSubmatch(url)
 	if len(m) < 2 {
 		return "", false

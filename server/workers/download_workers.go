@@ -216,23 +216,6 @@ func startHTTPDownloadV2(workerID int, task *database.IngestTask) {
 		},
 	}
 
-	// filename := path.Base(*task.SourceURI)
-	// sourcePath := filepath.Join(model.HoundHttpDownloadsPath, filename)
-
-	// out, err := os.OpenFile(sourcePath, os.O_CREATE|os.O_WRONLY, 0644)
-	// if err != nil {
-	// 	failTask(task, err)
-	// 	return
-	// }
-	// defer out.Close()
-
-	// var downloaded int64
-	// stat, _ := out.Stat()
-	// downloaded = stat.Size()
-	// task.SourcePath = sourcePath
-	// task.DownloadedBytes = downloaded
-	// database.UpdateIngestTask(task)
-
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	var downloaded int64 = 0

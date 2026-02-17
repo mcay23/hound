@@ -202,7 +202,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	// collectionID of -1 is a global Hound Library faux collection
 	// might need a better solution for this
 	if collectionID == -1 {
-		collectionView, err := GetHoundDownloadedRecords(limit, offset)
+		collectionView, err := getHoundDownloadedRecords(limit, offset)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
 			return
@@ -270,7 +270,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, viewArray, 200)
 }
 
-func GetHoundDownloadedRecords(limit int, offset int) (view.CollectionView, error) {
+func getHoundDownloadedRecords(limit int, offset int) (view.CollectionView, error) {
 	records, total_records, err := database.GetDownloadedParentRecords(limit, offset)
 	if err != nil {
 		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
