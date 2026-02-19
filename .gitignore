@@ -50,3 +50,4 @@ server/.env
 .DS_Store
 /server/Hound Data
 /docker
+/server/logs

@@ -7,6 +7,7 @@ import (
 	"hound/helpers"
 	"hound/model/providers"
 	"hound/sources"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -16,6 +17,16 @@ import (
 	"time"
 
 	"github.com/anacrolix/torrent/metainfo"
+)
+
+// whether to move, copy or preserve the source file
+// to the hound directory
+// preserve = keep source file where it is, typically for
+// external libraries
+const (
+	IngestTransferMove     = "move"
+	IngestTransferCopy     = "copy"
+	IngestTransferPreserve = "preserve"
 )
 
 // Downloads torrent to server, not clients
@@ -100,14 +111,16 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 	return nil
 }
 
-/*
-IngestFile copies the downloaded file into the media directory
-and adds its metadata to the database
-*/
 func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int,
-	infoHash *string, fileIdx *int, sourceURI *string, sourcePath string) (*database.MediaFile, error) {
+	infoHash *string, fileIdx *int, sourceURI *string, sourcePath string, transferMode string, fileOrigin string) (*database.MediaFile, error) {
 	if mediaRecord == nil {
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
+	}
+	if transferMode != IngestTransferMove && transferMode != IngestTransferCopy && transferMode != IngestTransferPreserve {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid ingest transfer mode")
+	}
+	if fileOrigin != database.FileOriginHoundManaged && fileOrigin != database.FileOriginExternalLibrary {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid file origin")
 	}
 	if !IsVideoFile(filepath.Ext(sourcePath)) {
 		return nil, helpers.LogErrorWithMessage(fmt.Errorf("File is not a video file %s", sourcePath), "File is not a video file")
@@ -125,42 +138,84 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			fmt.Sprintf("Video duration too short: %v (<1 minute)", videoMetadata.Duration))
 	}
 
-	targetDir, targetFilename, targetRecordID, err := getMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
-		infoHash, fileIdx, filepath.Ext(sourcePath))
+	var targetRecordID int64
+	var targetPath string
+	targetRecordID, err = getIngestTargetRecordID(mediaRecord, seasonNumber, episodeNumber)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get media destination dir")
+		return nil, helpers.LogErrorWithMessage(err, "Failed to get ingest target record id")
 	}
-	// rename, should be atomic since same filesystem
-	err = os.MkdirAll(targetDir, 0755)
-	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to create directory")
-	}
-	// need stricter evaluation for p2p file being streamed
-	err = os.Rename(sourcePath, filepath.Join(targetDir, targetFilename))
-	if err != nil {
-		slog.Error("Failed to rename file, trying link", "sourcePath", sourcePath, "targetPath",
-			filepath.Join(targetDir, targetFilename), "error", err)
-		// fallback to link, if file is being used
-		linkErr := os.Link(sourcePath, filepath.Join(targetDir, targetFilename))
-		if linkErr != nil {
-			return nil, helpers.LogErrorWithMessage(linkErr, "Failed to rename+link file")
+	if transferMode == IngestTransferPreserve {
+		targetPath = sourcePath
+	} else {
+		targetDir, targetFilename, _, err := getMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
+			infoHash, fileIdx, filepath.Ext(sourcePath))
+		if err != nil {
+			return nil, helpers.LogErrorWithMessage(err, "Failed to get media destination dir")
+		}
+		err = os.MkdirAll(targetDir, 0755)
+		if err != nil {
+			return nil, helpers.LogErrorWithMessage(err, "Failed to create directory")
+		}
+		targetPath = filepath.Join(targetDir, targetFilename)
+		// for external library cases, we probably just want to preserve source in original location
+		// but copy may be needed one day if users want a full migration
+		switch transferMode {
+		case IngestTransferMove:
+			// same-filesystem move is atomic
+			err = os.Rename(sourcePath, targetPath)
+			if err != nil {
+				// fallback to link when source is still open/locked
+				linkErr := os.Link(sourcePath, targetPath)
+				if linkErr != nil {
+					return nil, helpers.LogErrorWithMessage(linkErr, "Failed to move file with rename+link fallback")
+				}
+			}
+		case IngestTransferCopy:
+			// try hardlink first, copy fallback
+			err = os.Link(sourcePath, targetPath)
+			if err != nil {
+				err = copyFile(sourcePath, targetPath)
+				if err != nil {
+					return nil, helpers.LogErrorWithMessage(err, "Failed to copy file")
+				}
+			}
 		}
 	}
 	mediaFile := database.MediaFile{
-		Filepath:         filepath.Join(targetDir, targetFilename),
+		Filepath:         targetPath,
 		OriginalFilename: filepath.Base(sourcePath),
 		RecordID:         targetRecordID,
+		FileOrigin:       fileOrigin,
 		SourceURI:        sourceURI,
 		FileIdx:          fileIdx,
 		VideoMetadata:    *videoMetadata,
 	}
 	insertedMediaFile, err := database.InsertMediaFile(&mediaFile)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db"+
-			filepath.Join(targetDir, targetFilename))
+		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db "+targetPath)
 	}
 	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
 	return insertedMediaFile, nil
+}
+
+func getIngestTargetRecordID(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int) (int64, error) {
+	switch mediaRecord.RecordType {
+	case database.RecordTypeMovie:
+		return mediaRecord.RecordID, nil
+	case database.RecordTypeTVShow:
+		if seasonNumber == nil || episodeNumber == nil {
+			return 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Season number or episode number is nil")
+		}
+		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
+			mediaRecord.SourceID, seasonNumber, *episodeNumber)
+		if err != nil || episodeRecord == nil {
+			return 0, helpers.LogErrorWithMessage(err, "Failed to get episode media record")
+		}
+		return episodeRecord.RecordID, nil
+	default:
+		return 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
+	}
 }
 
 func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int, infoHash *string,
@@ -180,7 +235,8 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 	if releaseYear != "" {
 		mediaTitleStr += " (" + releaseYear + ")"
 	}
-	mediaTitleStr += fmt.Sprintf(" {%s-%s}", mediaRecord.MediaSource, mediaRecord.SourceID)
+	// [tmdbid-1234], matches with jellyfin scheme
+	mediaTitleStr += fmt.Sprintf(" [%sid-%s]", mediaRecord.MediaSource, mediaRecord.SourceID)
 	mediaTitleStr = helpers.SanitizeFilename(mediaTitleStr)
 	targetFilename := mediaTitleStr
 	var targetRecordID int64
@@ -213,7 +269,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		// continue to construct dir
 		targetFilename = fmt.Sprintf("%s - S%02dE%02d", mediaTitleStr, *seasonNumber, *episodeNumber)
 		// add infohash+fileidx, this just helps with multiple sources per episode
-		// eg. Big Buck Bunny (2001) {tmdb-123456} - S1E5 {tmdb-5123} {infohash-ab23ef12[2]}.mp4
+		// eg. Big Buck Bunny (2001) [tmdbid-123456] - S01E05 {infohash-ab23ef12[2]}.mp4
 		if infoHash != nil && *infoHash != "" {
 			targetFilename += fmt.Sprintf(" {infohash-%s", *infoHash)
 			if fileIdx != nil && *fileIdx >= 0 {
@@ -251,6 +307,25 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		}
 	}
 	return targetDir, targetFilename, targetRecordID, nil
+}
+
+func copyFile(src string, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
+	return dstFile.Sync()
 }
 
 // Helper function to copy files from downloads -> media directory

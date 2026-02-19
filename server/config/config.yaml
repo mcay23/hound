@@ -2,3 +2,8 @@
 auth:
   allow-registration: true
   jwt-access-token-expiration: 604800 # expressed in seconds
+external_library:
+  enabled: true
+  movies_root_path: "Hound Data/movies"
+  tv_root_path: "Hound Data/shows"
+  scan_interval_minutes: 360

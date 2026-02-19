@@ -29,7 +29,7 @@ var tmdbMovieGenres tmdb.GenreMovieList
 
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
-const getCacheTTL = 2 * time.Hour
+const getCacheTTL = 30 * time.Minute
 
 // defined anonymously in tmdb, so we redefine
 type TMDBEpisode struct {
@@ -119,7 +119,7 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	// for now, remove ability to control append_to_response, just cache the complete
 	// response for safety
 	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids",
+		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids,alternative_titles",
 	}
 	tvShow, err := tmdbClient.GetTVDetails(tmdbID, options)
 	if err != nil {
@@ -316,7 +316,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 		return &cacheObject, nil
 	}
 	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids",
+		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids,alternative_titles",
 	}
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
 	if err != nil {

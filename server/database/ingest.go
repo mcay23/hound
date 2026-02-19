@@ -23,6 +23,7 @@ const (
 	ProtocolP2P       = "p2p"
 	ProtocolProxyHTTP = "proxy-http"
 	ProtocolFileHTTP  = "file-http"
+	ProtocolExternal  = "external"
 )
 
 // tasks in terminal statuses won't change, retries must be made as a new task

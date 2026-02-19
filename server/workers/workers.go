@@ -14,6 +14,7 @@ import (
 func InitializeWorkers(downloadWorkers int, ingestWorkers int) {
 	InitializeDownloadWorkers(downloadWorkers)
 	InitializeIngestWorkers(ingestWorkers)
+	InitializeExternalLibraryWorker()
 	go cleanUpDownloads()
 }
 

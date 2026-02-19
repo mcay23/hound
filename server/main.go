@@ -3,6 +3,7 @@ package main
 import (
 	"hound/controllers"
 	"hound/database"
+	"hound/loggers"
 	"hound/model"
 	"hound/services"
 	"hound/sources"
@@ -19,6 +20,7 @@ func main() {
 	slog.SetDefault(slog.New(handler))
 
 	model.InitializeConfig()
+	loggers.InitializeLoggers()
 	database.InstantiateDB()
 	database.InitializeCache()
 	sources.InitializeSources()

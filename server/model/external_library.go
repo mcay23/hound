@@ -1,0 +1,377 @@
+package model
+
+import (
+	"errors"
+	"fmt"
+	"hound/database"
+	"hound/helpers"
+	"hound/loggers"
+	"hound/sources"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+)
+
+var (
+	seasonEpisodePattern = regexp.MustCompile(`(?i)[Ss](\d{1,2})[Ee](\d{1,4})`)
+	altEpisodePattern    = regexp.MustCompile(`(?i)(\d{1,2})[xX](\d{1,4})`)
+	seasonFolderPattern  = regexp.MustCompile(`(?i)season[ ._-]*(\d{1,2})`)
+	yearPattern          = regexp.MustCompile(`\b(19|20)\d{2}\b`)
+	junkTokenPattern     = regexp.MustCompile(`(?i)\b(480p|720p|1080p|2160p|x264|x265|h264|h265|hevc|av1|vp9|bluray|brrip|webrip|web-dl|remux|dvdrip|hdr|aac|dts)\b`)
+)
+
+const (
+	externalTMDBMatchCachePrefix = "external_match|tmdb"
+	externalTMDBMatchCacheTTL    = 7 * 24 * time.Hour
+	maxSearchChecks              = 5 // top n results to search for matching
+)
+
+type ParsedExternalMedia struct {
+	MediaType     string
+	Title         string
+	SourceID      string
+	Year          int
+	SeasonNumber  *int
+	EpisodeNumber *int
+}
+
+func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string) (*database.IngestTask, *ParsedExternalMedia, error) {
+	cleanRoot := filepath.Clean(rootPath)
+	cleanPath := filepath.Clean(filePath)
+	stat, err := os.Stat(cleanPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if stat.IsDir() || !IsVideoFile(cleanPath) {
+		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Not a video file")
+	}
+	parsed, err := parseExternalMediaPath(cleanRoot, cleanPath, mediaType)
+	if err != nil {
+		return nil, nil, err
+	}
+	var ingestRecordID int64
+	switch parsed.MediaType {
+	case database.MediaTypeMovie:
+		sourceID, err := findBestMovieTMDBID(parsed.Title, parsed.Year)
+		if err != nil {
+			return nil, parsed, err
+		}
+		parsed.SourceID = strconv.Itoa(sourceID)
+		has, record, err := database.GetMediaRecord(database.RecordTypeMovie, sources.MediaSourceTMDB, parsed.SourceID)
+		if err == nil && has && record != nil {
+			ingestRecordID = record.RecordID
+		} else {
+			record, err = sources.UpsertMediaRecordTMDB(database.MediaTypeMovie, sourceID)
+			if err != nil {
+				return nil, parsed, err
+			}
+			ingestRecordID = record.RecordID
+		}
+		loggers.IngestLogger().Info("[Matched Movie]", "path", filePath, "source_id", sourceID, "title", record.MediaTitle, "release_date", record.ReleaseDate)
+	case database.MediaTypeTVShow:
+		sourceID, err := findBestTVTMDBID(parsed.Title, parsed.Year)
+		if err != nil {
+			return nil, parsed, err
+		}
+		// if episode record already exists, we don't want to make an extra call
+		// just to get show title, just debug from source id
+		logTitle := "<see source id>"
+		logReleaseDate := "<see source id>"
+		parsed.SourceID = strconv.Itoa(sourceID)
+		// Fast path for repeat episodes: if already in DB, skip show upsert/network work.
+		epRecord, err := database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+		if err == nil && epRecord != nil {
+			ingestRecordID = epRecord.RecordID
+		} else {
+			record, err := sources.UpsertMediaRecordTMDB(database.MediaTypeTVShow, sourceID)
+			if err != nil {
+				return nil, parsed, err
+			}
+			logTitle = record.MediaTitle
+			logReleaseDate = record.ReleaseDate
+			epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+			if err != nil || epRecord == nil {
+				return nil, parsed, helpers.LogErrorWithMessage(err, "Failed to resolve episode record")
+			}
+			ingestRecordID = epRecord.RecordID
+		}
+		loggers.IngestLogger().Info("[Matched TV Show]", "path", filePath, "source_id", sourceID, "title", logTitle, "release_date", logReleaseDate, "season", epRecord.SeasonNumber, "episode", epRecord.EpisodeNumber)
+	default:
+		return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Unsupported media type")
+	}
+	tasks, err := database.FindIngestTasks(database.IngestTask{
+		RecordID:     ingestRecordID,
+		SourcePath:   cleanPath,
+		DownloadType: database.ProtocolExternal,
+	})
+	if err != nil {
+		return nil, parsed, err
+	}
+	for _, task := range tasks {
+		if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
+			return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "Ingest task already queued")
+		}
+	}
+
+	sourceURI := "file://" + filepath.ToSlash(cleanPath)
+	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, database.ProtocolExternal,
+		database.IngestStatusPendingInsert, sourceURI, nil)
+	if err != nil {
+		return nil, parsed, err
+	}
+	ingestTask.SourcePath = cleanPath
+	ingestTask.TotalBytes = stat.Size()
+	ingestTask.DownloadedBytes = stat.Size()
+	ingestTask.LastSeen = time.Now().UTC()
+	_, err = database.UpdateIngestTask(ingestTask)
+	if err != nil {
+		return nil, parsed, err
+	}
+	return ingestTask, parsed, nil
+}
+
+// finds tmdb id for title, year, media type
+func parseExternalMediaPath(rootPath string, filePath string, mediaType string) (*ParsedExternalMedia, error) {
+	rel, err := filepath.Rel(rootPath, filePath)
+	if err != nil {
+		return nil, err
+	}
+	rel = filepath.Clean(rel)
+	if strings.HasPrefix(rel, "..") {
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "File is outside external library root")
+	}
+	parts := splitPath(rel)
+	filename := filepath.Base(filePath)
+	parentDir := filepath.Base(filepath.Dir(filePath))
+
+	switch mediaType {
+	case database.MediaTypeMovie:
+		title := cleanTitle(parentDir)
+		if title == "" {
+			title = cleanTitle(strings.TrimSuffix(filename, filepath.Ext(filename)))
+		}
+		year := extractYear(parentDir)
+		if year == 0 {
+			year = extractYear(filename)
+		}
+		return &ParsedExternalMedia{
+			MediaType: database.MediaTypeMovie,
+			Title:     title,
+			Year:      year,
+		}, nil
+	case database.MediaTypeTVShow:
+		if len(parts) < 1 {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Unsupported tv show path structure")
+		}
+		showDir := parts[0]
+		showTitle := cleanTitle(showDir)
+		if showTitle == "" {
+			showTitle = cleanTitle(parentDir)
+		}
+		season, episode := extractSeasonEpisode(filename)
+		if season == nil || episode == nil {
+			season = extractSeasonFromParts(parts)
+		}
+		if season == nil {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No season number found in path")
+		}
+		if episode == nil {
+			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No episode number found in filename")
+		}
+		return &ParsedExternalMedia{
+			MediaType:     database.MediaTypeTVShow,
+			Title:         showTitle,
+			Year:          extractYear(showDir),
+			SeasonNumber:  season,
+			EpisodeNumber: episode,
+		}, nil
+	default:
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid media type hint")
+	}
+}
+
+func findBestMovieTMDBID(title string, year int) (int, error) {
+	cacheKey := getExternalTMDBMatchCacheKey(database.MediaTypeMovie, title, year)
+	var cachedID int
+	cacheExists, _ := database.GetCache(cacheKey, &cachedID)
+	if cacheExists && cachedID > 0 {
+		return cachedID, nil
+	}
+	results, err := sources.SearchMoviesTMDB(title)
+	if err != nil {
+		return -1, err
+	}
+	bestScore := -1
+	bestID := -1
+	target := normalizeTitle(title)
+	for idx, candidate := range results.Results {
+		if idx > maxSearchChecks {
+			break
+		}
+		candidateTitle := normalizeTitle(candidate.Title)
+		score := 0
+		if candidateTitle == target {
+			score += 5
+		}
+		if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
+			score += 3
+		}
+		// for top results, also search original title if initial matching fails (?)
+		// if score <= 0 && idx <= 3 {
+		// 	tvDetails, err := sources.GetTVShowFromIDTMDB(int(candidate.ID))
+		// 	if err != nil {
+		// 		_ = helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+		// 			"findBestMovieTMDBID(): Error getting tmdb show"+err.Error())
+		// 	}
+		// 	if len(tvDetails.OriginCountry) > 0 {
+		// 		originCountry := strings.ToLower(tvDetails.OriginCountry[0])
+		// 		if tvDetails != nil {
+		// 			for _, result := range tvDetails.AlternativeTitles.Results {
+		// 				if strings.ToLower(result.Iso3166_1) == originCountry {
+		// 					candidateTitle = normalizeTitle(result.Title)
+		// 					if candidateTitle == target {
+		// 						score += 5
+		// 					}
+		// 					if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
+		// 						score += 3
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+		// off by 1 years are accepted
+		if year > 0 && len(candidate.ReleaseDate) >= 4 {
+			cYear, _ := strconv.Atoi(candidate.ReleaseDate[:4])
+			switch cYear {
+			case year:
+				score += 3
+			case year - 1, year + 1:
+				score += 1
+			}
+		}
+		if score > bestScore {
+			bestScore = score
+			bestID = int(candidate.ID)
+		}
+	}
+	_, _ = database.SetCache(cacheKey, bestID, externalTMDBMatchCacheTTL)
+	return bestID, nil
+}
+
+func findBestTVTMDBID(title string, year int) (int, error) {
+	cacheKey := getExternalTMDBMatchCacheKey(database.MediaTypeTVShow, title, year)
+	var cachedID int
+	cacheExists, _ := database.GetCache(cacheKey, &cachedID)
+	if cacheExists && cachedID > 0 {
+		return cachedID, nil
+	}
+	results, err := sources.SearchTVShowTMDB(title)
+	if err != nil {
+		return -1, err
+	}
+	bestScore := -1
+	bestID := -1
+	target := normalizeTitle(title)
+	for idx, candidate := range results.Results {
+		if idx > maxSearchChecks {
+			break
+		}
+		candidateTitle := normalizeTitle(candidate.Name)
+		score := 0
+		if candidateTitle == target {
+			score += 5
+		}
+		if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
+			score += 3
+		}
+		if year > 0 && len(candidate.FirstAirDate) >= 4 {
+			cYear, _ := strconv.Atoi(candidate.FirstAirDate[:4])
+			switch cYear {
+			case year:
+				score += 3
+			case year - 1, year + 1:
+				score += 1
+			}
+		}
+		if score > bestScore {
+			bestScore = score
+			bestID = int(candidate.ID)
+		}
+	}
+	if bestID <= 0 {
+		return -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), fmt.Sprintf("No TMDB match for tv show: %s", title))
+	}
+	_, _ = database.SetCache(cacheKey, bestID, externalTMDBMatchCacheTTL)
+	return bestID, nil
+}
+
+func getExternalTMDBMatchCacheKey(mediaType string, title string, year int) string {
+	return fmt.Sprintf("%s|%s|%s|year:%d", externalTMDBMatchCachePrefix, mediaType, normalizeTitle(title), year)
+}
+
+func splitPath(path string) []string {
+	parts := strings.Split(filepath.ToSlash(path), "/")
+	filtered := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" || part == "." {
+			continue
+		}
+		filtered = append(filtered, part)
+	}
+	return filtered
+}
+
+func cleanTitle(raw string) string {
+	title := strings.TrimSpace(raw)
+	title = strings.TrimSuffix(title, filepath.Ext(title))
+	title = strings.ReplaceAll(title, ".", " ")
+	title = strings.ReplaceAll(title, "_", " ")
+	title = strings.ReplaceAll(title, "-", " ")
+	title = yearPattern.ReplaceAllString(title, "")
+	title = junkTokenPattern.ReplaceAllString(title, "")
+	title = strings.Join(strings.Fields(title), " ")
+	return strings.TrimSpace(title)
+}
+
+func normalizeTitle(title string) string {
+	s := strings.ToLower(cleanTitle(title))
+	return strings.Join(strings.Fields(s), " ")
+}
+
+func extractYear(input string) int {
+	match := yearPattern.FindString(input)
+	if match == "" {
+		return 0
+	}
+	year, _ := strconv.Atoi(match)
+	return year
+}
+
+func extractSeasonEpisode(filename string) (*int, *int) {
+	if matches := seasonEpisodePattern.FindStringSubmatch(filename); len(matches) == 3 {
+		season, _ := strconv.Atoi(matches[1])
+		episode, _ := strconv.Atoi(matches[2])
+		return &season, &episode
+	}
+	if matches := altEpisodePattern.FindStringSubmatch(filename); len(matches) == 3 {
+		season, _ := strconv.Atoi(matches[1])
+		episode, _ := strconv.Atoi(matches[2])
+		return &season, &episode
+	}
+	return nil, nil
+}
+
+func extractSeasonFromParts(parts []string) *int {
+	for _, part := range parts {
+		if matches := seasonFolderPattern.FindStringSubmatch(part); len(matches) == 2 {
+			season, _ := strconv.Atoi(matches[1])
+			return &season
+		}
+	}
+	return nil
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
+	"hound/loggers"
 	"hound/model"
 	"io"
 	"log/slog"
@@ -500,9 +501,19 @@ func cancelTask(task *database.IngestTask) {
 
 func failTask(task *database.IngestTask, err error) {
 	slog.Error("Task failed", "taskID", task.IngestTaskID, "error", err)
+	loggers.IngestLogger().Error("Task failed", "taskID", task.IngestTaskID, "error", err)
 	task.Status = database.IngestStatusFailed
 	errorMessage := err.Error()
 	task.LastMessage = &errorMessage
 	task.FinishedAt = time.Now().UTC()
 	database.UpdateIngestTask(task)
+	if task.DownloadType == database.ProtocolExternal {
+		item, getErr := database.GetExternalLibraryItemByPath(task.SourcePath)
+		if getErr == nil && item != nil {
+			item.Status = database.ExternalLibraryItemStatusFailed
+			item.LastError = &errorMessage
+			item.LastIngestTaskID = &task.IngestTaskID
+			_ = database.UpsertExternalLibraryItem(item)
+		}
+	}
 }

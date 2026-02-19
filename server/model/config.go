@@ -14,6 +14,10 @@ var configFileName = "config.yaml"
 
 var (
 	MaxConcurrentDownloads int
+	ExternalLibraryEnabled bool
+	ExternalLibraryMovies  string
+	ExternalLibraryTV      string
+	ExternalScanInterval   int
 )
 
 func InitializeConfig() {
@@ -34,6 +38,20 @@ func InitializeConfig() {
 	// hot reload functionality
 	viper.WatchConfig()
 	viper.SetDefault("max_concurrent_downloads", 3)
+	viper.SetDefault("external_library.enabled", false)
+	viper.SetDefault("external_library.movies_root_path", "")
+	viper.SetDefault("external_library.tv_root_path", "")
+	viper.SetDefault("external_library.scan_interval_minutes", 360)
 	MaxConcurrentDownloads = viper.GetInt("max_concurrent_downloads")
-	slog.Info("Config Initialized", "MaxConcurrentDownloads", MaxConcurrentDownloads)
+	ExternalLibraryEnabled = viper.GetBool("external_library.enabled")
+	ExternalLibraryMovies = viper.GetString("external_library.movies_root_path")
+	ExternalLibraryTV = viper.GetString("external_library.tv_root_path")
+	ExternalScanInterval = viper.GetInt("external_library.scan_interval_minutes")
+	slog.Info("Config Initialized",
+		"MaxConcurrentDownloads", MaxConcurrentDownloads,
+		"ExternalLibraryEnabled", ExternalLibraryEnabled,
+		"ExternalLibraryMovies", ExternalLibraryMovies,
+		"ExternalLibraryTV", ExternalLibraryTV,
+		"ExternalScanIntervalMinutes", ExternalScanInterval,
+	)
 }

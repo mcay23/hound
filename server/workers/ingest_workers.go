@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
+	"hound/loggers"
 	"hound/model"
 	"log/slog"
 	"time"
@@ -37,6 +38,7 @@ func ingestWorker(id int) {
 
 func processIngestTask(workerID int, task *database.IngestTask) {
 	slog.Info("Worker picked up ingest task", "workerID", workerID, "taskID", task.IngestTaskID)
+	loggers.IngestLogger().Info("Worker picked up ingest task", "workerID", workerID, "taskID", task.IngestTaskID)
 	var infoHashStr string
 	var infoHash *string
 	// p2p case, for external ingests we don't know the source
@@ -86,7 +88,12 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 		failTask(task, fmt.Errorf("unsupported record type for ingestion: %s", mediaRecord.RecordType))
 		return
 	}
-	mediaFile, err := model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath)
+	var mediaFile *database.MediaFile
+	if task.DownloadType == database.ProtocolExternal {
+		mediaFile, err = model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath, model.IngestTransferPreserve, database.FileOriginExternalLibrary)
+	} else {
+		mediaFile, err = model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath, model.IngestTransferMove, database.FileOriginHoundManaged)
+	}
 	if err != nil {
 		slog.Error("Ingestion failed", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
@@ -99,6 +106,17 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	_, err = database.UpdateIngestTask(task)
 	if err != nil {
 		slog.Error("Failed to update ingest task status", "taskID", task.IngestTaskID, "error", err)
+	}
+	if task.DownloadType == database.ProtocolExternal {
+		item, getErr := database.GetExternalLibraryItemByPath(task.SourcePath)
+		if getErr == nil && item != nil {
+			now := time.Now().UTC()
+			item.Status = database.ExternalLibraryItemStatusDone
+			item.LastError = nil
+			item.LastCompletedAt = &now
+			item.LastIngestTaskID = &task.IngestTaskID
+			_ = database.UpsertExternalLibraryItem(item)
+		}
 	}
 	slog.Info("Ingest task completed", "taskID", task.IngestTaskID)
 }

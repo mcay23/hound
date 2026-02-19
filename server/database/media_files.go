@@ -7,8 +7,13 @@ import (
 	"time"
 )
 
+// Hound managed are files managed by hound, in the hound directory
+// eg. when you download a file through hound
+// external library files are mounted to hound, and outside of the Hound Data folder
 const (
-	mediaFilesTable = "media_files"
+	mediaFilesTable           = "media_files"
+	FileOriginHoundManaged    = "hound_managed"
+	FileOriginExternalLibrary = "external_library"
 )
 
 type MediaFile struct {
@@ -16,6 +21,7 @@ type MediaFile struct {
 	Filepath         string  `xorm:"text not null unique 'file_path'" json:"file_path"`
 	OriginalFilename string  `xorm:"text 'original_file_name'" json:"original_file_name"`
 	RecordID         int64   `xorm:"index 'record_id'" json:"record_id"`
+	FileOrigin       string  `xorm:"varchar(64) not null default 'hound_managed' 'file_origin'" json:"file_origin"`
 	SourceURI        *string `xorm:"text 'source_uri'" json:"source_uri"`
 	FileIdx          *int    `xorm:"'file_idx'" json:"file_idx"`
 	VideoMetadata    `xorm:"extends"`

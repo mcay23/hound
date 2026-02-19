@@ -94,10 +94,60 @@ var addComplexIndexes = &migrate.Migration{
 	},
 }
 
+var addExternalLibraryIndexes = &migrate.Migration{
+	ID: "20260218_01_add_external_library_indexes",
+	Migrate: func(tx *xorm.Engine) error {
+		query := `
+			CREATE INDEX IF NOT EXISTS idx_external_library_source_path ON external_library_items (source_path);
+			CREATE INDEX IF NOT EXISTS idx_external_library_status_updated ON external_library_items (status, updated_at DESC);
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+	Rollback: func(tx *xorm.Engine) error {
+		query := `
+			DROP INDEX IF EXISTS idx_external_library_source_path;
+			DROP INDEX IF EXISTS idx_external_library_status_updated;
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+}
+
+var addMediaFilesOrigin = &migrate.Migration{
+	ID: "20260219_01_add_media_files_origin",
+	Migrate: func(tx *xorm.Engine) error {
+		query := `
+			ALTER TABLE media_files
+			ADD COLUMN IF NOT EXISTS file_origin VARCHAR(64);
+
+			UPDATE media_files
+			SET file_origin = 'hound_managed'
+			WHERE file_origin IS NULL OR file_origin = '';
+
+			ALTER TABLE media_files
+			ALTER COLUMN file_origin SET DEFAULT 'hound_managed',
+			ALTER COLUMN file_origin SET NOT NULL;
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+	Rollback: func(tx *xorm.Engine) error {
+		query := `
+			ALTER TABLE media_files
+			DROP COLUMN IF EXISTS file_origin;
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+}
+
 func runMigrations() error {
 	m := migrate.New(databaseEngine, migrate.DefaultOptions, []*migrate.Migration{
 		addForeignKeys,
 		addComplexIndexes,
+		addExternalLibraryIndexes,
+		addMediaFilesOrigin,
 	})
 	if err := m.Migrate(); err != nil {
 		return err
