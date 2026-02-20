@@ -112,6 +112,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 			logReleaseDate = record.ReleaseDate
 			epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
 			if err != nil || epRecord == nil {
+				loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record", "sourceID", record.SourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
 				return nil, parsed, helpers.LogErrorWithMessage(err, "Failed to resolve episode record")
 			}
 			ingestRecordID = epRecord.RecordID

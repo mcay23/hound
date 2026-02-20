@@ -237,7 +237,7 @@ func processExternalPath(item externalLibraryQueueItem) {
 	if dbItem != nil {
 		upsert.ItemID = dbItem.ItemID
 	}
-	loggers.IngestLogger().Info("Found file", "path", item.Path)
+	loggers.IngestLogger().Info("[External Library: File detected]", "path", item.Path)
 	err = database.UpsertExternalLibraryItem(upsert)
 	if err != nil {
 		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")

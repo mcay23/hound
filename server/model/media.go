@@ -26,6 +26,7 @@ var (
 	HoundTVShowsPath       = filepath.Join(dataDir, mediaDir, "TV Shows")
 	HoundP2PDownloadsPath  = filepath.Join(dataDir, downloadsDir, "p2p")
 	HoundHttpDownloadsPath = filepath.Join(dataDir, downloadsDir, "http")
+	ExternalLibraryPath    = filepath.Join("External Library")
 )
 
 /*
@@ -52,6 +53,11 @@ func InitializeMedia() {
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to create http downloads directory")
 		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
+	}
+	err = os.MkdirAll(ExternalLibraryPath, 0755)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to create external library directory")
+		panic(fmt.Errorf("fatal error creating external library directory %w", err))
 	}
 }
 

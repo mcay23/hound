@@ -393,7 +393,7 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 		Join("INNER", []string{"media_records", "episode"}, "episode.ancestor_id = show.record_id").
 		Where("show.media_source = ?", mediaSource).
 		Where("show.source_id = ?", showSourceID).
-		Where("show.record_type = ?", "tvshow").
+		Where("show.record_type = ?", RecordTypeTVShow).
 		Where("episode.record_type = ?", "episode")
 	if seasonNumber != nil {
 		sess = sess.Where("episode.season_number = ?", *seasonNumber)
@@ -418,7 +418,8 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 	if len(episodes) > 0 {
 		return &episodes[0], nil
 	}
-	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "season/episode pair does not exist")
+	// fails without logging, since some optimizations grab this without knowing if it exists yet
+	return nil, errors.New(helpers.BadRequest)
 }
 
 // This returns the movie/show-level record, not the episodes

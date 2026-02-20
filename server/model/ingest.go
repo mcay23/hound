@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
+	"hound/loggers"
 	"hound/model/providers"
 	"hound/sources"
 	"io"
@@ -140,6 +141,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 
 	var targetRecordID int64
 	var targetPath string
+	// for tv shows, get episode's record id
 	targetRecordID, err = getIngestTargetRecordID(mediaRecord, seasonNumber, episodeNumber)
 	if err != nil {
 		return nil, helpers.LogErrorWithMessage(err, "Failed to get ingest target record id")
@@ -199,6 +201,8 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db "+targetPath)
 	}
 	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
+	loggers.IngestLogger().Info("[External Library: Ingestion Complete]", "path", sourcePath, "SourceID", mediaRecord.SourceID,
+		"Title", mediaRecord.MediaTitle, "Release", mediaRecord.ReleaseDate, "Season", seasonNumber, "Episode", episodeNumber)
 	return insertedMediaFile, nil
 }
 
