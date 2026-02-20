@@ -513,7 +513,10 @@ func failTask(task *database.IngestTask, err error) {
 			item.Status = database.ExternalLibraryItemStatusFailed
 			item.LastError = &errorMessage
 			item.LastIngestTaskID = &task.IngestTaskID
-			_ = database.UpsertExternalLibraryItem(item)
+			err = database.UpsertExternalLibraryItem(item)
+			if err != nil {
+				helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+			}
 		}
 	}
 }

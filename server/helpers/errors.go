@@ -51,6 +51,9 @@ func GetErrorStatusCode(err error) int {
 
 // LogErrorWithMessage returns original error after logging for handling purposes
 func LogErrorWithMessage(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
 	slog.Error(msg, "err", err)
 	return err
 }

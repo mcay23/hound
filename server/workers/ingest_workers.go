@@ -115,7 +115,10 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 			item.LastError = nil
 			item.LastCompletedAt = &now
 			item.LastIngestTaskID = &task.IngestTaskID
-			_ = database.UpsertExternalLibraryItem(item)
+			err = database.UpsertExternalLibraryItem(item)
+			if err != nil {
+				helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+			}
 		}
 	}
 	slog.Info("Ingest task completed", "taskID", task.IngestTaskID)

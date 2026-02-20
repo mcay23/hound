@@ -23,17 +23,48 @@ type externalLibraryRoot struct {
 	MediaType string
 }
 
-type externalQueueItem struct {
+type externalLibraryQueueItem struct {
 	Path      string
 	RootPath  string
 	MediaType string
 }
 
 var (
-	externalQueue   chan externalQueueItem
-	externalInQueue sync.Map
+	externalLibraryQueue       chan externalLibraryQueueItem
+	externalLibraryItemInQueue sync.Map
 )
 
+/*
+Quick rundown:
+Three producers:
+1. initialExternalLibraryScan
+2. periodicExternalLibraryRescan
+3. watchExternalLibrary
+
+Initial scan is run at every startup,
+watch runs on file changes, renames
+
+Producers create a queue of paths to process, if item is already
+in queue, it's skipped
+
+External Library Queue workers pick up from the queue and checks
+if the file is already in the external_library_items table, and exits
+early if it's processed and unchanged (size, modified). Next, it attempts
+to match files to tmdb ids, season, episodes, if this is successful,
+an ingest task is created and ingest workers pick up the task and
+run ffprobe, etc. before inserting to media_files
+
+Performance is mostly bottlenecked in tmdb network call, in the future
+hardcoding popular shows/movies -> tmdb-id might be a fast trade-off, but
+the slowest part is still upserting tv show records which have many
+seasons and episodes, since each season is a separate network call
+
+Right now, tmdb doesn't have rate-limits, but in the future, throttling
+workers might be a good idea
+
+Note that this will cause mismatches, especially for tv shows if the season/episode
+ordering of the source directory is not identical to tmdb's ordering
+*/
 func InitializeExternalLibraryWorker() {
 	if !model.ExternalLibraryEnabled {
 		return
@@ -43,8 +74,9 @@ func InitializeExternalLibraryWorker() {
 		slog.Warn("External library enabled but no valid root paths configured")
 		return
 	}
-	externalQueue = make(chan externalQueueItem, externalQueueBuffer)
-	for i := 0; i < 2; i++ {
+	externalLibraryQueue = make(chan externalLibraryQueueItem, externalQueueBuffer)
+	consumerCount := model.MaxExternalLibraryWorkers
+	for i := 0; i < consumerCount; i++ {
 		go externalLibraryQueueWorker()
 	}
 	for _, root := range roots {
@@ -160,10 +192,10 @@ func enqueueExternalPath(path string, root externalLibraryRoot) {
 		return
 	}
 	key := root.RootPath + "|" + root.MediaType + "|" + cleanPath
-	if _, loaded := externalInQueue.LoadOrStore(key, struct{}{}); loaded {
+	if _, loaded := externalLibraryItemInQueue.LoadOrStore(key, struct{}{}); loaded {
 		return
 	}
-	externalQueue <- externalQueueItem{
+	externalLibraryQueue <- externalLibraryQueueItem{
 		Path:      cleanPath,
 		RootPath:  root.RootPath,
 		MediaType: root.MediaType,
@@ -171,14 +203,14 @@ func enqueueExternalPath(path string, root externalLibraryRoot) {
 }
 
 func externalLibraryQueueWorker() {
-	for item := range externalQueue {
+	for item := range externalLibraryQueue {
 		processExternalPath(item)
 		key := item.RootPath + "|" + item.MediaType + "|" + item.Path
-		externalInQueue.Delete(key)
+		externalLibraryItemInQueue.Delete(key)
 	}
 }
 
-func processExternalPath(item externalQueueItem) {
+func processExternalPath(item externalLibraryQueueItem) {
 	stat, err := os.Stat(item.Path)
 	if err != nil || stat.IsDir() {
 		return
@@ -188,7 +220,7 @@ func processExternalPath(item externalQueueItem) {
 		slog.Error("Failed to read external library item", "path", item.Path, "error", err)
 		return
 	}
-	// already exists, unchanged in db
+	// already exists, unchanged in db, no need to re-evaluate
 	if dbItem != nil &&
 		dbItem.FileSize == stat.Size() &&
 		dbItem.ModifiedUnix == stat.ModTime().Unix() &&
@@ -206,7 +238,10 @@ func processExternalPath(item externalQueueItem) {
 		upsert.ItemID = dbItem.ItemID
 	}
 	loggers.IngestLogger().Info("Found file", "path", item.Path)
-	_ = database.UpsertExternalLibraryItem(upsert)
+	err = database.UpsertExternalLibraryItem(upsert)
+	if err != nil {
+		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+	}
 
 	ingestTask, parsed, err := model.QueueExternalLibraryFile(item.RootPath, item.Path, item.MediaType)
 	if err != nil {
@@ -222,7 +257,10 @@ func processExternalPath(item externalQueueItem) {
 		} else {
 			upsert.LastError = nil
 		}
-		_ = database.UpsertExternalLibraryItem(upsert)
+		err = database.UpsertExternalLibraryItem(upsert)
+		if err != nil {
+			helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+		}
 		return
 	}
 	now := time.Now().UTC()
@@ -235,5 +273,8 @@ func processExternalPath(item externalQueueItem) {
 	upsert.LastError = nil
 	upsert.LastIngestTaskID = &ingestTask.IngestTaskID
 	upsert.LastQueuedAt = &now
-	_ = database.UpsertExternalLibraryItem(upsert)
+	err = database.UpsertExternalLibraryItem(upsert)
+	if err != nil {
+		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+	}
 }

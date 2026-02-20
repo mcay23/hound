@@ -73,7 +73,7 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 				continue
 			}
 			infoHash := uri.InfoHash.HexString()
-			if strings.ToLower(infoHash) == strings.ToLower(streamDetails.InfoHash) {
+			if strings.EqualFold(infoHash, streamDetails.InfoHash) {
 				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
 					"Ingest task already exists - downloading/queued")
 			}
@@ -94,7 +94,7 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 			// matching infohash, same file
 			// there's an unhandled edge case where a single torrent may have
 			// multiple versions of the same movie/episode, which is unhandled here
-			if strings.ToLower(infoHash) == strings.ToLower(streamDetails.InfoHash) {
+			if strings.EqualFold(infoHash, streamDetails.InfoHash) {
 				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
 					"Ingest task already exists - file already downloaded")
 			}
@@ -162,6 +162,10 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		switch transferMode {
 		case IngestTransferMove:
 			// same-filesystem move is atomic
+			// should be fast for hound-managed files since downloads folder and media folder are in the same
+			// directory
+			// TODO Edge case: this might fail/brick if file is being streamed and downloaded at the same time,
+			// when download completes while file is being watched
 			err = os.Rename(sourcePath, targetPath)
 			if err != nil {
 				// fallback to link when source is still open/locked

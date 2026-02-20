@@ -7,3 +7,4 @@ external_library:
   movies_root_path: "Hound Data/movies"
   tv_root_path: "Hound Data/shows"
   scan_interval_minutes: 360
+  max_workers: 2

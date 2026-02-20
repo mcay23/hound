@@ -13,11 +13,12 @@ import (
 var configFileName = "config.yaml"
 
 var (
-	MaxConcurrentDownloads int
-	ExternalLibraryEnabled bool
-	ExternalLibraryMovies  string
-	ExternalLibraryTV      string
-	ExternalScanInterval   int
+	MaxConcurrentDownloads    int
+	ExternalLibraryEnabled    bool
+	ExternalLibraryMovies     string
+	ExternalLibraryTV         string
+	ExternalScanInterval      int
+	MaxExternalLibraryWorkers int
 )
 
 func InitializeConfig() {
@@ -42,16 +43,19 @@ func InitializeConfig() {
 	viper.SetDefault("external_library.movies_root_path", "")
 	viper.SetDefault("external_library.tv_root_path", "")
 	viper.SetDefault("external_library.scan_interval_minutes", 360)
+	viper.SetDefault("external_library.max_workers", 2)
 	MaxConcurrentDownloads = viper.GetInt("max_concurrent_downloads")
 	ExternalLibraryEnabled = viper.GetBool("external_library.enabled")
 	ExternalLibraryMovies = viper.GetString("external_library.movies_root_path")
 	ExternalLibraryTV = viper.GetString("external_library.tv_root_path")
 	ExternalScanInterval = viper.GetInt("external_library.scan_interval_minutes")
+	MaxExternalLibraryWorkers = viper.GetInt("external_library.max_workers")
 	slog.Info("Config Initialized",
 		"MaxConcurrentDownloads", MaxConcurrentDownloads,
 		"ExternalLibraryEnabled", ExternalLibraryEnabled,
 		"ExternalLibraryMovies", ExternalLibraryMovies,
 		"ExternalLibraryTV", ExternalLibraryTV,
 		"ExternalScanIntervalMinutes", ExternalScanInterval,
+		"ExternalLibraryWorkers", MaxExternalLibraryWorkers,
 	)
 }

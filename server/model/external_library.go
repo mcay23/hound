@@ -21,6 +21,7 @@ var (
 	altEpisodePattern    = regexp.MustCompile(`(?i)(\d{1,2})[xX](\d{1,4})`)
 	seasonFolderPattern  = regexp.MustCompile(`(?i)season[ ._-]*(\d{1,2})`)
 	yearPattern          = regexp.MustCompile(`\b(19|20)\d{2}\b`)
+	tmdbIDPattern        = regexp.MustCompile(`(?i)\[(?:tmdbid|tmdb)-(\d+)\]`)
 	junkTokenPattern     = regexp.MustCompile(`(?i)\b(480p|720p|1080p|2160p|x264|x265|h264|h265|hevc|av1|vp9|bluray|brrip|webrip|web-dl|remux|dvdrip|hdr|aac|dts)\b`)
 )
 
@@ -56,11 +57,19 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 	var ingestRecordID int64
 	switch parsed.MediaType {
 	case database.MediaTypeMovie:
-		sourceID, err := findBestMovieTMDBID(parsed.Title, parsed.Year)
-		if err != nil {
-			return nil, parsed, err
+		sourceID := -1
+		if parsed.SourceID != "" {
+			sourceID, err = strconv.Atoi(parsed.SourceID)
+			if err != nil || sourceID <= 0 {
+				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid tmdb id in movie folder name")
+			}
+		} else {
+			sourceID, err = findBestMovieTMDBID(parsed.Title, parsed.Year)
+			if err != nil {
+				return nil, parsed, err
+			}
+			parsed.SourceID = strconv.Itoa(sourceID)
 		}
-		parsed.SourceID = strconv.Itoa(sourceID)
 		has, record, err := database.GetMediaRecord(database.RecordTypeMovie, sources.MediaSourceTMDB, parsed.SourceID)
 		if err == nil && has && record != nil {
 			ingestRecordID = record.RecordID
@@ -73,15 +82,23 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		}
 		loggers.IngestLogger().Info("[Matched Movie]", "path", filePath, "source_id", sourceID, "title", record.MediaTitle, "release_date", record.ReleaseDate)
 	case database.MediaTypeTVShow:
-		sourceID, err := findBestTVTMDBID(parsed.Title, parsed.Year)
-		if err != nil {
-			return nil, parsed, err
+		sourceID := -1
+		if parsed.SourceID != "" {
+			sourceID, err = strconv.Atoi(parsed.SourceID)
+			if err != nil || sourceID <= 0 {
+				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid tmdb id in tv show folder name")
+			}
+		} else {
+			sourceID, err = findBestTVTMDBID(parsed.Title, parsed.Year)
+			if err != nil {
+				return nil, parsed, err
+			}
+			parsed.SourceID = strconv.Itoa(sourceID)
 		}
 		// if episode record already exists, we don't want to make an extra call
 		// just to get show title, just debug from source id
 		logTitle := "<see source id>"
 		logReleaseDate := "<see source id>"
-		parsed.SourceID = strconv.Itoa(sourceID)
 		// Fast path for repeat episodes: if already in DB, skip show upsert/network work.
 		epRecord, err := database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
 		if err == nil && epRecord != nil {
@@ -150,6 +167,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 
 	switch mediaType {
 	case database.MediaTypeMovie:
+		sourceID := extractTMDBID(parentDir)
 		title := cleanTitle(parentDir)
 		if title == "" {
 			title = cleanTitle(strings.TrimSuffix(filename, filepath.Ext(filename)))
@@ -161,6 +179,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 		return &ParsedExternalMedia{
 			MediaType: database.MediaTypeMovie,
 			Title:     title,
+			SourceID:  sourceID,
 			Year:      year,
 		}, nil
 	case database.MediaTypeTVShow:
@@ -168,6 +187,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Unsupported tv show path structure")
 		}
 		showDir := parts[0]
+		sourceID := extractTMDBID(showDir)
 		showTitle := cleanTitle(showDir)
 		if showTitle == "" {
 			showTitle = cleanTitle(parentDir)
@@ -185,6 +205,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 		return &ParsedExternalMedia{
 			MediaType:     database.MediaTypeTVShow,
 			Title:         showTitle,
+			SourceID:      sourceID,
 			Year:          extractYear(showDir),
 			SeasonNumber:  season,
 			EpisodeNumber: episode,
@@ -194,6 +215,27 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 	}
 }
 
+/*
+There's quite a bit of reliance on tmdb results here,
+typically tmdb has its own algorithm to find fuzzy matches,
+even though the search query can be quite different than the result
+since a show/movie may have many aliases
+
+eg. tmdb successfully returns the result:
+query: Sangatsu no Lion -> result: March comes in like a lion
+
+This is a bit difficult to query in hound without a second network call
+to check for alternative titles, so we rely on tmdb results for now.
+if hound fails to match title, it still can succeed if year is the same
+and tmdb deems it a top n result
+
+This fails if a tv/movie title doesn't really have a good match in tmdb
+and returns a junk result that happens to have the same year,
+but it should be a relatively small edge case
+
+Whether this approach causes too many false positives is something that
+needs to be evaluated
+*/
 func findBestMovieTMDBID(title string, year int) (int, error) {
 	cacheKey := getExternalTMDBMatchCacheKey(database.MediaTypeMovie, title, year)
 	var cachedID int
@@ -263,6 +305,7 @@ func findBestMovieTMDBID(title string, year int) (int, error) {
 	return bestID, nil
 }
 
+// see findBestMovieTMDBID comments for explanation
 func findBestTVTMDBID(title string, year int) (int, error) {
 	cacheKey := getExternalTMDBMatchCacheKey(database.MediaTypeTVShow, title, year)
 	var cachedID int
@@ -329,6 +372,7 @@ func splitPath(path string) []string {
 func cleanTitle(raw string) string {
 	title := strings.TrimSpace(raw)
 	title = strings.TrimSuffix(title, filepath.Ext(title))
+	title = tmdbIDPattern.ReplaceAllString(title, "")
 	title = strings.ReplaceAll(title, ".", " ")
 	title = strings.ReplaceAll(title, "_", " ")
 	title = strings.ReplaceAll(title, "-", " ")
@@ -374,4 +418,12 @@ func extractSeasonFromParts(parts []string) *int {
 		}
 	}
 	return nil
+}
+
+func extractTMDBID(input string) string {
+	matches := tmdbIDPattern.FindStringSubmatch(input)
+	if len(matches) != 2 {
+		return ""
+	}
+	return matches[1]
 }
