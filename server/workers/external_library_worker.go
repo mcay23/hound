@@ -24,9 +24,10 @@ type externalLibraryRoot struct {
 }
 
 type externalLibraryQueueItem struct {
-	Path      string
-	RootPath  string
-	MediaType string
+	Path          string
+	RootPath      string
+	MediaType     string
+	IsInitialScan bool
 }
 
 var (
@@ -115,6 +116,10 @@ func getExternalLibraryRoots() []externalLibraryRoot {
 
 func initialExternalLibraryScan(root externalLibraryRoot) {
 	slog.Info("Starting initial external library scan", "root", root.RootPath, "mediaType", root.MediaType)
+	scanExternalLibrary(root, true)
+}
+
+func scanExternalLibrary(root externalLibraryRoot, isInitialScan bool) {
 	err := filepath.WalkDir(root.RootPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -122,11 +127,11 @@ func initialExternalLibraryScan(root externalLibraryRoot) {
 		if d.IsDir() {
 			return nil
 		}
-		enqueueExternalPath(path, root)
+		enqueueExternalPath(path, root, isInitialScan)
 		return nil
 	})
 	if err != nil {
-		slog.Error("Initial external library scan failed", "root", root.RootPath, "error", err)
+		slog.Error("External library scan failed", "root", root.RootPath, "mediaType", root.MediaType, "isInitial", isInitialScan, "error", err)
 	}
 }
 
@@ -138,7 +143,7 @@ func periodicExternalLibraryRescan(root externalLibraryRoot, intervalMinutes int
 	defer ticker.Stop()
 	for range ticker.C {
 		slog.Info("Running periodic external library rescan", "root", root.RootPath, "mediaType", root.MediaType)
-		initialExternalLibraryScan(root)
+		scanExternalLibrary(root, false)
 	}
 }
 
@@ -176,7 +181,7 @@ func watchExternalLibrary(root externalLibraryRoot) {
 				if err == nil && info.IsDir() {
 					_ = watcher.Add(event.Name)
 				}
-				enqueueExternalPath(event.Name, root)
+				enqueueExternalPath(event.Name, root, false)
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -187,7 +192,7 @@ func watchExternalLibrary(root externalLibraryRoot) {
 	}
 }
 
-func enqueueExternalPath(path string, root externalLibraryRoot) {
+func enqueueExternalPath(path string, root externalLibraryRoot, isInitialScan bool) {
 	cleanPath := filepath.Clean(path)
 	if !model.IsVideoFile(cleanPath) {
 		return
@@ -197,17 +202,29 @@ func enqueueExternalPath(path string, root externalLibraryRoot) {
 		return
 	}
 	externalLibraryQueue <- externalLibraryQueueItem{
-		Path:      cleanPath,
-		RootPath:  root.RootPath,
-		MediaType: root.MediaType,
+		Path:          cleanPath,
+		RootPath:      root.RootPath,
+		MediaType:     root.MediaType,
+		IsInitialScan: isInitialScan,
 	}
 }
 
 func externalLibraryQueueWorker() {
 	for item := range externalLibraryQueue {
-		processExternalPath(item)
-		key := item.RootPath + "|" + item.MediaType + "|" + item.Path
-		externalLibraryItemInQueue.Delete(key)
+		func(item externalLibraryQueueItem) {
+			key := item.RootPath + "|" + item.MediaType + "|" + item.Path
+			defer externalLibraryItemInQueue.Delete(key)
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("External library worker panic recovered",
+						"path", item.Path,
+						"root", item.RootPath,
+						"mediaType", item.MediaType,
+						"panic", r)
+				}
+			}()
+			processExternalPath(item)
+		}(item)
 	}
 }
 
@@ -216,14 +233,13 @@ func processExternalPath(item externalLibraryQueueItem) {
 	if err != nil || stat.IsDir() {
 		return
 	}
-	// Check if file is still being copied to the watched directory,
-	// we want to wait until the file is fully copied to process
-	// THIS ADDS A STATIC +2 SECONDS TO EACH PROCESS
-	// need to evaluate if this is necessary or if there's a better solution
-	// commenting this out for now to see if it causes issues in alpine
-	// if isFileCopying(item.Path, stat) {
-	// 	return
-	// }
+	// isFileCopying adds 1 second to every process, we disable it for initial
+	// scans for faster processing
+	// trade-off -> if files are being copied and then hound is started,
+	// this may cause files being processed prematurely, which may be an issue
+	if !item.IsInitialScan && isFileCopying(item.Path, stat) {
+		return
+	}
 	dbItem, err := database.GetExternalLibraryItemByPath(item.Path)
 	if err != nil {
 		slog.Error("Failed to read external library item", "path", item.Path, "error", err)
@@ -291,7 +307,7 @@ func processExternalPath(item externalLibraryQueueItem) {
 // Minimal guard against processing a file while it's still being copied.
 // If size or mtime changes within a short window, defer processing.
 func isFileCopying(path string, first os.FileInfo) bool {
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	second, err := os.Stat(path)
 	if err != nil || second.IsDir() {
 		return true
