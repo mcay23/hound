@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"xorm.io/xorm"
 )
 
@@ -76,32 +77,59 @@ func instantiateMediaTables() error {
 
 func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 	// check if data is already in internal library
-	var existingRecords []MediaRecord
-	_ = databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
+	var existingRecord MediaRecord
+	has, err := databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
 		Where("media_source = ?", mediaRecord.MediaSource).
 		Where("source_id = ?", mediaRecord.SourceID).
-		Find(&existingRecords)
+		Get(&existingRecord)
+	if err != nil {
+		return err
+	}
 
 	// source_id is either movie, show, season, or episode id
 	// a key on these three should be sufficiently unique (?)
 	var recordID int64
-	if len(existingRecords) > 0 {
+	if has {
 		// use existing SourceID
-		recordID = existingRecords[0].RecordID
-		if existingRecords[0].ContentHash != mediaRecord.ContentHash {
+		recordID = existingRecord.RecordID
+		if existingRecord.ContentHash != mediaRecord.ContentHash {
 			// hash changed, update record in internal library
-			_, err := databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(mediaRecord)
+			_, err = databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(mediaRecord)
 			if err != nil {
 				return err
 			}
 		}
 		// mutate in place
-		*mediaRecord = existingRecords[0]
+		*mediaRecord = existingRecord
 	} else {
 		// insert media data to library table
-		_, err := databaseEngine.Table(mediaRecordsTable).Insert(mediaRecord)
+		_, err = databaseEngine.Table(mediaRecordsTable).Insert(mediaRecord)
 		if err != nil {
-			return err
+			// concurrent insert race, often happens when ingesting external items
+			// since two episodes might attempt to upsert at the same time for new records
+			if !isUniqueViolation(err) {
+				return err
+			}
+			has, err = databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
+				Where("media_source = ?", mediaRecord.MediaSource).
+				Where("source_id = ?", mediaRecord.SourceID).
+				Get(&existingRecord)
+			if err != nil {
+				return err
+			}
+			if !has {
+				return helpers.
+					LogErrorWithMessage(errors.New(helpers.InternalServerError),
+						"Failed to find media record, raise issue in github, this should not happen")
+			}
+			recordID = existingRecord.RecordID
+			if existingRecord.ContentHash != mediaRecord.ContentHash {
+				_, err := databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(mediaRecord)
+				if err != nil {
+					return err
+				}
+			}
+			*mediaRecord = existingRecord
 		}
 	}
 	return nil
@@ -118,10 +146,29 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 	if err != nil {
 		return false, err
 	}
+	// it's possible that another process/worker has upserted this record between the first check and the insert,
+	// thus failing the insert
 	if !has {
 		_, err := sess.Table(mediaRecordsTable).Insert(record)
 		if err != nil {
-			return false, err
+			if !isUniqueViolation(err) {
+				return false, err
+			}
+			// unique violation, refetch
+			has, err = sess.Table(mediaRecordsTable).Where("record_type = ?", record.RecordType).
+				Where("media_source = ?", record.MediaSource).
+				Where("source_id = ?", record.SourceID).
+				Get(&recordData)
+			if err != nil {
+				return false, err
+			}
+			if !has {
+				return false, helpers.
+					LogErrorWithMessage(errors.New(helpers.InternalServerError),
+						"Failed to find media record, raise issue in github, this should not happen")
+			}
+		} else {
+			return true, nil
 		}
 	}
 	// if has, check hash, then update if not match
@@ -133,6 +180,11 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 		return false, err
 	}
 	return true, nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr.Code == "23505"
 }
 
 func BatchUpsertMediaRecords(sess *xorm.Session, records []*MediaRecord) error {

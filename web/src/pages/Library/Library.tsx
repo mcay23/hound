@@ -87,7 +87,7 @@ function Library(props: any) {
               itemOnClick={undefined}
             />
             {!(recentItems?.length > 0) && (
-              <div className="horizontal-section-header">
+              <div className="horizontal-section-header pb-5">
                 Your collections are empty. Try adding some items!
               </div>
             )}

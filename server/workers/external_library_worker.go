@@ -170,7 +170,8 @@ func watchExternalLibrary(root externalLibraryRoot) {
 			if !ok {
 				return
 			}
-			if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Rename == fsnotify.Rename {
+			if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write ||
+				event.Op&fsnotify.Rename == fsnotify.Rename {
 				info, err := os.Stat(event.Name)
 				if err == nil && info.IsDir() {
 					_ = watcher.Add(event.Name)
@@ -215,6 +216,14 @@ func processExternalPath(item externalLibraryQueueItem) {
 	if err != nil || stat.IsDir() {
 		return
 	}
+	// Check if file is still being copied to the watched directory,
+	// we want to wait until the file is fully copied to process
+	// THIS ADDS A STATIC +2 SECONDS TO EACH PROCESS
+	// need to evaluate if this is necessary or if there's a better solution
+	// commenting this out for now to see if it causes issues in alpine
+	// if isFileCopying(item.Path, stat) {
+	// 	return
+	// }
 	dbItem, err := database.GetExternalLibraryItemByPath(item.Path)
 	if err != nil {
 		slog.Error("Failed to read external library item", "path", item.Path, "error", err)
@@ -277,4 +286,15 @@ func processExternalPath(item externalLibraryQueueItem) {
 	if err != nil {
 		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
 	}
+}
+
+// Minimal guard against processing a file while it's still being copied.
+// If size or mtime changes within a short window, defer processing.
+func isFileCopying(path string, first os.FileInfo) bool {
+	time.Sleep(2 * time.Second)
+	second, err := os.Stat(path)
+	if err != nil || second.IsDir() {
+		return true
+	}
+	return first.Size() != second.Size() || first.ModTime().UnixNano() != second.ModTime().UnixNano()
 }

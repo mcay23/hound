@@ -20,7 +20,7 @@ var (
 	seasonEpisodePattern = regexp.MustCompile(`(?i)[Ss](\d{1,2})[Ee](\d{1,4})`)
 	altEpisodePattern    = regexp.MustCompile(`(?i)(\d{1,2})[xX](\d{1,4})`)
 	seasonFolderPattern  = regexp.MustCompile(`(?i)season[ ._-]*(\d{1,2})`)
-	yearPattern          = regexp.MustCompile(`\b(19|20)\d{2}\b`)
+	yearPattern          = regexp.MustCompile(`\(\s*((?:19|20)\d{2})\s*\)`)
 	tmdbIDPattern        = regexp.MustCompile(`(?i)\[(?:tmdbid|tmdb)-(\d+)\]`)
 	junkTokenPattern     = regexp.MustCompile(`(?i)\b(480p|720p|1080p|2160p|x264|x265|h264|h265|hevc|av1|vp9|bluray|brrip|webrip|web-dl|remux|dvdrip|hdr|aac|dts)\b`)
 )
@@ -61,7 +61,8 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		if parsed.SourceID != "" {
 			sourceID, err = strconv.Atoi(parsed.SourceID)
 			if err != nil || sourceID <= 0 {
-				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid tmdb id in movie folder name")
+				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+					"Invalid tmdb id in movie folder name")
 			}
 		} else {
 			sourceID, err = findBestMovieTMDBID(parsed.Title, parsed.Year)
@@ -80,13 +81,15 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 			}
 			ingestRecordID = record.RecordID
 		}
-		loggers.IngestLogger().Info("[Matched Movie]", "path", filePath, "source_id", sourceID, "title", record.MediaTitle, "release_date", record.ReleaseDate)
+		loggers.IngestLogger().Info("[Matched Movie]", "path", filePath, "source_id", sourceID,
+			"title", record.MediaTitle, "release_date", record.ReleaseDate)
 	case database.MediaTypeTVShow:
 		sourceID := -1
 		if parsed.SourceID != "" {
 			sourceID, err = strconv.Atoi(parsed.SourceID)
 			if err != nil || sourceID <= 0 {
-				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid tmdb id in tv show folder name")
+				return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+					"Invalid tmdb id in tv show folder name")
 			}
 		} else {
 			sourceID, err = findBestTVTMDBID(parsed.Title, parsed.Year)
@@ -110,14 +113,18 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 			}
 			logTitle = record.MediaTitle
 			logReleaseDate = record.ReleaseDate
-			epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+			epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID,
+				parsed.SeasonNumber, *parsed.EpisodeNumber)
 			if err != nil || epRecord == nil {
-				loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record", "sourceID", record.SourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
+				loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record",
+					"sourceID", record.SourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
 				return nil, parsed, helpers.LogErrorWithMessage(err, "Failed to resolve episode record")
 			}
 			ingestRecordID = epRecord.RecordID
 		}
-		loggers.IngestLogger().Info("[Matched TV Show]", "path", filePath, "source_id", sourceID, "title", logTitle, "release_date", logReleaseDate, "season", epRecord.SeasonNumber, "episode", epRecord.EpisodeNumber)
+		loggers.IngestLogger().Info("[Matched TV Show]", "path", filePath, "source_id",
+			sourceID, "title", logTitle, "release_date", logReleaseDate, "season",
+			epRecord.SeasonNumber, "episode", epRecord.EpisodeNumber)
 	default:
 		return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Unsupported media type")
 	}
@@ -389,11 +396,11 @@ func normalizeTitle(title string) string {
 }
 
 func extractYear(input string) int {
-	match := yearPattern.FindString(input)
-	if match == "" {
+	matches := yearPattern.FindStringSubmatch(input)
+	if len(matches) < 2 {
 		return 0
 	}
-	year, _ := strconv.Atoi(match)
+	year, _ := strconv.Atoi(matches[1])
 	return year
 }
 

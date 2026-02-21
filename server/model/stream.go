@@ -31,6 +31,7 @@ var videoExtensions = map[string]bool{
 	".webm": true,
 	".mpeg": true,
 	".mpg":  true,
+	".m4v":  true,
 	".ts":   true,
 	".vob":  true,
 	".3gp":  true,
