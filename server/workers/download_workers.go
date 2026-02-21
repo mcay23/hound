@@ -36,9 +36,9 @@ func (cw *countingWriter) Write(p []byte) (n int, err error) {
 }
 
 // Only p2p downloads are supported for now
-func InitializeDownloadWorkers(n int) {
+func InitializeDownloadWorkers() {
 	// check for invalid downloads and fail them (downloading when server is just starting)
-	_, tasks, err := database.FindIngestTasksForStatus([]string{database.IngestStatusDownloading}, -1, 0)
+	_, tasks, err := database.FindIngestTasksForStatus(database.IngestActiveStatuses, -1, 0)
 	if err != nil {
 		slog.Error("Failed to get pending download tasks", "error", err)
 		return
@@ -46,9 +46,8 @@ func InitializeDownloadWorkers(n int) {
 	for _, task := range tasks {
 		failTask(&task.IngestTask, fmt.Errorf("invalid download task - process crashed during download"))
 	}
-
-	slog.Info("Starting download workers", "count", n)
-	for i := range n {
+	slog.Info("Starting download workers", "count", model.MaxConcurrentDownloads)
+	for i := range model.MaxConcurrentDownloads {
 		go downloadWorker(i)
 	}
 }

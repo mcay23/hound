@@ -105,6 +105,10 @@ func simplifyMetadata(uri string, raw *services.FfprobeOutput) (*database.VideoM
 		Bitrate:            raw.Format.Bitrate,
 	}
 	for _, rawStream := range raw.Streams {
+		// strip out attachment (eg. font) streams, we don't really need this info
+		if rawStream.CodecType != "video" && rawStream.CodecType != "audio" && rawStream.CodecType != "subtitle" {
+			continue
+		}
 		stream := database.Stream{
 			CodecType:      rawStream.CodecType,
 			CodecName:      rawStream.CodecName,

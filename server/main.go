@@ -28,6 +28,7 @@ func main() {
 	model.InitializeMedia()
 	services.InitializeFFMPEG()
 	model.InitializeOnboarding()
-	workers.InitializeWorkers(model.MaxConcurrentDownloads, 3)
+	// workers should run after db, since some row cleanups are done during startup
+	workers.InitializeWorkers()
 	controllers.SetupRoutes()
 }

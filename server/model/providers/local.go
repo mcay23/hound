@@ -3,6 +3,7 @@ package providers
 import (
 	"hound/database"
 	"hound/sources"
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -33,6 +34,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	streamObjects := []*StreamObject{}
 	for _, file := range mediaFiles {
 		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
+			slog.Error("File not found", "filepath", file.Filepath)
 			continue
 		}
 		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
@@ -44,7 +46,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	return streamObjects, nil
 }
 
-func GetLocalStreamsForTVShow(showID int, seasonNumber int, episodeNumber int) ([]*StreamObject, error) {
+func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObject, error) {
 	// check note on above
 	title := ""
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
@@ -53,28 +55,36 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber int, episodeNumber int) (
 		if showDetails.FirstAirDate != "" && len(showDetails.FirstAirDate) >= 4 {
 			title += " (" + showDetails.FirstAirDate[0:4] + ")"
 		}
-		title += " - S" + strconv.Itoa(seasonNumber) + "E" + strconv.Itoa(episodeNumber)
 	}
-	episodeRecord, err := database.GetEpisodeMediaRecord("tmdb", strconv.Itoa(showID),
-		&seasonNumber, episodeNumber)
-	if err != nil {
-		return nil, err
-	}
-	mediaFiles, err := database.GetMediaFileByRecordID(int(episodeRecord.RecordID))
+	episodeRecords, err := database.GetEpisodeMediaRecords("tmdb", strconv.Itoa(showID),
+		seasonNumber, episodeNumber)
 	if err != nil {
 		return nil, err
 	}
 	streamObjects := []*StreamObject{}
-	for _, file := range mediaFiles {
-		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-			continue
-		}
-
-		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(showID), file, episodeRecord, title)
+	for _, episodeRecordTemp := range episodeRecords {
+		episodeRecord := episodeRecordTemp
+		mediaFiles, err := database.GetMediaFileByRecordID(int(episodeRecord.RecordID))
 		if err != nil {
 			continue
 		}
-		streamObjects = append(streamObjects, streamObj)
+		for _, file := range mediaFiles {
+			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
+				slog.Error("File not found", "filepath", file.Filepath)
+				continue
+			}
+			epTitle := title
+			if seasonNumber == nil || episodeNumber == nil {
+				if episodeRecord.SeasonNumber != nil && episodeRecord.EpisodeNumber != nil {
+					epTitle += " - S" + strconv.Itoa(*episodeRecord.SeasonNumber) + "E" + strconv.Itoa(*episodeRecord.EpisodeNumber)
+				}
+			}
+			streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(showID), file, &episodeRecord, epTitle)
+			if err != nil {
+				continue
+			}
+			streamObjects = append(streamObjects, streamObj)
+		}
 	}
 	return streamObjects, nil
 }

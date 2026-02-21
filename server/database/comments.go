@@ -95,11 +95,15 @@ func DeleteCommentBatch(userID int64, commentIDs []int64) error {
 	_ = session.Begin()
 	for _, item := range commentIDs {
 		affected, err := session.Table(commentsTable).Delete(&CommentRecord{UserID: userID, CommentID: item})
-		if err != nil || affected <= 0 {
-			_ = session.Rollback()
+		if err != nil {
+			session.Rollback()
+			return err
+		}
+		if affected <= 0 {
+			session.Rollback()
 			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCommentBatch(): No comment found with this ID or invalid user")
 		}
 	}
-	_ = session.Commit()
-	return nil
+	err := session.Commit()
+	return err
 }

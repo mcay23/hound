@@ -67,16 +67,12 @@ type ProviderResponseObject struct {
 	Providers []*ProviderObject `json:"providers"`
 }
 
-const providersCacheTTL = time.Second * 1
+const providersCacheTTL = time.Hour * 2
 
 func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
 	providersCacheKey := fmt.Sprintf("providers|%s|%s-%s", query.MediaType, query.MediaSource, query.SourceID)
-	originalEpisode := -1
-	originalSeason := -1
 	if query.MediaType == database.MediaTypeTVShow {
 		providersCacheKey += fmt.Sprintf("|S%d|E%d|episode_group_id:%s", *query.SeasonNumber, *query.EpisodeNumber, query.EpisodeGroupID)
-		originalEpisode = *query.EpisodeNumber
-		originalSeason = *query.SeasonNumber
 	}
 	// get cache
 	var cacheObject ProviderResponseObject
@@ -113,10 +109,9 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 			return nil, err
 		}
 		// check if episode group mapping is available
-		// this is manually curated list
+		// this is a manually curated list
 		manualGroupID, _ := GetEpisodeGroupMapping(query.MediaSource, query.SourceID)
-		// if season doesn't start with 1, check if media has
-		// tvdb ordering available
+		// if episode doesn't start with 1, check if media has tvdb ordering available
 		if seasonDetails.Episodes[0].EpisodeNumber != 1 || query.EpisodeGroupID != "" || manualGroupID != "" {
 			oldEp := *query.EpisodeNumber
 			firstEp := seasonDetails.Episodes[0].EpisodeNumber
@@ -159,25 +154,7 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 	if err != nil {
 		return nil, err
 	}
-	// Add local streams if available
-	// append this as the first provider
-	var localStreams []*StreamObject
-	switch query.MediaType {
-	case database.MediaTypeMovie:
-		id, _ := strconv.Atoi(query.SourceID)
-		localStreams, _ = GetLocalStreamsForMovie(id)
-	case database.MediaTypeTVShow:
-		id, _ := strconv.Atoi(query.SourceID)
-		localStreams, _ = GetLocalStreamsForTVShow(id, originalSeason, originalEpisode)
-	}
-
 	allProviders := []*ProviderObject{}
-	if len(localStreams) > 0 {
-		allProviders = append(allProviders, &ProviderObject{
-			Provider: "Hound",
-			Streams:  localStreams,
-		})
-	}
 	allProviders = append(allProviders, stremioStreams)
 
 	result := ProviderResponseObject{

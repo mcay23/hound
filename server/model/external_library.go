@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,11 +24,12 @@ var (
 	yearPattern          = regexp.MustCompile(`\(\s*((?:19|20)\d{2})\s*\)`)
 	tmdbIDPattern        = regexp.MustCompile(`(?i)\[(?:tmdbid|tmdb)-(\d+)\]`)
 	junkTokenPattern     = regexp.MustCompile(`(?i)\b(480p|720p|1080p|2160p|x264|x265|h264|h265|hevc|av1|vp9|bluray|brrip|webrip|web-dl|remux|dvdrip|hdr|aac|dts)\b`)
+	showUpsertLocks      sync.Map
 )
 
 const (
 	externalTMDBMatchCachePrefix = "external_match|tmdb"
-	externalTMDBMatchCacheTTL    = 7 * 24 * time.Hour
+	externalTMDBMatchCacheTTL    = 12 * time.Hour
 	maxSearchChecks              = 5 // top n results to search for matching
 )
 
@@ -77,9 +79,18 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		} else {
 			record, err = sources.UpsertMediaRecordTMDB(database.MediaTypeMovie, sourceID)
 			if err != nil {
-				return nil, parsed, err
+				// Retry fetching just in case another worker succeeded in upserting concurrently
+				has, retryRecord, retryErr := database.GetMediaRecord(database.RecordTypeMovie,
+					sources.MediaSourceTMDB, parsed.SourceID)
+				if retryErr == nil && has && retryRecord != nil {
+					record = retryRecord
+					ingestRecordID = record.RecordID
+				} else {
+					return nil, parsed, err
+				}
+			} else {
+				ingestRecordID = record.RecordID
 			}
-			ingestRecordID = record.RecordID
 		}
 		loggers.IngestLogger().Info("[Matched Movie]", "path", filePath, "source_id", sourceID,
 			"title", record.MediaTitle, "release_date", record.ReleaseDate)
@@ -102,25 +113,41 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		// just to get show title, just debug from source id
 		logTitle := "<see source id>"
 		logReleaseDate := "<see source id>"
-		// Fast path for repeat episodes: if already in DB, skip show upsert/network work.
+		// Fast path for repeat episodes - if already in DB, skip show upsert
+		// however, with concurrent workers, good possibility multiple upserts are attempted.
+		// use a lock to prevent multiple upserts for the same show.
 		epRecord, err := database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
 		if err == nil && epRecord != nil {
 			ingestRecordID = epRecord.RecordID
 		} else {
-			record, err := sources.UpsertMediaRecordTMDB(database.MediaTypeTVShow, sourceID)
-			if err != nil {
-				return nil, parsed, err
+			lock, _ := showUpsertLocks.LoadOrStore(sources.MediaSourceTMDB+"-"+parsed.SourceID, &sync.Mutex{})
+			mu := lock.(*sync.Mutex)
+			mu.Lock()
+
+			epRecord, err = database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+			if err == nil && epRecord != nil {
+				ingestRecordID = epRecord.RecordID
+				mu.Unlock()
+			} else {
+				record, err := sources.UpsertMediaRecordTMDB(database.MediaTypeTVShow, sourceID)
+				if err != nil {
+					loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to upsert media record",
+						"sourceID", sourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
+					mu.Unlock()
+					return nil, parsed, err
+				}
+				logTitle = record.MediaTitle
+				logReleaseDate = record.ReleaseDate
+				epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID,
+					parsed.SeasonNumber, *parsed.EpisodeNumber)
+				mu.Unlock()
+				if err != nil || epRecord == nil {
+					loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record",
+						"sourceID", record.SourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
+					return nil, parsed, helpers.LogErrorWithMessage(err, "Failed to resolve episode record")
+				}
+				ingestRecordID = epRecord.RecordID
 			}
-			logTitle = record.MediaTitle
-			logReleaseDate = record.ReleaseDate
-			epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID,
-				parsed.SeasonNumber, *parsed.EpisodeNumber)
-			if err != nil || epRecord == nil {
-				loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record",
-					"sourceID", record.SourceID, "season", parsed.SeasonNumber, "episode", parsed.EpisodeNumber)
-				return nil, parsed, helpers.LogErrorWithMessage(err, "Failed to resolve episode record")
-			}
-			ingestRecordID = epRecord.RecordID
 		}
 		loggers.IngestLogger().Info("[Matched TV Show]", "path", filePath, "source_id",
 			sourceID, "title", logTitle, "release_date", logReleaseDate, "season",
@@ -266,8 +293,7 @@ func findBestMovieTMDBID(title string, year int) (int, error) {
 		score := 0
 		if candidateTitle == target {
 			score += 5
-		}
-		if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
+		} else if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
 			score += 3
 		}
 		// for top results, also search original title if initial matching fails (?)
@@ -299,7 +325,7 @@ func findBestMovieTMDBID(title string, year int) (int, error) {
 			cYear, _ := strconv.Atoi(candidate.ReleaseDate[:4])
 			switch cYear {
 			case year:
-				score += 3
+				score += 5
 			case year - 1, year + 1:
 				score += 1
 			}
@@ -336,15 +362,14 @@ func findBestTVTMDBID(title string, year int) (int, error) {
 		score := 0
 		if candidateTitle == target {
 			score += 5
-		}
-		if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
+		} else if strings.Contains(candidateTitle, target) || strings.Contains(target, candidateTitle) {
 			score += 3
 		}
 		if year > 0 && len(candidate.FirstAirDate) >= 4 {
 			cYear, _ := strconv.Atoi(candidate.FirstAirDate[:4])
 			switch cYear {
 			case year:
-				score += 3
+				score += 5
 			case year - 1, year + 1:
 				score += 1
 			}

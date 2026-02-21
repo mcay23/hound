@@ -215,7 +215,11 @@ func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*WatchEv
 	}
 	sess = sess.OrderBy("watch_events.watched_at DESC, watch_events.watch_event_id DESC")
 	err := sess.Find(&records)
-	return records, err
+	if err != nil {
+		sess.Rollback()
+		return nil, err
+	}
+	return records, sess.Commit()
 }
 
 // batch the inserts since we also insert the full json data

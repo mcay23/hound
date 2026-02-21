@@ -44,3 +44,18 @@ export const cancelDownload = async (taskID: number) => {
   const { data } = await axios.post(`/api/v1/ingest/${taskID}/cancel`);
   return data;
 };
+
+export const fetchMovieMediaFiles = async (mediaSource: string, sourceID: string) => {
+  const { data } = await axios.get(`/api/v1/movies/${mediaSource}-${sourceID}/media_files`);
+  return data;
+};
+
+export const fetchShowMediaFiles = async (mediaSource: string, sourceID: string, season: number, episode:number) => {
+  const { data } = await axios.get<any>(`/api/v1/tv/${mediaSource}-${sourceID}/media_files`, {
+    params: {
+      season: season,
+      episode: episode,
+    },
+  });
+  return data;
+};

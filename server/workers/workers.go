@@ -11,10 +11,12 @@ import (
 	"time"
 )
 
-func InitializeWorkers(downloadWorkers int, ingestWorkers int) {
-	InitializeDownloadWorkers(downloadWorkers)
-	InitializeIngestWorkers(ingestWorkers)
-	InitializeExternalLibraryWorker()
+func InitializeWorkers() {
+	InitializeDownloadWorkers()
+	InitializeIngestWorkers()
+	// external library workers has some dependencies on ingest workers, start
+	// it after ingest workers are initialized
+	InitializeExternalLibraryWorkers()
 	go cleanUpDownloads()
 }
 

@@ -48,17 +48,25 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 			"request id param invalid"+err.Error()))
 		return
 	}
-	seasonNumber, err := strconv.Atoi(c.Query("season"))
-	if err != nil || c.Query("season") == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid season query param"+err.Error()))
-		return
+	var seasonNumber *int
+	if c.Query("season") != "" {
+		s, err := strconv.Atoi(c.Query("season"))
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Invalid season query param"+err.Error()))
+			return
+		}
+		seasonNumber = &s
 	}
-	episodeNumber, err := strconv.Atoi(c.Query("episode"))
-	if err != nil || c.Query("episode") == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid episode query param"+err.Error()))
-		return
+	var episodeNumber *int
+	if c.Query("episode") != "" {
+		e, err := strconv.Atoi(c.Query("episode"))
+		if err != nil {
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Invalid episode query param"+err.Error()))
+			return
+		}
+		episodeNumber = &e
 	}
 	streamObjects, err := providers.GetLocalStreamsForTVShow(sourceID, seasonNumber, episodeNumber)
 	if err != nil {
@@ -66,20 +74,22 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 		return
 	}
 	// in regular flows, should be a cached call
-	epDetails, err := sources.GetEpisodeTMDB(sourceID, seasonNumber, episodeNumber)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episode record"))
-		return
+	var epID *string
+	if seasonNumber != nil && episodeNumber != nil {
+		epDetails, err := sources.GetEpisodeTMDB(sourceID, *seasonNumber, *episodeNumber)
+		if err == nil {
+			idStr := strconv.Itoa(int(epDetails.ID))
+			epID = &idStr
+		}
 	}
-	epID := strconv.Itoa(int(epDetails.ID))
 	res := &providers.ProviderResponseObject{
 		StreamMediaDetails: providers.StreamMediaDetails{
 			MediaType:       database.MediaTypeTVShow,
 			MediaSource:     sources.MediaSourceTMDB,
 			SourceID:        strconv.Itoa(sourceID),
-			SeasonNumber:    &seasonNumber,
-			EpisodeNumber:   &episodeNumber,
-			EpisodeSourceID: &epID,
+			SeasonNumber:    seasonNumber,
+			EpisodeNumber:   episodeNumber,
+			EpisodeSourceID: epID,
 		},
 		Providers: []*providers.ProviderObject{
 			{

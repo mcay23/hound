@@ -34,7 +34,20 @@ type ExternalLibraryItem struct {
 }
 
 func instantiateExternalLibraryItemsTable() error {
-	return databaseEngine.Table(externalLibraryItemsTable).Sync2(new(ExternalLibraryItem))
+	err := databaseEngine.Table(externalLibraryItemsTable).Sync2(new(ExternalLibraryItem))
+	if err != nil {
+		return err
+	}
+	// fail pending, queued tasks on startup in case server was restarted during processing
+	lastError := "Server restarted while task was in progress"
+	_, err = databaseEngine.Table(externalLibraryItemsTable).
+		Where("status = ? OR status = ?", ExternalLibraryItemStatusPending, ExternalLibraryItemStatusQueued).
+		Cols("status", "last_error").
+		Update(&ExternalLibraryItem{
+			Status:    ExternalLibraryItemStatusFailed,
+			LastError: &lastError,
+		})
+	return err
 }
 
 func GetExternalLibraryItemByPath(sourcePath string) (*ExternalLibraryItem, error) {

@@ -33,6 +33,13 @@ var (
 		IngestStatusFailed,
 		IngestStatusCanceled,
 	}
+	IngestActiveStatuses = []string{
+		IngestStatusPendingDownload,
+		IngestStatusMetadataFetching,
+		IngestStatusDownloading,
+		IngestStatusPendingInsert,
+		IngestStatusCopying,
+	}
 )
 
 type IngestTask struct {
@@ -68,8 +75,7 @@ type IngestTaskFullRecord struct {
 // ingest_jobs track ingestion of files from download -> inserted into hound
 // external files are inserted at the pending_insert stage
 func instantiateIngestTasksTable() error {
-	databaseEngine.Table(IngestTasksTable).Sync2(new(IngestTask))
-	return nil
+	return databaseEngine.Table(IngestTasksTable).Sync2(new(IngestTask))
 }
 
 func FindIngestTasks(task IngestTask) ([]IngestTask, error) {

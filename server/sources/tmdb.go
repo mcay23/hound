@@ -630,15 +630,18 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	// upsert the root level entry
 	affected, err := database.UpsertMediaRecordsTrx(session, &tvShowEntry)
 	if err != nil {
+		session.Rollback()
 		return nil, err
 	}
 	// we get here since xorm.Update doesn't get recordID automatically
 	has, showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, MediaSourceTMDB,
 		strconv.Itoa(showSourceID))
 	if err != nil {
+		session.Rollback()
 		return nil, err
 	}
 	if !has {
+		session.Rollback()
 		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
 	}
@@ -654,10 +657,12 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		// create season records
 		seasonData, err := GetTVSeasonTMDB(showSourceID, season.SeasonNumber)
 		if err != nil {
+			session.Rollback()
 			return nil, err
 		}
 		seasonJson, err := json.Marshal(seasonData)
 		if err != nil {
+			session.Rollback()
 			return nil, err
 		}
 		thumbnailURI := tmdb.GetImageURL(seasonData.PosterPath, tmdb.W300)
@@ -700,6 +705,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		// upsert the season entry
 		affected, err = database.UpsertMediaRecordsTrx(session, &seasonEntry)
 		if err != nil {
+			session.Rollback()
 			return nil, err
 		}
 		// skip if no change
@@ -710,13 +716,16 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		has, seasonRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeSeason, MediaSourceTMDB,
 			strconv.Itoa(int(seasonData.ID)))
 		if err != nil {
+			session.Rollback()
 			return nil, err
 		}
 		if !has {
+			session.Rollback()
 			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 				"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
 		}
 		if seasonRecord == nil || seasonRecord.ParentID == nil {
+			session.Rollback()
 			return nil, fmt.Errorf("UpsertTVShowRecordTMDB(): season record is nil or has no parent id")
 		}
 		// upsert all children
@@ -758,6 +767,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	}
 	err = database.BatchUpsertMediaRecords(session, episodeRecords)
 	if err != nil {
+		session.Rollback()
 		return nil, err
 	}
 	// only commit if everything succeeds

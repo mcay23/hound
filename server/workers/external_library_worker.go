@@ -66,7 +66,7 @@ workers might be a good idea
 Note that this will cause mismatches, especially for tv shows if the season/episode
 ordering of the source directory is not identical to tmdb's ordering
 */
-func InitializeExternalLibraryWorker() {
+func InitializeExternalLibraryWorkers() {
 	if !model.ExternalLibraryEnabled {
 		return
 	}
@@ -122,6 +122,7 @@ func initialExternalLibraryScan(root externalLibraryRoot) {
 func scanExternalLibrary(root externalLibraryRoot, isInitialScan bool) {
 	err := filepath.WalkDir(root.RootPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			slog.Warn("External library scan encountered error on path", "path", path, "error", err)
 			return nil
 		}
 		if d.IsDir() {
@@ -131,7 +132,7 @@ func scanExternalLibrary(root externalLibraryRoot, isInitialScan bool) {
 		return nil
 	})
 	if err != nil {
-		slog.Error("External library scan failed", "root", root.RootPath, "mediaType", root.MediaType, "isInitial", isInitialScan, "error", err)
+		slog.Error("External library scan failed (walkdir error)", "root", root.RootPath, "mediaType", root.MediaType, "isInitial", isInitialScan, "error", err)
 	}
 }
 
@@ -157,6 +158,7 @@ func watchExternalLibrary(root externalLibraryRoot) {
 
 	err = filepath.WalkDir(root.RootPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			slog.Warn("External library watcher failed to access path", "path", path, "error", err)
 			return nil
 		}
 		if d.IsDir() {

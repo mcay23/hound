@@ -12,9 +12,9 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 )
 
-func InitializeIngestWorkers(n int) {
-	slog.Info("Starting ingest workers", "count", n)
-	for i := range n {
+func InitializeIngestWorkers() {
+	slog.Info("Starting ingest workers", "count", model.MaxConcurrentIngests)
+	for i := range model.MaxConcurrentIngests {
 		go ingestWorker(i)
 	}
 }

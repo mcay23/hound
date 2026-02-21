@@ -211,11 +211,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): No collection found with this ID or invalid user")
 	}
 	err = session.Commit()
-	if err != nil {
-		_ = session.Rollback()
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): error committing transaction")
-	}
-	return nil
+	return err
 }
 
 func FindCollection(query CollectionRecord, limit int, offset int) ([]CollectionRecord, int, error) {
