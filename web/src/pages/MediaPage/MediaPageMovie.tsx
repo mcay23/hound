@@ -3,6 +3,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
 import {
+  Chip,
   IconButton,
   Skeleton,
   styled,
@@ -23,6 +24,8 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
+import { useMediaFiles } from "../../api/hooks/media";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 
 const offsetFix = {
   modifiers: [
@@ -70,6 +73,12 @@ function MediaPageMovie(props: any) {
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
+  const { data: mediaFiles } = useMediaFiles(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   useEffect(() => {
     axios
       .get(
@@ -153,18 +162,19 @@ function MediaPageMovie(props: any) {
     }
     if (!streams) {
       const searchProvidersToast = toast.loading("Searching providers...");
-      axios
-        .get(
-          `/api/v1/movie/${props.data.media_source}-${props.data.source_id}/providers`,
-        )
-        .then((res) => {
+      searchProviders({
+        mediaType: "movie",
+        mediaSource: props.data.media_source,
+        sourceId: props.data.source_id,
+      })
+        .then((data) => {
           toast.dismiss(searchProvidersToast);
-          setStreams(res.data);
-          let numStreams = res.data?.providers[0]?.streams?.length;
+          setStreams(data);
+          let numStreams = data?.streams?.length;
           if (numStreams > 0) {
-            let selectedStream = res.data.providers[0].streams[0];
+            let selectedStream = data.streams[0];
             if (mode === "direct" && watchProgress) {
-              const matchingStream = res.data.providers[0].streams.find(
+              const matchingStream = data.streams.find(
                 (stream: any) =>
                   stream.encoded_data === watchProgress.encoded_data,
               );
@@ -195,7 +205,7 @@ function MediaPageMovie(props: any) {
             setIsStreamSelectButtonLoading(false);
           }
         });
-    } else if (streams?.providers[0]?.streams?.length > 0) {
+    } else if (streams?.streams?.length > 0) {
       if (mode === "direct") {
         setIsStreamModalOpen(true);
         setIsStreamButtonLoading(false);
@@ -253,6 +263,19 @@ function MediaPageMovie(props: any) {
               )}
             </div>
             <div className="media-page-tv-header-info">
+              {mediaFiles?.providers[0]?.streams?.length > 0 && (
+                <Chip
+                  label={"In Hound"}
+                  size="medium"
+                  color="primary"
+                  sx={{
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    fontFamily: '"Cabin", sans-serif',
+                  }}
+                />
+              )}
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
                 <span className="media-page-tv-header-year">

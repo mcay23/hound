@@ -27,79 +27,75 @@ function SelectStreamModal(props: any) {
           PaperProps={paperPropsGlass}
         >
           <div className="stream-info-card-container">
-            {props.streamData?.providers?.map((provider: any) =>
-              provider?.streams?.map((stream: any) => {
-                return (
-                  <div className="stream-info-card" key={stream.infohash}>
-                    <div
-                      className="stream-info-card-title"
+            {props.streamData?.streams?.map((stream: any) => {
+              return (
+                <div className="stream-info-card" key={stream.infohash}>
+                  <div
+                    className="stream-info-card-title"
+                    onClick={() => {
+                      if (stream) {
+                        setMainStream(stream);
+                        setIsStreamModalOpen(true);
+                      }
+                    }}
+                  >
+                    {stream.title}
+                  </div>
+                  <div className="stream-info-card-subtitle">
+                    {stream.description}
+                  </div>
+                  <Chip label={stream.provider} size="small" />
+                  <div className="stream-info-card-footer mt-2">
+                    {stream.provider !== "Hound" && (
+                      <Button
+                        className="stream-info-card-footer-buttons me-2"
+                        variant="light"
+                        size="sm"
+                        onClick={() => {
+                          axios
+                            .post(
+                              "/api/v1/stream/" +
+                                stream.encoded_data +
+                                "/download",
+                            )
+                            .then((res) => {
+                              toast.success("Download added to queue");
+                            })
+                            .catch((err) => {
+                              toast.error("Download Failed! " + err);
+                            });
+                        }}
+                      >
+                        Download to Hound
+                      </Button>
+                    )}
+                    <Button
+                      className="stream-info-card-footer-buttons"
+                      variant="light"
+                      size="sm"
                       onClick={() => {
-                        if (stream) {
-                          setMainStream(stream);
-                          setIsStreamModalOpen(true);
-                        }
+                        const handleCopy = async () => {
+                          try {
+                            await navigator.clipboard.writeText(
+                              window.location.origin +
+                                "/api/v1/stream/" +
+                                stream.encoded_data,
+                            );
+                            toast.success("Link copied to clipboard");
+                          } catch (err) {
+                            console.error("Failed to copy text: ", err);
+                            toast.error("Copy to clipboard failed! " + err);
+                          }
+                        };
+                        handleCopy();
                       }}
                     >
-                      {stream.title}
-                    </div>
-                    <div className="stream-info-card-subtitle">
-                      {stream.description}
-                    </div>
-                    <Chip label={provider.provider} size="small" />
-                    {provider.provider !== "Hound" ? (
-                      <div className="stream-info-card-footer mt-2">
-                        <Button
-                          className="stream-info-card-footer-buttons"
-                          variant="light"
-                          size="sm"
-                          onClick={() => {
-                            axios
-                              .post(
-                                "/api/v1/stream/" +
-                                  stream.encoded_data +
-                                  "/download",
-                              )
-                              .then((res) => {
-                                toast.success("Download added to queue");
-                              })
-                              .catch((err) => {
-                                toast.error("Download Failed! " + err);
-                              });
-                          }}
-                        >
-                          Download to Hound
-                        </Button>
-                        <Button
-                          className="stream-info-card-footer-buttons ms-2"
-                          variant="light"
-                          size="sm"
-                          onClick={() => {
-                            const handleCopy = async () => {
-                              try {
-                                await navigator.clipboard.writeText(
-                                  window.location.origin +
-                                    "/api/v1/stream/" +
-                                    stream.encoded_data,
-                                );
-                                toast.success("Link copied to clipboard");
-                              } catch (err) {
-                                console.error("Failed to copy text: ", err);
-                                toast.error("Copy to clipboard failed! " + err);
-                              }
-                            };
-                            handleCopy();
-                          }}
-                        >
-                          Copy Link
-                        </Button>
-                      </div>
-                    ) : (
-                      <></>
-                    )}
+                      Copy Link
+                    </Button>
                   </div>
-                );
-              }),
-            )}
+                </div>
+              );
+            })}
           </div>
         </Dialog>
       ) : (

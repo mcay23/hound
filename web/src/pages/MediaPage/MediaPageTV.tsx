@@ -3,6 +3,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import CachedIcon from "@mui/icons-material/Cached";
 import {
+  Chip,
   IconButton,
   Skeleton,
   styled,
@@ -23,6 +24,8 @@ import SelectStreamModal from "../Modals/StreamSelectModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
+import { useMediaFiles } from "../../api/hooks/media";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 
 const offsetFix = {
   modifiers: [
@@ -65,6 +68,12 @@ function MediaPageTV(props: any) {
   const [mainStream, setMainStream] = useState<any>(null);
   const [streamStartTime, setStreamStartTime] = useState(0);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
+  const { data: mediaFiles } = useMediaFiles(
+    "tv",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
 
   var styles = {
     noBackdrop: {
@@ -169,21 +178,24 @@ function MediaPageTV(props: any) {
     // if we have current watch data, use encodedData to match a stream
     const requestProviderStream = (startTime: number, encodedData: string) => {
       setStreamStartTime(startTime);
-      return axios
-        .get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/providers?season=${season}&episode=${episode}`,
-        )
-        .then((res) => {
+      return searchProviders({
+        mediaType: "tv",
+        mediaSource,
+        sourceId: sourceID,
+        season,
+        episode,
+      })
+        .then((data) => {
           toast.dismiss(searchProvidersToast);
-          setStreams(res.data);
-          let numStreams = res.data?.providers[0]?.streams?.length;
+          setStreams(data);
+          let numStreams = data?.streams?.length;
           if (numStreams > 0) {
-            let selectedStream = res.data.providers[0].streams[0];
+            let selectedStream = data.streams[0];
             // if we have watch progress, set this as the main stream
             // note this doesn't handle different hosts/protocols, eg. if
             // the urls are different even if they are the same file, it won't match
             if (mode === "direct" && encodedData) {
-              const matchingStream = res.data.providers[0].streams.find(
+              const matchingStream = data.streams.find(
                 (stream: any) => stream.encoded_data === encodedData,
               );
               if (matchingStream) {
@@ -331,6 +343,19 @@ function MediaPageTV(props: any) {
               )}
             </div>
             <div className="media-page-tv-header-info">
+              {mediaFiles?.providers[0]?.streams?.length > 0 && (
+                <Chip
+                  label={"In Hound"}
+                  size="medium"
+                  color="primary"
+                  sx={{
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    fontFamily: '"Cabin", sans-serif',
+                  }}
+                />
+              )}
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
                 <span className="media-page-tv-header-year">
