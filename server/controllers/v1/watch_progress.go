@@ -41,9 +41,9 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error binding JSON for watch history"))
 		return
 	}
-	if watchProgress.CurrentProgressSeconds < 300 {
+	if watchProgress.CurrentProgressSeconds < 120 {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Less than 5 minutes watched, skipping saving progress"))
+			"Less than 2 minutes watched, skipping saving progress"))
 		return
 	}
 	if watchProgress.TotalDurationSeconds < 60 {

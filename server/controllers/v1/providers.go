@@ -59,7 +59,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 			"Invalid episode query param"+err.Error()))
 	}
 	episode, err := sources.GetEpisodeTMDB(sourceID, seasonNumber, episodeNumber)
-	if err != nil {
+	if err != nil || episode == nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
 			"Error retrieving TMDB episode"+err.Error()))
 		return

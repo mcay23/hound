@@ -31,7 +31,7 @@ function StreamModal(props: any) {
           .then(() => {
             toast.dismiss(fetchToast);
             setVideoURL(
-              SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data
+              SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
             );
             setLoading(false);
           })
@@ -40,7 +40,7 @@ function StreamModal(props: any) {
           });
       } else {
         setVideoURL(
-          SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data
+          SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
         );
         setLoading(false);
       }
@@ -60,7 +60,7 @@ function StreamModal(props: any) {
   };
 
   const handleVideoProgress = (current: number, total: number) => {
-    if (current < 300) return; // don't log before 5 minutes
+    if (current < 120) return; // don't log before 2 minutes
     const payload = {
       stream_protocol: streamDetails.stream_protocol,
       source_uri: streamDetails.uri,
@@ -79,7 +79,7 @@ function StreamModal(props: any) {
         `/api/v1/${streams.media_type === "tvshow" ? "tv" : "movie"}/${
           streams.media_source
         }-${streams.source_id}/playback`,
-        payload
+        payload,
       )
       .then((res) => {
         // console.log(res.data);

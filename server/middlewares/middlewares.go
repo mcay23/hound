@@ -23,7 +23,7 @@ func extractBearerToken(header string) (string, error) {
 func JWTMiddleware(c *gin.Context) {
 	jwtToken, err := c.Cookie("token")
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Cookie not found, checking auth header")
+		// _ = helpers.LogErrorWithMessage(err, "Cookie not found, checking auth header")
 		jwtToken, err = extractBearerToken(c.GetHeader("Authorization"))
 		if err != nil {
 			helpers.ErrorResponse(c, err)
