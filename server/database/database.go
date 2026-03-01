@@ -58,6 +58,11 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media tables")
 		panic(err)
 	}
+	err = instantiateGenresTables()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate genre tables")
+		panic(err)
+	}
 	err = instantiateCommentTable()
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate comment table")

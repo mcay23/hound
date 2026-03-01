@@ -21,6 +21,8 @@ var addForeignKeys = &migrate.Migration{
 			ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_record_id;
 			ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_collection_id;
 			ALTER TABLE media_files DROP CONSTRAINT IF EXISTS fk_media_files_record_id;
+			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_record_id;
+			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_genre_id;
 
 			ALTER TABLE collections
 			ADD CONSTRAINT fk_collections_user_id
@@ -50,6 +52,14 @@ var addForeignKeys = &migrate.Migration{
 			ADD CONSTRAINT fk_media_files_record_id
 				FOREIGN KEY (record_id) REFERENCES media_records (record_id)
 				ON UPDATE CASCADE ON DELETE CASCADE;
+
+			ALTER TABLE media_record_genres
+			ADD CONSTRAINT fk_media_record_genres_record_id
+				FOREIGN KEY (record_id) REFERENCES media_records (record_id)
+				ON UPDATE CASCADE ON DELETE CASCADE,
+			ADD CONSTRAINT fk_media_record_genres_genre_id
+				FOREIGN KEY (genre_id) REFERENCES genres (id)
+				ON UPDATE CASCADE ON DELETE CASCADE;
 			`
 		_, err := tx.Exec(query)
 		return err
@@ -63,6 +73,8 @@ var addForeignKeys = &migrate.Migration{
 		ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_record_id;
 		ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_collection_id;
 		ALTER TABLE media_files DROP CONSTRAINT IF EXISTS fk_media_files_record_id;
+		ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_record_id;
+		ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_genre_id;
 		`
 		_, err := tx.Exec(sql)
 		return err

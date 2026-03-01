@@ -26,6 +26,8 @@ const (
 var tmdbClient *tmdb.Client
 var tmdbTVGenres tmdb.GenreMovieList
 var tmdbMovieGenres tmdb.GenreMovieList
+var tmdbTVGenreInternalIDs = map[int64]int64{}
+var tmdbMovieGenreInternalIDs = map[int64]int64{}
 
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
@@ -56,6 +58,13 @@ func InitializeTMDB() {
 	tmdbClient.SetClientConfig(http.Client{
 		Timeout: time.Second * 30,
 	})
+	/*
+		genres are loaded to memory at startup for fast access
+		however, if server is running and tmdb adds a new genre,
+		media_record upserts with the new genre will not be inserted
+		this is a pretty niche case as genres seem rarely added, so we don't
+		handle repopulating genres at runtime for simplicity
+	*/
 	err = populateTMDBTVGenres()
 	if err != nil {
 		panic(err)
@@ -360,6 +369,18 @@ func populateTMDBTVGenres() error {
 		return helpers.LogErrorWithMessage(err, "Failed to populate genre list (tmdb)")
 	}
 	tmdbTVGenres = *list
+	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
+	for _, genre := range list.Genres {
+		genreRecords = append(genreRecords, database.GenreObject{
+			ID:   genre.ID,
+			Name: genre.Name,
+		})
+	}
+	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeTVShow, genreRecords)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to sync tv genres to database")
+	}
+	tmdbTVGenreInternalIDs = mapping
 	return nil
 }
 
@@ -369,7 +390,48 @@ func populateTMDBMovieGenres() error {
 		return helpers.LogErrorWithMessage(err, "Failed to populate genre list (tmdb)")
 	}
 	tmdbMovieGenres = *list
+	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
+	for _, genre := range list.Genres {
+		genreRecords = append(genreRecords, database.GenreObject{
+			ID:   genre.ID,
+			Name: genre.Name,
+		})
+	}
+	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeMovie, genreRecords)
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to sync movie genres to database")
+	}
+	tmdbMovieGenreInternalIDs = mapping
 	return nil
+}
+
+// checks if genres are missing from the memory mapping
+// should be a rare case, but should be handled
+func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject) ([]int64, []int64, error) {
+	if len(genres) == 0 {
+		return nil, nil, nil
+	}
+	var src map[int64]int64
+	switch mediaType {
+	case database.MediaTypeTVShow:
+		src = tmdbTVGenreInternalIDs
+	case database.MediaTypeMovie:
+		src = tmdbMovieGenreInternalIDs
+	default:
+		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid media type for genre mapping")
+	}
+	ret := make([]int64, 0, len(genres))
+	missing := make([]int64, 0)
+	for _, genre := range genres {
+		internalID, ok := src[genre.ID]
+		if !ok {
+			missing = append(missing, genre.ID)
+			continue
+		}
+		ret = append(ret, internalID)
+	}
+	return ret, missing, nil
 }
 
 func GetGenresMap(genreIds []int64, mediaType string) []database.GenreObject {
@@ -543,8 +605,43 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		FullData:         movieJson,
 	}
 	entry.ContentHash = hashRecordTMDB(entry, "")
-	err = database.UpsertMediaRecord(&entry)
+	session := database.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return nil, helpers.LogErrorWithMessage(err,
+			"UpsertMovieRecordTMDB(): Failed to start xorm session")
+	}
+	affected, err := database.UpsertMediaRecordsTrx(session, &entry)
 	if err != nil {
+		session.Rollback()
+		return nil, err
+	}
+	has, record, err := database.GetMediaRecordTrx(session, database.RecordTypeMovie, MediaSourceTMDB, strconv.Itoa(sourceID))
+	if err != nil {
+		session.Rollback()
+		return nil, err
+	}
+	if !has || record == nil {
+		session.Rollback()
+		return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
+			"Failed to get movie media record after upsert")
+	}
+	if affected {
+		internalGenreIDs, missingGenreIDs, err := resolveTMDBGenreInternalIDs(database.MediaTypeMovie, genreArray)
+		if err != nil {
+			session.Rollback()
+			return nil, err
+		}
+		if len(missingGenreIDs) > 0 {
+			_ = helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				fmt.Sprintf("Skipping unknown movie genre ids for tmdb-%d: %v", sourceID, missingGenreIDs))
+		}
+		if err := database.ReplaceMediaRecordGenresByIDsTrx(session, record.RecordID, internalGenreIDs); err != nil {
+			session.Rollback()
+			return nil, err
+		}
+	}
+	if err := session.Commit(); err != nil {
 		return nil, err
 	}
 	return &entry, nil
@@ -647,7 +744,21 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	}
 	// hash same, no update/insert
 	if !affected {
+		session.Commit()
 		return showRecord, nil
+	}
+	internalGenreIDs, missingGenreIDs, err := resolveTMDBGenreInternalIDs(database.MediaTypeTVShow, genreArray)
+	if err != nil {
+		session.Rollback()
+		return nil, err
+	}
+	if len(missingGenreIDs) > 0 {
+		_ = helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			fmt.Sprintf("Skipping unknown tv genre ids for tmdb-%d: %v", showSourceID, missingGenreIDs))
+	}
+	if err := database.ReplaceMediaRecordGenresByIDsTrx(session, showRecord.RecordID, internalGenreIDs); err != nil {
+		session.Rollback()
+		return nil, err
 	}
 	// show hash changed, preload seasons to the cache
 	_ = PrefetchSeasons(showSourceID)
