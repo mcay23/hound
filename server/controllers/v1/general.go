@@ -86,7 +86,7 @@ func GetMediaBackdrops(c *gin.Context) {
 }
 
 func GetCommentsHandler(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return

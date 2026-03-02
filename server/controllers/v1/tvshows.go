@@ -26,7 +26,7 @@ func SearchTVShowHandler(c *gin.Context) {
 
 // returns a tmdb-like response but with media record catalog structure
 func GetTVShowFromIDHandlerV2(c *gin.Context) {
-	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -123,7 +123,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 }
 
 func GetTVShowFromIDHandler(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -208,7 +208,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 }
 
 func GetTVSeasonHandlerV2(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -276,7 +276,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
 		return
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -318,7 +318,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 }
 
 func GetTVEpisodeGroupsHandler(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"request id param invalid"+err.Error()))

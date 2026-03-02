@@ -20,7 +20,7 @@ func GetNextWatchActionHandler(c *gin.Context) {
 	} else if strings.HasPrefix(path, "/api/v1/movie") {
 		mediaType = database.MediaTypeMovie
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return

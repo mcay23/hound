@@ -27,7 +27,7 @@ func ClearCacheHandler(c *gin.Context) {
 }
 
 func SearchProvidersTVShowsHandler(c *gin.Context) {
-	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -85,7 +85,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 }
 
 func SearchProvidersMovieHandler(c *gin.Context) {
-	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"request id param invalid"+err.Error()))

@@ -41,7 +41,7 @@ func AddToCollectionHandler(c *gin.Context) {
 	temp := int64(collectionID)
 	body.CollectionID = &temp
 	// check valid mediaType and source
-	err = ValidateMediaParams(body.MediaType, body.MediaSource)
+	err = validateMediaParams(body.MediaType, body.MediaSource)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -96,7 +96,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 	temp := int64(collectionID)
 	body.CollectionID = &temp
 	// check valid mediaType and source
-	err = ValidateMediaParams(body.MediaType, body.MediaSource)
+	err = validateMediaParams(body.MediaType, body.MediaSource)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
@@ -177,37 +177,14 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	limitQuery := c.Query("limit")
 	offsetQuery := c.Query("offset")
 	// -1 means no limit, offset
-	limit := -1
-	offset := -1
-	if limitQuery != "" && offsetQuery != "" {
-		var err error
-		limit, err = strconv.Atoi(limitQuery)
-		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Invalid limit query param")
-			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-			return
-		}
-		offset, err = strconv.Atoi(offsetQuery)
-		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Invalid offset query param")
-			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-			return
-		}
+	limit, offset, err := getLimitOffset(limitQuery, offsetQuery)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
 	}
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
-		return
-	}
-	// collectionID of -1 is a global Hound Library faux collection
-	// might need a better solution for this
-	if collectionID == -1 {
-		collectionView, err := getHoundDownloadedRecords(limit, offset)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
-			return
-		}
-		helpers.SuccessResponse(c, collectionView, 200)
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
@@ -268,33 +245,6 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 		viewArray = append(viewArray, viewObject)
 	}
 	helpers.SuccessResponse(c, viewArray, 200)
-}
-
-func getHoundDownloadedRecords(limit int, offset int) (view.CollectionView, error) {
-	records, total_records, err := database.GetDownloadedParentRecords(limit, offset)
-	if err != nil {
-		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
-	}
-	var viewArray []view.MediaRecordCatalog
-	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
-		viewArray = append(viewArray, viewObject)
-	}
-	collectionView := view.CollectionView{
-		Records: viewArray,
-		Collection: &view.CollectionObject{
-			CollectionID:    -1,
-			CollectionTitle: "Hound Library",
-			Description:     "Downloaded Content in Hound",
-			OwnerUsername:   "Hound",
-			IsPublic:        true,
-			ThumbnailURI:    "",
-		},
-		TotalRecords: total_records,
-		Limit:        limit,
-		Offset:       offset,
-	}
-	return collectionView, nil
 }
 
 func DeleteCollectionHandler(c *gin.Context) {

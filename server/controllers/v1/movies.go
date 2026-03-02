@@ -26,7 +26,7 @@ func SearchMoviesHandler(c *gin.Context) {
 }
 
 func GetMovieFromIDHandlerV2(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return
@@ -93,7 +93,7 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 }
 
 func GetMovieFromIDHandler(c *gin.Context) {
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
 		return

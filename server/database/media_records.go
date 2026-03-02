@@ -489,6 +489,7 @@ func GetDownloadedParentRecords(limit int, offset int) ([]MediaRecordGroup, int6
 		WHERE (
 			mr.record_type = 'movie' AND EXISTS (
 				SELECT 1 FROM %s mf WHERE mf.record_id = mr.record_id
+				ORDER BY mf.updated_at DESC
 			)
 		) OR (
 			mr.record_type = 'tvshow' AND EXISTS (
@@ -496,6 +497,7 @@ func GetDownloadedParentRecords(limit int, offset int) ([]MediaRecordGroup, int6
 				FROM %s ep 
 				JOIN %s mf ON mf.record_id = ep.record_id
 				WHERE ep.ancestor_id = mr.record_id AND ep.record_type = 'episode'
+				ORDER BY mf.updated_at DESC
 			)
 		)
 		ORDER BY mr.updated_at DESC

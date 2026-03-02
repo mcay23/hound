@@ -31,7 +31,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -128,7 +128,7 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -178,7 +178,7 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return

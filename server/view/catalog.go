@@ -23,9 +23,9 @@ type MediaRecordCatalog struct {
 	Cast             *[]Credit              `json:"cast,omitempty"`
 	Creators         *[]Credit              `json:"creators,omitempty"`
 	GuestStars       *[]Credit              `json:"guest_stars,omitempty"`
-	VoteCount        int64                  `json:"vote_count"`
-	VoteAverage      float32                `json:"vote_average"`
-	Popularity       float32                `json:"popularity"`
+	VoteCount        int64                  `json:"vote_count,omitempty"`
+	VoteAverage      float32                `json:"vote_average,omitempty"`
+	Popularity       float32                `json:"popularity,omitempty"`
 	ThumbnailURI     string                 `json:"thumbnail_uri"`
 	BackdropURI      string                 `json:"backdrop_uri"`
 	LogoURI          string                 `json:"logo_uri"`

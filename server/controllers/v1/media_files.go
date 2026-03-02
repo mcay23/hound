@@ -14,7 +14,7 @@ import (
 )
 
 func SearchMovieMediaFilesHandler(c *gin.Context) {
-	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"request id param invalid"+err.Error()))
@@ -42,7 +42,7 @@ func SearchMovieMediaFilesHandler(c *gin.Context) {
 }
 
 func SearchTVShowMediaFilesHandler(c *gin.Context) {
-	_, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"request id param invalid"+err.Error()))

@@ -33,7 +33,7 @@ func GetWatchHistoryHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
-	mediaSource, parentSourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, parentSourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -92,7 +92,7 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
 		return
 	}
-	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -148,7 +148,7 @@ func DeleteWatchHistoryHandler(c *gin.Context) {
 		return
 	}
 	// get record id from show source id
-	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -178,7 +178,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
 		return
 	}
-	mediaSource, showID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
@@ -229,7 +229,7 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
 		return
 	}
-	mediaSource, sourceID, err := GetSourceIDFromParams(c.Param("id"))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
 		return
