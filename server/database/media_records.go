@@ -61,8 +61,11 @@ type MediaRecord struct {
 }
 
 type GenreObject struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	GenreID     int64  `json:"genre_id"`
+	Genre       string `json:"genre"`
+	MediaType   string `json:"media_type"`
+	MediaSource string `json:"media_source"`
+	SourceID    int64  `json:"source_id"`
 }
 
 type MediaRecordGroup struct {

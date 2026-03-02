@@ -42,7 +42,7 @@ type TVShowFullObject struct {
 	Status           string                     `json:"status"` // Returning Series, etc.
 	FirstAirDate     string                     `json:"first_air_date"`
 	Popularity       float32                    `json:"popularity"`
-	Genres           []tmdb.Genre               `json:"genres"`
+	Genres           []database.GenreObject     `json:"genres"`
 	OriginalLanguage string                     `json:"original_language"`
 	BackdropURI      string                     `json:"backdrop_uri"`
 	LogoURI          string                     `json:"logo_uri"`

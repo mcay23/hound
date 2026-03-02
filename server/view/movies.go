@@ -1,6 +1,10 @@
 package view
 
-import tmdb "github.com/cyruzin/golang-tmdb"
+import (
+	"hound/database"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
+)
 
 type MovieFullObject struct {
 	MediaSource         string                     `json:"media_source"` // tmdb, openlibrary, etc
@@ -25,7 +29,7 @@ type MovieFullObject struct {
 	VoteAverage         float32                    `json:"vote_average"`
 	VoteCount           int64                      `json:"vote_count"`
 	ProductionCompanies *[]tmdb.ProductionCompany  `json:"production_companies"`
-	Genres              *[]tmdb.Genre              `json:"genres"`
+	Genres              *[]database.GenreObject    `json:"genres"`
 	MovieCredits        *tmdb.MovieCredits         `json:"credits"`
 	Videos              *tmdb.VideoResults         `json:"videos"`
 	Recommendations     *tmdb.MovieRecommendations `json:"recommendations"`

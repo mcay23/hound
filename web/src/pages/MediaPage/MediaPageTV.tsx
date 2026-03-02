@@ -105,7 +105,7 @@ function MediaPageTV(props: any) {
   var releaseYear = props.data.release_date.slice(0, 4);
   var genres = props.data.genres
     .map((item: any) => {
-      return item.name;
+      return item.genre;
     })
     .join(", ");
   var runtime = "";

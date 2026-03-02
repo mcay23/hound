@@ -127,7 +127,7 @@ function MediaPageMovie(props: any) {
   } catch {}
   var genres = props.data.genres
     .map((item: any) => {
-      return item.name;
+      return item.genre;
     })
     .join(", ");
   var runtime = "";

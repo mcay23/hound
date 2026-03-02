@@ -4,8 +4,10 @@ import (
 	"errors"
 	"hound/helpers"
 	"sort"
+	"strconv"
 	"time"
 
+	tmdb "github.com/cyruzin/golang-tmdb"
 	"xorm.io/xorm"
 )
 
@@ -15,7 +17,7 @@ const (
 )
 
 type GenreRecord struct {
-	ID          int64     `xorm:"pk autoincr 'id'" json:"id"`
+	GenreID     int64     `xorm:"pk autoincr 'genre_id'" json:"genre_id"`
 	Genre       string    `xorm:"varchar(128) not null 'genre'" json:"genre"`
 	MediaType   string    `xorm:"unique(uk_genres_source) not null 'media_type'" json:"media_type"`
 	MediaSource string    `xorm:"unique(uk_genres_source) not null 'media_source'" json:"media_source"`
@@ -31,13 +33,80 @@ type MediaRecordGenre struct {
 	UpdatedAt time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
+func PopulateGenresCache() error {
+	var genres []GenreRecord
+	err := databaseEngine.Table(genresTable).Find(&genres)
+	if err != nil {
+		return err
+	}
+	for _, genre := range genres {
+		key := getGenreCacheKey(genre.MediaSource, genre.MediaType, genre.SourceID)
+		_, err := SetCache(key, genre, -1) // No expiration for genres
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getGenreCacheKey(mediaSource, mediaType string, sourceID int64) string {
+	return "genre:" + mediaSource + ":" + mediaType + ":" + strconv.FormatInt(sourceID, 10)
+}
+
+func GetGenreFromCache(mediaSource, mediaType string, sourceID int64) *GenreRecord {
+	key := getGenreCacheKey(mediaSource, mediaType, sourceID)
+	var genre GenreRecord
+	exists, err := GetCache(key, &genre)
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Error fetching genre from cache, returning nil")
+		return nil
+	}
+	if exists {
+		return &genre
+	}
+	return nil
+}
+
 func instantiateGenresTables() error {
 	if err := databaseEngine.Table(genresTable).Sync2(new(GenreRecord)); err != nil {
 		return err
 	}
-	return databaseEngine.Table(mediaRecordGenresTable).Sync2(new(MediaRecordGenre))
+	if err := databaseEngine.Table(mediaRecordGenresTable).Sync2(new(MediaRecordGenre)); err != nil {
+		return err
+	}
+	// delete genres cache on startup
+	genreKeys, err := GetKeysWithPrefix("genre:")
+	if err != nil {
+		return err
+	}
+	for _, key := range genreKeys {
+		err := DeleteCache(key)
+		if err != nil {
+			return err
+		}
+	}
+	return PopulateGenresCache()
 }
 
+func ConvertGenres(mediaSource string, mediaType string, genres []tmdb.Genre) []GenreObject {
+	converted := make([]GenreObject, 0, len(genres))
+	for _, genre := range genres {
+		genreRecord := GetGenreFromCache(mediaSource, mediaType, int64(genre.ID))
+		if genreRecord != nil {
+			converted = append(converted, GenreObject{
+				GenreID:     genreRecord.GenreID,
+				Genre:       genreRecord.Genre,
+				MediaSource: mediaSource,
+				SourceID:    genreRecord.SourceID,
+				MediaType:   mediaType,
+			})
+		}
+	}
+	return converted
+}
+
+// UpsertGenres inserts new genres, or update db records if genre names were to change
+// This shouldn't be run after startup, race conditions possible?
 func UpsertGenres(mediaSource string, mediaType string, genres []GenreObject) (map[int64]int64, error) {
 	session := databaseEngine.NewSession()
 	defer session.Close()
@@ -52,6 +121,8 @@ func UpsertGenres(mediaSource string, mediaType string, genres []GenreObject) (m
 	if err := session.Commit(); err != nil {
 		return nil, err
 	}
+	// refresh cache after upsert
+	_ = PopulateGenresCache()
 	return sourceToInternal, nil
 }
 
@@ -63,7 +134,7 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 		var existing GenreRecord
 		has, err := sess.Table(genresTable).
 			Where("media_source = ?", mediaSource).
-			Where("source_id = ?", genre.ID).
+			Where("source_id = ?", genre.SourceID).
 			Where("media_type = ?", mediaType).
 			Get(&existing)
 		if err != nil {
@@ -71,9 +142,9 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 		}
 		if !has {
 			insert := GenreRecord{
-				Genre:       genre.Name,
+				Genre:       genre.Genre,
 				MediaSource: mediaSource,
-				SourceID:    genre.ID,
+				SourceID:    genre.SourceID,
 				MediaType:   mediaType,
 			}
 			_, err = sess.Table(genresTable).Insert(&insert)
@@ -84,7 +155,7 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 				// concurrent upsert race, refetch
 				has, err = sess.Table(genresTable).
 					Where("media_source = ?", mediaSource).
-					Where("source_id = ?", genre.ID).
+					Where("source_id = ?", genre.SourceID).
 					Where("media_type = ?", mediaType).
 					Get(&existing)
 				if err != nil {
@@ -98,14 +169,14 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 				existing = insert
 			}
 		}
-		if existing.Genre != genre.Name {
-			existing.Genre = genre.Name
-			_, err = sess.Table(genresTable).ID(existing.ID).Cols("genre").Update(&existing)
+		if existing.Genre != genre.Genre {
+			existing.Genre = genre.Genre
+			_, err = sess.Table(genresTable).ID(existing.GenreID).Cols("genre").Update(&existing)
 			if err != nil {
 				return nil, err
 			}
 		}
-		sourceToInternal[genre.ID] = existing.ID
+		sourceToInternal[genre.SourceID] = existing.GenreID
 	}
 	return sourceToInternal, nil
 }

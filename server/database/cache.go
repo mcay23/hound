@@ -23,6 +23,7 @@ func InitializeCache() {
 	db, err = badger.Open(opts)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Error initializing cache")
+		panic(err)
 	}
 	// 10 minute GC cleanup
 	gcIntervalSec := 600
@@ -75,7 +76,7 @@ func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 		_ = helpers.LogErrorWithMessage(err, "set cache: failed to set/update cache for key: "+key)
 		return false, err
 	}
-	slog.Info("Cache set", "key", key)
+	slog.Debug("Cache set", "key", key)
 	return true, nil
 }
 
@@ -145,6 +146,6 @@ func DeleteCache(key string) error {
 		_ = helpers.LogErrorWithMessage(err, "Error deleting cache key: "+key)
 		return err
 	}
-	slog.Info("Cache deleted", "key", key)
+	slog.Debug("Cache deleted", "key", key)
 	return nil
 }

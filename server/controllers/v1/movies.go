@@ -36,13 +36,7 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	genreArray := []database.GenreObject{}
-	for _, genre := range movieDetails.Genres {
-		genreArray = append(genreArray, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
-		})
-	}
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
 	logoURI := ""
 	if len(movieDetails.Images.Logos) > 0 {
 		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
@@ -122,6 +116,8 @@ func GetMovieFromIDHandler(c *gin.Context) {
 	if len(movieDetails.Images.Logos) > 0 {
 		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
+
 	returnObject := view.MovieFullObject{
 		MediaSource:         sources.MediaSourceTMDB,
 		MediaType:           database.MediaTypeMovie,
@@ -131,7 +127,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		ThumbnailURI:        helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
 		LogoURI:             logoURI,
 		Budget:              movieDetails.Budget,
-		Genres:              &movieDetails.Genres,
+		Genres:              &genreArray,
 		Homepage:            movieDetails.Homepage,
 		IMDbID:              movieDetails.IMDbID,
 		OriginalLanguage:    movieDetails.OriginalLanguage,

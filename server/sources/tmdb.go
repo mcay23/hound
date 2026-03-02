@@ -372,8 +372,10 @@ func populateTMDBTVGenres() error {
 	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
 	for _, genre := range list.Genres {
 		genreRecords = append(genreRecords, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
+			SourceID:    genre.ID,
+			Genre:       genre.Name,
+			MediaType:   database.MediaTypeTVShow,
+			MediaSource: MediaSourceTMDB,
 		})
 	}
 	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeTVShow, genreRecords)
@@ -393,8 +395,10 @@ func populateTMDBMovieGenres() error {
 	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
 	for _, genre := range list.Genres {
 		genreRecords = append(genreRecords, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
+			SourceID:    genre.ID,
+			Genre:       genre.Name,
+			MediaType:   database.MediaTypeMovie,
+			MediaSource: MediaSourceTMDB,
 		})
 	}
 	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeMovie, genreRecords)
@@ -424,9 +428,9 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 	ret := make([]int64, 0, len(genres))
 	missing := make([]int64, 0)
 	for _, genre := range genres {
-		internalID, ok := src[genre.ID]
+		internalID, ok := src[genre.SourceID]
 		if !ok {
-			missing = append(missing, genre.ID)
+			missing = append(missing, genre.SourceID)
 			continue
 		}
 		ret = append(ret, internalID)
@@ -435,41 +439,25 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 }
 
 func GetGenresMap(genreIds []int64, mediaType string) []database.GenreObject {
-	var genreList tmdb.GenreMovieList
-	switch mediaType {
-	case database.MediaTypeTVShow:
-		genreList = tmdbTVGenres
-	case database.MediaTypeMovie:
-		genreList = tmdbMovieGenres
-	default:
-		_ = helpers.LogErrorWithMessage(errors.New("invalid param: mediaType"),
-			"Invalid media type supplied to tmdb.GetGenresMap()")
-		return nil
-	}
 	var ret []database.GenreObject
 	for _, id := range genreIds {
-		genreName := ""
-		for _, obj := range genreList.Genres {
-			if id == obj.ID {
-				genreName = obj.Name
-			}
+		cached := database.GetGenreFromCache(MediaSourceTMDB, mediaType, id)
+		// if genre is missing, skip it for now, don't want to handle refetching
+		// since possible race conditions? This should be really rare
+		if cached == nil {
+			continue
+			// missing genre, reload? (rare)
+			// _ = populateTMDBTVGenres()
+			// _ = populateTMDBMovieGenres()
+			// cached = database.GetGenreFromCache(MediaSourceTMDB, mediaType, id)
 		}
-		// could not find id in map, possible new tmdb genre made?
-		if genreName == "" {
-			_ = populateTMDBTVGenres()
-			_ = populateTMDBMovieGenres()
-			// retry again
-			for _, obj := range genreList.Genres {
-				if id == obj.ID {
-					genreName = obj.Name
-				}
-			}
-		}
-		insert := database.GenreObject{
-			ID:   id,
-			Name: genreName,
-		}
-		ret = append(ret, insert)
+		ret = append(ret, database.GenreObject{
+			GenreID:     cached.GenreID,
+			Genre:       cached.Genre,
+			MediaType:   cached.MediaType,
+			MediaSource: cached.MediaSource,
+			SourceID:    cached.SourceID,
+		})
 	}
 	return ret
 }
@@ -559,13 +547,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// import tmdb genres
-	var genreArray []database.GenreObject
-	for _, genre := range movie.Genres {
-		genreArray = append(genreArray, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
-		})
-	}
+	genreArray := database.ConvertGenres(MediaSourceTMDB, database.MediaTypeMovie, movie.Genres)
 	// parse image keys -> links
 	thumbnailURI := tmdb.GetImageURL(movie.PosterPath, tmdb.W300)
 	if movie.PosterPath == "" {
@@ -661,13 +643,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		return nil, err
 	}
 	// import tmdb genres
-	var genreArray []database.GenreObject
-	for _, genre := range showData.Genres {
-		genreArray = append(genreArray, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
-		})
-	}
+	genreArray := database.ConvertGenres(MediaSourceTMDB, database.MediaTypeTVShow, showData.Genres)
 	thumbnailURI := tmdb.GetImageURL(showData.PosterPath, tmdb.W300)
 	if showData.PosterPath == "" {
 		thumbnailURI = ""

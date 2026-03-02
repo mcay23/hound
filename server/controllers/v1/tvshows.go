@@ -41,13 +41,7 @@ func GetTVShowFromIDHandlerV2(c *gin.Context) {
 	if len(showDetails.EpisodeRunTime) > 0 {
 		duration = showDetails.EpisodeRunTime[0]
 	}
-	genreArray := []database.GenreObject{}
-	for _, genre := range showDetails.Genres {
-		genreArray = append(genreArray, database.GenreObject{
-			ID:   genre.ID,
-			Name: genre.Name,
-		})
-	}
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeTVShow, showDetails.Genres)
 	logoURI := ""
 	if len(showDetails.Images.Logos) > 0 {
 		logoURI = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
@@ -167,6 +161,8 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	if len(showDetails.Images.Logos) > 0 {
 		logoURI = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeTVShow, showDetails.Genres)
+
 	returnObject := view.TVShowFullObject{
 		MediaSource:      sources.MediaSourceTMDB,
 		MediaType:        database.MediaTypeTVShow,
@@ -187,7 +183,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		Status:           showDetails.Status,
 		FirstAirDate:     showDetails.FirstAirDate,
 		Popularity:       showDetails.Popularity,
-		Genres:           showDetails.Genres,
+		Genres:           genreArray,
 		OriginalLanguage: showDetails.OriginalLanguage,
 		BackdropURI:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
 		Overview:         showDetails.Overview,

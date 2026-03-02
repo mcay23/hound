@@ -21,8 +21,8 @@ func main() {
 
 	model.InitializeConfig()
 	loggers.InitializeLoggers()
-	database.InstantiateDB()
 	database.InitializeCache()
+	database.InstantiateDB()
 	sources.InitializeSources()
 	model.InitializeP2P()
 	model.InitializeMedia()

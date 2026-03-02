@@ -58,7 +58,7 @@ var addForeignKeys = &migrate.Migration{
 				FOREIGN KEY (record_id) REFERENCES media_records (record_id)
 				ON UPDATE CASCADE ON DELETE CASCADE,
 			ADD CONSTRAINT fk_media_record_genres_genre_id
-				FOREIGN KEY (genre_id) REFERENCES genres (id)
+				FOREIGN KEY (genre_id) REFERENCES genres (genre_id)
 				ON UPDATE CASCADE ON DELETE CASCADE;
 			`
 		_, err := tx.Exec(query)
