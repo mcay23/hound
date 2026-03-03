@@ -110,6 +110,12 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/media_files", SearchTVShowMediaFilesHandler)
 
 	/*
+		Genres Routes
+	*/
+	privateRoutes.GET("/tv/genres", GetTVGenresHandler)
+	privateRoutes.GET("/movie/genres", GetMovieGenresHandler)
+
+	/*
 		Media Routes
 	*/
 	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound

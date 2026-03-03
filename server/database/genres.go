@@ -67,6 +67,32 @@ func GetGenreFromCache(mediaSource, mediaType string, sourceID int64) *GenreReco
 	return nil
 }
 
+func GetGenresByType(mediaType string) ([]GenreRecord, error) {
+	// get all genre keys from the cache
+	// only tmdb is supported for now
+	prefix := "genre:tmdb:" + mediaType + ":"
+	keys, err := GetKeysWithPrefix(prefix)
+	if err != nil {
+		return nil, helpers.LogErrorWithMessage(err, "Failed to get genre keys from cache")
+	}
+	genres := make([]GenreRecord, 0, len(keys))
+	for _, key := range keys {
+		var genre GenreRecord
+		exists, err := GetCache(key, &genre)
+		if err != nil {
+			_ = helpers.LogErrorWithMessage(err, "Error fetching genre from cache for key: "+key)
+			continue
+		}
+		if exists {
+			genres = append(genres, genre)
+		}
+	}
+	sort.Slice(genres, func(i, j int) bool {
+		return genres[i].Genre < genres[j].Genre
+	})
+	return genres, nil
+}
+
 func instantiateGenresTables() error {
 	if err := databaseEngine.Table(genresTable).Sync2(new(GenreRecord)); err != nil {
 		return err

@@ -90,6 +90,9 @@ var addComplexIndexes = &migrate.Migration{
 			CREATE INDEX IF NOT EXISTS idx_rewatches_user_record ON rewatches (user_id, record_id, started_at DESC);
 			CREATE INDEX IF NOT EXISTS idx_ingest_tasks_status_id ON ingest_tasks (status, ingest_task_id ASC);
 			CREATE INDEX IF NOT EXISTS idx_collection_relations_user_record_created ON collection_relations (user_id, record_id, created_at DESC);
+			CREATE INDEX IF NOT EXISTS idx_external_library_source_path ON external_library_items (source_path);
+			CREATE INDEX IF NOT EXISTS idx_external_library_status_updated ON external_library_items (status, updated_at DESC);
+			CREATE INDEX IF NOT EXISTS idx_media_records_ancestor_id ON media_records(ancestor_id) WHERE record_type = 'episode';
 		`
 		_, err := tx.Exec(query)
 		return err
@@ -100,54 +103,9 @@ var addComplexIndexes = &migrate.Migration{
 			DROP INDEX IF EXISTS idx_rewatches_user_record;
 			DROP INDEX IF EXISTS idx_ingest_tasks_status_id;
 			DROP INDEX IF EXISTS idx_collection_relations_user_record_created;
-		`
-		_, err := tx.Exec(query)
-		return err
-	},
-}
-
-var addExternalLibraryIndexes = &migrate.Migration{
-	ID: "20260218_01_add_external_library_indexes",
-	Migrate: func(tx *xorm.Engine) error {
-		query := `
-			CREATE INDEX IF NOT EXISTS idx_external_library_source_path ON external_library_items (source_path);
-			CREATE INDEX IF NOT EXISTS idx_external_library_status_updated ON external_library_items (status, updated_at DESC);
-		`
-		_, err := tx.Exec(query)
-		return err
-	},
-	Rollback: func(tx *xorm.Engine) error {
-		query := `
 			DROP INDEX IF EXISTS idx_external_library_source_path;
 			DROP INDEX IF EXISTS idx_external_library_status_updated;
-		`
-		_, err := tx.Exec(query)
-		return err
-	},
-}
-
-var addMediaFilesOrigin = &migrate.Migration{
-	ID: "20260219_01_add_media_files_origin",
-	Migrate: func(tx *xorm.Engine) error {
-		query := `
-			ALTER TABLE media_files
-			ADD COLUMN IF NOT EXISTS file_origin VARCHAR(64);
-
-			UPDATE media_files
-			SET file_origin = 'hound_managed'
-			WHERE file_origin IS NULL OR file_origin = '';
-
-			ALTER TABLE media_files
-			ALTER COLUMN file_origin SET DEFAULT 'hound_managed',
-			ALTER COLUMN file_origin SET NOT NULL;
-		`
-		_, err := tx.Exec(query)
-		return err
-	},
-	Rollback: func(tx *xorm.Engine) error {
-		query := `
-			ALTER TABLE media_files
-			DROP COLUMN IF EXISTS file_origin;
+			DROP INDEX IF EXISTS idx_media_records_ancestor_id;
 		`
 		_, err := tx.Exec(query)
 		return err
@@ -158,8 +116,6 @@ func runMigrations() error {
 	m := migrate.New(databaseEngine, migrate.DefaultOptions, []*migrate.Migration{
 		addForeignKeys,
 		addComplexIndexes,
-		addExternalLibraryIndexes,
-		addMediaFilesOrigin,
 	})
 	if err := m.Migrate(); err != nil {
 		return err

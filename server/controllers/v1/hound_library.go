@@ -1,9 +1,11 @@
 package v1
 
 import (
+	"errors"
 	"hound/database"
 	"hound/helpers"
 	"hound/view"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +18,28 @@ func GetHoundLibraryHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	collectionView, err := getHoundDownloadedRecords(limit, offset)
+	mediaType := ""
+	mediaTypeQuery := c.Query("media_type")
+	if mediaTypeQuery != "" {
+		switch mediaTypeQuery {
+		case database.MediaTypeMovie:
+			mediaType = database.MediaTypeMovie
+		case database.MediaTypeTVShow:
+			mediaType = database.MediaTypeTVShow
+		default:
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+				"Invalid media type, needs to be 'movie' or 'tvshow'"))
+			return
+		}
+	}
+
+	var genreID int64
+	genreIDQuery := c.Query("genre_id")
+	if genreIDQuery != "" {
+		genreID, _ = strconv.ParseInt(genreIDQuery, 10, 64)
+	}
+
+	collectionView, err := getHoundDownloadedRecords(limit, offset, mediaType, genreID)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
 		return
@@ -24,8 +47,8 @@ func GetHoundLibraryHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, collectionView, 200)
 }
 
-func getHoundDownloadedRecords(limit int, offset int) (view.CollectionView, error) {
-	records, total_records, err := database.GetDownloadedParentRecords(limit, offset)
+func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreID int64) (view.CollectionView, error) {
+	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreID)
 	if err != nil {
 		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
 	}

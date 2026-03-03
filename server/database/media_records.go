@@ -480,16 +480,12 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 // This returns the movie/show-level record, not the episodes
 // For shows, if you have at least 1 downloaded episode
 // it will be included
-func GetDownloadedParentRecords(limit int, offset int) ([]MediaRecordGroup, int64, error) {
+func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID int64) ([]MediaRecordGroup, int64, error) {
 	var recordGroups []MediaRecordGroup
 	// find movies with files OR shows with episodes that have files
-	query := fmt.Sprintf(`
-		SELECT mr.*
-		FROM %s mr
-		WHERE (
+	whereClause := `(
 			mr.record_type = 'movie' AND EXISTS (
 				SELECT 1 FROM %s mf WHERE mf.record_id = mr.record_id
-				ORDER BY mf.updated_at DESC
 			)
 		) OR (
 			mr.record_type = 'tvshow' AND EXISTS (
@@ -497,21 +493,36 @@ func GetDownloadedParentRecords(limit int, offset int) ([]MediaRecordGroup, int6
 				FROM %s ep 
 				JOIN %s mf ON mf.record_id = ep.record_id
 				WHERE ep.ancestor_id = mr.record_id AND ep.record_type = 'episode'
-				ORDER BY mf.updated_at DESC
 			)
-		)
-		ORDER BY mr.updated_at DESC
-	`, mediaRecordsTable, mediaFilesTable, mediaRecordsTable, mediaFilesTable)
+		)`
+	whereClause = fmt.Sprintf(whereClause, mediaFilesTable, mediaRecordsTable, mediaFilesTable)
 
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS sub", query)
+	var args []interface{}
+	if mediaType != "" {
+		whereClause = fmt.Sprintf("(%s) AND mr.record_type = ?", whereClause)
+		args = append(args, mediaType)
+	}
+	if genreID > 0 {
+		whereClause = fmt.Sprintf("(%s) AND EXISTS (SELECT 1 FROM %s mrg WHERE mrg.record_id = mr.record_id AND mrg.genre_id = ?)", whereClause, mediaRecordGenresTable)
+		args = append(args, genreID)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT mr.*
+		FROM %s mr
+		WHERE %s
+		ORDER BY mr.media_title ASC
+	`, mediaRecordsTable, whereClause)
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s mr WHERE %s", mediaRecordsTable, whereClause)
 	var totalRecords int64
-	_, err := databaseEngine.SQL(countQuery).Get(&totalRecords)
+	_, err := databaseEngine.SQL(countQuery, args...).Get(&totalRecords)
 	if err != nil {
 		return nil, 0, err
 	}
 	if limit > 0 && offset >= 0 {
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
-	err = databaseEngine.SQL(query).Find(&recordGroups)
+	err = databaseEngine.SQL(query, args...).Find(&recordGroups)
 	return recordGroups, totalRecords, err
 }
