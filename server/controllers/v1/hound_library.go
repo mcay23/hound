@@ -32,14 +32,17 @@ func GetHoundLibraryHandler(c *gin.Context) {
 			return
 		}
 	}
-
-	var genreID int64
-	genreIDQuery := c.Query("genre_id")
-	if genreIDQuery != "" {
-		genreID, _ = strconv.ParseInt(genreIDQuery, 10, 64)
+	// multiple genre_id params, get records with at least of the genres
+	var genreIDs []int64
+	genreIDQueries := c.QueryArray("genre_id")
+	for _, idStr := range genreIDQueries {
+		if idStr != "" {
+			if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
+				genreIDs = append(genreIDs, id)
+			}
+		}
 	}
-
-	collectionView, err := getHoundDownloadedRecords(limit, offset, mediaType, genreID)
+	collectionView, err := getHoundDownloadedRecords(limit, offset, mediaType, genreIDs)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
 		return
@@ -47,8 +50,8 @@ func GetHoundLibraryHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, collectionView, 200)
 }
 
-func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreID int64) (view.CollectionView, error) {
-	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreID)
+func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs []int64) (view.CollectionView, error) {
+	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
 	if err != nil {
 		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
 	}

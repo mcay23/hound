@@ -480,7 +480,7 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 // This returns the movie/show-level record, not the episodes
 // For shows, if you have at least 1 downloaded episode
 // it will be included
-func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID int64) ([]MediaRecordGroup, int64, error) {
+func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreIDs []int64) ([]MediaRecordGroup, int64, error) {
 	var recordGroups []MediaRecordGroup
 	// find movies with files OR shows with episodes that have files
 	whereClause := `(
@@ -502,9 +502,15 @@ func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID
 		whereClause = fmt.Sprintf("(%s) AND mr.record_type = ?", whereClause)
 		args = append(args, mediaType)
 	}
-	if genreID > 0 {
-		whereClause = fmt.Sprintf("(%s) AND EXISTS (SELECT 1 FROM %s mrg WHERE mrg.record_id = mr.record_id AND mrg.genre_id = ?)", whereClause, mediaRecordGenresTable)
-		args = append(args, genreID)
+
+	if len(genreIDs) > 0 {
+		placeholders := make([]string, len(genreIDs))
+		for i := range genreIDs {
+			placeholders[i] = "?"
+			args = append(args, genreIDs[i])
+		}
+		whereClause = fmt.Sprintf("(%s) AND EXISTS (SELECT 1 FROM %s mrg WHERE mrg.record_id = mr.record_id AND mrg.genre_id IN (%s))",
+			whereClause, mediaRecordGenresTable, strings.Join(placeholders, ","))
 	}
 
 	query := fmt.Sprintf(`
