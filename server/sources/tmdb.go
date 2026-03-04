@@ -626,7 +626,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	if err := session.Commit(); err != nil {
 		return nil, err
 	}
-	return &entry, nil
+	return record, nil
 }
 
 // Triggers a full update attempt
