@@ -44,6 +44,9 @@ function SelectStreamModal(props: any) {
                   <div className="stream-info-card-subtitle">
                     {stream.description}
                   </div>
+                  <div className="stream-info-card-subtitle mb-2">
+                    info hash: {stream.info_hash}
+                  </div>
                   <Chip label={stream.provider} size="small" />
                   <div className="stream-info-card-footer mt-2">
                     {stream.provider !== "Hound" && (

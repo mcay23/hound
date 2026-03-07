@@ -31,7 +31,7 @@ const (
 )
 
 // Downloads torrent to server, not clients
-func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
+func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *database.IngestDownloadPreferences, skipDownloaded bool) error {
 	if streamDetails == nil {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Nil stream details passed to DownloadTorrent()")
@@ -39,6 +39,10 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 	if streamDetails.MediaSource != sources.MediaSourceTMDB {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
 			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
+	}
+	if streamDetails.MediaType != database.RecordTypeMovie && streamDetails.MediaType != database.RecordTypeTVShow {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Invalid media type, only movie and tv show are supported: "+streamDetails.MediaType)
 	}
 	// 1. Attempt upsert first, if failed, abort
 	tmdbID, err := strconv.Atoi(streamDetails.SourceID)
@@ -49,28 +53,66 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to upsert media record when downloading")
 	}
-	ingestRecordID := mediaRecord.RecordID // movie/episode record, not shows/seasons
+	// get movie/episode record, not shows/seasons
+	childRecord := mediaRecord
 	if mediaRecord.RecordType == database.RecordTypeTVShow {
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
 			mediaRecord.SourceID, streamDetails.SeasonNumber, *streamDetails.EpisodeNumber)
 		if err != nil || episodeRecord == nil {
 			return helpers.LogErrorWithMessage(err, "Failed to get episode media record when downloading")
 		}
-		ingestRecordID = episodeRecord.RecordID
+		childRecord = episodeRecord
 	}
-	// 2. Check if a non-terminal task or media file already exists with same infoHash
-	err = CheckDuplicateDownloadTask(ingestRecordID, -1, streamDetails.StreamProtocol, streamDetails.URI, streamDetails.InfoHash, streamDetails.FileIdx)
-	if err != nil {
-		return err
+	// 2. Check if a non-terminal task or media file already exists
+	if streamDetails.StreamProtocol != "" && streamDetails.URI != "" {
+		err = CheckDuplicateDownloadTask(childRecord, -1, streamDetails.StreamProtocol,
+			streamDetails.URI, streamDetails.InfoHash, streamDetails.FileIdx, skipDownloaded)
+		if err != nil {
+			return err
+		}
+	} else {
+		// URI/stream protocol empty, this is resolved by the worker
+		// Do simple checking to see if it's already downloading/being downloaded
+		// for simpler logic, for now, don't allow concurrent season downloads even if they have
+		// different preferences
+		tasks, _ := database.FindIngestTasks(database.IngestTask{RecordID: childRecord.RecordID})
+		for _, task := range tasks {
+			if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+			}
+		}
+		if skipDownloaded {
+			// check already existing files
+			mediaFiles, err := database.GetMediaFileByRecordID(int(childRecord.RecordID))
+			if err != nil {
+				return helpers.LogErrorWithMessage(err, "Failed to get media files when checking duplicate")
+			}
+			for _, file := range mediaFiles {
+				_, err := os.Stat(file.Filepath)
+				// files that don't exist don't count
+				if os.IsNotExist(err) {
+					continue
+				}
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+			}
+		}
 	}
 	// 3. Insert ingest task
-	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
-	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, streamDetails.StreamProtocol,
-		database.IngestStatusPendingDownload, streamDetails.URI, streamDetails.FileIdx)
+	taskToInsert := &database.IngestTask{
+		RecordID:            childRecord.RecordID,
+		DownloadProtocol:    streamDetails.StreamProtocol,
+		Status:              database.IngestStatusPendingDownload,
+		FileIdx:             streamDetails.FileIdx,
+		DownloadPreferences: prefs,
+	}
+	if streamDetails.URI != "" {
+		taskToInsert.SourceURI = &streamDetails.URI
+	}
+	_, _, err = database.InsertIngestTask(taskToInsert)
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
 	}
-	slog.Info("Ingest task inserted successfully", "ingestTask", ingestTask)
+	slog.Info("Ingest task inserted successfully", "ingestTask", taskToInsert)
 	return nil
 }
 
@@ -78,12 +120,16 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 CheckDuplicateDownloadTask checks if a download task is a duplicate (already downloaded or being downloaded)
 This is not a fool-proof check, false negatives may occur
 */
-func CheckDuplicateDownloadTask(recordID int64, currentTaskID int64, protocol string, sourceURI string, currInfoHash string, currFileIdx *int) error {
+func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID int64, protocol string,
+	sourceURI string, currInfoHash string, currFileIdx *int, skipDownloaded bool) error {
+	if mediaRecord == nil {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "mediaRecord is nil")
+	}
 	if sourceURI == "" {
 		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "sourceURI is empty")
 	}
 	tasks, err := database.FindIngestTasks(database.IngestTask{
-		RecordID: recordID,
+		RecordID: mediaRecord.RecordID,
 	})
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when checking duplicate")
@@ -123,10 +169,16 @@ func CheckDuplicateDownloadTask(recordID int64, currentTaskID int64, protocol st
 		}
 	}
 	// 2. Check against media_files table
-	mediaFiles, err := database.GetMediaFileByRecordID(int(recordID))
+	mediaFiles, err := database.GetMediaFileByRecordID(int(mediaRecord.RecordID))
 	if err != nil {
 		return helpers.LogErrorWithMessage(err, "Failed to get media files when checking duplicate")
 	}
+
+	if skipDownloaded && len(mediaFiles) > 0 {
+		return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
+			"Episode already downloaded (skipDownloaded true)")
+	}
+
 	for _, mediaFile := range mediaFiles {
 		// files may have been loaded in different ways, sourceURI not guaranteed to always
 		// exist for ingested files (?). If sourceURI doesn't exist, we have no reliable way to
@@ -241,7 +293,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	}
 	insertedMediaFile, err := database.InsertMediaFile(&mediaFile)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to insert video metadata to db "+targetPath)
+		return nil, helpers.LogErrorWithMessage(err, "Failed to insert media file to db "+targetPath)
 	}
 	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
 	loggers.IngestLogger().Info("[External Library: Ingestion Complete]", "path", sourcePath, "SourceID", mediaRecord.SourceID,

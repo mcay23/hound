@@ -170,8 +170,13 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 	}
 
 	sourceURI := "file://" + filepath.ToSlash(cleanPath)
-	_, ingestTask, err := database.InsertIngestTask(ingestRecordID, database.ProtocolExternal,
-		database.IngestStatusPendingInsert, sourceURI, nil)
+	taskToInsert := &database.IngestTask{
+		RecordID:         ingestRecordID,
+		DownloadProtocol: database.ProtocolExternal,
+		Status:           database.IngestStatusPendingInsert,
+		SourceURI:        &sourceURI,
+	}
+	_, ingestTask, err := database.InsertIngestTask(taskToInsert)
 	if err != nil {
 		return nil, parsed, err
 	}

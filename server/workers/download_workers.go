@@ -8,6 +8,8 @@ import (
 	"hound/helpers"
 	"hound/loggers"
 	"hound/model"
+	"hound/model/providers"
+	"hound/sources"
 	"io"
 	"log/slog"
 	"mime"
@@ -71,12 +73,13 @@ func downloadWorker(id int) {
 }
 
 func processTask(workerID int, task *database.IngestTask) {
-	// shouldn't happen, all flows should have sourceURI
 	if task.SourceURI == nil {
-		helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Task is missing sourceURI please report this issue on Github"+
-			strconv.Itoa(int(task.IngestTaskID)))
-		failTask(task, fmt.Errorf("task is missing source URI - please report this issue on Github"))
-		return
+		slog.Info("Worker resolving source URI via preferences", "taskID", task.IngestTaskID)
+		err := resolveSourceURI(task)
+		if err != nil {
+			failTask(task, fmt.Errorf("failed to resolve source URI: %v", err))
+			return
+		}
 	}
 	slog.Info("Worker picked up download task", "workerID", workerID,
 		"taskID", task.IngestTaskID, "sourceURI", *task.SourceURI)
@@ -88,7 +91,14 @@ func processTask(workerID int, task *database.IngestTask) {
 			infoHash = magnet.InfoHash.HexString()
 		}
 	}
-	err := model.CheckDuplicateDownloadTask(task.RecordID, task.IngestTaskID, task.DownloadProtocol, *task.SourceURI, infoHash, task.FileIdx)
+	// this resolves to movie/episode record, not tv show
+	mediaRecord, err := database.GetMediaRecordByID(task.RecordID)
+	if err != nil || mediaRecord == nil {
+		slog.Error("Worker failed to get media record", "taskID", task.IngestTaskID, "error", err)
+		failTask(task, fmt.Errorf("could not find media record: %v", err))
+		return
+	}
+	err = model.CheckDuplicateDownloadTask(mediaRecord, task.IngestTaskID, task.DownloadProtocol, *task.SourceURI, infoHash, task.FileIdx, false)
 	if err != nil {
 		slog.Info("Task is a duplicate, failing", "taskID", task.IngestTaskID, "error", err)
 		failTask(task, err)
@@ -546,4 +556,124 @@ func failTask(task *database.IngestTask, err error) {
 			}
 		}
 	}
+}
+
+// given a user's preferences, resolve the sourceURI that matches it best
+func resolveSourceURI(task *database.IngestTask) error {
+	record, err := database.GetMediaRecordByID(task.RecordID)
+	if err != nil || record == nil {
+		return fmt.Errorf("could not find media record for task: %v", err)
+	}
+
+	var showSourceID string
+	var imdbID string
+	var seasonNumber, episodeNumber *int
+	var episodeSourceID *string
+
+	switch record.RecordType {
+	case database.RecordTypeEpisode:
+		if record.AncestorID == nil {
+			return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Episode Record missing ancestorID")
+		}
+		showRecord, err := database.GetMediaRecordByID(*record.AncestorID)
+		if err != nil || showRecord == nil {
+			return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Episode Record missing ancestorID")
+		}
+		showSourceID = showRecord.SourceID
+		sID, _ := strconv.Atoi(showSourceID)
+		imdbIDStr, _ := sources.GetTVShowIMDBID(sID)
+		imdbID = imdbIDStr
+		seasonNumber = record.SeasonNumber
+		episodeNumber = record.EpisodeNumber
+		epId := record.SourceID
+		episodeSourceID = &epId
+	case database.RecordTypeMovie:
+		showSourceID = record.SourceID
+		mID, _ := strconv.Atoi(record.SourceID)
+		movie, _ := sources.GetMovieFromIDTMDB(mID)
+		if movie != nil {
+			imdbID = movie.IMDbID
+		}
+	default:
+		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid recordType")
+	}
+	query := providers.ProvidersQueryRequest{
+		IMDbID:          imdbID,
+		MediaType:       record.RecordType,
+		MediaSource:     sources.MediaSourceTMDB,
+		SourceID:        showSourceID,
+		SeasonNumber:    seasonNumber,
+		EpisodeNumber:   episodeNumber,
+		EpisodeSourceID: episodeSourceID,
+	}
+	if record.RecordType == database.RecordTypeEpisode {
+		query.MediaType = database.MediaTypeTVShow
+	}
+	response, err := providers.QueryProviders(query)
+	if err != nil {
+		return err
+	}
+
+	var bestStream *providers.StreamObject
+
+	if task.DownloadPreferences != nil && len(task.DownloadPreferences.PreferenceList) > 0 {
+		for _, pref := range task.DownloadPreferences.PreferenceList {
+			for _, provider := range response.Providers {
+				for _, stream := range provider.Streams {
+					// skip if trying to download episode with nil fileidx for p2p
+					// in stremio responses, this is supposed to resolve to the file
+					// with the highest index, but if a season has multiple episodes,
+					// empty file index is probably wrong, since different episodes can
+					// resolve to the same file
+					if stream.StreamProtocol == database.ProtocolP2P &&
+						record.RecordType == database.RecordTypeEpisode &&
+						stream.FileIdx == nil {
+						continue
+					}
+					if pref.MatchType == database.MatchTypeInfoHash && pref.InfoHashPreference != nil {
+						if strings.EqualFold(stream.InfoHash, pref.InfoHashPreference.InfoHash) {
+							bestStream = stream
+							goto StreamFound
+						}
+					} else if pref.MatchType == database.MatchTypeString && pref.StringMatchPreference != nil {
+						title := stream.Title
+						if stream.Filename != nil {
+							title += " " + *stream.Filename
+						}
+						title += stream.Description
+						matchStr := pref.StringMatchPreference.MatchString
+						if pref.StringMatchPreference.CaseSensitive != true {
+							title = strings.ToLower(title)
+							matchStr = strings.ToLower(matchStr)
+						}
+						if strings.Contains(title, matchStr) {
+							bestStream = stream
+							goto StreamFound
+						}
+					}
+				}
+			}
+		}
+	}
+
+StreamFound:
+	if bestStream == nil {
+		if task.DownloadPreferences != nil && task.DownloadPreferences.StrictMatch {
+			return helpers.LogErrorWithMessage(errors.New(helpers.NotFound), "No stream found using strict matching")
+		}
+		for _, provider := range response.Providers {
+			if len(provider.Streams) > 0 {
+				bestStream = provider.Streams[0]
+				break
+			}
+		}
+	}
+	if bestStream == nil {
+		return helpers.LogErrorWithMessage(errors.New(helpers.NotFound), "No stream found (no strict matching)")
+	}
+	task.SourceURI = &bestStream.URI
+	task.FileIdx = bestStream.FileIdx
+	task.DownloadProtocol = bestStream.StreamProtocol
+	_, err = database.UpdateIngestTask(task)
+	return err
 }

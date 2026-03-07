@@ -78,7 +78,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 	results, err := providers.QueryProviders(query)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Error retrieving Stremio streams"+err.Error()))
+			"Error retrieving Stremio streams "+err.Error()))
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)

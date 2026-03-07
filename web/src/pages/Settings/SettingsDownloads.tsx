@@ -46,9 +46,16 @@ function SettingsDownloads() {
       {isDownloadsLoading ? (
         <div>Loading...</div>
       ) : (
-        downloads?.tasks?.map((item: any) => {
-          return <DownloadCard item={item} />;
-        })
+        downloads?.tasks
+          ?.slice() // avoid mutating original array
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.updated_at).getTime() -
+              new Date(a.updated_at).getTime(),
+          )
+          .map((item: any) => {
+            return <DownloadCard key={item.id} item={item} />;
+          })
       )}
       <div className="d-flex w-100 mt-3 justify-content-center">
         <div className="paginator-container shadow-lg">

@@ -11,6 +11,8 @@ const BadRequest = "badRequest"
 const Unauthorized = "unauthorized"
 const VideoDurationTooShort = "videoDurationTooShort"
 const AlreadyExists = "alreadyExists"
+const NotFound = "notFound"
+const MagnetInfoTimeout = "Failed to get Magnet Info"
 
 var (
 	InfoMsg  = Teal

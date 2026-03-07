@@ -44,7 +44,7 @@ func GetMagnetURI(infoHash string, trackers *[]string) string {
 				uniqueTrackers[value] = struct{}{}
 			}
 		} else {
-			slog.Info("Skipping tracker: " + sourceType)
+			slog.Debug("Skipping tracker: " + sourceType)
 		}
 	}
 	// append trackers

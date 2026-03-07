@@ -140,7 +140,7 @@ func AddTorrent(infoHashStr string, sources *[]string) error {
 	case <-t.GotInfo():
 		slog.Info("Success Retrieving Magnet Info: " + t.InfoHash().HexString())
 	case <-time.After(120 * time.Second):
-		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Timeout retrieving magnet: "+magnetURI)
+		return helpers.LogErrorWithMessage(errors.New(helpers.MagnetInfoTimeout), "Timeout retrieving magnet: "+magnetURI)
 	}
 	activeSessions.Store(infoHashStr, &TorrentSession{
 		Torrent:       t,

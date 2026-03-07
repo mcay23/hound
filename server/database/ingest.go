@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	MatchTypeInfoHash = "match_infohash"
+	MatchTypeInfoHash = "match_info_hash"
 	MatchTypeString   = "match_string"
 )
 
@@ -49,17 +49,17 @@ var (
 
 type IngestTask struct {
 	IngestTaskID        int64                      `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
-	DownloadPriority    int                        `xorm:"'download_priority'" json:"download_priority"`       // priority of task, not used for now
-	RecordID            int64                      `xorm:"index 'record_id'" json:"record_id"`                 // episode or movie to be ingested
-	Status              string                     `xorm:"index 'status'" json:"status"`                       // pending_insert, processing, completed
-	DownloadProtocol    string                     `xorm:"'download_protocol'" json:"download_protocol"`       // p2p, http, external (not downloaded by hound)
-	SourceURI           *string                    `xorm:"text 'source_uri'" json:"source_uri"`                // magnet uri with trackers / http link
-	FileIdx             *int                       `xorm:"'file_idx'" json:"file_idx"`                         // index for p2p only
-	DownloadPreferences *IngestDownloadPreferences `xorm:"'download_preferences'" json:"download_preferences"` // for season/auto downloads
-	LastMessage         *string                    `xorm:"text 'last_message'" json:"last_message"`            // store last error message
-	SourcePath          string                     `xorm:"text 'source_path'" json:"source_path"`              // path to source file/download path
-	DestinationPath     string                     `xorm:"text 'destination_path'" json:"destination_path"`    // path to final destination in hound media dir
-	TotalBytes          int64                      `xorm:"'total_bytes'" json:"total_bytes"`                   // total bytes to be downloaded
+	DownloadPriority    int                        `xorm:"'download_priority'" json:"download_priority"`             // priority of task, not used for now
+	RecordID            int64                      `xorm:"index 'record_id'" json:"record_id"`                       // episode or movie to be ingested
+	Status              string                     `xorm:"index 'status'" json:"status"`                             // pending_insert, processing, completed
+	DownloadProtocol    string                     `xorm:"'download_protocol'" json:"download_protocol"`             // p2p, http, external (not downloaded by hound)
+	SourceURI           *string                    `xorm:"text 'source_uri'" json:"source_uri"`                      // magnet uri with trackers / http link
+	FileIdx             *int                       `xorm:"'file_idx'" json:"file_idx"`                               // index for p2p only
+	DownloadPreferences *IngestDownloadPreferences `xorm:"jsonb 'download_preferences'" json:"download_preferences"` // for season/auto downloads
+	LastMessage         *string                    `xorm:"text 'last_message'" json:"last_message"`                  // store last error message
+	SourcePath          string                     `xorm:"text 'source_path'" json:"source_path"`                    // path to source file/download path
+	DestinationPath     string                     `xorm:"text 'destination_path'" json:"destination_path"`          // path to final destination in hound media dir
+	TotalBytes          int64                      `xorm:"'total_bytes'" json:"total_bytes"`                         // total bytes to be downloaded
 	DownloadedBytes     int64                      `xorm:"'downloaded_bytes'" json:"downloaded_bytes"`
 	DownloadSpeed       int64                      `xorm:"'download_speed'" json:"download_speed"`       // bytes per second
 	ConnectedSeeders    *int                       `xorm:"'connected_seeders'" json:"connected_seeders"` // number of seeders (p2p only)
@@ -117,7 +117,7 @@ type DownloadPreferenceInfoHash struct {
 
 type DownloadPreferenceString struct {
 	MatchString   string `json:"match_string"`
-	CaseSensitive string `json:"case_sensitive"`
+	CaseSensitive bool   `json:"case_sensitive"`
 }
 
 // ingest_jobs track ingestion of files from download -> inserted into hound
@@ -239,18 +239,12 @@ func GetIngestTask(task IngestTask) (*IngestTask, error) {
 	return &task, err
 }
 
-func InsertIngestTask(recordID int64, downloadType string, status string,
-	sourceURI string, fileIdx *int) (bool, *IngestTask, error) {
-	task := IngestTask{
-		RecordID:         recordID,
-		DownloadPriority: 1,
-		DownloadProtocol: downloadType,
-		Status:           status,
-		SourceURI:        &sourceURI,
-		FileIdx:          fileIdx,
+func InsertIngestTask(task *IngestTask) (bool, *IngestTask, error) {
+	if task.DownloadPriority == 0 {
+		task.DownloadPriority = 1
 	}
-	_, err := databaseEngine.Table(IngestTasksTable).Insert(&task)
-	return true, &task, err
+	_, err := databaseEngine.Table(IngestTasksTable).Insert(task)
+	return true, task, err
 }
 
 func UpdateIngestTask(task *IngestTask) (int, error) {
