@@ -11,7 +11,7 @@ interface IngestTaskFullRecord {
   ingest_task_id: string;
   record_id: string;
   status: string;
-  download_type: string;
+  download_protocol: string;
   source_uri: string;
   file_idx: string;
   last_message: string;

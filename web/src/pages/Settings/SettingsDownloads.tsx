@@ -94,7 +94,7 @@ function DownloadCard({ item }: { item: any }) {
       <CardContent className="download-card-content">
         <h5>{title}</h5>
         <div className="text-muted">
-          {"Download Type: " + item.download_type}
+          {"Download Type: " + item.download_protocol}
         </div>
         <div>{statusLabel}</div>
         {item.status === "downloading" && downloadingUI({ item })}

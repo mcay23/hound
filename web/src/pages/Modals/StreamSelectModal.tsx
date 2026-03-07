@@ -53,11 +53,7 @@ function SelectStreamModal(props: any) {
                         size="sm"
                         onClick={() => {
                           axios
-                            .post(
-                              "/api/v1/stream/" +
-                                stream.encoded_data +
-                                "/download",
-                            )
+                            .post("/api/v1/download/" + stream.encoded_data)
                             .then((res) => {
                               toast.success("Download added to queue");
                             })

@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -70,14 +71,41 @@ func downloadWorker(id int) {
 }
 
 func processTask(workerID int, task *database.IngestTask) {
+	// shouldn't happen, all flows should have sourceURI
+	if task.SourceURI == nil {
+		helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Task is missing sourceURI please report this issue on Github"+
+			strconv.Itoa(int(task.IngestTaskID)))
+		failTask(task, fmt.Errorf("task is missing source URI - please report this issue on Github"))
+		return
+	}
 	slog.Info("Worker picked up download task", "workerID", workerID,
 		"taskID", task.IngestTaskID, "sourceURI", *task.SourceURI)
-	if strings.HasPrefix(*task.SourceURI, "http") {
+
+	var infoHash string
+	if task.DownloadProtocol == database.ProtocolP2P {
+		magnet, err := metainfo.ParseMagnetUri(*task.SourceURI)
+		if err == nil {
+			infoHash = magnet.InfoHash.HexString()
+		}
+	}
+	err := model.CheckDuplicateDownloadTask(task.RecordID, task.IngestTaskID, task.DownloadProtocol, *task.SourceURI, infoHash, task.FileIdx)
+	if err != nil {
+		slog.Info("Task is a duplicate, failing", "taskID", task.IngestTaskID, "error", err)
+		failTask(task, err)
+		return
+	}
+	switch task.DownloadProtocol {
+	case database.ProtocolProxyHTTP:
 		// http case
 		startHTTPDownloadV2(workerID, task)
-	} else {
+	case database.ProtocolP2P:
 		// p2p download case
 		startP2PDownload(workerID, task)
+	default:
+		slog.Error("Invalid download protocol", "taskID", task.IngestTaskID,
+			"protocol", task.DownloadProtocol)
+		failTask(task, fmt.Errorf("invalid download protocol"))
+		return
 	}
 }
 
@@ -461,7 +489,7 @@ func cancelTask(task *database.IngestTask) {
 	slog.Info("Task cancelled by user", "taskID", task.IngestTaskID, "uri", *task.SourceURI)
 
 	// protocol specific logic
-	if task.DownloadType != database.ProtocolP2P {
+	if task.DownloadProtocol != database.ProtocolP2P {
 		return
 	}
 
@@ -506,7 +534,7 @@ func failTask(task *database.IngestTask, err error) {
 	task.LastMessage = &errorMessage
 	task.FinishedAt = time.Now().UTC()
 	database.UpdateIngestTask(task)
-	if task.DownloadType == database.ProtocolExternal {
+	if task.DownloadProtocol == database.ProtocolExternal {
 		item, getErr := database.GetExternalLibraryItemByPath(task.SourcePath)
 		if getErr == nil && item != nil {
 			item.Status = database.ExternalLibraryItemStatusFailed

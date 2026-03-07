@@ -156,9 +156,9 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		return nil, parsed, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Unsupported media type")
 	}
 	tasks, err := database.FindIngestTasks(database.IngestTask{
-		RecordID:     ingestRecordID,
-		SourcePath:   cleanPath,
-		DownloadType: database.ProtocolExternal,
+		RecordID:         ingestRecordID,
+		SourcePath:       cleanPath,
+		DownloadProtocol: database.ProtocolExternal,
 	})
 	if err != nil {
 		return nil, parsed, err

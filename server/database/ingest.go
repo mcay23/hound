@@ -26,6 +26,11 @@ const (
 	ProtocolExternal  = "external"
 )
 
+const (
+	MatchTypeInfoHash = "match_infohash"
+	MatchTypeString   = "match_string"
+)
+
 // tasks in terminal statuses won't change, retries must be made as a new task
 var (
 	IngestTerminalStatuses = []string{
@@ -43,25 +48,26 @@ var (
 )
 
 type IngestTask struct {
-	IngestTaskID     int64     `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
-	DownloadPriority int       `xorm:"'download_priority'" json:"download_priority"`    // priority of task, not used for now
-	RecordID         int64     `xorm:"index 'record_id'" json:"record_id"`              // episode or movie to be ingested
-	Status           string    `xorm:"index 'status'" json:"status"`                    // pending_insert, processing, completed
-	DownloadType     string    `xorm:"'download_type'" json:"download_type"`            // p2p, http, external (not downloaded by hound)
-	SourceURI        *string   `xorm:"text 'source_uri'" json:"source_uri"`             // magnet uri with trackers / http link
-	FileIdx          *int      `xorm:"'file_idx'" json:"file_idx"`                      // index for  only
-	LastMessage      *string   `xorm:"text 'last_message'" json:"last_message"`         // store last error message
-	SourcePath       string    `xorm:"text 'source_path'" json:"source_path"`           // path to source file/download path
-	DestinationPath  string    `xorm:"text 'destination_path'" json:"destination_path"` // path to final destination in hound media dir
-	TotalBytes       int64     `xorm:"'total_bytes'" json:"total_bytes"`                // total bytes to be downloaded
-	DownloadedBytes  int64     `xorm:"'downloaded_bytes'" json:"downloaded_bytes"`
-	DownloadSpeed    int64     `xorm:"'download_speed'" json:"download_speed"`       // bytes per second
-	ConnectedSeeders *int      `xorm:"'connected_seeders'" json:"connected_seeders"` // number of seeders (p2p only)
-	LastSeen         time.Time `xorm:"timestampz last_seen" json:"last_seen"`        // track stale download/copy jobs
-	StartedAt        time.Time `xorm:"timestampz started_at" json:"started_at"`      // time queued task was started
-	FinishedAt       time.Time `xorm:"timestampz finished_at" json:"finished_at"`
-	CreatedAt        time.Time `xorm:"timestampz index created" json:"created_at"`
-	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
+	IngestTaskID        int64                      `xorm:"pk autoincr 'ingest_task_id'" json:"ingest_task_id"`
+	DownloadPriority    int                        `xorm:"'download_priority'" json:"download_priority"`       // priority of task, not used for now
+	RecordID            int64                      `xorm:"index 'record_id'" json:"record_id"`                 // episode or movie to be ingested
+	Status              string                     `xorm:"index 'status'" json:"status"`                       // pending_insert, processing, completed
+	DownloadProtocol    string                     `xorm:"'download_protocol'" json:"download_protocol"`       // p2p, http, external (not downloaded by hound)
+	SourceURI           *string                    `xorm:"text 'source_uri'" json:"source_uri"`                // magnet uri with trackers / http link
+	FileIdx             *int                       `xorm:"'file_idx'" json:"file_idx"`                         // index for p2p only
+	DownloadPreferences *IngestDownloadPreferences `xorm:"'download_preferences'" json:"download_preferences"` // for season/auto downloads
+	LastMessage         *string                    `xorm:"text 'last_message'" json:"last_message"`            // store last error message
+	SourcePath          string                     `xorm:"text 'source_path'" json:"source_path"`              // path to source file/download path
+	DestinationPath     string                     `xorm:"text 'destination_path'" json:"destination_path"`    // path to final destination in hound media dir
+	TotalBytes          int64                      `xorm:"'total_bytes'" json:"total_bytes"`                   // total bytes to be downloaded
+	DownloadedBytes     int64                      `xorm:"'downloaded_bytes'" json:"downloaded_bytes"`
+	DownloadSpeed       int64                      `xorm:"'download_speed'" json:"download_speed"`       // bytes per second
+	ConnectedSeeders    *int                       `xorm:"'connected_seeders'" json:"connected_seeders"` // number of seeders (p2p only)
+	LastSeen            time.Time                  `xorm:"timestampz last_seen" json:"last_seen"`        // track stale download/copy jobs
+	StartedAt           time.Time                  `xorm:"timestampz started_at" json:"started_at"`      // time queued task was started
+	FinishedAt          time.Time                  `xorm:"timestampz finished_at" json:"finished_at"`
+	CreatedAt           time.Time                  `xorm:"timestampz index created" json:"created_at"`
+	UpdatedAt           time.Time                  `xorm:"timestampz updated" json:"updated_at"`
 }
 
 type IngestTaskFullRecord struct {
@@ -70,6 +76,48 @@ type IngestTaskFullRecord struct {
 	MovieMediaRecord   *MediaRecord `json:"movie_media_record,omitempty"`
 	EpisodeMediaRecord *MediaRecord `json:"episode_media_record,omitempty"`
 	ShowMediaRecord    *MediaRecord `json:"show_media_record,omitempty"`
+}
+
+/*
+This defines download preferences when the user downloads downloads automatically
+eg. Downloading a whole season. The download worker search current providers, and gets
+the best match based on the preferences.
+
+Flow:
+1. Providers return a list of sources
+2. The first preference from the PreferenceList is evaluated
+3. The first source from the providers response is evaluated
+4. If a match is found, this becomes the task's sourceURI
+5. Else, repeat the process with the second, third, ... preference until
+a match is found
+6. If no match is found, choose the first result or fail the task depending
+on StrictMatch
+
+Note that AIOStreams is recommended for basically all users, and this has even
+more robust sort/filter systems, it's recommended to use that to set quality,
+resolution, bitrate, language preferences.
+
+This is mostly to help downloading seasons, so we can more consistently download
+episodes from the same torrent based on string matching or infohash matching
+*/
+type IngestDownloadPreferences struct {
+	StrictMatch    bool                 `json:"strict_match"` // whether if no match is found, to fail the download
+	PreferenceList []DownloadPreference `json:"preference_list"`
+}
+
+type DownloadPreference struct {
+	MatchType             string                      `json:"match_type"`
+	InfoHashPreference    *DownloadPreferenceInfoHash `json:"info_hash_preference,omitempty"`
+	StringMatchPreference *DownloadPreferenceString   `json:"string_match_preference,omitempty"`
+}
+
+type DownloadPreferenceInfoHash struct {
+	InfoHash string `json:"info_hash"`
+}
+
+type DownloadPreferenceString struct {
+	MatchString   string `json:"match_string"`
+	CaseSensitive string `json:"case_sensitive"`
 }
 
 // ingest_jobs track ingestion of files from download -> inserted into hound
@@ -196,7 +244,7 @@ func InsertIngestTask(recordID int64, downloadType string, status string,
 	task := IngestTask{
 		RecordID:         recordID,
 		DownloadPriority: 1,
-		DownloadType:     downloadType,
+		DownloadProtocol: downloadType,
 		Status:           status,
 		SourceURI:        &sourceURI,
 		FileIdx:          fileIdx,
@@ -228,6 +276,7 @@ func GetNextPendingDownloadTask() (*IngestTask, error) {
 	if err := sess.Begin(); err != nil {
 		return nil, err
 	}
+	// postgres for update to prevent race conditions
 	has, err := sess.SQL("SELECT * FROM "+IngestTasksTable+" WHERE status = ? ORDER BY ingest_task_id ASC LIMIT 1 FOR UPDATE",
 		IngestStatusPendingDownload).Get(&task)
 	if err != nil {

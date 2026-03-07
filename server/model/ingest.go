@@ -58,48 +58,10 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 		}
 		ingestRecordID = episodeRecord.RecordID
 	}
-	// 2. Check if a non-terminal (downloading, queued) task already exists
-	tasks, err := database.FindIngestTasks(database.IngestTask{
-		SourceURI: &streamDetails.URI,
-		RecordID:  ingestRecordID,
-	})
+	// 2. Check if a non-terminal task or media file already exists with same infoHash
+	err = CheckDuplicateDownloadTask(ingestRecordID, -1, streamDetails.StreamProtocol, streamDetails.URI, streamDetails.InfoHash, streamDetails.FileIdx)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when downloading")
-	}
-	for _, task := range tasks {
-		// note that we don't check for 'done' state since the file may have been deleted afterwards
-		if !slices.Contains(database.IngestTerminalStatuses, task.Status) && task.SourceURI != nil {
-			uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
-			if err != nil {
-				continue
-			}
-			infoHash := uri.InfoHash.HexString()
-			if strings.EqualFold(infoHash, streamDetails.InfoHash) {
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
-					"Ingest task already exists - downloading/queued")
-			}
-		}
-	}
-	// 3. Check if media file already exists for this movie/episode record
-	mediaFiles, err := database.GetMediaFileByRecordID(int(ingestRecordID))
-	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to get media files when downloading")
-	}
-	for _, mediaFile := range mediaFiles {
-		if mediaFile.SourceURI != nil {
-			uri, err := metainfo.ParseMagnetUri(*mediaFile.SourceURI)
-			if err != nil {
-				continue
-			}
-			infoHash := uri.InfoHash.HexString()
-			// matching infohash, same file
-			// there's an unhandled edge case where a single torrent may have
-			// multiple versions of the same movie/episode, which is unhandled here
-			if strings.EqualFold(infoHash, streamDetails.InfoHash) {
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
-					"Ingest task already exists - file already downloaded")
-			}
-		}
+		return err
 	}
 	// 3. Insert ingest task
 	// upsert has suceeded, if something else fails database won't be rolled back, which is fine
@@ -109,6 +71,87 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull) error {
 		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
 	}
 	slog.Info("Ingest task inserted successfully", "ingestTask", ingestTask)
+	return nil
+}
+
+/*
+CheckDuplicateDownloadTask checks if a download task is a duplicate (already downloaded or being downloaded)
+This is not a fool-proof check, false negatives may occur
+*/
+func CheckDuplicateDownloadTask(recordID int64, currentTaskID int64, protocol string, sourceURI string, currInfoHash string, currFileIdx *int) error {
+	if sourceURI == "" {
+		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "sourceURI is empty")
+	}
+	tasks, err := database.FindIngestTasks(database.IngestTask{
+		RecordID: recordID,
+	})
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when checking duplicate")
+	}
+	// 1. Check ingest tasks for queued/downloaded tasks for this particular record
+	for _, task := range tasks {
+		if task.IngestTaskID == currentTaskID || task.DownloadProtocol != protocol {
+			continue
+		}
+		// note that we skip 'done' tasks since there's no guarantee the file
+		// still exists even if it was downloaded before
+		if !slices.Contains(database.IngestTerminalStatuses, task.Status) && task.SourceURI != nil {
+			// for http case, same sourceURI will be the same file
+			switch protocol {
+			case database.ProtocolProxyHTTP:
+				if *task.SourceURI == sourceURI {
+					return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+				}
+			case database.ProtocolP2P:
+				// for p2p case, sourceURI is the magnetURI w/ trackers, depending on the file index
+				// it might be a different file. Here, we know that the episode/movie record is the
+				// same, but technically you might be downloading a different version of a movie
+				// from the same magnet torrent, so we check for fileidx equality
+				magnet, err := metainfo.ParseMagnetUri(*task.SourceURI)
+				// check if task's sourceURI has the same torrent infohash
+				if err == nil && strings.EqualFold(magnet.InfoHash.HexString(), currInfoHash) {
+					// if it does, we still need to know if the file idx is the same
+					if currFileIdx != nil && task.FileIdx != nil && *currFileIdx == *task.FileIdx {
+						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+					} else if currFileIdx == nil && task.FileIdx == nil {
+						// when both is nil, some providers implicitly expect largest file
+						// here, we assume it refers to the same file
+						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+					}
+				}
+			}
+		}
+	}
+	// 2. Check against media_files table
+	mediaFiles, err := database.GetMediaFileByRecordID(int(recordID))
+	if err != nil {
+		return helpers.LogErrorWithMessage(err, "Failed to get media files when checking duplicate")
+	}
+	for _, mediaFile := range mediaFiles {
+		// files may have been loaded in different ways, sourceURI not guaranteed to always
+		// exist for ingested files (?). If sourceURI doesn't exist, we have no reliable way to
+		// check for duplicates unless we use a video hashing algorithm
+		if mediaFile.SourceURI != nil {
+			// if unable to find file (manually deleted?), skip
+			_, err := os.Stat(mediaFile.Filepath)
+			if os.IsNotExist(err) {
+				continue
+			}
+			if protocol == database.ProtocolProxyHTTP && strings.HasPrefix(*mediaFile.SourceURI, "http") &&
+				*mediaFile.SourceURI == sourceURI {
+				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+			} else if protocol == database.ProtocolP2P {
+				magnet, err := metainfo.ParseMagnetUri(*mediaFile.SourceURI)
+				if err == nil && strings.EqualFold(magnet.InfoHash.HexString(), currInfoHash) {
+					if currFileIdx != nil && mediaFile.FileIdx != nil && *currFileIdx == *mediaFile.FileIdx {
+						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+					} else if currFileIdx == nil && mediaFile.FileIdx == nil {
+						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

@@ -42,7 +42,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	var infoHashStr string
 	var infoHash *string
 	// p2p case, for external ingests we don't know the source
-	if task.DownloadType == database.ProtocolP2P && task.SourceURI != nil {
+	if task.DownloadProtocol == database.ProtocolP2P && task.SourceURI != nil {
 		uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
 		if err == nil {
 			infoHashStr = uri.InfoHash.HexString()
@@ -89,7 +89,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 		return
 	}
 	var mediaFile *database.MediaFile
-	if task.DownloadType == database.ProtocolExternal {
+	if task.DownloadProtocol == database.ProtocolExternal {
 		mediaFile, err = model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath, model.IngestTransferPreserve, database.FileOriginExternalLibrary)
 	} else {
 		mediaFile, err = model.IngestFile(ingestRecord, seasonNum, episodeNum, infoHash, task.FileIdx, task.SourceURI, task.SourcePath, model.IngestTransferMove, database.FileOriginHoundManaged)
@@ -107,7 +107,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	if err != nil {
 		slog.Error("Failed to update ingest task status", "taskID", task.IngestTaskID, "error", err)
 	}
-	if task.DownloadType == database.ProtocolExternal {
+	if task.DownloadProtocol == database.ProtocolExternal {
 		item, getErr := database.GetExternalLibraryItemByPath(task.SourcePath)
 		if getErr == nil && item != nil {
 			now := time.Now().UTC()
