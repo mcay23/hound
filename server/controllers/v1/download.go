@@ -43,7 +43,12 @@ func DownloadHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"status": "started"}, 200)
 }
 
-// Downloads a whole tv season based on the top result from the providers response
+/*
+Downloads a whole tv season based on the top result from the providers response
+and the given preferences (infohash, etc.)
+the source provider itself is resolved by the download worker when the episode
+is picked up. The idea is this will naturally rate-limit calls made to external sources
+*/
 func DownloadTVSeasonHandler(c *gin.Context) {
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {

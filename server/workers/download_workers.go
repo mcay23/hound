@@ -620,16 +620,27 @@ func resolveSourceURI(task *database.IngestTask) error {
 		for _, pref := range task.DownloadPreferences.PreferenceList {
 			for _, provider := range response.Providers {
 				for _, stream := range provider.Streams {
-					// skip if trying to download episode with nil fileidx for p2p
-					// in stremio responses, this is supposed to resolve to the file
-					// with the highest index, but if a season has multiple episodes,
-					// empty file index is probably wrong, since different episodes can
-					// resolve to the same file
-					if stream.StreamProtocol == database.ProtocolP2P &&
-						record.RecordType == database.RecordTypeEpisode &&
-						stream.FileIdx == nil {
-						continue
-					}
+					/*
+						skip if trying to download episode with nil fileidx for p2p
+						in stremio responses, this is supposed to resolve to the file
+						with the highest index, but if a season has multiple episodes,
+						empty file index is probably wrong, since different episodes can
+						resolve to the same file
+
+						if stream.StreamProtocol == database.ProtocolP2P &&
+							record.RecordType == database.RecordTypeEpisode &&
+							stream.FileIdx == nil {
+							continue
+						}
+
+						UPDATE: too strict, since it's possible to resolve to an episode
+						that is a standalone file and not in a season pack, which may have zero file idx
+
+						However, I've seen stremio responses that don't have a file_idx even though they
+						are part of a season pack, and different episodes resolve to the same file.
+
+						This remains a known edge case issue for now
+					*/
 					if pref.MatchType == database.MatchTypeInfoHash && pref.InfoHashPreference != nil {
 						if strings.EqualFold(stream.InfoHash, pref.InfoHashPreference.InfoHash) {
 							bestStream = stream
