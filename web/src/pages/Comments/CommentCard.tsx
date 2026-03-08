@@ -8,7 +8,7 @@ import {
   IconButton,
 } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import "./CommentCard.css";
 import { useState } from "react";
 import axios from "axios";
@@ -85,11 +85,6 @@ function CommentCard(props: any) {
           <Button onClick={handleDeleteItem}>Delete</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

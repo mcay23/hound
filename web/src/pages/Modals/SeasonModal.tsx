@@ -82,7 +82,9 @@ function SeasonModal(props: any) {
     Map<string, WatchProgressItem>
   >(() => new Map());
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
-  const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
+  const [isCreateHistoryModalOpen, setIsCreateHistoryModalOpen] =
+    useState(false);
+  const [isDownloadSeasonModalOpen, setIsDownloadSeasonModalOpen] =
     useState(false);
   const handleWatchEpisode = (
     season: number,
@@ -247,7 +249,23 @@ function SeasonModal(props: any) {
                     >
                       <IconButton
                         onClick={() => {
-                          setisCreateHistoryModalOpen(true);
+                          setIsCreateHistoryModalOpen(true);
+                        }}
+                      >
+                        <VisibilityIcon />
+                      </IconButton>
+                    </BootstrapTooltip>
+                    <BootstrapTooltip
+                      title={
+                        <span className="media-page-tv-header-button-tooltip-title">
+                          Download Season
+                        </span>
+                      }
+                      PopperProps={offsetFix}
+                    >
+                      <IconButton
+                        onClick={() => {
+                          setIsCreateHistoryModalOpen(true);
                         }}
                       >
                         <VisibilityIcon />
@@ -287,7 +305,7 @@ function SeasonModal(props: any) {
           </div>
           <CreateHistoryModal
             onClose={() => {
-              setisCreateHistoryModalOpen(false);
+              setIsCreateHistoryModalOpen(false);
             }}
             open={isCreateHistoryModalOpen}
             type={"season"}

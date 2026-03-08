@@ -1,5 +1,5 @@
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import ItemCard from "../Home/ItemCard";
 import "./Reviews.css";
 import {
@@ -163,11 +163,6 @@ function Reviews(props: any) {
           <Button onClick={handlePostReview}>Post</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

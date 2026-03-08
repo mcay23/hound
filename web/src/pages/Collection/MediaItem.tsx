@@ -8,7 +8,7 @@ import {
   DialogTitle,
   IconButton,
 } from "@mui/material";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import ClearIcon from "@mui/icons-material/Clear";
 import { useState } from "react";
 import axios from "axios";
@@ -109,11 +109,6 @@ function MediaItem(props: any) {
           <Button onClick={handleDeleteItem}>Delete</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

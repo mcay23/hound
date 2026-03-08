@@ -1,13 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import Topnav from "../Topnav";
 import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
 import MediaPageGame from "./MediaPageGame";
-import toast, { Toaster } from "react-hot-toast";
-import Footer from "../Footer";
+import toast from "react-hot-toast";
 
 function MediaPageLanding() {
   const [data, setData] = useState<any[]>([]);
@@ -49,18 +47,11 @@ function MediaPageLanding() {
   }
   return (
     <>
-      <Topnav />
       {isDataLoaded ? (
         <>{mediaComponent}</>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
-      <Footer />
     </>
   );
 }

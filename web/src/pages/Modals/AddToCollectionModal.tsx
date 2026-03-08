@@ -6,7 +6,7 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import "./AddToCollectionModal.css";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -99,11 +99,6 @@ function AddToCollectionModal(props: any) {
           )}
         </div>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

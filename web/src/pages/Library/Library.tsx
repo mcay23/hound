@@ -1,7 +1,6 @@
 import "./Library.css";
-import Topnav from "../Topnav";
-import { useState, useMemo } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import CollectionCard from "./CollectionCover";
 import HorizontalSection from "../Home/HorizontalSection";
 import {
@@ -76,7 +75,6 @@ function Library(props: any) {
 
   return (
     <>
-      <Topnav />
       {isLoaded ? (
         <div className="library-main-container">
           <div className="library-top-section-container">
@@ -156,12 +154,6 @@ function Library(props: any) {
           <Button onClick={handleCreateCollection}>Create</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
-      <Footer />
     </>
   );
 }

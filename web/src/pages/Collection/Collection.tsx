@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import "./Collection.css";
-import Topnav from "../Topnav";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -17,8 +16,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import MediaItem from "./MediaItem";
 import CollectionCover from "../Library/CollectionCover";
-import toast, { Toaster } from "react-hot-toast";
-import Footer from "../Footer";
+import toast from "react-hot-toast";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
@@ -100,7 +98,6 @@ function Collection(props: any) {
   }
   return (
     <>
-      <Topnav />
       {isCollectionDataLoaded ? (
         <>
           <div className="collection-main-section">
@@ -195,16 +192,10 @@ function Collection(props: any) {
               <Button onClick={handleDeleteCollection}>Delete</Button>
             </DialogActions>
           </Dialog>
-          <Toaster
-            toastOptions={{
-              duration: 5000,
-            }}
-          />
         </>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Footer />
     </>
   );
 }

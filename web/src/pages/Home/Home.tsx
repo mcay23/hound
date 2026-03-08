@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import Topnav from "../Topnav";
 import HorizontalSection from "./HorizontalSection";
 import SearchBar from "./SearchBar";
 import "./Home.css";
@@ -41,7 +40,6 @@ function Home() {
 
   return (
     <>
-      <Topnav />
       <div
         className="home-page-search-section"
         style={backdropURI ? styles.withBackdrop : {}}

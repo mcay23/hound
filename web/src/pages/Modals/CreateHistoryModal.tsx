@@ -6,7 +6,7 @@ import {
   TextField,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import axios from "axios";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useState } from "react";
@@ -43,7 +43,7 @@ function CreateHistoryModal(props: any) {
   const createHistoryHandler = () => {
     if (createHistoryData.watched_at === "") {
       alert(
-        "unset date (bug, should not be possible, please report in github)"
+        "unset date (bug, should not be possible, please report in github)",
       );
       return;
     }
@@ -113,11 +113,6 @@ function CreateHistoryModal(props: any) {
           <Button onClick={createHistoryHandler}>Ok</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

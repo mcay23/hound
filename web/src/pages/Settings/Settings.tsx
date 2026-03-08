@@ -7,14 +7,12 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import Topnav from "../Topnav";
 import "./Settings.css";
 import SettingsDownloads from "./SettingsDownloads";
 
 function Settings(props: any) {
   return (
     <>
-      <Topnav />
       <div className="settings-main-container">
         <div className="d-flex">
           <Drawer

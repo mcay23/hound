@@ -17,6 +17,8 @@ import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
 import Settings from "./pages/Settings/Settings";
+import { Toaster } from "react-hot-toast";
+import Topnav from "./pages/Topnav";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +89,12 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Toaster
+        toastOptions={{
+          duration: 5000,
+        }}
+      />
+      <Topnav />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>

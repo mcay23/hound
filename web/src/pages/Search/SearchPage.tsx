@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import LinearProgress from "@mui/material/LinearProgress";
 import HorizontalSection from "../Home/HorizontalSection";
 import SearchBar from "../Home/SearchBar";
-import Topnav from "../Topnav";
 import "./SearchPage.css";
 
 function SearchPage(props: any) {
@@ -55,7 +54,6 @@ function SearchPage(props: any) {
   }
   return (
     <>
-      <Topnav />
       <div
         className="search-page-search-section"
         style={backdropURI ? styles.withBackdrop : {}}
