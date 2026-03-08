@@ -41,7 +41,14 @@ function SelectStreamModal(props: {
           PaperProps={paperPropsGlass}
         >
           <div className="stream-info-card-container">
-            {streamData?.streams?.map((stream: any) => {
+            {modalType === "download-season" ? (
+              <div className="px-4 mb-3 h5">
+                Choose a season pack to prioritize...
+              </div>
+            ) : (
+              ""
+            )}
+            {streamData?.map((stream: any) => {
               return (
                 <div className="stream-info-card" key={stream.infohash}>
                   <div
@@ -50,9 +57,18 @@ function SelectStreamModal(props: {
                       if (stream) {
                         // for season pack downloader, sets this stream as the one
                         // to reference the infohash
-                        setMainStream(stream);
                         if (modalType === "select-stream") {
+                          setMainStream(stream);
                           setIsStreamModalOpen?.(true);
+                        } else if (modalType === "download-season") {
+                          if (!stream.info_hash || stream.info_hash === "") {
+                            toast.error(
+                              "This season pack doesn't have a valid info hash, please select another pack",
+                            );
+                            return;
+                          }
+                          setMainStream(stream);
+                          setOpen(false);
                         }
                       }
                     }}

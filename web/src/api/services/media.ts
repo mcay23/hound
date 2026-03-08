@@ -30,10 +30,10 @@ interface IngestTaskFullRecord {
   media_type: string;
 }
 
-const MatchTypeString = "match_string" as const;
-const MatchTypeInfoHash = "info_hash" as const;
+export const MatchTypeString = "match_string" as const;
+export const MatchTypeInfoHash = "info_hash" as const;
 
-type DownloadPreference =
+export type DownloadPreference =
   | {
       match_type: typeof MatchTypeString;
       string_match_preference: {
@@ -49,6 +49,7 @@ type DownloadPreference =
     };
 
 export interface SeasonDownloadPreferences {
+  episodes_to_download: number[];
   strict_match: boolean;
   skip_downloaded_episodes: boolean;
   preference_list: DownloadPreference[];

@@ -9,11 +9,11 @@ import {
   Pagination,
 } from "@mui/material";
 import { useDownloads } from "../../api/hooks/media";
-import "./SettingsDownloads.css";
+import "./AdminDownloads.css";
 import { cancelDownload } from "../../api/services/media";
 import { useState } from "react";
 
-function SettingsDownloads() {
+function AdminDownloads() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -106,6 +106,7 @@ function DownloadCard({ item }: { item: any }) {
         <div>{statusLabel}</div>
         {item.status === "downloading" && downloadingUI({ item })}
         {item.status === "done" && doneUI({ item })}
+        <div>{getFilename(item.source_path)}</div>
       </CardContent>
     </Card>
   );
@@ -167,6 +168,28 @@ function doneUI({ item }: { item: any }) {
   );
 }
 
+/*
+  parses: Hound Data\Downloads\p2p\1239as5338dd2919a8af5ecd5fe2413c7db081ade\Show A (Season 1)\Show A - S01E10.mkv
+  to: Show A (Season 1)\Show A - S01E10.mkv
+*/
+function getFilename(path: string) {
+  let name = undefined;
+  if (path.includes("\\p2p\\")) {
+    let temp = path.split("\\p2p\\")?.[1].split("\\");
+    if (temp.length === 3) {
+      name = temp[1] + "\\" + temp[2];
+    } else {
+      name = path.split("\\p2p\\")?.[1];
+    }
+  } else if (path.includes("\\http\\")) {
+    name = path.split("\\").pop();
+  }
+  if (!name || name == "") {
+    return path;
+  }
+  return name;
+}
+
 function getStatusChip(status: string) {
   let color: ChipProps["color"] = "primary";
   if (status === "done") {
@@ -177,4 +200,4 @@ function getStatusChip(status: string) {
   const label = status[0].toUpperCase() + status.slice(1);
   return <Chip label={label} color={color} />;
 }
-export default SettingsDownloads;
+export default AdminDownloads;

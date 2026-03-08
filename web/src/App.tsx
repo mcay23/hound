@@ -16,9 +16,9 @@ import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
-import Settings from "./pages/Settings/Settings";
 import { Toaster } from "react-hot-toast";
 import Topnav from "./pages/Topnav";
+import Admin from "./pages/Admin/Admin";
 
 const queryClient = new QueryClient();
 
@@ -110,8 +110,8 @@ function App() {
                 element={<ProtectedRoute component={<Logout />} />}
               />
               <Route
-                path="settings"
-                element={<ProtectedRoute component={<Settings />} />}
+                path="admin"
+                element={<ProtectedRoute component={<Admin />} />}
               />
               <Route
                 path="library"

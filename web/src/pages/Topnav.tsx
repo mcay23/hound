@@ -35,8 +35,8 @@ function Topnav() {
             </Nav.Link> */}
           </Nav>
           {/* <SearchBar type={"nav"} /> */}
-          <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/settings">
-            Settings
+          <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/admin">
+            Admin
           </Nav.Link>
           <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/logout">
             Logout

@@ -5,10 +5,10 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import "./Settings.css";
-import SettingsDownloads from "./SettingsDownloads";
+import "./Admin.css";
+import AdminDownloads from "./AdminDownloads";
 
-function Settings(props: any) {
+function Admin(props: any) {
   return (
     <>
       <div className="settings-main-container">
@@ -46,7 +46,7 @@ function Settings(props: any) {
             </List>
           </Drawer>
           <div className="settings-content">
-            <SettingsDownloads />
+            <AdminDownloads />
           </div>
         </div>
       </div>
@@ -54,4 +54,4 @@ function Settings(props: any) {
   );
 }
 
-export default Settings;
+export default Admin;
