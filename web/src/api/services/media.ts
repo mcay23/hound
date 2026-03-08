@@ -31,7 +31,7 @@ interface IngestTaskFullRecord {
 }
 
 export const MatchTypeString = "match_string" as const;
-export const MatchTypeInfoHash = "info_hash" as const;
+export const MatchTypeInfoHash = "match_info_hash" as const;
 
 export type DownloadPreference =
   | {
@@ -47,13 +47,6 @@ export type DownloadPreference =
         info_hash: string;
       };
     };
-
-export interface SeasonDownloadPreferences {
-  episodes_to_download: number[];
-  strict_match: boolean;
-  skip_downloaded_episodes: boolean;
-  preference_list: DownloadPreference[];
-}
 
 export const fetchDownloads = async (limit: number, offset: number) => {
   const { data } = await axios.get<GetIngestTasksResponse>("/api/v1/ingest", {
@@ -86,12 +79,22 @@ export const fetchMediaFiles = async (
   return data;
 };
 
+export interface SeasonDownloadPayload {
+  episodes_to_download: number[];
+  strict_match: boolean;
+  skip_downloaded_episodes: boolean;
+  preference_list: DownloadPreference[];
+}
+
 type DownloadSeasonParams = {
   mediaType: string;
   mediaSource: string;
   sourceID: string;
   seasonNum?: number | null;
-  preferences?: SeasonDownloadPreferences;
+  episodesToDownload?: number[];
+  strictMatch: boolean;
+  skipDownloadedEpisodes: boolean;
+  preferenceList?: DownloadPreference[];
 };
 
 export const downloadSeason = async ({
@@ -99,11 +102,21 @@ export const downloadSeason = async ({
   mediaSource,
   sourceID,
   seasonNum,
-  preferences,
+  episodesToDownload,
+  strictMatch,
+  skipDownloadedEpisodes,
+  preferenceList: preferenceList,
 }: DownloadSeasonParams) => {
+  const payload = {
+    episodes_to_download: episodesToDownload,
+    strict_match: strictMatch,
+    skip_downloaded_episodes: skipDownloadedEpisodes,
+    preference_list: preferenceList
+  }
+  console.log(payload)
   const { data } = await axios.post(
-    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/${seasonNum}/download`,
-    preferences,
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/season/${seasonNum}/download`,
+    payload,
   );
   return data;
 };

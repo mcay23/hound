@@ -24,7 +24,6 @@ import {
   DownloadPreference,
   MatchTypeInfoHash,
   MatchTypeString,
-  SeasonDownloadPreferences,
 } from "../../api/services/media";
 import { useEffect, useMemo, useState } from "react";
 import { useProvidersMutation } from "../../api/hooks/providers";
@@ -43,7 +42,9 @@ function DownloadSeasonModal(props: any) {
     string | undefined
   >(undefined);
   const [caseSensitive, setCaseSensitive] = useState<boolean>(false);
-  const [episodesToDownload, setEpisodesToDownload] = useState<number[]>([]);
+  const [episodesToDownload, setEpisodesToDownload] = useState<
+    number[] | undefined
+  >(undefined);
 
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const downloadSeasonMutation = useDownloadSeason();
@@ -69,16 +70,6 @@ function DownloadSeasonModal(props: any) {
     }
     return prefs;
   }, [mainStream, preferredStringMatch, caseSensitive]);
-
-  const preferences: SeasonDownloadPreferences = useMemo(
-    () => ({
-      strict_match: strictMatch,
-      skip_downloaded_episodes: skipDownloaded,
-      preference_list: preferenceList,
-      episodes_to_download: episodesToDownload,
-    }),
-    [strictMatch, skipDownloaded, preferenceList],
-  );
 
   // get the first providers, to help users select season packs
   useEffect(() => {
@@ -124,15 +115,20 @@ function DownloadSeasonModal(props: any) {
   }, [open, mediaSource, sourceID, seasonData.season_number]);
 
   const handleConfirm = () => {
-    console.log(preferences);
-    return;
+    if (episodesToDownload !== undefined && episodesToDownload.length === 0) {
+      toast.error("Select at least 1 episode");
+      return;
+    }
     toast.promise(
       downloadSeasonMutation.mutateAsync({
         mediaType: "tv",
         mediaSource: mediaSource,
         sourceID: sourceID,
         seasonNum: seasonData.season_number,
-        preferences: preferences,
+        episodesToDownload: episodesToDownload,
+        strictMatch: strictMatch,
+        skipDownloadedEpisodes: skipDownloaded,
+        preferenceList: preferenceList,
       }),
       {
         loading: "Queueing download...",
@@ -341,38 +337,68 @@ function EpisodeSelector(props: any) {
   };
 
   return (
-    <FormControl fullWidth className="mt-2">
-      <InputLabel id="demo-multiple-checkbox-label">Episodes</InputLabel>
-      <Select
-        labelId="demo-multiple-checkbox-label"
-        id="demo-multiple-checkbox"
-        multiple
-        value={episodesToDownload}
-        onChange={handleChange}
-        input={<OutlinedInput label="Episodes" />}
-        renderValue={(selected) => selected.join(", ")}
-        MenuProps={MenuProps}
-      >
-        {episodesData.map((ep: any) => {
-          const selected = episodesToDownload?.includes(ep.episode_number);
-          const SelectionIcon = selected
-            ? CheckBoxIcon
-            : CheckBoxOutlineBlankIcon;
+    <>
+      <FormControl fullWidth className="mt-2">
+        <InputLabel id="demo-multiple-checkbox-label">Episodes</InputLabel>
+        <Select
+          labelId="demo-multiple-checkbox-label"
+          id="demo-multiple-checkbox"
+          multiple
+          value={episodesToDownload}
+          onChange={handleChange}
+          input={<OutlinedInput label="Episodes" />}
+          renderValue={(selected) => selected.join(", ")}
+          MenuProps={MenuProps}
+        >
+          {episodesData.map((ep: any) => {
+            const selected = episodesToDownload?.includes(ep.episode_number);
+            const SelectionIcon = selected
+              ? CheckBoxIcon
+              : CheckBoxOutlineBlankIcon;
 
-          return (
-            <MenuItem key={ep.episode_number} value={ep.episode_number}>
-              <SelectionIcon
-                fontSize="small"
-                style={{ marginRight: 8, padding: 9, boxSizing: "content-box" }}
-              />
-              <ListItemText
-                primary={`S${ep.season_number}E${ep.episode_number} - ${ep.media_title}`}
-              />
-            </MenuItem>
-          );
-        })}
-      </Select>
-    </FormControl>
+            return (
+              <MenuItem key={ep.episode_number} value={ep.episode_number}>
+                <SelectionIcon
+                  fontSize="small"
+                  style={{
+                    marginRight: 8,
+                    padding: 9,
+                    boxSizing: "content-box",
+                  }}
+                />
+                <ListItemText
+                  primary={`S${ep.season_number}E${ep.episode_number} - ${ep.media_title}`}
+                />
+              </MenuItem>
+            );
+          })}
+        </Select>
+      </FormControl>
+      <div className="mt-3">
+        {episodesToDownload && episodesToDownload.length > 0 ? (
+          <Button
+            onClick={() => setEpisodesToDownload([])}
+            variant="outlined"
+            className="mb-2"
+          >
+            Clear Selection
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              const episodesList = episodesData.map(
+                (ep: any) => ep.episode_number,
+              );
+              setEpisodesToDownload(episodesList);
+            }}
+            variant="outlined"
+            className="mb-2"
+          >
+            Select All
+          </Button>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -7,6 +7,7 @@ import (
 	"hound/model"
 	"hound/model/providers"
 	"hound/sources"
+	"slices"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,8 @@ import (
 
 type TVSeasonDownloadRequest struct {
 	database.IngestDownloadPreferences
-	SkipDownloadedEpisodes *bool `json:"skip_downloaded_episodes,omitempty"`
+	SkipDownloadedEpisodes *bool  `json:"skip_downloaded_episodes,omitempty"`
+	EpisodesToDownload     *[]int `json:"episodes_to_download,omitempty"`
 }
 
 // This downloads the media file to the server, not the client
@@ -84,13 +86,28 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get tv season details"))
 		return
 	}
+	if request.EpisodesToDownload != nil && len(*request.EpisodesToDownload) == 0 {
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+			"Empty episodes_to_download passed, either fill this or omit this field to download all episodes"))
+		return
+	}
 	queuedEpisodes := []int{}
 	type skippedEpisode struct {
-		EpisodeNumber int    `json:"episode_number"`
-		Error         string `json:"error"`
+		EpisodeNumber int     `json:"episode_number"`
+		Error         *string `json:"error,omitempty"`
 	}
 	var skippedEpisodes []skippedEpisode
 	for _, ep := range seasonDetails.Episodes {
+		if request.EpisodesToDownload != nil {
+			if !slices.Contains(*request.EpisodesToDownload, ep.EpisodeNumber) {
+				ep := skippedEpisode{
+					EpisodeNumber: ep.EpisodeNumber,
+					Error:         nil,
+				}
+				skippedEpisodes = append(skippedEpisodes, ep)
+				continue
+			}
+		}
 		streamObj := &providers.StreamObjectFull{
 			StreamMediaDetails: providers.StreamMediaDetails{
 				MediaSource:   sources.MediaSourceTMDB,
@@ -111,9 +128,10 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 		// if ignoreDownloaded is true, and file already exists, AlreadyExists error is returned
 		err = model.CreateIngestTaskDownload(streamObj, prefsPtr, skipDownloaded)
 		if err != nil {
+			errMsg := err.Error()
 			ep := skippedEpisode{
 				EpisodeNumber: ep.EpisodeNumber,
-				Error:         err.Error(),
+				Error:         &errMsg,
 			}
 			skippedEpisodes = append(skippedEpisodes, ep)
 			if err.Error() == helpers.AlreadyExists {

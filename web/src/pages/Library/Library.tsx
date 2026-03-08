@@ -154,6 +154,7 @@ function Library(props: any) {
           <Button onClick={handleCreateCollection}>Create</Button>
         </DialogActions>
       </Dialog>
+      <Footer />
     </>
   );
 }

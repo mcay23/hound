@@ -11,7 +11,7 @@ import {
 import { useDownloads } from "../../api/hooks/media";
 import "./AdminDownloads.css";
 import { cancelDownload } from "../../api/services/media";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 function AdminDownloads() {
   const [page, setPage] = useState(1);
@@ -39,6 +39,15 @@ function AdminDownloads() {
     setTotalRecords(downloads.total_records);
     setTotalPages(Math.ceil(downloads.total_records / itemsPerPage));
   }
+  const sortedTasks = useMemo(() => {
+    return downloads?.tasks?.slice().sort((a: any, b: any) => {
+      if (a.status === "downloading" && b.status !== "downloading") return -1;
+      if (a.status !== "downloading" && b.status === "downloading") return 1;
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
+  }, [downloads?.tasks]);
   return (
     <div>
       <h2>Downloads</h2>
@@ -46,16 +55,9 @@ function AdminDownloads() {
       {isDownloadsLoading ? (
         <div>Loading...</div>
       ) : (
-        downloads?.tasks
-          ?.slice() // avoid mutating original array
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.updated_at).getTime() -
-              new Date(a.updated_at).getTime(),
-          )
-          .map((item: any) => {
-            return <DownloadCard key={item.id} item={item} />;
-          })
+        sortedTasks?.map((item: any) => {
+          return <DownloadCard key={item.id} item={item} />;
+        })
       )}
       <div className="d-flex w-100 mt-3 justify-content-center">
         <div className="paginator-container shadow-lg">

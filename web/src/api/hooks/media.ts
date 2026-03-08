@@ -4,7 +4,6 @@ import {
   downloadSeason,
   fetchDownloads,
   fetchMediaFiles,
-  SeasonDownloadPreferences,
 } from "../services/media";
 
 export const useDownloads = (
