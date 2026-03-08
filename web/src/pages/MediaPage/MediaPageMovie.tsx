@@ -435,6 +435,7 @@ function MediaPageMovie(props: any) {
         startTime={watchProgress?.current_progress_seconds || 0}
       />
       <SelectStreamModal
+        modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
         streamData={streams}

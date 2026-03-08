@@ -30,7 +30,7 @@ function ConfirmRewatchModal(props: any) {
           Are you sure you want to rewatch this show? This will archive your
           current progress.
         </p>
-        <div className="confirm-rewatch-modal-buttons d-flex justify-content-end">
+        <div className="d-flex justify-content-end">
           <Button onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm}>Confirm</Button>
         </div>

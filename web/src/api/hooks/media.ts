@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { cancelDownload, downloadSeason, fetchDownloads, fetchMediaFiles, SeasonDownloadPreferences } from "../services/media";
+import {
+  cancelDownload,
+  downloadSeason,
+  fetchDownloads,
+  fetchMediaFiles,
+  SeasonDownloadPreferences,
+} from "../services/media";
 
 export const useDownloads = (
   limit: number,
@@ -24,22 +30,24 @@ export const useMediaFiles = (
   mediaSource: string,
   sourceID: string,
   season?: number | null,
-  episode?: number | null
+  episode?: number | null,
 ) => {
   return useQuery({
-    queryKey: ["media-files", mediaType, mediaSource, sourceID, season, episode],
-    queryFn: () => fetchMediaFiles(mediaType, mediaSource, sourceID, season, episode),
+    queryKey: [
+      "media-files",
+      mediaType,
+      mediaSource,
+      sourceID,
+      season,
+      episode,
+    ],
+    queryFn: () =>
+      fetchMediaFiles(mediaType, mediaSource, sourceID, season, episode),
   });
 };
 
-export const useDownloadSeason = (
-  mediaType: string,
-  mediaSource: string,
-  sourceID: string,
-  seasonNum?: number | null,
-  preferences?: SeasonDownloadPreferences
-) => {
+export const useDownloadSeason = () => {
   return useMutation({
-    mutationFn: () => downloadSeason(mediaType, mediaSource, sourceID, seasonNum, preferences),
+    mutationFn: downloadSeason,
   });
-}
+};

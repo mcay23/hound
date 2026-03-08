@@ -548,6 +548,7 @@ function MediaPageTV(props: any) {
         streams={streams}
       />
       <SelectStreamModal
+        modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
         streamData={streams}

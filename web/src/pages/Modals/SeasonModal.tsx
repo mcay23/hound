@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import "./SeasonModal.css";
 import convertDateToReadable from "../../helpers/helpers";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CreateHistoryModal from "./CreateHistoryModal";
 import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
@@ -23,6 +24,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Spinner } from "react-bootstrap";
 import { PlayArrowRounded } from "@mui/icons-material";
 import toast from "react-hot-toast";
+import DownloadSeasonModal from "./DownloadSeasonModal";
 
 const offsetFix = {
   modifiers: [
@@ -265,10 +267,12 @@ function SeasonModal(props: any) {
                     >
                       <IconButton
                         onClick={() => {
-                          setIsCreateHistoryModalOpen(true);
+                          if (isSeasonDataLoaded) {
+                            setIsDownloadSeasonModalOpen(true);
+                          }
                         }}
                       >
-                        <VisibilityIcon />
+                        <DownloadIcon />
                       </IconButton>
                     </BootstrapTooltip>
                   </span>
@@ -309,7 +313,17 @@ function SeasonModal(props: any) {
             }}
             open={isCreateHistoryModalOpen}
             type={"season"}
-            seasonNumber={seasonData.season_number}
+            seasonNumber={seasonNumber}
+          />
+          <DownloadSeasonModal
+            onClose={() => {
+              setIsDownloadSeasonModalOpen(false);
+            }}
+            open={isDownloadSeasonModalOpen}
+            mediaSource={mediaSource}
+            sourceID={sourceID}
+            seasonNumber={seasonNumber}
+            seasonData={seasonData}
           />
         </Dialog>
       ) : (

@@ -6,9 +6,9 @@
 }
 
 .season-modal-container {
-  padding-top: 12px;
-  padding-left: 23px;
-  padding-right: 20px;
+  padding-top: 20px;
+  padding-left: 20px;
+  padding-right: 17px; /* right side has scroll bar */
   padding-bottom: 3px;
   overflow-y: auto;
   border-right: solid 3px transparent;

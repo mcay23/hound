@@ -6,8 +6,22 @@ import { Button } from "react-bootstrap";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-function SelectStreamModal(props: any) {
-  const { setOpen, open, setMainStream, setIsStreamModalOpen } = props;
+function SelectStreamModal(props: {
+  modalType: "select-stream" | "download-season";
+  streamData: any;
+  setOpen: (open: boolean) => void;
+  open: boolean;
+  setMainStream: (stream: any) => void;
+  setIsStreamModalOpen?: (open: boolean) => void;
+}) {
+  const {
+    modalType,
+    streamData,
+    setOpen,
+    open,
+    setMainStream,
+    setIsStreamModalOpen,
+  } = props;
   const handleClose = () => {
     setOpen(false);
   };
@@ -16,7 +30,7 @@ function SelectStreamModal(props: any) {
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   return (
     <>
-      {props.streamData !== null ? (
+      {streamData !== null ? (
         <Dialog
           onClose={handleClose}
           open={open}
@@ -27,15 +41,19 @@ function SelectStreamModal(props: any) {
           PaperProps={paperPropsGlass}
         >
           <div className="stream-info-card-container">
-            {props.streamData?.streams?.map((stream: any) => {
+            {streamData?.streams?.map((stream: any) => {
               return (
                 <div className="stream-info-card" key={stream.infohash}>
                   <div
                     className="stream-info-card-title"
                     onClick={() => {
                       if (stream) {
+                        // for season pack downloader, sets this stream as the one
+                        // to reference the infohash
                         setMainStream(stream);
-                        setIsStreamModalOpen(true);
+                        if (modalType === "select-stream") {
+                          setIsStreamModalOpen?.(true);
+                        }
                       }
                     }}
                   >
@@ -48,50 +66,54 @@ function SelectStreamModal(props: any) {
                     info hash: {stream.info_hash}
                   </div>
                   <Chip label={stream.provider} size="small" />
-                  <div className="stream-info-card-footer mt-2">
-                    {stream.provider !== "Hound" && (
+                  {modalType === "select-stream" ? (
+                    <div className="stream-info-card-footer mt-2">
+                      {stream.provider !== "Hound" && (
+                        <Button
+                          className="stream-info-card-footer-buttons me-2"
+                          variant="light"
+                          size="sm"
+                          onClick={() => {
+                            axios
+                              .post("/api/v1/download/" + stream.encoded_data)
+                              .then((res) => {
+                                toast.success("Download added to queue");
+                              })
+                              .catch((err) => {
+                                toast.error("Download Failed! " + err);
+                              });
+                          }}
+                        >
+                          Download to Hound
+                        </Button>
+                      )}
                       <Button
-                        className="stream-info-card-footer-buttons me-2"
+                        className="stream-info-card-footer-buttons"
                         variant="light"
                         size="sm"
                         onClick={() => {
-                          axios
-                            .post("/api/v1/download/" + stream.encoded_data)
-                            .then((res) => {
-                              toast.success("Download added to queue");
-                            })
-                            .catch((err) => {
-                              toast.error("Download Failed! " + err);
-                            });
+                          const handleCopy = async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                window.location.origin +
+                                  "/api/v1/stream/" +
+                                  stream.encoded_data,
+                              );
+                              toast.success("Link copied to clipboard");
+                            } catch (err) {
+                              console.error("Failed to copy text: ", err);
+                              toast.error("Copy to clipboard failed! " + err);
+                            }
+                          };
+                          handleCopy();
                         }}
                       >
-                        Download to Hound
+                        Copy Link
                       </Button>
-                    )}
-                    <Button
-                      className="stream-info-card-footer-buttons"
-                      variant="light"
-                      size="sm"
-                      onClick={() => {
-                        const handleCopy = async () => {
-                          try {
-                            await navigator.clipboard.writeText(
-                              window.location.origin +
-                                "/api/v1/stream/" +
-                                stream.encoded_data,
-                            );
-                            toast.success("Link copied to clipboard");
-                          } catch (err) {
-                            console.error("Failed to copy text: ", err);
-                            toast.error("Copy to clipboard failed! " + err);
-                          }
-                        };
-                        handleCopy();
-                      }}
-                    >
-                      Copy Link
-                    </Button>
-                  </div>
+                    </div>
+                  ) : (
+                    ""
+                  )}
                 </div>
               );
             })}

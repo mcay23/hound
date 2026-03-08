@@ -30,28 +30,28 @@ interface IngestTaskFullRecord {
   media_type: string;
 }
 
-const MatchTypeString = "match_string" as const
-const MatchTypeInfoHash = "info_hash" as const
+const MatchTypeString = "match_string" as const;
+const MatchTypeInfoHash = "info_hash" as const;
 
 type DownloadPreference =
   | {
-      match_type: typeof MatchTypeString
+      match_type: typeof MatchTypeString;
       string_match_preference: {
-        match_string: string
-        case_sensitive: boolean
-      }
+        match_string: string;
+        case_sensitive: boolean;
+      };
     }
   | {
-      match_type: typeof MatchTypeInfoHash
+      match_type: typeof MatchTypeInfoHash;
       info_hash_preference: {
-        info_hash: string
-      }
-    }
+        info_hash: string;
+      };
+    };
 
 export interface SeasonDownloadPreferences {
-  strict_match: boolean,
-  skip_downloaded_episodes: boolean,
-  preference_list: DownloadPreference[]
+  strict_match: boolean;
+  skip_downloaded_episodes: boolean;
+  preference_list: DownloadPreference[];
 }
 
 export const fetchDownloads = async (limit: number, offset: number) => {
@@ -74,21 +74,35 @@ export const fetchMediaFiles = async (
   mediaSource: string,
   sourceID: string,
   season?: number | null,
-  episode?: number | null
+  episode?: number | null,
 ) => {
-  const { data } = await axios.get<any>(`/api/v1/${mediaType}/${mediaSource}-${sourceID}/media_files`, {
-    params: mediaType === "tv" ? { season, episode } : {},
-  });
+  const { data } = await axios.get<any>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/media_files`,
+    {
+      params: mediaType === "tv" ? { season, episode } : {},
+    },
+  );
   return data;
 };
 
-export const downloadSeason = async(
-  mediaType: string,
-  mediaSource: string,
-  sourceID: string,
-  seasonNum?: number | null,
-  preferences?: SeasonDownloadPreferences
-) => {
-  const { data } = await axios.post(`/api/v1/${mediaType}/${mediaSource}-${sourceID}/${seasonNum}/download`, preferences);
+type DownloadSeasonParams = {
+  mediaType: string;
+  mediaSource: string;
+  sourceID: string;
+  seasonNum?: number | null;
+  preferences?: SeasonDownloadPreferences;
+};
+
+export const downloadSeason = async ({
+  mediaType,
+  mediaSource,
+  sourceID,
+  seasonNum,
+  preferences,
+}: DownloadSeasonParams) => {
+  const { data } = await axios.post(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/${seasonNum}/download`,
+    preferences,
+  );
   return data;
-}
+};

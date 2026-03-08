@@ -1,10 +1,8 @@
 import {
-  Box,
   Drawer,
   List,
   ListItem,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
 } from "@mui/material";
 import "./Settings.css";

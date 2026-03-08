@@ -1,6 +1,7 @@
 .home-page-search-section {
   height: 350px;
-  background: url('https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg') no-repeat;
+  background: url("https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg")
+    no-repeat;
   background-size: cover;
   animation: backgroundScroll 150s linear infinite;
   display: flex;
@@ -27,14 +28,20 @@
   height: 1300px;
 }
 
-@media only screen and (max-width:600px) {
+@media only screen and (max-width: 600px) {
   .home-page-search-section {
     height: 200px;
   }
 }
-  
+
 @keyframes backgroundScroll {
-  0%   {background-position: 0 0%;}
-  50%  {background-position: 0 60%;}
-  100% {background-position: 0 0%;}
+  0% {
+    background-position: 0 0%;
+  }
+  50% {
+    background-position: 0 60%;
+  }
+  100% {
+    background-position: 0 0%;
+  }
 }

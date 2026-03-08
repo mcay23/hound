@@ -68,7 +68,7 @@ function Home() {
           />
         )}
         {!isContinueWatchingLoading ? (
-          <div className="mt-5">
+          <div className="mt-3">
             <HorizontalSection
               items={continueWatchingData}
               header="Continue Watching"
