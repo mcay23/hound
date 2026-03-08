@@ -621,7 +621,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 			for _, provider := range response.Providers {
 				for _, stream := range provider.Streams {
 					/*
-						skip if trying to download episode with nil fileidx for p2p
+						skip if trying to download episode with nil file_idx for p2p
 						in stremio responses, this is supposed to resolve to the file
 						with the highest index, but if a season has multiple episodes,
 						empty file index is probably wrong, since different episodes can
