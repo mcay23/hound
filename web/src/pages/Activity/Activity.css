@@ -1,8 +1,10 @@
-.settings-main-container {
-  padding: 30px;
+.activity-main-container {
+  padding-top: 50px;
+  width: 90%;
+  max-width: 1000px;
+  margin: auto;
 }
 
-.settings-content {
-  margin-left: 30px;
-  width: 100%;
+.activity-calendar-container {
+  height: 800px;
 }

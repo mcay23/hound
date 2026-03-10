@@ -15,10 +15,10 @@ type CollectionView struct {
 }
 
 type WatchActivityResponse struct {
-	WatchActivity []*database.WatchEventMediaRecord `json:"watch_activity"`
-	TotalRecords  int64                             `json:"total_records"`
-	Limit         int                               `json:"limit"`
-	Offset        int                               `json:"offset"`
+	WatchActivity []*database.WatchActivity `json:"watch_activity"`
+	TotalRecords  int64                     `json:"total_records"`
+	Limit         int                       `json:"limit"`
+	Offset        int                       `json:"offset"`
 }
 
 type GeneralSearchResponse struct {

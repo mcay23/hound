@@ -19,23 +19,11 @@ function Topnav() {
               Home
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/library">
-              My Collections
+              Collections
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/activity">
-              My Activity
+              Activity
             </Nav.Link>
-            {/* <Nav.Link className="top-navbar-item" href="/tvshows">
-              TV Shows
-            </Nav.Link> */}
-            {/* <Nav.Link className="top-navbar-item" href="/movies">
-              Movies
-            </Nav.Link>
-            <Nav.Link className="top-navbar-item" href="/books">
-              Books
-            </Nav.Link>
-            <Nav.Link className="top-navbar-item" href="/games">
-              Games
-            </Nav.Link> */}
           </Nav>
           {/* <SearchBar type={"nav"} /> */}
           <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/admin">

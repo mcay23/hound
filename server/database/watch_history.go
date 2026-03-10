@@ -44,18 +44,25 @@ type RewatchRecord struct {
 	UpdatedAt  time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
-// combination fo a watch event and a media record
+// combination of a watch event and a media record
 type WatchEventMediaRecord struct {
 	WatchEventsRecord `xorm:"extends"`
-	RecordType        string `xorm:"'record_type'" json:"record_type"`      // movie,episode
-	MediaSource       string `xorm:"'media_source'" json:"media_source"`    // tmdb, openlibrary, etc. the main metadata provider
-	SourceID          string `xorm:"'source_id'" json:"source_id"`          // tmdb id, episode/season tmdb id
-	MediaTitle        string `xorm:"text 'media_title'" json:"media_title"` // movie, tvshow, season or episode title
-	SeasonNumber      *int   `xorm:"'season_number'" json:"season_number,omitempty"`
-	EpisodeNumber     *int   `xorm:"'episode_number'" json:"episode_number,omitempty"`
-	ReleaseDate       string `xorm:"'release_date'" json:"release_date"` // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
-	Overview          string `xorm:"text 'overview'" json:"overview"`    // game of thrones is a show about ...
-	Duration          int    `xorm:"'duration'" json:"duration"`         // duration/runtime in minutes
+	RecordType        string `xorm:"'record_type'" json:"record_type"`                 // movie,episode
+	MediaSource       string `xorm:"'media_source'" json:"media_source"`               // tmdb, openlibrary, etc. the main metadata provider
+	SourceID          string `xorm:"'source_id'" json:"source_id"`                     // tmdb id, episode/movie tmdb id
+	MediaTitle        string `xorm:"text 'media_title'" json:"media_title"`            // movie, tvshow, season or episode title
+	SeasonNumber      *int   `xorm:"'season_number'" json:"season_number,omitempty"`   //
+	EpisodeNumber     *int   `xorm:"'episode_number'" json:"episode_number,omitempty"` //
+	ReleaseDate       string `xorm:"'release_date'" json:"release_date"`               // 2012-12-30, for shows/seasons - first_air_date, for episodes - air_date
+	Overview          string `xorm:"text 'overview'" json:"overview"`                  // game of thrones is a show about ...
+	Duration          int    `xorm:"'duration'" json:"duration"`                       // duration/runtime in minutes
+}
+
+// fix this as necessary
+type WatchActivity struct {
+	WatchEventMediaRecord `xorm:"extends"`
+	ShowSourceID          string `xorm:"'show_source_id'" json:"show_source_id,omitempty"`
+	ShowMediaTitle        string `xorm:"text 'show_media_title'" json:"show_media_title,omitempty"`
 }
 
 func instantiateWatchTables() error {
@@ -72,12 +79,13 @@ func instantiateWatchTables() error {
 
 // gets a users watch activity (list of events) between start and end time
 // if nil, return all activity
-func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, limit int, offset int) ([]*WatchEventMediaRecord, int64, error) {
-	var records []*WatchEventMediaRecord
+func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, limit int, offset int) ([]*WatchActivity, int64, error) {
+	var records []*WatchActivity
 	query := func() *xorm.Session {
 		sess := databaseEngine.Table(watchEventsTable).Alias("we").
 			Join("INNER", rewatchesTable+" r", "r.rewatch_id = we.rewatch_id").
 			Join("INNER", mediaRecordsTable+" mr", "mr.record_id = we.record_id").
+			Join("LEFT", mediaRecordsTable+" show", "show.record_id = mr.ancestor_id AND mr.record_type = 'episode'").
 			Where("r.user_id = ?", userID)
 		if startTime != nil {
 			sess = sess.Where("we.watched_at >= ?", *startTime)
@@ -96,6 +104,7 @@ func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, li
 		sess = sess.Limit(limit, offset)
 	}
 	sess = sess.OrderBy("we.watched_at DESC, we.watch_event_id DESC")
+	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title")
 	err = sess.Find(&records)
 	return records, totalRecords, err
 }
@@ -216,10 +225,9 @@ func GetWatchEventsFromRewatchID(rewatchID int64, seasonNumber *int) ([]*WatchEv
 	sess = sess.OrderBy("watch_events.watched_at DESC, watch_events.watch_event_id DESC")
 	err := sess.Find(&records)
 	if err != nil {
-		sess.Rollback()
 		return nil, err
 	}
-	return records, sess.Commit()
+	return records, nil
 }
 
 // batch the inserts since we also insert the full json data

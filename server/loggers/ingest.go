@@ -13,6 +13,8 @@ func initializeIngestLogger() error {
 		return nil
 	}
 	logPath := filepath.Join("logs", "ingest.log")
+	// remove on every restart for now
+	_ = os.Remove(logPath)
 	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
 		return err
 	}
