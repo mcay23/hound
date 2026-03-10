@@ -21,6 +21,9 @@ function Topnav() {
             <Nav.Link className="top-navbar-item" href="/library">
               My Collections
             </Nav.Link>
+            <Nav.Link className="top-navbar-item" href="/activity">
+              My Activity
+            </Nav.Link>
             {/* <Nav.Link className="top-navbar-item" href="/tvshows">
               TV Shows
             </Nav.Link> */}

@@ -19,6 +19,7 @@ import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
 import { Toaster } from "react-hot-toast";
 import Topnav from "./pages/Topnav";
 import Admin from "./pages/Admin/Admin";
+import Activity from "./pages/Activity/Activity";
 
 const queryClient = new QueryClient();
 
@@ -79,7 +80,6 @@ function App() {
       return <Navigate to={{ pathname: "/login" }} />;
     }
   }
-
   const theme = createTheme({
     typography: {
       fontFamily: '"Cabin", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -94,7 +94,7 @@ function App() {
           duration: 5000,
         }}
       />
-      <Topnav />
+      {!!isAuthenticated && <Topnav />}
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
@@ -112,6 +112,10 @@ function App() {
               <Route
                 path="admin"
                 element={<ProtectedRoute component={<Admin />} />}
+              />
+              <Route
+                path="activity"
+                element={<ProtectedRoute component={<Activity />} />}
               />
               <Route
                 path="library"
