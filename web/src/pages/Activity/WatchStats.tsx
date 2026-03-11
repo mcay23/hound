@@ -27,8 +27,9 @@ export default function WatchStats() {
               <h5>
                 {data.total_episodes_duration + data.total_movies_duration > 60
                   ? (
-                      data.total_episodes_duration +
-                      data.total_movies_duration / 60
+                      (data.total_episodes_duration +
+                        data.total_movies_duration) /
+                      60
                     ).toFixed(1) + " hours"
                   : (
                       data.total_episodes_duration + data.total_movies_duration
