@@ -15,6 +15,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /v1/watch_activity [get]
+// @Summary Get Watch Activity for User
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Param start_time query string false "Start time in RFC3339 format" example(2026-03-13T10:20:30Z)
+// @Param end_time query string false "End time in RFC3339 format" example(2026-03-13T10:20:30Z)
+// @Success 200 {object} V1SuccessResponse{data=view.WatchActivityResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetWatchActivityHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
@@ -67,15 +79,34 @@ func GetWatchActivityHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
-// Get a user's watch history for a show/movie
-func GetWatchHistoryHandler(c *gin.Context) {
-	recordType := database.RecordTypeMovie
-	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
-		recordType = database.RecordTypeTVShow
-	} else if !strings.Contains(c.FullPath(), "/api/v1/movie/") {
-		// this shouldn't happen
-		panic("Fatal error, invalid path for watch history")
-	}
+// @Router /v1/tv/{id}/history [get]
+// @Summary Get TV Show Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber query int false "Season number"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetWatchHistoryTVHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /v1/movie/{id}/history [get]
+// @Summary Get Movie Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetWatchHistoryMovieHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeMovie)
+}
+
+func handleGetWatchHistory(c *gin.Context, recordType string) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
@@ -134,6 +165,23 @@ func GetWatchHistoryHandler(c *gin.Context) {
 /*
 TV Show Watch History Handlers
 */
+
+type AddWatchHistoryTVResponse struct {
+	MediaSource        string `json:"media_source"`
+	InsertedEpisodeIDs *[]int `json:"inserted_episode_ids,omitempty"`
+	SkippedEpisodeIDs  *[]int `json:"skipped_episode_ids,omitempty"`
+}
+
+// @Router /v1/tv/{id}/history [post]
+// @Summary Add TV Show Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchHistoryTVShowPayload true "Watch History Payload"
+// @Success 200 {object} V1SuccessResponse{data=AddWatchHistoryTVResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
@@ -162,13 +210,12 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating watch history"))
 		return
 	}
-	response := gin.H{
-		"status":               "success",
-		"media_source":         mediaSource,
-		"inserted_episode_ids": insertedEpisodeIDs,
+	response := AddWatchHistoryTVResponse{
+		MediaSource:        mediaSource,
+		InsertedEpisodeIDs: insertedEpisodeIDs,
 	}
-	if len(*skippedEpisodeIDs) > 0 {
-		response["skipped_episode_ids"] = skippedEpisodeIDs
+	if *skippedEpisodeIDs != nil && len(*skippedEpisodeIDs) > 0 {
+		response.SkippedEpisodeIDs = skippedEpisodeIDs
 	}
 	helpers.SuccessResponse(c, response, 200)
 }

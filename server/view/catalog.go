@@ -5,8 +5,8 @@ import (
 )
 
 type MediaRecordCatalog struct {
-	MediaType        string                 `json:"media_type" binding:"required"`
-	MediaSource      string                 `json:"media_source" binding:"required"` // tmdb, openlibrary, etc
+	MediaType        string                 `json:"media_type" binding:"required" enums:"movie,tvshow"`
+	MediaSource      string                 `json:"media_source" binding:"required" example:"tmdb"` // tmdb, openlibrary, etc
 	SourceID         string                 `json:"source_id" binding:"required"`
 	MediaTitle       string                 `json:"media_title" binding:"required"`
 	OriginalTitle    string                 `json:"original_title"`

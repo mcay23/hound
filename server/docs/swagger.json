@@ -457,6 +457,264 @@
                     }
                 }
             }
+        },
+        "/v1/movie/{id}/history": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Get Movie Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRewatchRecordWatchEvents"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/history": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Get TV Show Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season number",
+                        "name": "seasonNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRewatchRecordWatchEvents"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Add TV Show Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch History Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WatchHistoryTVShowPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.AddWatchHistoryTVResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/watch_activity": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Get Watch Activity for User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-13T10:20:30Z",
+                        "description": "Start time in RFC3339 format",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-13T10:20:30Z",
+                        "description": "End time in RFC3339 format",
+                        "name": "end_time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.WatchActivityResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -492,6 +750,168 @@
                 }
             }
         },
+        "database.WatchActivity": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "description": "duration/runtime in minutes",
+                    "type": "integer"
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "media_source": {
+                    "description": "tmdb, openlibrary, etc. the main metadata provider",
+                    "type": "string"
+                },
+                "media_title": {
+                    "description": "movie, tvshow, season or episode title",
+                    "type": "string"
+                },
+                "overview": {
+                    "description": "game of thrones is a show about ...",
+                    "type": "string"
+                },
+                "record_id": {
+                    "type": "integer"
+                },
+                "record_type": {
+                    "description": "movie,episode",
+                    "type": "string"
+                },
+                "release_date": {
+                    "description": "2012-12-30, for shows/seasons - first_air_date, for episodes - air_date",
+                    "type": "string"
+                },
+                "rewatch_id": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "show_media_title": {
+                    "type": "string"
+                },
+                "show_source_id": {
+                    "type": "string"
+                },
+                "source_id": {
+                    "description": "tmdb id, episode/movie tmdb id",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "watch_event_id": {
+                    "type": "integer"
+                },
+                "watch_type": {
+                    "description": "watch, scrobble",
+                    "type": "string"
+                },
+                "watched_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.WatchEventMediaRecord": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "description": "duration/runtime in minutes",
+                    "type": "integer"
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "media_source": {
+                    "description": "tmdb, openlibrary, etc. the main metadata provider",
+                    "type": "string"
+                },
+                "media_title": {
+                    "description": "movie, tvshow, season or episode title",
+                    "type": "string"
+                },
+                "overview": {
+                    "description": "game of thrones is a show about ...",
+                    "type": "string"
+                },
+                "record_id": {
+                    "type": "integer"
+                },
+                "record_type": {
+                    "description": "movie,episode",
+                    "type": "string"
+                },
+                "release_date": {
+                    "description": "2012-12-30, for shows/seasons - first_air_date, for episodes - air_date",
+                    "type": "string"
+                },
+                "rewatch_id": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "source_id": {
+                    "description": "tmdb id, episode/movie tmdb id",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "watch_event_id": {
+                    "type": "integer"
+                },
+                "watch_type": {
+                    "description": "watch, scrobble",
+                    "type": "string"
+                },
+                "watched_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WatchHistoryTVShowPayload": {
+            "type": "object",
+            "required": [
+                "action_type"
+            ],
+            "properties": {
+                "action_type": {
+                    "type": "string",
+                    "enum": [
+                        "watch",
+                        "scrobble"
+                    ]
+                },
+                "episode_ids": {
+                    "description": "tmdb unique id for episode",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "rewatch_id": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "watched_at": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AddToCollectionRequest": {
             "type": "object",
             "required": [
@@ -511,6 +931,26 @@
                 },
                 "source_id": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.AddWatchHistoryTVResponse": {
+            "type": "object",
+            "properties": {
+                "inserted_episode_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "media_source": {
+                    "type": "string"
+                },
+                "skipped_episode_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -699,13 +1139,18 @@
                 },
                 "media_source": {
                     "description": "tmdb, openlibrary, etc",
-                    "type": "string"
+                    "type": "string",
+                    "example": "tmdb"
                 },
                 "media_title": {
                     "type": "string"
                 },
                 "media_type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "movie",
+                        "tvshow"
+                    ]
                 },
                 "next_air_date": {
                     "description": "for shows, next scheduled episode air date",
@@ -753,6 +1198,62 @@
                 },
                 "vote_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "view.MediaRewatchRecordWatchEvents": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "record_id": {
+                    "description": "record id for movie/show",
+                    "type": "integer"
+                },
+                "rewatch_finished_at": {
+                    "type": "string"
+                },
+                "rewatch_id": {
+                    "type": "integer"
+                },
+                "rewatch_started_at": {
+                    "type": "string"
+                },
+                "target_season": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "watch_events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.WatchEventMediaRecord"
+                    }
+                }
+            }
+        },
+        "view.WatchActivityResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total_records": {
+                    "type": "integer"
+                },
+                "watch_activity": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.WatchActivity"
+                    }
                 }
             }
         }
