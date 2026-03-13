@@ -64,7 +64,7 @@ function Collection(props: any) {
   }
   const handleDeleteCollection = () => {
     axios
-      .delete(`/api/v1/collection/delete/${collectionID}`)
+      .delete(`/api/v1/collection/${collectionID}/delete`)
       .then((res) => {
         setIsDeleteDialogOpen(false);
         navigate("/library");

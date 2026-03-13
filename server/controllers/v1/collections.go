@@ -25,6 +25,16 @@ type CreateCollectionRequest struct {
 	IsPublic        bool   `json:"is_public"`
 }
 
+// @Router /v1/collection/{id} [post]
+// @Summary Add Media to Collection
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param id path int true "Collection ID"
+// @Param body body AddToCollectionRequest true "Add to Collection Request"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func AddToCollectionHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	body := AddToCollectionRequest{}
@@ -76,6 +86,16 @@ func AddToCollectionHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, nil, 200)
 }
 
+// @Router /v1/collection/{id} [delete]
+// @Summary Delete A Media from Collection
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param id path int true "Collection ID"
+// @Param body body AddToCollectionRequest true "Add to Collection Request"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeleteFromCollectionHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
@@ -84,7 +104,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 	}
 	body := AddToCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind body"))
 		return
 	}
 	idParam := c.Param("id")
@@ -118,6 +138,14 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, nil, 200)
 }
 
+// @Router /v1/collection/all [get]
+// @Summary Get a User's Collections
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]view.CollectionObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetUserCollectionsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
@@ -146,6 +174,14 @@ func GetUserCollectionsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, collectionResponse, 200)
 }
 
+// @Router /v1/collection/new [post]
+// @Summary Create New Collection
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func CreateCollectionHandler(c *gin.Context) {
 	body := CreateCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -172,6 +208,17 @@ func CreateCollectionHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
 }
 
+// @Router /v1/collection/{id} [get]
+// @Summary Get Collection Contents
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param id path int true "Collection ID"
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} V1SuccessResponse{data=view.CollectionView}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetCollectionContentsHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	limitQuery := c.Query("limit")
@@ -227,6 +274,15 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
+// @Router /v1/collection/recent [get]
+// @Summary Get User's Recent Collection Records
+// @Description Gets 20 most recent records added to any collection
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetRecentCollectionContentsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
@@ -247,6 +303,15 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, viewArray, 200)
 }
 
+// @Router /v1/collection/{id}/delete [delete]
+// @Summary Delete Collection
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param id path int true "Collection ID"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeleteCollectionHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	collectionID, err := strconv.ParseInt(idParam, 10, 64)

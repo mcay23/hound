@@ -1,0 +1,483 @@
+basePath: /
+definitions:
+  database.GenreObject:
+    properties:
+      genre:
+        type: string
+      genre_id:
+        type: integer
+      media_source:
+        type: string
+      media_type:
+        type: string
+      source_id:
+        type: integer
+    type: object
+  database.TagObject:
+    properties:
+      tagID:
+        format: int64
+        type: integer
+      tagName:
+        type: string
+    type: object
+  v1.AddToCollectionRequest:
+    properties:
+      collection_id:
+        type: integer
+      media_source:
+        type: string
+      media_type:
+        type: string
+      source_id:
+        type: string
+    required:
+    - media_source
+    - media_type
+    - source_id
+    type: object
+  v1.V1ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+      status:
+        enum:
+        - success
+        - error
+        example: error
+        type: string
+    type: object
+  v1.V1SuccessResponse:
+    properties:
+      data: {}
+      status:
+        enum:
+        - success
+        - error
+        example: success
+        type: string
+    type: object
+  view.CollectionObject:
+    properties:
+      collection_id:
+        type: integer
+      collection_title:
+        description: my collection, etc.
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      is_public:
+        type: boolean
+      owner_username:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/database.TagObject'
+        type: array
+      thumbnail_uri:
+        description: url for media thumbnails
+        type: string
+      updated_at:
+        type: string
+    type: object
+  view.CollectionView:
+    properties:
+      collection:
+        $ref: '#/definitions/view.CollectionObject'
+      limit:
+        type: integer
+      offset:
+        type: integer
+      records:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+      total_records:
+        type: integer
+    type: object
+  view.Credit:
+    properties:
+      character:
+        type: string
+      credit_id:
+        type: string
+      job:
+        description: cast, director, etc.
+        type: string
+      meta_source:
+        type: string
+      name:
+        type: string
+      original_name:
+        type: string
+      source_id:
+        type: string
+      thumbnail_uri:
+        description: profile pic of person
+        type: string
+    required:
+    - meta_source
+    - source_id
+    type: object
+  view.MediaRecordCatalog:
+    properties:
+      backdrop_uri:
+        type: string
+      cast:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      creators:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_count:
+        type: integer
+      episode_number:
+        type: integer
+      extra_data:
+        additionalProperties: true
+        type: object
+      genres:
+        items:
+          $ref: '#/definitions/database.GenreObject'
+        type: array
+      guest_stars:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      last_air_date:
+        description: for shows, latest episode air date
+        type: string
+      logo_uri:
+        type: string
+      media_source:
+        description: tmdb, openlibrary, etc
+        type: string
+      media_title:
+        type: string
+      media_type:
+        type: string
+      next_air_date:
+        description: for shows, next scheduled episode air date
+        type: string
+      origin_country:
+        items:
+          type: string
+        type: array
+      original_language:
+        type: string
+      original_title:
+        type: string
+      overview:
+        type: string
+      popularity:
+        type: number
+      release_date:
+        type: string
+      season_count:
+        type: integer
+      season_number:
+        type: integer
+      source_id:
+        type: string
+      status:
+        description: Returning Series, Released, etc.
+        type: string
+      thumbnail_uri:
+        type: string
+      vote_average:
+        type: number
+      vote_count:
+        type: integer
+    required:
+    - media_source
+    - media_title
+    - media_type
+    - source_id
+    type: object
+host: localhost:2323
+info:
+  contact: {}
+  description: Hound Media Server Documentation
+  title: Hound API Documentation
+  version: beta-0.1.0
+paths:
+  /api/v1/catalog/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Catalog
+      tags:
+      - Catalog
+  /v1/collection/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Add to Collection Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AddToCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete A Media from Collection
+      tags:
+      - Collection
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.CollectionView'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Collection Contents
+      tags:
+      - Collection
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Add to Collection Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AddToCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add Media to Collection
+      tags:
+      - Collection
+  /v1/collection/{id}/delete:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete Collection
+      tags:
+      - Collection
+  /v1/collection/all:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CollectionObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get a User's Collections
+      tags:
+      - Collection
+  /v1/collection/new:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create New Collection
+      tags:
+      - Collection
+  /v1/collection/recent:
+    get:
+      consumes:
+      - application/json
+      description: Gets 20 most recent records added to any collection
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get User's Recent Collection Records
+      tags:
+      - Collection
+swagger: "2.0"

@@ -25,14 +25,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
-	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
-	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
-	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
-	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
-	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
-	privateRoutes.POST("/collection/new", CreateCollectionHandler)          // add new collection
-	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler) // delete whole collection
+	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
 
@@ -40,6 +33,17 @@ func SetupRoutes(r *gin.Engine) {
 		Catalog Routes
 	*/
 	privateRoutes.GET("/catalog/:id", GetCatalogHandler)
+
+	/*
+		Collection Routes
+	*/
+	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
+	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
+	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
+	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
+	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
+	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
+	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
 
 	/*
 		Watch History Routes

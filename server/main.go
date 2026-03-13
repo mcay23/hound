@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+// @title Hound API Documentation
+// @version beta-0.1.0
+// @description Hound Media Server Documentation
+// @host localhost:2323
+// @BasePath /
 func main() {
 	// initialize logging
 	time.Local, _ = time.LoadLocation("UTC")
