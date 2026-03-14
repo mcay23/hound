@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
@@ -51,7 +50,7 @@ func InitializeTMDB() {
 	var err error
 	tmdbClient, err = tmdb.InitV4(os.Getenv("TMDB_API_KEY"))
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to initialize tmdb client")
+		slog.Error("Failed to initialize tmdb client", "error", err)
 		panic(err)
 	}
 	tmdbClient.SetClientAutoRetry()
@@ -132,7 +131,7 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	}
 	tvShow, err := tmdbClient.GetTVDetails(tmdbID, options)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv show details from tmdb")
+		return nil, fmt.Errorf("failed to get tv show details from tmdb for source_id %d: %w", tmdbID, err)
 	}
 	if tvShow != nil {
 		_, _ = database.SetCache(cacheKey, tvShow, getCacheTTL)
@@ -150,7 +149,7 @@ func GetTVShowIMDBID(tmdbID int) (string, error) {
 	}
 	externalIDs, err := tmdbClient.GetTVExternalIDs(tmdbID, nil)
 	if err != nil {
-		return "", helpers.LogErrorWithMessage(err, "Failed to get tv show external ids from tmdb")
+		return "", fmt.Errorf("failed to get tv show external ids from tmdb for source_id %d: %w", tmdbID, err)
 	}
 	return externalIDs.IMDbID, nil
 }
@@ -164,11 +163,10 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	}
 	season, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, nil)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get tv season details from tmdb")
+		return nil, fmt.Errorf("failed to get tv season details from tmdb for source_id %d, season_number %d: %w", tmdbID, seasonNumber, err)
 	}
 	if season == nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"failed to get tv season details from tmdb: season is nil")
+		return nil, fmt.Errorf("failed to get tv season details from tmdb: season is nil: %w", helpers.InternalServerError)
 	}
 	_, _ = database.SetCache(cacheKey, season, getCacheTTL)
 	return season, nil
@@ -178,7 +176,7 @@ func GetEpisodeTMDB(tmdbID int, seasonNumber int, episodeNumber int) (*TMDBEpiso
 	// cached call, should be fast under normal flow
 	season, err := GetTVSeasonTMDB(tmdbID, seasonNumber)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "failed to get season")
+		return nil, fmt.Errorf("failed to get season %d for show %d: %w", seasonNumber, tmdbID, err)
 	}
 	for _, episode := range season.Episodes {
 		if episode.EpisodeNumber == episodeNumber {
@@ -246,12 +244,12 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 	// but upsert returns after inserting the first season, the rest are concurrently added
 	record, err := UpsertTVShowRecordTMDB(sourceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to upsert tv show record: %w", err)
 	}
 	// insert collection relation to collections table
 	err = database.InsertCollectionRelation(userID, record.RecordID, collectionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert collection relation: %w", err)
 	}
 	return nil
 }
@@ -329,7 +327,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	}
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get movie details from tmdb")
+		return nil, fmt.Errorf("failed to get movie details from tmdb for id %d: %w", tmdbID, err)
 	}
 	if movie != nil {
 		_, _ = database.SetCache(cacheKey, movie, getCacheTTL)
@@ -347,12 +345,12 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 	}
 	entry, err := UpsertMovieRecordTMDB(sourceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to upsert movie record: %w", err)
 	}
 	// insert collection relation to collections table
 	err = database.InsertCollectionRelation(userID, entry.RecordID, collectionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert collection relation: %w", err)
 	}
 	return nil
 }
@@ -366,7 +364,7 @@ func AddMovieToCollectionTMDB(username string, source string, sourceID int, coll
 func populateTMDBTVGenres() error {
 	list, err := tmdbClient.GetGenreTVList(nil)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to populate genre list (tmdb)")
+		return fmt.Errorf("failed to populate genre list (tmdb): %w", err)
 	}
 	tmdbTVGenres = *list
 	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
@@ -380,7 +378,7 @@ func populateTMDBTVGenres() error {
 	}
 	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeTVShow, genreRecords)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to sync tv genres to database")
+		return fmt.Errorf("failed to sync tv genres to database: %w", err)
 	}
 	tmdbTVGenreInternalIDs = mapping
 	return nil
@@ -389,7 +387,7 @@ func populateTMDBTVGenres() error {
 func populateTMDBMovieGenres() error {
 	list, err := tmdbClient.GetGenreMovieList(nil)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to populate genre list (tmdb)")
+		return fmt.Errorf("failed to populate genre list (tmdb): %w", err)
 	}
 	tmdbMovieGenres = *list
 	genreRecords := make([]database.GenreObject, 0, len(list.Genres))
@@ -403,7 +401,7 @@ func populateTMDBMovieGenres() error {
 	}
 	mapping, err := database.UpsertGenres(MediaSourceTMDB, database.MediaTypeMovie, genreRecords)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to sync movie genres to database")
+		return fmt.Errorf("failed to sync movie genres to database: %w", err)
 	}
 	tmdbMovieGenreInternalIDs = mapping
 	return nil
@@ -422,8 +420,7 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 	case database.MediaTypeMovie:
 		src = tmdbMovieGenreInternalIDs
 	default:
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media type for genre mapping")
+		return nil, nil, fmt.Errorf("invalid media type for genre mapping: %w", helpers.BadRequestError)
 	}
 	ret := make([]int64, 0, len(genres))
 	missing := make([]int64, 0)
@@ -532,7 +529,7 @@ func UpsertMediaRecordTMDB(mediaType string, sourceID int) (*database.MediaRecor
 	case database.MediaTypeTVShow:
 		return UpsertTVShowRecordTMDB(sourceID)
 	default:
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid media type")
+		return nil, fmt.Errorf("invalid media_type %s: %w", mediaType, helpers.BadRequestError)
 	}
 }
 
@@ -540,11 +537,11 @@ func UpsertMediaRecordTMDB(mediaType string, sourceID int) (*database.MediaRecor
 func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	movie, err := GetMovieFromIDTMDB(sourceID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get movie from tmdb: %w", err)
 	}
 	movieJson, err := json.Marshal(movie)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal movie: %w", err)
 	}
 	// import tmdb genres
 	genreArray := database.ConvertGenres(MediaSourceTMDB, database.MediaTypeMovie, movie.Genres)
@@ -590,41 +587,38 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	session := database.NewSession()
 	defer session.Close()
 	if err := session.Begin(); err != nil {
-		return nil, helpers.LogErrorWithMessage(err,
-			"UpsertMovieRecordTMDB(): Failed to start xorm session")
+		return nil, fmt.Errorf("failed to start xorm session: %w", err)
 	}
 	affected, err := database.UpsertMediaRecordsTrx(session, &entry)
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to upsert media record: %w", err)
 	}
 	has, record, err := database.GetMediaRecordTrx(session, database.RecordTypeMovie, MediaSourceTMDB, strconv.Itoa(sourceID))
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to get media record: %w", err)
 	}
 	if !has || record == nil {
 		session.Rollback()
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Failed to get movie media record after upsert")
+		return nil, fmt.Errorf("failed to get movie media record after upsert: %w", helpers.InternalServerError)
 	}
 	if affected {
 		internalGenreIDs, missingGenreIDs, err := resolveTMDBGenreInternalIDs(database.MediaTypeMovie, genreArray)
 		if err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to resolve genre internal ids: %w", err)
 		}
 		if len(missingGenreIDs) > 0 {
-			_ = helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				fmt.Sprintf("Skipping unknown movie genre ids for tmdb-%d: %v", sourceID, missingGenreIDs))
+			slog.Debug("Skipping unknown movie genre ids", "sourceID", sourceID, "missingIDs", missingGenreIDs)
 		}
 		if err := database.ReplaceMediaRecordGenresByIDsTrx(session, record.RecordID, internalGenreIDs); err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to replace media record genres by ids: %w", err)
 		}
 	}
 	if err := session.Commit(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to commit xorm session: %w", err)
 	}
 	return record, nil
 }
@@ -636,11 +630,11 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	// create show records
 	showData, err := GetTVShowFromIDTMDB(showSourceID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get tv show from tmdb: %w", err)
 	}
 	showJson, err := json.Marshal(showData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal tv show: %w", err)
 	}
 	// import tmdb genres
 	genreArray := database.ConvertGenres(MediaSourceTMDB, database.MediaTypeTVShow, showData.Genres)
@@ -697,26 +691,24 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	session := database.NewSession()
 	defer session.Close()
 	if err := session.Begin(); err != nil {
-		return nil, helpers.LogErrorWithMessage(err,
-			"UpsertTVShowRecordTMDB(): Failed to start xorm session")
+		return nil, fmt.Errorf("failed to start xorm session: %w", err)
 	}
 	// upsert the root level entry
 	affected, err := database.UpsertMediaRecordsTrx(session, &tvShowEntry)
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to upsert media records trx: %w", err)
 	}
 	// we get here since xorm.Update doesn't get recordID automatically
 	has, showRecord, err := database.GetMediaRecordTrx(session, database.RecordTypeTVShow, MediaSourceTMDB,
 		strconv.Itoa(showSourceID))
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to get media record trx: %w", err)
 	}
 	if !has {
 		session.Rollback()
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
+		return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeTVShow, MediaSourceTMDB, showSourceID, helpers.NotFoundError)
 	}
 	// hash same, no update/insert
 	if !affected {
@@ -726,15 +718,14 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	internalGenreIDs, missingGenreIDs, err := resolveTMDBGenreInternalIDs(database.MediaTypeTVShow, genreArray)
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to resolve genre internal ids: %w", err)
 	}
 	if len(missingGenreIDs) > 0 {
-		_ = helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			fmt.Sprintf("Skipping unknown tv genre ids for tmdb-%d: %v", showSourceID, missingGenreIDs))
+		slog.Debug("Skipping unknown tv genre ids", "sourceID", showSourceID, "missingIDs", missingGenreIDs)
 	}
 	if err := database.ReplaceMediaRecordGenresByIDsTrx(session, showRecord.RecordID, internalGenreIDs); err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to replace media record genres by ids trx: %w", err)
 	}
 	// show hash changed, preload seasons to the cache
 	_ = PrefetchSeasons(showSourceID)
@@ -745,12 +736,12 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		seasonData, err := GetTVSeasonTMDB(showSourceID, season.SeasonNumber)
 		if err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to get tv season tmdb: %w", err)
 		}
 		seasonJson, err := json.Marshal(seasonData)
 		if err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to marshal tv season: %w", err)
 		}
 		thumbnailURI := tmdb.GetImageURL(seasonData.PosterPath, tmdb.W300)
 		if showData.PosterPath == "" {
@@ -793,7 +784,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		affected, err = database.UpsertMediaRecordsTrx(session, &seasonEntry)
 		if err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to upsert media records trx: %w", err)
 		}
 		// skip if no change
 		if !affected {
@@ -804,16 +795,15 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 			strconv.Itoa(int(seasonData.ID)))
 		if err != nil {
 			session.Rollback()
-			return nil, err
+			return nil, fmt.Errorf("failed to get media record trx: %w", err)
 		}
 		if !has {
 			session.Rollback()
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"No Media Record Found for "+database.RecordTypeTVShow+":"+MediaSourceTMDB+"-"+strconv.Itoa(showSourceID))
+			return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeSeason, MediaSourceTMDB, seasonData.ID, helpers.NotFoundError)
 		}
 		if seasonRecord == nil || seasonRecord.ParentID == nil {
 			session.Rollback()
-			return nil, fmt.Errorf("UpsertTVShowRecordTMDB(): season record is nil or has no parent id")
+			return nil, fmt.Errorf("season record is nil or has no parent id: %w", helpers.InternalServerError)
 		}
 		// upsert all children
 		for _, episode := range seasonData.Episodes {
@@ -855,7 +845,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	err = database.BatchUpsertMediaRecords(session, episodeRecords)
 	if err != nil {
 		session.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("failed to batch upsert media records: %w", err)
 	}
 	// only commit if everything succeeds
 	session.Commit()
