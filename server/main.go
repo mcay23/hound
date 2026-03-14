@@ -13,9 +13,10 @@ import (
 	"time"
 )
 
-// @title Hound API Documentation
+// @title Hound API Documentation V1
 // @version beta-0.1.0
-// @description Hound Media Server Documentation
+// @description V1 Hound Media Server API Documentation
+// @description While in beta, please expect breaking api changes in short/no notice
 // @host localhost:2323
 // @BasePath /
 func main() {
