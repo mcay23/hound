@@ -73,6 +73,134 @@ const docTemplate = `{
                 }
             }
         },
+        "/movie/{id}/history/delete": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Delete Movie Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch History Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DeleteWatchHistoryPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tv/{id}/history/delete": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Delete TV Show Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch History Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DeleteWatchHistoryPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/collection/all": {
             "get": {
                 "consumes": [
@@ -520,6 +648,68 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Add Movie Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch History Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WatchHistoryMoviePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/v1/tv/{id}/history": {
@@ -648,6 +838,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/tv/{id}/history/rewatch": {
+            "post": {
+                "description": "Create new rewatch for tv show. This archives the previous watches, so user's can start fresh.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Create TV Show Rewatch",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.RewatchRecord"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/season/{seasonNumber}/history": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch History"
+                ],
+                "summary": "Get TV Show Watch History",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season number",
+                        "name": "seasonNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRewatchRecordWatchEvents"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/watch_activity": {
             "get": {
                 "consumes": [
@@ -663,7 +973,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Limit",
+                        "description": "Limit - Defaults at 500",
                         "name": "limit",
                         "in": "query"
                     },
@@ -740,6 +1050,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "source_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "database.RewatchRecord": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "record_id": {
+                    "description": "record id for movie/show",
+                    "type": "integer"
+                },
+                "rewatch_finished_at": {
+                    "type": "string"
+                },
+                "rewatch_id": {
+                    "type": "integer"
+                },
+                "rewatch_started_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -884,6 +1221,24 @@ const docTemplate = `{
                 }
             }
         },
+        "model.WatchHistoryMoviePayload": {
+            "type": "object",
+            "required": [
+                "action_type"
+            ],
+            "properties": {
+                "action_type": {
+                    "type": "string",
+                    "enum": [
+                        "watch",
+                        "scrobble"
+                    ]
+                },
+                "watched_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.WatchHistoryTVShowPayload": {
             "type": "object",
             "required": [
@@ -953,6 +1308,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "skipped_episode_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "v1.DeleteWatchHistoryPayload": {
+            "type": "object",
+            "required": [
+                "watch_event_ids"
+            ],
+            "properties": {
+                "watch_event_ids": {
                     "type": "array",
                     "items": {
                         "type": "integer"

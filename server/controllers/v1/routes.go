@@ -49,13 +49,14 @@ func SetupRoutes(r *gin.Engine) {
 		Watch History Routes
 	*/
 	privateRoutes.GET("/tv/:id/history", GetWatchHistoryTVHandler)
-	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVShowHandler)
-	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryHandler) // batch deletion, we send a body so use POST which is more defined
+	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryTVHandler)
-	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler) // we only want multiple rewatches for tv shows
-	privateRoutes.GET("/movie/:id/history", GetWatchHistoryMovieHandler)   // shared function w/ tv show history
+	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler)    // we only want multiple rewatches for tv shows
+	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryTVHandler) // batch deletion, we send a body so use POST which is more defined
+
+	privateRoutes.GET("/movie/:id/history", GetWatchHistoryMovieHandler) // shared function w/ tv show history
 	privateRoutes.POST("/movie/:id/history", AddWatchHistoryMovieHandler)
-	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryHandler)
+	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryMovieHandler)
 	privateRoutes.GET("/watch_activity", GetWatchActivityHandler) // returns user watch activity between two dates
 
 	/*

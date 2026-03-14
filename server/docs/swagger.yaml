@@ -13,6 +13,24 @@ definitions:
       source_id:
         type: integer
     type: object
+  database.RewatchRecord:
+    properties:
+      created_at:
+        type: string
+      record_id:
+        description: record id for movie/show
+        type: integer
+      rewatch_finished_at:
+        type: string
+      rewatch_id:
+        type: integer
+      rewatch_started_at:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
   database.TagObject:
     properties:
       tagID:
@@ -113,6 +131,18 @@ definitions:
       watched_at:
         type: string
     type: object
+  model.WatchHistoryMoviePayload:
+    properties:
+      action_type:
+        enum:
+        - watch
+        - scrobble
+        type: string
+      watched_at:
+        type: string
+    required:
+    - action_type
+    type: object
   model.WatchHistoryTVShowPayload:
     properties:
       action_type:
@@ -163,6 +193,15 @@ definitions:
         items:
           type: integer
         type: array
+    type: object
+  v1.DeleteWatchHistoryPayload:
+    properties:
+      watch_event_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - watch_event_ids
     type: object
   v1.V1ErrorResponse:
     properties:
@@ -413,6 +452,84 @@ paths:
       summary: Get Catalog
       tags:
       - Catalog
+  /movie/{id}/history/delete:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch History Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DeleteWatchHistoryPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete Movie Watch History
+      tags:
+      - Watch History
+  /tv/{id}/history/delete:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch History Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DeleteWatchHistoryPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete TV Show Watch History
+      tags:
+      - Watch History
   /v1/collection/{id}:
     delete:
       consumes:
@@ -684,6 +801,44 @@ paths:
       summary: Get Movie Watch History
       tags:
       - Watch History
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch History Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WatchHistoryMoviePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add Movie Watch History
+      tags:
+      - Watch History
   /v1/tv/{id}/history:
     get:
       consumes:
@@ -761,12 +916,86 @@ paths:
       summary: Add TV Show Watch History
       tags:
       - Watch History
+  /v1/tv/{id}/history/rewatch:
+    post:
+      consumes:
+      - application/json
+      description: Create new rewatch for tv show. This archives the previous watches,
+        so user's can start fresh.
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.RewatchRecord'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create TV Show Rewatch
+      tags:
+      - Watch History
+  /v1/tv/{id}/season/{seasonNumber}/history:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season number
+        in: query
+        name: seasonNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRewatchRecordWatchEvents'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Watch History
+      tags:
+      - Watch History
   /v1/watch_activity:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Limit
+      - description: Limit - Defaults at 500
         in: query
         name: limit
         type: integer

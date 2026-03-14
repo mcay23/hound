@@ -20,7 +20,7 @@ import (
 // @Tags Watch History
 // @Accept json
 // @Produce json
-// @Param limit query int false "Limit"
+// @Param limit query int false "Limit - Defaults at 500"
 // @Param offset query int false "Offset"
 // @Param start_time query string false "Start time in RFC3339 format" example(2026-03-13T10:20:30Z)
 // @Param end_time query string false "End time in RFC3339 format" example(2026-03-13T10:20:30Z)
@@ -80,6 +80,7 @@ func GetWatchActivityHandler(c *gin.Context) {
 }
 
 // @Router /v1/tv/{id}/history [get]
+// @Router /v1/tv/{id}/season/{seasonNumber}/history [get]
 // @Summary Get TV Show Watch History
 // @Tags Watch History
 // @Accept json
@@ -162,10 +163,6 @@ func handleGetWatchHistory(c *gin.Context, recordType string) {
 	helpers.SuccessResponse(c, rewatchObjects, 200)
 }
 
-/*
-TV Show Watch History Handlers
-*/
-
 type AddWatchHistoryTVResponse struct {
 	MediaSource        string `json:"media_source"`
 	InsertedEpisodeIDs *[]int `json:"inserted_episode_ids,omitempty"`
@@ -182,7 +179,7 @@ type AddWatchHistoryTVResponse struct {
 // @Success 200 {object} V1SuccessResponse{data=AddWatchHistoryTVResponse}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func AddWatchHistoryTVShowHandler(c *gin.Context) {
+func AddWatchHistoryTVHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
@@ -220,14 +217,39 @@ func AddWatchHistoryTVShowHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, response, 200)
 }
 
-func DeleteWatchHistoryHandler(c *gin.Context) {
-	recordType := database.RecordTypeMovie
-	if strings.Contains(c.FullPath(), "/tv/") {
-		recordType = database.RecordTypeTVShow
-	} else if !strings.Contains(c.FullPath(), "/movie/") {
-		// this shouldn't happen
-		panic("Fatal error, invalid path for watch history")
-	}
+// @Router /tv/{id}/history/delete [post]
+// @Summary Delete TV Show Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body DeleteWatchHistoryPayload true "Watch Event IDs to delete"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteWatchHistoryTVHandler(c *gin.Context) {
+	handleDeleteWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /movie/{id}/history/delete [post]
+// @Summary Delete Movie Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body DeleteWatchHistoryPayload true "Watch Event IDs to delete"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteWatchHistoryMovieHandler(c *gin.Context) {
+	handleDeleteWatchHistory(c, database.RecordTypeMovie)
+}
+
+type DeleteWatchHistoryPayload struct {
+	WatchEventIDs []int64 `json:"watch_event_ids" binding:"required"`
+}
+
+func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
@@ -239,10 +261,7 @@ func DeleteWatchHistoryHandler(c *gin.Context) {
 		return
 	}
 	// Only episode ids that belong to the same show should be inserted at the same time
-	type deleteWatchHistoryPayload struct {
-		WatchEventIDs []int64 `json:"watch_event_ids" binding:"required"`
-	}
-	payload := deleteWatchHistoryPayload{}
+	payload := DeleteWatchHistoryPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
 		return
@@ -265,8 +284,16 @@ func DeleteWatchHistoryHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, nil, 200)
 }
 
-// Create new rewatch for tv show
-// should be user trigerred
+// @Router /v1/tv/{id}/history/rewatch [post]
+// @Summary Create TV Show Rewatch
+// @Description Create new rewatch for tv show. This archives the previous watches, so user's can start fresh.
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=database.RewatchRecord}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func AddTVShowRewatchHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
@@ -313,11 +340,16 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, rewatchRecord, 200)
 }
 
-/*
-Movie Watch Handlers
-*/
-
-// for movies, only a single rewatch is supported
+// @Router /v1/movie/{id}/history [post]
+// @Summary Add Movie Watch History
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchHistoryMoviePayload true "Watch History Payload"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func AddWatchHistoryMovieHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
