@@ -7,7 +7,7 @@ import (
 )
 
 type TVSeasonResponseObject struct {
-	MediaSource     string                `json:"media_source"` // tmdb, openlibrary, etc
+	MediaSource     string                `json:"media_source" example:"tmdb"` // tmdb, openlibrary, etc
 	SourceID        int64                 `json:"source_id"`
 	SeasonData      *tmdb.TVSeasonDetails `json:"season"`
 	SeasonWatchInfo *[]CommentObject      `json:"watch_info"`
@@ -24,8 +24,8 @@ type SeasonObjectPartial struct {
 }
 
 type TVShowFullObject struct {
-	MediaSource      string                     `json:"media_source"` // tmdb, openlibrary, etc
-	MediaType        string                     `json:"media_type"`   // tmdb, openlibrary, etc
+	MediaSource      string                     `json:"media_source" example:"tmdb"` // tmdb, openlibrary, etc
+	MediaType        string                     `json:"media_type" example:"tvshow"` // tmdb, openlibrary, etc
 	SourceID         int64                      `json:"source_id"`
 	MediaTitle       string                     `json:"media_title"`
 	OriginalName     string                     `json:"original_name"`

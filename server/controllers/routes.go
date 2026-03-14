@@ -4,12 +4,17 @@ import (
 	v1 "hound/controllers/v1"
 	"os"
 
+	_ "hound/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes() {
 	r := gin.Default()
 	v1.SetupRoutes(r)
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Serve static files from the build directory in prod
 	if os.Getenv("APP_ENV") == "production" {

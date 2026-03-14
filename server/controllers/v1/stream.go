@@ -19,6 +19,16 @@ import (
 /*
 Proxies links through the server
 */
+// @Router /api/v1/stream/{encodedString} [get]
+// @Summary Stream Video
+// @Description A streamable link for a video defined by the encodedString
+// @Tags Stream
+// @Accept json
+// @Produce json
+// @Param encodedString path string true "Encoded Stream Details"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func StreamHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
@@ -185,6 +195,17 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	}
 }
 
+// @Router /api/v1/torrent/{encodedString} [post]
+// @Summary Add Torrent
+// @Description Adds a p2p torrent to the server for streaming/download.
+// @Description Not strictly necessary, as calling stream directly invokes this. May be deprecated in the future.
+// @Tags Stream
+// @Accept json
+// @Produce json
+// @Param encodedString path string true "Encoded Stream Details"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func AddTorrentHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {

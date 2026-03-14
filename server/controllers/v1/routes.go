@@ -2,6 +2,7 @@ package v1
 
 import (
 	"hound/middlewares"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,16 +26,8 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
-	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
-	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
-	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
-	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
-	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
-	privateRoutes.POST("/collection/new", CreateCollectionHandler)          // add new collection
-	privateRoutes.DELETE("/collection/delete/:id", DeleteCollectionHandler) // delete whole collection
-	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
-	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
+	privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
+	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*
 		Catalog Routes
@@ -42,16 +35,29 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/catalog/:id", GetCatalogHandler)
 
 	/*
+		Collection Routes
+	*/
+	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
+	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
+	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
+	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
+	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
+	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
+	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
+	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
+
+	/*
 		Watch History Routes
 	*/
-	privateRoutes.GET("/tv/:id/history", GetWatchHistoryHandler)
-	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVShowHandler)
-	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryHandler) // batch deletion, we send a body so use POST which is more defined
-	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryHandler)
-	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler) // we only want multiple rewatches for tv shows
-	privateRoutes.GET("/movie/:id/history", GetWatchHistoryHandler)        // shared function w/ tv show history
+	privateRoutes.GET("/tv/:id/history", GetWatchHistoryTVHandler)
+	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryTVHandler)
+	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler)    // we only want multiple rewatches for tv shows
+	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryTVHandler) // batch deletion, we send a body so use POST which is more defined
+
+	privateRoutes.GET("/movie/:id/history", GetWatchHistoryMovieHandler) // shared function w/ tv show history
 	privateRoutes.POST("/movie/:id/history", AddWatchHistoryMovieHandler)
-	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryHandler)
+	privateRoutes.POST("/movie/:id/history/delete", DeleteWatchHistoryMovieHandler)
 	privateRoutes.GET("/watch_activity", GetWatchActivityHandler) // returns user watch activity between two dates
 
 	/*
@@ -68,21 +74,26 @@ func SetupRoutes(r *gin.Engine) {
 		TV Show Routes
 	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
-	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandlerV2)
-	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandlerV2)
+	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
-	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
-	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/tv/:id/continue_watching", GetNextWatchActionHandler)
 
 	/*
 		Movies Routes
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
-	privateRoutes.GET("/movie/:id", GetMovieFromIDHandlerV2)
+	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
+
+	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
+
+	/*
+		Comments
+	*/
+	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
+	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
-	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
 
 	/*
 		Games Routes - games are being deprecated
@@ -107,8 +118,8 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVShowsHandler)
-	privateRoutes.GET("/movie/:id/media_files", SearchMovieMediaFilesHandler)
-	privateRoutes.GET("/tv/:id/media_files", SearchTVShowMediaFilesHandler)
+	privateRoutes.GET("/movie/:id/media_files", GetMovieMediaFilesHandler)
+	privateRoutes.GET("/tv/:id/media_files", GetTVShowMediaFilesHandler)
 
 	/*
 		Genres Routes
@@ -120,22 +131,16 @@ func SetupRoutes(r *gin.Engine) {
 		Media Routes
 	*/
 	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound
-	privateRoutes.POST("/ingest", IngestFileHandler)
-
-	/*
-		Media Files Routes
-	*/
 	privateRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
-
-	/*
-		Metadata Routes
-	*/
-	privateRoutes.GET("/media/metadata", GetMetadataHandler)
 
 	/*
 		Testing purposes only
 	*/
-	privateRoutes.GET("/decode", DecodeTestHandler)
-	privateRoutes.GET("/clearcache", ClearCacheHandler)
-	privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
+	if os.Getenv("APP_ENV") != "production" {
+		privateRoutes.GET("/decode", DecodeTestHandler)
+		privateRoutes.GET("/clearcache", ClearCacheHandler)
+		privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
+		privateRoutes.GET("/media_files/metadata", GetMetadataHandler)
+		privateRoutes.POST("/ingest", IngestFileHandler)
+	}
 }

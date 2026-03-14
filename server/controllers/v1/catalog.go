@@ -7,6 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /api/v1/catalog/{id} [get]
+// @Summary Get Catalog
+// @Tags Catalog
+// @Accept json
+// @Produce json
+// @Param id path string true "Catalog ID"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetCatalogHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	catalogID := idParam

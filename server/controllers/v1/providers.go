@@ -26,6 +26,18 @@ func ClearCacheHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, nil, 200)
 }
 
+// @Router /api/v1/tv/{id}/providers [get]
+// @Summary Search Stream Providers for TV Shows by ID
+// @Tags Providers
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param season query int true "Season Number"
+// @Param episode query int true "Episode Number"
+// @Param episode_group_id query string false "Episode Group ID"
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SearchProvidersTVShowsHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
@@ -84,6 +96,15 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, results, 200)
 }
 
+// @Router /api/v1/movie/{id}/providers [get]
+// @Summary Search Stream Providers for Movies
+// @Tags Providers
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SearchProvidersMovieHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {

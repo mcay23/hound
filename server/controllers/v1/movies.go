@@ -14,6 +14,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /v1/movie/search [get]
+// @Summary Search Movies
+// @Tags Movie, Search
+// @Accept json
+// @Produce json
+// @Param query query string true "Search Query"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SearchMoviesHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := model.SearchMovies(queryString)
@@ -25,7 +34,16 @@ func SearchMoviesHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, results, 200)
 }
 
-func GetMovieFromIDHandlerV2(c *gin.Context) {
+// @Router /v1/movie/{id} [get]
+// @Summary Get Movie Details
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetMovieFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
@@ -90,73 +108,4 @@ func GetMovieFromIDHandlerV2(c *gin.Context) {
 	}
 	movieObject.Creators = &directorsArray
 	helpers.SuccessResponse(c, movieObject, 200)
-}
-
-func GetMovieFromIDHandler(c *gin.Context) {
-	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
-	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
-		return
-	}
-	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	// get profile, video urls
-	if movieDetails.Credits.MovieCredits != nil {
-		for num, item := range movieDetails.Credits.MovieCredits.Cast {
-			movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
-		}
-		for num, item := range movieDetails.Credits.MovieCredits.Crew {
-			movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500)
-		}
-	}
-	logoURI := ""
-	if len(movieDetails.Images.Logos) > 0 {
-		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
-	}
-	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
-
-	returnObject := view.MovieFullObject{
-		MediaSource:         sources.MediaSourceTMDB,
-		MediaType:           database.MediaTypeMovie,
-		SourceID:            movieDetails.ID,
-		MediaTitle:          movieDetails.Title,
-		BackdropURI:         helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
-		ThumbnailURI:        helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
-		LogoURI:             logoURI,
-		Budget:              movieDetails.Budget,
-		Genres:              &genreArray,
-		Homepage:            movieDetails.Homepage,
-		IMDbID:              movieDetails.IMDbID,
-		OriginalLanguage:    movieDetails.OriginalLanguage,
-		OriginalTitle:       movieDetails.OriginalTitle,
-		Overview:            movieDetails.Overview,
-		Popularity:          movieDetails.Popularity,
-		ProductionCompanies: &movieDetails.ProductionCompanies,
-		ReleaseDate:         movieDetails.ReleaseDate,
-		Revenue:             movieDetails.Revenue,
-		Runtime:             movieDetails.Runtime,
-		Status:              movieDetails.Status,
-		Tagline:             movieDetails.Tagline,
-		VoteAverage:         movieDetails.VoteAverage,
-		VoteCount:           movieDetails.VoteCount,
-		MovieCredits:        movieDetails.Credits.MovieCredits,
-		Videos:              movieDetails.MovieVideosAppend.Videos,
-		Recommendations:     movieDetails.Recommendations,
-		WatchProviders:      movieDetails.WatchProviders,
-		ExternalIDs:         movieDetails.MovieExternalIDs,
-	}
-	_, record, err := database.GetMediaRecord(database.MediaTypeMovie, sources.MediaSourceTMDB, strconv.Itoa(int(movieDetails.ID)))
-	if err == nil && record != nil {
-		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
-			return
-		}
-		returnObject.Comments = comments
-	}
-	helpers.SuccessResponse(c, returnObject, 200)
 }

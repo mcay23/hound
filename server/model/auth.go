@@ -15,12 +15,14 @@ import (
 const (
 	ClientIDWeb                 = "hound-web"
 	ClientIDApp                 = "hound-app"
+	ClientPlatformIOSMobile     = "ios-mobile"
+	ClientPlatformTVOS          = "ios-tv"
 	ClientPlatformAndroidMobile = "android-mobile"
 	ClientPlatformAndroidTV     = "android-tv"
 	ClientPlatformWeb           = "web"
 )
 
-var SupportedClientPlatforms = []string{ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientPlatforms = []string{ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
 var SupportedClientIDs = []string{ClientIDWeb, ClientIDApp}
 
 type RegistrationUser struct {

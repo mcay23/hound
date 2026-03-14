@@ -12,6 +12,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /api/v1/tv/{id}/continue_watching [get]
+// @Router /api/v1/movie/{id}/continue_watching [get]
+// @Summary Get next watch action for a media
+// @Tags Watch Activity
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID"
+// @Success 200 {object} V1SuccessResponse{data=model.WatchAction}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetNextWatchActionHandler(c *gin.Context) {
 	mediaType := ""
 	path := c.FullPath()
@@ -37,6 +47,14 @@ func GetNextWatchActionHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, watchAction, 200)
 }
 
+// @Router /api/v1/continue_watching [get]
+// @Summary Get continue watching list
+// @Tags Watch Activity
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]model.WatchAction}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetContinueWatchingHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)

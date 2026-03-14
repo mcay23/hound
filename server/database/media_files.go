@@ -34,7 +34,7 @@ type VideoMetadata struct {
 	Filesize           int64         `xorm:"'file_size'" json:"file_size"`
 	FileFormat         string        `xorm:"text 'format_name'" json:"format_name"`
 	FileFormatLongName string        `xorm:"text 'format_long_name'" json:"format_long_name"`
-	Duration           time.Duration `xorm:"'duration'" json:"duration"`
+	Duration           time.Duration `xorm:"'duration'" json:"duration" swaggertype:"integer"`
 	Bitrate            string        `xorm:"'bit_rate'" json:"bit_rate"`
 	Width              int           `xorm:"'width'" json:"width,omitempty"`
 	Height             int           `xorm:"'height'" json:"height,omitempty"`
