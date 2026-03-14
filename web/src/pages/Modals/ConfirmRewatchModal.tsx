@@ -9,7 +9,7 @@ function ConfirmRewatchModal(props: any) {
     axios
       .post(`/api/v1/tv/${mediaSource}-${sourceID}/history/rewatch`)
       .then((res) => {
-        toast.success("Rewatch created successfully");
+        toast.success("New Rewatch Started");
         onClose();
       })
       .catch((err) => {
