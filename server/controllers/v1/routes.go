@@ -25,9 +25,8 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
-	privateRoutes.DELETE("/comments", DeleteCommentHandler)                 // ?ids=23,52,43 (batch deletion)
-	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler)             // single deletion
+	privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
+	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*
 		Catalog Routes
@@ -41,6 +40,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
 	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
 	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
+	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
 	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
@@ -73,8 +73,8 @@ func SetupRoutes(r *gin.Engine) {
 		TV Show Routes
 	*/
 	privateRoutes.GET("/tv/search", SearchTVShowHandler)
-	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandlerV2)
-	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandlerV2)
+	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
 	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
 	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
@@ -84,7 +84,7 @@ func SetupRoutes(r *gin.Engine) {
 		Movies Routes
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
-	privateRoutes.GET("/movie/:id", GetMovieFromIDHandlerV2)
+	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
 	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)

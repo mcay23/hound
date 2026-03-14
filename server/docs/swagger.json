@@ -88,7 +88,7 @@
                         "required": true
                     },
                     {
-                        "description": "Watch History Payload",
+                        "description": "Watch Event IDs to delete",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -152,7 +152,7 @@
                         "required": true
                     },
                     {
-                        "description": "Watch History Payload",
+                        "description": "Watch Event IDs to delete",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -586,6 +586,121 @@
                 }
             }
         },
+        "/v1/movie/search": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movie",
+                    "Search"
+                ],
+                "summary": "Search Movies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search Query",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRecordCatalog"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/movie/{id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movie"
+                ],
+                "summary": "Get Movie Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.MediaRecordCatalog"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/movie/{id}/history": {
             "get": {
                 "consumes": [
@@ -670,6 +785,357 @@
                         "schema": {
                             "$ref": "#/definitions/model.WatchHistoryMoviePayload"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/movie/{id}/playback": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Get Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Set Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch Progress Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WatchProgress"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/movie/{id}/playback/delete": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Delete Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Delete Payload (only for TV)",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DeletePlaybackProgressPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/search": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Show",
+                    "Search"
+                ],
+                "summary": "Search TV Shows",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search Query",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRecordCatalog"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Show"
+                ],
+                "summary": "Get TV Show Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.TVShowCatalogObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/episode_groups": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Show"
+                ],
+                "summary": "Get TV Episode Groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -888,6 +1354,196 @@
                 }
             }
         },
+        "/v1/tv/{id}/playback": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Set Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Watch Progress Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WatchProgress"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/playback/delete": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Delete Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Delete Payload (only for TV)",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DeletePlaybackProgressPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/season/{seasonNumber}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Show"
+                ],
+                "summary": "Get TV Season Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "seasonNumber",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.TVSeasonCatalogObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tv/{id}/season/{seasonNumber}/history": {
             "get": {
                 "consumes": [
@@ -931,6 +1587,67 @@
                                             "items": {
                                                 "$ref": "#/definitions/view.MediaRewatchRecordWatchEvents"
                                             }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tv/{id}/season/{seasonNumber}/playback": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Progress"
+                ],
+                "summary": "Get Playback Progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "seasonNumber",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -1215,6 +1932,31 @@
                 }
             }
         },
+        "model.PlayerSettings": {
+            "type": "object",
+            "properties": {
+                "audio_idx": {
+                    "type": "integer"
+                },
+                "audio_lang": {
+                    "type": "string"
+                },
+                "player": {
+                    "description": "mpv, exoplayer, etc.",
+                    "type": "string"
+                },
+                "resize_mode": {
+                    "description": "whether the video is zoomed to fill/normal, etc.",
+                    "type": "string"
+                },
+                "subtitle_idx": {
+                    "type": "integer"
+                },
+                "subtitle_lang": {
+                    "type": "string"
+                }
+            }
+        },
         "model.WatchHistoryMoviePayload": {
             "type": "object",
             "required": [
@@ -1267,6 +2009,91 @@
                 }
             }
         },
+        "model.WatchProgress": {
+            "type": "object",
+            "required": [
+                "current_progress_seconds",
+                "total_duration_seconds"
+            ],
+            "properties": {
+                "client_platform": {
+                    "description": "android-tv, etc.",
+                    "type": "string"
+                },
+                "current_progress_seconds": {
+                    "description": "how many seconds in the user is",
+                    "type": "integer"
+                },
+                "encoded_data": {
+                    "description": "for hound-proxied sources",
+                    "type": "string"
+                },
+                "episode_number": {
+                    "description": "only defined for shows",
+                    "type": "integer"
+                },
+                "episode_source_id": {
+                    "description": "episode source id",
+                    "type": "string"
+                },
+                "episode_title": {
+                    "type": "string"
+                },
+                "last_watched_at": {
+                    "description": "last unix time when the playback progress was set",
+                    "type": "integer"
+                },
+                "media_source": {
+                    "description": "\"tmdb\"",
+                    "type": "string"
+                },
+                "media_title": {
+                    "description": "movie/show title",
+                    "type": "string"
+                },
+                "media_type": {
+                    "description": "\"movie\" or \"tvshow\"",
+                    "type": "string"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "player_settings": {
+                    "description": "player, audio, subtitle selections, etc.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.PlayerSettings"
+                        }
+                    ]
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "season_number": {
+                    "description": "only defined for shows",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "description": "movie/show source id",
+                    "type": "string"
+                },
+                "source_uri": {
+                    "description": "magnet, http link, local path",
+                    "type": "string"
+                },
+                "stream_protocol": {
+                    "description": "p2p, http, local, etc.",
+                    "type": "string"
+                },
+                "thumbnail_uri": {
+                    "type": "string"
+                },
+                "total_duration_seconds": {
+                    "description": "total duration of the media in seconds",
+                    "type": "integer"
+                }
+            }
+        },
         "v1.AddToCollectionRequest": {
             "type": "object",
             "required": [
@@ -1306,6 +2133,17 @@
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "v1.DeletePlaybackProgressPayload": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
                 }
             }
         },
@@ -1603,6 +2441,260 @@
                     "items": {
                         "$ref": "#/definitions/database.WatchEventMediaRecord"
                     }
+                }
+            }
+        },
+        "view.TVSeasonCatalogObject": {
+            "type": "object",
+            "required": [
+                "media_source",
+                "media_title",
+                "media_type",
+                "source_id"
+            ],
+            "properties": {
+                "backdrop_uri": {
+                    "type": "string"
+                },
+                "cast": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "creators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "duration": {
+                    "description": "duration/runtime in minutes",
+                    "type": "integer"
+                },
+                "episode_count": {
+                    "type": "integer"
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "episodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.MediaRecordCatalog"
+                    }
+                },
+                "extra_data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.GenreObject"
+                    }
+                },
+                "guest_stars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "last_air_date": {
+                    "description": "for shows, latest episode air date",
+                    "type": "string"
+                },
+                "logo_uri": {
+                    "type": "string"
+                },
+                "media_source": {
+                    "description": "tmdb, openlibrary, etc",
+                    "type": "string",
+                    "example": "tmdb"
+                },
+                "media_title": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string",
+                    "enum": [
+                        "movie",
+                        "tvshow"
+                    ]
+                },
+                "next_air_date": {
+                    "description": "for shows, next scheduled episode air date",
+                    "type": "string"
+                },
+                "origin_country": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "original_language": {
+                    "type": "string"
+                },
+                "original_title": {
+                    "type": "string"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "popularity": {
+                    "type": "number"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "season_count": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "source_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Returning Series, Released, etc.",
+                    "type": "string"
+                },
+                "thumbnail_uri": {
+                    "type": "string"
+                },
+                "vote_average": {
+                    "type": "number"
+                },
+                "vote_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "view.TVShowCatalogObject": {
+            "type": "object",
+            "required": [
+                "media_source",
+                "media_title",
+                "media_type",
+                "source_id"
+            ],
+            "properties": {
+                "backdrop_uri": {
+                    "type": "string"
+                },
+                "cast": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "creators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "duration": {
+                    "description": "duration/runtime in minutes",
+                    "type": "integer"
+                },
+                "episode_count": {
+                    "type": "integer"
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "extra_data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.GenreObject"
+                    }
+                },
+                "guest_stars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.Credit"
+                    }
+                },
+                "last_air_date": {
+                    "description": "for shows, latest episode air date",
+                    "type": "string"
+                },
+                "logo_uri": {
+                    "type": "string"
+                },
+                "media_source": {
+                    "description": "tmdb, openlibrary, etc",
+                    "type": "string",
+                    "example": "tmdb"
+                },
+                "media_title": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string",
+                    "enum": [
+                        "movie",
+                        "tvshow"
+                    ]
+                },
+                "next_air_date": {
+                    "description": "for shows, next scheduled episode air date",
+                    "type": "string"
+                },
+                "origin_country": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "original_language": {
+                    "type": "string"
+                },
+                "original_title": {
+                    "type": "string"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "popularity": {
+                    "type": "number"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "season_count": {
+                    "type": "integer"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "seasons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.MediaRecordCatalog"
+                    }
+                },
+                "source_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Returning Series, Released, etc.",
+                    "type": "string"
+                },
+                "thumbnail_uri": {
+                    "type": "string"
+                },
+                "vote_average": {
+                    "type": "number"
+                },
+                "vote_count": {
+                    "type": "integer"
                 }
             }
         },

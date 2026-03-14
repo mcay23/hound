@@ -13,6 +13,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /v1/movie/{id}/playback [post]
+// @Router /v1/tv/{id}/playback [post]
+// @Summary Set Playback Progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchProgress true "Watch Progress Payload"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SetPlaybackProgressHandler(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
@@ -110,6 +121,17 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, gin.H{"watched": false}, 200)
 }
 
+// @Router /v1/movie/{id}/playback [get]
+// @Router /v1/tv/{id}/season/{seasonNumber}/playback [get]
+// @Summary Get Playback Progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int false "Season Number"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetPlaybackProgressHandler(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
@@ -160,6 +182,22 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, watchProgress, 200)
 }
 
+type DeletePlaybackProgressPayload struct {
+	SeasonNumber  *int `json:"season_number"`
+	EpisodeNumber *int `json:"episode_number"`
+}
+
+// @Router /v1/movie/{id}/playback/delete [post]
+// @Router /v1/tv/{id}/playback/delete [post]
+// @Summary Delete Playback Progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body DeletePlaybackProgressPayload false "Delete Payload (only for TV)"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeletePlaybackProgressHandler(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
@@ -192,11 +230,7 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 		return
 	}
 	// tv show case
-	type deletePayload struct {
-		SeasonNumber  *int `json:"season_number"`
-		EpisodeNumber *int `json:"episode_number"`
-	}
-	var payload deletePayload
+	var payload DeletePlaybackProgressPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error binding JSON for watch history"))
 		return
