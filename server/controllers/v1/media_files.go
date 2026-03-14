@@ -13,7 +13,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SearchMovieMediaFilesHandler(c *gin.Context) {
+// @Summary Get Movie Media Files by ID
+// @Description Get
+// @Tags Media Files
+// @Accept json
+// @Produce json
+// @Param id path int true "Movie ID"
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+// @Router /api/v1/movie/{id}/media_files [get]
+func GetMovieMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
@@ -41,7 +51,18 @@ func SearchMovieMediaFilesHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
-func SearchTVShowMediaFilesHandler(c *gin.Context) {
+// @Router /api/v1/tv/{id}/media_files [get]
+// @Summary Search TV Show Media Files by ID
+// @Tags Media Files
+// @Accept json
+// @Produce json
+// @Param id path int true "TV Show ID"
+// @Param season query int false "Season Number"
+// @Param episode query int false "Episode Number"
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVShowMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
@@ -101,6 +122,16 @@ func SearchTVShowMediaFilesHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
+// @Router /api/v1/media_files [get]
+// @Summary Get all media file records
+// @Tags Media Files
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} V1SuccessResponse{data=view.MediaFilesResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetMediaFilesHandler(c *gin.Context) {
 	limit := c.Query("limit")
 	offset := c.Query("offset")
@@ -132,6 +163,15 @@ func GetMediaFilesHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, res, 200)
 }
 
+// @Router /api/v1/media_files/{id} [delete]
+// @Summary Delete a media file
+// @Tags Media Files
+// @Accept json
+// @Produce json
+// @Param id path int true "Media File ID"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeleteMediaFileHandler(c *gin.Context) {
 	mediaFileID := c.Param("id")
 	if mediaFileID == "" {

@@ -12,6 +12,19 @@ import (
 	"github.com/spf13/viper"
 )
 
+type RegistrationResponse struct {
+	Username string `json:"username"`
+}
+
+// @Router /api/v1/auth/register [post]
+// @Summary Register a new user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body model.RegistrationUser true "Registration Details"
+// @Success 200 {object} V1SuccessResponse{data=RegistrationResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func RegistrationHandler(c *gin.Context) {
 	if !viper.GetBool("auth.allow-registration") {
 		err := errors.New(helpers.BadRequest)
@@ -45,9 +58,23 @@ func RegistrationHandler(c *gin.Context) {
 		return
 	}
 	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
-	helpers.SuccessResponse(c, gin.H{"username": userPayload.Username}, 200)
+	helpers.SuccessResponse(c, RegistrationResponse{Username: userPayload.Username}, 200)
 }
 
+type LoginResponse struct {
+	Username string `json:"username"`
+	Token    string `json:"token"`
+}
+
+// @Router /api/v1/auth/login [post]
+// @Summary User login
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body model.LoginUser true "Login Details"
+// @Success 200 {object} V1SuccessResponse{data=LoginResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func LoginHandler(c *gin.Context) {
 	userPayload := model.LoginUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
@@ -75,7 +102,7 @@ func LoginHandler(c *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(c.Writer, cookie)
-	helpers.SuccessResponse(c, gin.H{"username": userPayload.Username, "token": token}, 200)
+	helpers.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token}, 200)
 }
 
 func validateClientHeaders(c *gin.Context) (string, string, error) {

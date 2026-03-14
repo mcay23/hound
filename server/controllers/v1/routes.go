@@ -2,6 +2,7 @@ package v1
 
 import (
 	"hound/middlewares"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -76,8 +77,6 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
-	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
-	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/tv/:id/continue_watching", GetNextWatchActionHandler)
 
 	/*
@@ -85,9 +84,16 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
+
+	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
+
+	/*
+		Comments
+	*/
+	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
+	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
-	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
 
 	/*
 		Games Routes - games are being deprecated
@@ -112,8 +118,8 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVShowsHandler)
-	privateRoutes.GET("/movie/:id/media_files", SearchMovieMediaFilesHandler)
-	privateRoutes.GET("/tv/:id/media_files", SearchTVShowMediaFilesHandler)
+	privateRoutes.GET("/movie/:id/media_files", GetMovieMediaFilesHandler)
+	privateRoutes.GET("/tv/:id/media_files", GetTVShowMediaFilesHandler)
 
 	/*
 		Genres Routes
@@ -125,22 +131,16 @@ func SetupRoutes(r *gin.Engine) {
 		Media Routes
 	*/
 	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound
-	privateRoutes.POST("/ingest", IngestFileHandler)
-
-	/*
-		Media Files Routes
-	*/
 	privateRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
-
-	/*
-		Metadata Routes
-	*/
-	privateRoutes.GET("/media/metadata", GetMetadataHandler)
 
 	/*
 		Testing purposes only
 	*/
-	privateRoutes.GET("/decode", DecodeTestHandler)
-	privateRoutes.GET("/clearcache", ClearCacheHandler)
-	privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
+	if os.Getenv("APP_ENV") != "production" {
+		privateRoutes.GET("/decode", DecodeTestHandler)
+		privateRoutes.GET("/clearcache", ClearCacheHandler)
+		privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
+		privateRoutes.GET("/media_files/metadata", GetMetadataHandler)
+		privateRoutes.POST("/ingest", IngestFileHandler)
+	}
 }

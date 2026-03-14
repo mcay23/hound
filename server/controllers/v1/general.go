@@ -30,7 +30,15 @@ type CommentRequest struct {
 	Score        int       `json:"score"`    // only for reviews
 }
 
-// TODO IGDB search is disabled for now
+// @Router /api/v1/search [get]
+// @Summary General Media Search
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param q query string true "Search Query"
+// @Success 200 {object} V1SuccessResponse{data=view.GeneralSearchResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GeneralSearchHandler(c *gin.Context) {
 	queryString := c.Query("q")
 	// search tmdb
@@ -46,7 +54,14 @@ func GeneralSearchHandler(c *gin.Context) {
 	}, 200)
 }
 
-// gets the current most popular backdrop from tmdb
+// @Router /api/v1/backdrops [get]
+// @Summary Get Media Backdrops
+// @Tags Media
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=string} "URL to backdrop"
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetMediaBackdrops(c *gin.Context) {
 	// refresh backdrop every 24 hours, store data in cache
 	var backdropCache string

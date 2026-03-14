@@ -23,6 +23,18 @@ type IngestFileRequest struct {
 	FilePath        string `json:"file_path" binding:"required"`
 }
 
+type IngestFileResponse struct {
+	MediaFile *database.MediaFile `json:"file"`
+}
+
+type GetMetadataResponse struct {
+	Metadata *database.VideoMetadata `json:"metadata"`
+}
+
+type GetTVEpisodesResponse struct {
+	Episodes []database.MediaRecord `json:"episodes"`
+}
+
 func IngestFileHandler(c *gin.Context) {
 	var body IngestFileRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -51,9 +63,7 @@ func IngestFileHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to ingest file"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{
-		"file": mediaFile,
-	}, 200)
+	helpers.SuccessResponse(c, IngestFileResponse{MediaFile: mediaFile}, 200)
 }
 
 func GetMetadataHandler(c *gin.Context) {
@@ -63,7 +73,7 @@ func GetMetadataHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"metadata": metadata}, 200)
+	helpers.SuccessResponse(c, GetMetadataResponse{Metadata: metadata}, 200)
 }
 
 func GetTVEpisodesHandler(c *gin.Context) {
@@ -78,9 +88,20 @@ func GetTVEpisodesHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episodes"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"episodes": episodeRecords}, 200)
+	helpers.SuccessResponse(c, GetTVEpisodesResponse{Episodes: episodeRecords}, 200)
 }
 
+// @Router /api/v1/ingest [get]
+// @Summary Get Ingest Tasks
+// @Tags Media
+// @Accept json
+// @Produce json
+// @Param status query string false "Comma separated status"
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} V1SuccessResponse{data=view.IngestTaskResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetIngestTasksHandler(c *gin.Context) {
 	status := c.Query("status")
 	statusSlice := strings.Split(status, ",")

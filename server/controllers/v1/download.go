@@ -19,7 +19,19 @@ type TVSeasonDownloadRequest struct {
 	EpisodesToDownload     *[]int `json:"episodes_to_download,omitempty"`
 }
 
-// This downloads the media file to the server, not the client
+type DownloadResponse struct {
+	Status string `json:"status" example:"started"`
+}
+
+// @Router /api/v1/download/{encodedString} [post]
+// @Summary Download media file to server
+// @Tags Download
+// @Accept json
+// @Produce json
+// @Param encodedString path string true "Encoded Stream String - get from Query providers"
+// @Success 200 {object} V1SuccessResponse{data=DownloadResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DownloadHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
@@ -42,7 +54,7 @@ func DownloadHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to download torrent"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "started"}, 200)
+	helpers.SuccessResponse(c, DownloadResponse{Status: "started"}, 200)
 }
 
 /*
@@ -51,6 +63,29 @@ and the given preferences (infohash, etc.)
 the source provider itself is resolved by the download worker when the episode
 is picked up. The idea is this will naturally rate-limit calls made to external sources
 */
+type skippedEpisode struct {
+	EpisodeNumber int     `json:"episode_number"`
+	Error         *string `json:"error,omitempty"`
+}
+
+type TVSeasonDownloadResponse struct {
+	Status          string           `json:"status" example:"queued"`
+	Season          int              `json:"season"`
+	QueuedEpisodes  []int            `json:"queued_episodes"`
+	SkippedEpisodes []skippedEpisode `json:"skipped_episodes"`
+}
+
+// @Router /api/v1/tv/{id}/season/{seasonNumber}/download [post]
+// @Summary Download TV Season
+// @Tags Download
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int true "Season Number"
+// @Param request body TVSeasonDownloadRequest false "Download Preferences"
+// @Success 200 {object} V1SuccessResponse{data=TVSeasonDownloadResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DownloadTVSeasonHandler(c *gin.Context) {
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
@@ -92,10 +127,6 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 		return
 	}
 	queuedEpisodes := []int{}
-	type skippedEpisode struct {
-		EpisodeNumber int     `json:"episode_number"`
-		Error         *string `json:"error,omitempty"`
-	}
 	var skippedEpisodes []skippedEpisode
 	for _, ep := range seasonDetails.Episodes {
 		if request.EpisodesToDownload != nil {
@@ -145,10 +176,29 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 			queuedEpisodes = append(queuedEpisodes, ep.EpisodeNumber)
 		}
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "queued", "season": seasonNumber, "queued_episodes": queuedEpisodes, "skipped_episodes": skippedEpisodes}, 200)
+	res := TVSeasonDownloadResponse{
+		Status:         "queued",
+		Season:         seasonNumber,
+		QueuedEpisodes: queuedEpisodes,
+	}
+	res.SkippedEpisodes = skippedEpisodes
+	helpers.SuccessResponse(c, res, 200)
 }
 
-// Cancel downloads
+type CancelIngestTaskResponse struct {
+	IngestTaskID int    `json:"ingest_task_id"`
+	Status       string `json:"status" example:"pending_cancel"`
+}
+
+// @Router /api/v1/ingest/{taskID}/cancel [post]
+// @Summary Cancel an ingest/download task
+// @Tags Download
+// @Accept json
+// @Produce json
+// @Param taskID path int true "Task ID"
+// @Success 200 {object} V1SuccessResponse{data=CancelIngestTaskResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func CancelIngestTaskHandler(c *gin.Context) {
 	taskIDStr := c.Param("taskID")
 	taskID, err := strconv.Atoi(taskIDStr)
@@ -176,5 +226,5 @@ func CancelIngestTaskHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to cancel task"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"ingest_task_id": taskID, "status": "pending_cancel"}, 200)
+	helpers.SuccessResponse(c, CancelIngestTaskResponse{IngestTaskID: taskID, Status: "pending_cancel"}, 200)
 }

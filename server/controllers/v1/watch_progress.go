@@ -13,6 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type SetPlaybackProgressResponse struct {
+	Watched bool `json:"watched" example:"false"`
+}
+
 // @Router /v1/movie/{id}/playback [post]
 // @Router /v1/tv/{id}/playback [post]
 // @Summary Set Playback Progress
@@ -21,7 +25,7 @@ import (
 // @Produce json
 // @Param id path int true "Media ID" example(tmdb-1234)
 // @Param body body model.WatchProgress true "Watch Progress Payload"
-// @Success 200 {object} V1SuccessResponse{data=object}
+// @Success 200 {object} V1SuccessResponse{data=SetPlaybackProgressResponse}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func SetPlaybackProgressHandler(c *gin.Context) {
@@ -80,7 +84,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			}
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil)
-			helpers.SuccessResponse(c, gin.H{"watched": true}, 200)
+			helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
 			return
 		case database.MediaTypeTVShow:
 			if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
@@ -106,7 +110,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
 				watchProgress.SeasonNumber, watchProgress.EpisodeNumber, nil)
-			helpers.SuccessResponse(c, gin.H{"watched": true}, 200)
+			helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
 			return
 		}
 	}
@@ -118,7 +122,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error setting watch history"))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"watched": false}, 200)
+	helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: false}, 200)
 }
 
 // @Router /v1/movie/{id}/playback [get]
@@ -129,7 +133,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Media ID" example(tmdb-1234)
 // @Param seasonNumber path int false "Season Number"
-// @Success 200 {object} V1SuccessResponse{data=object}
+// @Success 200 {object} V1SuccessResponse{data=[]model.WatchProgress}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetPlaybackProgressHandler(c *gin.Context) {

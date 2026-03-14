@@ -340,6 +340,12 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, rewatchRecord, 200)
 }
 
+type AddWatchHistoryMovieResponse struct {
+	MediaSource      string `json:"media_source"`
+	ActionType       string `json:"action_type"`
+	InsertedSourceID *int   `json:"inserted_source_id"`
+}
+
 // @Router /v1/movie/{id}/history [post]
 // @Summary Add Movie Watch History
 // @Tags Watch History
@@ -347,7 +353,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Media ID" example(tmdb-1234)
 // @Param body body model.WatchHistoryMoviePayload true "Watch History Payload"
-// @Success 200 {object} V1SuccessResponse{data=object}
+// @Success 200 {object} V1SuccessResponse{data=AddWatchHistoryMovieResponse}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func AddWatchHistoryMovieHandler(c *gin.Context) {
@@ -376,9 +382,9 @@ func AddWatchHistoryMovieHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{
-		"media_source":       mediaSource,
-		"action_type":        strings.ToLower(watchHistoryPayload.ActionType),
-		"inserted_source_id": insertedSourceID,
+	helpers.SuccessResponse(c, AddWatchHistoryMovieResponse{
+		MediaSource:      mediaSource,
+		ActionType:       strings.ToLower(watchHistoryPayload.ActionType),
+		InsertedSourceID: insertedSourceID,
 	}, 200)
 }

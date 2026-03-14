@@ -15,6 +15,166 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LoginUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "Registration Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RegistrationUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.RegistrationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/backdrops": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get Media Backdrops",
+                "responses": {
+                    "200": {
+                        "description": "URL to backdrop",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/catalog/{id}": {
             "get": {
                 "consumes": [
@@ -52,6 +212,1185 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/view.MediaRecordCatalog"
                                             }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/collection/hound-library": {
+            "get": {
+                "description": "Get content downloaded to Hound",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "Get Hound Library",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Media Type eg. tvshow or movie",
+                        "name": "media_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Genre IDs",
+                        "name": "genre_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.CollectionView"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/continue_watching": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Activity"
+                ],
+                "summary": "Get continue watching list",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.WatchAction"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/download/{encodedString}": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download media file to server",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Encoded Stream String - get from Query providers",
+                        "name": "encodedString",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.DownloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ingest": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get Ingest Tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma separated status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.IngestTaskResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ingest/{taskID}/cancel": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Cancel an ingest/download task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.CancelIngestTaskResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media_files": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media Files"
+                ],
+                "summary": "Get all media file records",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.MediaFilesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media_files/{id}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media Files"
+                ],
+                "summary": "Delete a media file",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movie/genres": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Shows",
+                    "Genres"
+                ],
+                "summary": "Get Movie Genres",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/database.GenreRecord"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movie/{id}/continue_watching": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Activity"
+                ],
+                "summary": "Get next watch action for a media",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.WatchAction"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movie/{id}/media_files": {
+            "get": {
+                "description": "Get",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media Files"
+                ],
+                "summary": "Get Movie Media Files by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movie/{id}/providers": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Providers"
+                ],
+                "summary": "Search Stream Providers for Movies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/search": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "General Media Search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search Query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/view.GeneralSearchResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stream/{encodedString}": {
+            "get": {
+                "description": "A streamable link for a video defined by the encodedString",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stream"
+                ],
+                "summary": "Stream Video",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Encoded Stream Details",
+                        "name": "encodedString",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/torrent/{encodedString}": {
+            "post": {
+                "description": "Adds a p2p torrent to the server for streaming/download.\nNot strictly necessary, as calling stream directly invokes this. May be deprecated in the future.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stream"
+                ],
+                "summary": "Add Torrent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Encoded Stream Details",
+                        "name": "encodedString",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/genres": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TV Shows",
+                    "Genres"
+                ],
+                "summary": "Get TV Show Genres",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/database.GenreRecord"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/{id}/continue_watching": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Activity"
+                ],
+                "summary": "Get next watch action for a media",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.WatchAction"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/{id}/media_files": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media Files"
+                ],
+                "summary": "Search TV Show Media Files by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TV Show ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "season",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Episode Number",
+                        "name": "episode",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/{id}/providers": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Providers"
+                ],
+                "summary": "Search Stream Providers for TV Shows by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "season",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Episode Number",
+                        "name": "episode",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Episode Group ID",
+                        "name": "episode_group_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/{id}/season/{seasonNumber}/download": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download TV Season",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "seasonNumber",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Download Preferences",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TVSeasonDownloadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/v1.TVSeasonDownloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/watch_stats": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watch Activity"
+                ],
+                "summary": "Get Watch Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Time RFC3339",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Time RFC3339",
+                        "name": "end_time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.WatchStats"
                                         }
                                     }
                                 }
@@ -805,7 +2144,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/definitions/v1.AddWatchHistoryMovieResponse"
                                         }
                                     }
                                 }
@@ -860,7 +2199,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.WatchProgress"
+                                            }
                                         }
                                     }
                                 }
@@ -922,7 +2264,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/definitions/v1.SetPlaybackProgressResponse"
                                         }
                                     }
                                 }
@@ -1402,7 +2744,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/definitions/v1.SetPlaybackProgressResponse"
                                         }
                                     }
                                 }
@@ -1653,7 +2995,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.WatchProgress"
+                                            }
                                         }
                                     }
                                 }
@@ -1751,6 +3096,39 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "database.DownloadPreference": {
+            "type": "object",
+            "properties": {
+                "info_hash_preference": {
+                    "$ref": "#/definitions/database.DownloadPreferenceInfoHash"
+                },
+                "match_type": {
+                    "type": "string"
+                },
+                "string_match_preference": {
+                    "$ref": "#/definitions/database.DownloadPreferenceString"
+                }
+            }
+        },
+        "database.DownloadPreferenceInfoHash": {
+            "type": "object",
+            "properties": {
+                "info_hash": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.DownloadPreferenceString": {
+            "type": "object",
+            "properties": {
+                "case_sensitive": {
+                    "type": "boolean"
+                },
+                "match_string": {
+                    "type": "string"
+                }
+            }
+        },
         "database.GenreObject": {
             "type": "object",
             "properties": {
@@ -1768,6 +3146,329 @@ const docTemplate = `{
                 },
                 "source_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "database.GenreRecord": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "genre": {
+                    "type": "string"
+                },
+                "genre_id": {
+                    "type": "integer"
+                },
+                "media_source": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string"
+                },
+                "source_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.IngestDownloadPreferences": {
+            "type": "object",
+            "properties": {
+                "preference_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.DownloadPreference"
+                    }
+                },
+                "strict_match": {
+                    "description": "whether if no match is found, to fail the download",
+                    "type": "boolean"
+                }
+            }
+        },
+        "database.IngestTaskFullRecord": {
+            "type": "object",
+            "properties": {
+                "connected_seeders": {
+                    "description": "number of seeders (p2p only)",
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "destination_path": {
+                    "description": "path to final destination in hound media dir",
+                    "type": "string"
+                },
+                "download_preferences": {
+                    "description": "for season/auto downloads",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/database.IngestDownloadPreferences"
+                        }
+                    ]
+                },
+                "download_priority": {
+                    "description": "priority of task, not used for now",
+                    "type": "integer"
+                },
+                "download_protocol": {
+                    "description": "p2p, http, external (not downloaded by hound)",
+                    "type": "string"
+                },
+                "download_speed": {
+                    "description": "bytes per second",
+                    "type": "integer"
+                },
+                "downloaded_bytes": {
+                    "type": "integer"
+                },
+                "episode_media_record": {
+                    "$ref": "#/definitions/database.MediaRecord"
+                },
+                "file_idx": {
+                    "description": "index for p2p only",
+                    "type": "integer"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "ingest_task_id": {
+                    "type": "integer"
+                },
+                "last_message": {
+                    "description": "store last error message",
+                    "type": "string"
+                },
+                "last_seen": {
+                    "description": "track stale download/copy jobs",
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string"
+                },
+                "movie_media_record": {
+                    "$ref": "#/definitions/database.MediaRecord"
+                },
+                "record_id": {
+                    "description": "episode or movie to be ingested",
+                    "type": "integer"
+                },
+                "show_media_record": {
+                    "$ref": "#/definitions/database.MediaRecord"
+                },
+                "source_path": {
+                    "description": "path to source file/download path",
+                    "type": "string"
+                },
+                "source_uri": {
+                    "description": "magnet uri with trackers / http link",
+                    "type": "string"
+                },
+                "started_at": {
+                    "description": "time queued task was started",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending_insert, processing, completed",
+                    "type": "string"
+                },
+                "total_bytes": {
+                    "description": "total bytes to be downloaded",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.MediaFile": {
+            "type": "object",
+            "properties": {
+                "bit_rate": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "file_id": {
+                    "type": "integer"
+                },
+                "file_idx": {
+                    "type": "integer"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "file_origin": {
+                    "type": "string"
+                },
+                "file_path": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "format_long_name": {
+                    "type": "string"
+                },
+                "format_name": {
+                    "type": "string"
+                },
+                "framerate": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "original_file_name": {
+                    "type": "string"
+                },
+                "record_id": {
+                    "type": "integer"
+                },
+                "source_uri": {
+                    "type": "string"
+                },
+                "streams": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.Stream"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "database.MediaRecord": {
+            "type": "object",
+            "properties": {
+                "ancestor_id": {
+                    "description": "reference to fk record_id of the show, for episodes",
+                    "type": "integer"
+                },
+                "backdrop_uri": {
+                    "description": "backgrounds",
+                    "type": "string"
+                },
+                "content_hash": {
+                    "description": "checksum to compare changes/updates",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "description": "duration/runtime in minutes",
+                    "type": "integer"
+                },
+                "episode_number": {
+                    "type": "integer"
+                },
+                "full_data": {
+                    "description": "full data from tmdb",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "genres": {
+                    "description": "to store genres, tags",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.GenreObject"
+                    }
+                },
+                "last_air_date": {
+                    "description": "for shows, latest episode air date",
+                    "type": "string"
+                },
+                "logo_uri": {
+                    "description": "logo for the show/movie",
+                    "type": "string"
+                },
+                "media_source": {
+                    "description": "tmdb, openlibrary, etc. the main metadata provider",
+                    "type": "string"
+                },
+                "media_title": {
+                    "description": "movie, tvshow, season or episode title",
+                    "type": "string"
+                },
+                "next_air_date": {
+                    "description": "for shows, next scheduled episode air date",
+                    "type": "string"
+                },
+                "origin_country": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "original_language": {
+                    "type": "string"
+                },
+                "original_title": {
+                    "description": "original title in release language",
+                    "type": "string"
+                },
+                "overview": {
+                    "description": "game of thrones is a show about ...",
+                    "type": "string"
+                },
+                "parent_id": {
+                    "description": "reference to fk record_id, null for movie, tvshow",
+                    "type": "integer"
+                },
+                "record_id": {
+                    "type": "integer"
+                },
+                "record_type": {
+                    "description": "movie,tvshow,season,episode",
+                    "type": "string"
+                },
+                "release_date": {
+                    "description": "2012-12-30, for shows/seasons - first_air_date, for episodes - air_date",
+                    "type": "string"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "sort_index": {
+                    "description": "not in use yet, used to sort based on user preferences",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "description": "tmdb id, episode/season tmdb id",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Returning Series, Released, etc.",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.TagObject"
+                    }
+                },
+                "thumbnail_uri": {
+                    "description": "poster image for shows/movies, still image for episode",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1798,6 +3499,51 @@ const docTemplate = `{
                 }
             }
         },
+        "database.Stream": {
+            "type": "object",
+            "properties": {
+                "channel_layout": {
+                    "type": "string"
+                },
+                "channels": {
+                    "type": "integer"
+                },
+                "codec_long_name": {
+                    "type": "string"
+                },
+                "codec_name": {
+                    "type": "string"
+                },
+                "codec_type": {
+                    "description": "video, audio, subtitle",
+                    "type": "string"
+                },
+                "color_primaries": {
+                    "type": "string"
+                },
+                "color_range": {
+                    "type": "string"
+                },
+                "color_space": {
+                    "type": "string"
+                },
+                "color_transfer": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "pix_fmt": {
+                    "type": "string"
+                },
+                "profile": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "database.TagObject": {
             "type": "object",
             "properties": {
@@ -1807,6 +3553,44 @@ const docTemplate = `{
                 },
                 "tagName": {
                     "type": "string"
+                }
+            }
+        },
+        "database.VideoMetadata": {
+            "type": "object",
+            "properties": {
+                "bit_rate": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "format_long_name": {
+                    "type": "string"
+                },
+                "format_name": {
+                    "type": "string"
+                },
+                "framerate": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "streams": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.Stream"
+                    }
+                },
+                "width": {
+                    "type": "integer"
                 }
             }
         },
@@ -1938,6 +3722,82 @@ const docTemplate = `{
                 }
             }
         },
+        "database.WatchStats": {
+            "type": "object",
+            "properties": {
+                "episodes_watched": {
+                    "description": "a show is included even though it's not completed",
+                    "type": "integer"
+                },
+                "finish_time": {
+                    "type": "string"
+                },
+                "movies_watched": {
+                    "type": "integer"
+                },
+                "shows_watched": {
+                    "type": "integer"
+                },
+                "start_time": {
+                    "description": "query start, finish time",
+                    "type": "string"
+                },
+                "total_episodes_duration": {
+                    "type": "integer"
+                },
+                "total_movies_duration": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.LoginUser": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.NextEpisode": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "description": "only defined for shows",
+                    "type": "integer"
+                },
+                "episode_source_id": {
+                    "description": "episode source id",
+                    "type": "string"
+                },
+                "episode_title": {
+                    "type": "string"
+                },
+                "media_title": {
+                    "description": "movie/show title",
+                    "type": "string"
+                },
+                "overview": {
+                    "type": "string"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "season_number": {
+                    "description": "only defined for shows",
+                    "type": "integer"
+                },
+                "thumbnail_uri": {
+                    "type": "string"
+                }
+            }
+        },
         "model.PlayerSettings": {
             "type": "object",
             "properties": {
@@ -1960,6 +3820,64 @@ const docTemplate = `{
                 },
                 "subtitle_lang": {
                     "type": "string"
+                }
+            }
+        },
+        "model.RegistrationUser": {
+            "type": "object",
+            "required": [
+                "first_name",
+                "last_name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WatchAction": {
+            "type": "object",
+            "properties": {
+                "media_source": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string"
+                },
+                "next_episode": {
+                    "description": "only for next episode watch action type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.NextEpisode"
+                        }
+                    ]
+                },
+                "source_id": {
+                    "type": "string"
+                },
+                "watch_action_type": {
+                    "description": "next_episode or resume",
+                    "type": "string"
+                },
+                "watch_progress": {
+                    "description": "only for resume watch action type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.WatchProgress"
+                        }
+                    ]
                 }
             }
         },
@@ -2100,6 +4018,182 @@ const docTemplate = `{
                 }
             }
         },
+        "providers.ProviderObject": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "description": "provider name in /providers folder",
+                    "type": "string"
+                },
+                "streams": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/providers.StreamObject"
+                    }
+                }
+            }
+        },
+        "providers.ProviderResponseObject": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "type": "integer"
+                },
+                "episode_source_id": {
+                    "description": "tv shows only",
+                    "type": "string"
+                },
+                "imdb_id": {
+                    "description": "starts with 'tt'",
+                    "type": "string"
+                },
+                "media_source": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "description": "movies or tvshows, etc.",
+                    "type": "string"
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/providers.ProviderObject"
+                    }
+                },
+                "season_number": {
+                    "description": "shows only",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "providers.StreamObject": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "encoded_data": {
+                    "description": "data encoded in AES for playing streams in hound",
+                    "type": "string"
+                },
+                "file_idx": {
+                    "description": "file index for p2p type",
+                    "type": "integer"
+                },
+                "file_name": {
+                    "description": "might not be reliable",
+                    "type": "string"
+                },
+                "file_size": {
+                    "description": "file size in bytes",
+                    "type": "integer"
+                },
+                "info_hash": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "sources": {
+                    "description": "trackers for p2p",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "stream_protocol": {
+                    "description": "http or p2p",
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "uri": {
+                    "description": "magnet link, http link, or file path",
+                    "type": "string"
+                },
+                "video_metadata": {
+                    "$ref": "#/definitions/database.VideoMetadata"
+                }
+            }
+        },
+        "sources.IGDBSearchObject": {
+            "type": "object",
+            "properties": {
+                "cover": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer"
+                        },
+                        "image_id": {
+                            "type": "string"
+                        },
+                        "image_url": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "first_release_date": {
+                    "type": "integer"
+                },
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "media_source": {
+                    "type": "string"
+                },
+                "media_title": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "platforms": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "source_id": {
+                    "type": "integer"
+                },
+                "thumbnail_uri": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AddToCollectionRequest": {
             "type": "object",
             "required": [
@@ -2122,6 +4216,20 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.AddWatchHistoryMovieResponse": {
+            "type": "object",
+            "properties": {
+                "action_type": {
+                    "type": "string"
+                },
+                "inserted_source_id": {
+                    "type": "integer"
+                },
+                "media_source": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AddWatchHistoryTVResponse": {
             "type": "object",
             "properties": {
@@ -2139,6 +4247,18 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "v1.CancelIngestTaskResponse": {
+            "type": "object",
+            "properties": {
+                "ingest_task_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending_cancel"
                 }
             }
         },
@@ -2164,6 +4284,91 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "v1.DownloadResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "started"
+                }
+            }
+        },
+        "v1.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RegistrationResponse": {
+            "type": "object",
+            "properties": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SetPlaybackProgressResponse": {
+            "type": "object",
+            "properties": {
+                "watched": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "v1.TVSeasonDownloadRequest": {
+            "type": "object",
+            "properties": {
+                "episodes_to_download": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "preference_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.DownloadPreference"
+                    }
+                },
+                "skip_downloaded_episodes": {
+                    "type": "boolean"
+                },
+                "strict_match": {
+                    "description": "whether if no match is found, to fail the download",
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TVSeasonDownloadResponse": {
+            "type": "object",
+            "properties": {
+                "queued_episodes": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "season": {
+                    "type": "integer"
+                },
+                "skipped_episodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.skippedEpisode"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "example": "queued"
                 }
             }
         },
@@ -2195,6 +4400,17 @@ const docTemplate = `{
                         "error"
                     ],
                     "example": "success"
+                }
+            }
+        },
+        "v1.skippedEpisode": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
                 }
             }
         },
@@ -2290,6 +4506,69 @@ const docTemplate = `{
                 "thumbnail_uri": {
                     "description": "profile pic of person",
                     "type": "string"
+                }
+            }
+        },
+        "view.GeneralSearchResponse": {
+            "type": "object",
+            "properties": {
+                "game_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sources.IGDBSearchObject"
+                    }
+                },
+                "movie_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.MediaRecordCatalog"
+                    }
+                },
+                "tv_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/view.MediaRecordCatalog"
+                    }
+                }
+            }
+        },
+        "view.IngestTaskResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.IngestTaskFullRecord"
+                    }
+                },
+                "total_records": {
+                    "type": "integer"
+                }
+            }
+        },
+        "view.MediaFilesResponse": {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.MediaFile"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total_records": {
+                    "type": "integer"
                 }
             }
         },

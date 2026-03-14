@@ -10,6 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /api/v1/collection/hound-library [get]
+// @Summary Get Hound Library
+// @Description Get content downloaded to Hound
+// @Tags Collections
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Param media_type query string false "Media Type eg. tvshow or movie"
+// @Param genre_id query []int false "Genre IDs"
+// @Success 200 {object} V1SuccessResponse{data=view.CollectionView}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetHoundLibraryHandler(c *gin.Context) {
 	limitQuery := c.Query("limit")
 	offsetQuery := c.Query("offset")

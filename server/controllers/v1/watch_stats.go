@@ -8,6 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /api/v1/watch_stats [get]
+// @Summary Get Watch Stats
+// @Tags Watch Activity
+// @Accept json
+// @Produce json
+// @Param start_time query string false "Start Time RFC3339"
+// @Param end_time query string false "End Time RFC3339"
+// @Success 200 {object} V1SuccessResponse{data=database.WatchStats}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetWatchStatsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
