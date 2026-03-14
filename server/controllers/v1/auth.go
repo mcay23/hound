@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/helpers"
 	"hound/model"
 	"net/http"
@@ -27,14 +27,13 @@ type RegistrationResponse struct {
 // @Failure 500 {object} V1ErrorResponse
 func RegistrationHandler(c *gin.Context) {
 	if !viper.GetBool("auth.allow-registration") {
-		err := errors.New(helpers.BadRequest)
-		_ = helpers.LogErrorWithMessage(err, "Registration is currently disabled. Please contact your system admin.")
+		err := fmt.Errorf("%w: Registration is currently disabled. Please contact your system admin.", helpers.BadRequestError)
 		helpers.ErrorResponse(c, err)
 		return
 	}
 	userPayload := model.RegistrationUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to bind registration body")
+		err := fmt.Errorf("%w: Failed to bind registration body", helpers.BadRequestError)
 		helpers.ErrorResponse(c, err)
 		return
 	}
@@ -108,13 +107,12 @@ func LoginHandler(c *gin.Context) {
 func validateClientHeaders(c *gin.Context) (string, string, error) {
 	clientID := strings.ToLower(c.GetHeader("X-Client-Id"))
 	if !slices.Contains(model.SupportedClientIDs, clientID) {
-		err := errors.New(helpers.BadRequest)
-		_ = helpers.LogErrorWithMessage(err, "Invalid or missing X-Client-Id header")
+		err := helpers.LogErrorWithMessage(helpers.BadRequestError, "Invalid or missing X-Client-Id header")
 		return "", "", err
 	}
 	clientPlatform := strings.ToLower(c.GetHeader("X-Client-Platform"))
 	if !slices.Contains(model.SupportedClientPlatforms, clientPlatform) {
-		err := errors.New(helpers.BadRequest)
+		err := helpers.LogErrorWithMessage(helpers.BadRequestError, "Invalid or missing X-Client-Platform header")
 		_ = helpers.LogErrorWithMessage(err, "Invalid or missing X-Client-Platform header")
 		return "", "", err
 	}

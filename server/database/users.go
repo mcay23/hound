@@ -1,7 +1,6 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"hound/helpers"
 	"time"
@@ -44,10 +43,10 @@ func GetUser(username string) (*User, error) {
 	var user User
 	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
 	}
 	if !found {
-		return nil, errors.New(helpers.BadRequest)
+		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, helpers.NotFoundError)
 	}
 	return &user, nil
 }
@@ -62,7 +61,7 @@ func GetUserIDFromUsername(username string) (int64, error) {
 	}
 	user, err := GetUser(username)
 	if err != nil {
-		return -1, helpers.LogErrorWithMessage(err, "Error retrieving user_id from username")
+		return -1, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
 	}
 	SetCache(cacheKey, user.UserID, 48*time.Hour)
 	return user.UserID, nil
@@ -72,10 +71,10 @@ func GetUsernameFromID(userID int64) (string, error) {
 	var user User
 	found, err := databaseEngine.Table(usersTable).ID(userID).Get(&user)
 	if !found {
-		return "", errors.New(helpers.BadRequest)
+		return "", fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, helpers.NotFoundError)
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, err)
 	}
 	return user.Username, nil
 }
@@ -83,5 +82,8 @@ func GetUsernameFromID(userID int64) (string, error) {
 func GetUsers() ([]User, error) {
 	var users []User
 	err := databaseEngine.Table(usersTable).Find(&users)
-	return users, err
+	if err != nil {
+		return nil, fmt.Errorf("query %s: %w", usersTable, err)
+	}
+	return users, nil
 }

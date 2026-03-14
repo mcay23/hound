@@ -1,6 +1,9 @@
 package database
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	IngestTasksTable = "ingest_tasks"
@@ -140,7 +143,7 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 	if len(status) == 0 {
 		ct, err := databaseEngine.Table(IngestTasksTable).Count()
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("count %s: %w", IngestTasksTable, err)
 		}
 		var tasks []IngestTask
 		sess := databaseEngine.Table(IngestTasksTable).Desc("created_at")
@@ -149,15 +152,15 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 		}
 		err = sess.Omit("full_data").Find(&tasks)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("query %s: %w", IngestTasksTable, err)
 		}
-		return int(ct), enrichIngestTasks(tasks), err
+		return int(ct), enrichIngestTasks(tasks), nil
 	}
 	// status given, find tasks with status
 	ct := databaseEngine.Table(IngestTasksTable).In("status", status)
 	totalRecords, err := ct.Count()
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("count %s: %w", IngestTasksTable, err)
 	}
 	var tasks []IngestTask
 	sess := databaseEngine.Table(IngestTasksTable).
@@ -168,9 +171,9 @@ func FindIngestTasksForStatus(status []string, limit int, offset int) (int, []In
 	}
 	err = sess.Omit("full_data").Find(&tasks)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("query %s: %w", IngestTasksTable, err)
 	}
-	return int(totalRecords), enrichIngestTasks(tasks), err
+	return int(totalRecords), enrichIngestTasks(tasks), nil
 }
 
 // this gets the movie record, or both the episode and show record for tv shows
@@ -275,7 +278,7 @@ func GetNextPendingDownloadTask() (*IngestTask, error) {
 		IngestStatusPendingDownload).Get(&task)
 	if err != nil {
 		sess.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("query %s for status %s: %w", IngestTasksTable, IngestStatusPendingDownload, err)
 	}
 	if !has {
 		sess.Rollback()
@@ -287,7 +290,7 @@ func GetNextPendingDownloadTask() (*IngestTask, error) {
 	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
 		sess.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("update %s for ingest_task_id %d: %w", IngestTasksTable, task.IngestTaskID, err)
 	}
 	sess.Commit()
 	return &task, nil
@@ -305,7 +308,7 @@ func GetNextPendingIngestTask() (*IngestTask, error) {
 		IngestStatusPendingInsert).Get(&task)
 	if err != nil {
 		sess.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("query %s for status %s: %w", IngestTasksTable, IngestStatusPendingInsert, err)
 	}
 	if !has {
 		sess.Rollback()
@@ -317,7 +320,7 @@ func GetNextPendingIngestTask() (*IngestTask, error) {
 	if _, err := sess.Table(IngestTasksTable).ID(task.IngestTaskID).
 		Cols("status", "started_at", "last_seen").Update(&task); err != nil {
 		sess.Rollback()
-		return nil, err
+		return nil, fmt.Errorf("update %s for ingest_task_id %d: %w", IngestTasksTable, task.IngestTaskID, err)
 	}
 	sess.Commit()
 	return &task, nil

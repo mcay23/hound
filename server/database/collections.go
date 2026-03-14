@@ -61,13 +61,16 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	var collection CollectionRecord
 	found, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collection)
 	if err != nil {
-		return nil, nil, -1, err
+		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d: %w: %w", collectionsTable,
+			collectionID, helpers.InternalServerError, err)
 	}
 	if !found {
-		return nil, nil, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "getCollectionRecords(): No collection with this ID")
+		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d: %w", collectionsTable,
+			collectionID, helpers.NotFoundError)
 	}
 	if !collection.IsPublic && collection.OwnerUserID != userID {
-		return nil, nil, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "user does not have access to collection")
+		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d, owner_user_id %d does not have access: %w",
+			collectionsTable, collectionID, userID, helpers.UnauthorizedError)
 	}
 	sess := databaseEngine.Table(mediaRecordsTable)
 	if limit > 0 && offset >= 0 {
@@ -79,12 +82,15 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 		OrderBy(fmt.Sprintf("%s.updated_at desc", collectionRelationsTable)).
 		Find(&recordGroups)
 	if err != nil {
-		return nil, nil, -1, err
+		return nil, nil, -1, fmt.Errorf("query %s, %s for collection_id %d: %w", mediaRecordsTable,
+			collectionRelationsTable, collectionID, err)
 	}
 	//TODO remove
-	totalRecords, err := databaseEngine.Table(mediaRecordsTable).Where("collection_id = ?", collectionID).Join("INNER", collectionRelationsTable, fmt.Sprintf("%s.record_id = %s.record_id", mediaRecordsTable, collectionRelationsTable)).Count()
+	totalRecords, err := databaseEngine.Table(mediaRecordsTable).Where("collection_id = ?", collectionID).
+		Join("INNER", collectionRelationsTable, fmt.Sprintf("%s.record_id = %s.record_id", mediaRecordsTable, collectionRelationsTable)).Count()
 	if err != nil {
-		return nil, nil, -1, err
+		return nil, nil, -1, fmt.Errorf("query %s, %s for collection_id %d: %w",
+			mediaRecordsTable, collectionRelationsTable, collectionID, err)
 	}
 	return recordGroups, &collection, totalRecords, nil
 }
@@ -104,7 +110,10 @@ func GetRecentCollectionRecords(userID int64, limit int) ([]MediaRecordGroup, er
 		LIMIT ?
 	`, mediaRecordsTable, collectionRelationsTable)
 	err := databaseEngine.SQL(query, userID, limit).Find(&recordGroups)
-	return recordGroups, err
+	if err != nil {
+		return recordGroups, fmt.Errorf("query %s: %w", collectionRelationsTable, err)
+	}
+	return recordGroups, nil
 }
 
 func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64) error {
@@ -113,10 +122,10 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 		var collectionRecord CollectionRecord
 		has, err := databaseEngine.Table(collectionsTable).Where("owner_user_id = ?", userID).Where("is_primary = ?", true).Get(&collectionRecord)
 		if err != nil {
-			return err
+			return fmt.Errorf("query %s for owner_user_id %d, is_primary true: %w", collectionsTable, userID, err)
 		}
 		if !has {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection not found, no primary col found for user")
+			return fmt.Errorf("query %s owner_user_id %d, is_primary true: %w", collectionsTable, userID, helpers.NotFoundError)
 		}
 		collectionID = &collectionRecord.CollectionID
 	} else {
@@ -125,14 +134,15 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 		var collectionRecord CollectionRecord
 		has, err := databaseEngine.Table(collectionsTable).ID(*collectionID).Get(&collectionRecord)
 		if err != nil {
-			return err
+			return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, *collectionID, err)
 		}
 		if !has {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection not found")
+			return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, *collectionID, helpers.NotFoundError)
 		}
 		// check if user is authorized to add to collection
 		if collectionRecord.OwnerUserID != userID {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
+			return fmt.Errorf("insert %s for collection_id %d, owner_user_id %d: %w",
+				collectionsTable, *collectionID, userID, helpers.UnauthorizedError)
 		}
 	}
 	// insert record to db
@@ -146,7 +156,8 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 		if errors.As(err, &pqErr) {
 			// unique key failed
 			if pqErr.Code == "23505" {
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "Record already exists in collection")
+				return fmt.Errorf("insert %s for record_id %d, collection_id %d: %w",
+					collectionRelationsTable, recordID, *collectionID, helpers.AlreadyExistsError)
 			}
 		}
 	}
@@ -157,14 +168,15 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	var collectionRecord CollectionRecord
 	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collectionRecord)
 	if err != nil {
-		return err
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
 	}
 	if !has {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection not found")
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, helpers.NotFoundError)
 	}
-	// check if user is authorized to add to collection
+	// check if user is authorized to this collection
 	if collectionRecord.OwnerUserID != userID {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Collection - owner mismatch, unauthorized")
+		return fmt.Errorf("delete %s for collection_id %d, record_id %d, user_id %d: %w",
+			collectionRelationsTable, collectionID, recordID, userID, helpers.UnauthorizedError)
 	}
 	// if user authenticated, remove
 	affected, _ := databaseEngine.Table(collectionRelationsTable).Delete(&CollectionRelation{
@@ -173,15 +185,19 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 		CollectionID: collectionID,
 	})
 	if affected == 0 {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollectionRelation(): No record with these parameters found")
+		return fmt.Errorf("delete %s for userID %d, record_id %d, collection_id %d: %w",
+			collectionRelationsTable, userID, recordID, collectionID, helpers.NotFoundError)
 	}
 	return nil
 }
 
 func CreateCollection(record CollectionRecord) (*int64, error) {
+	if record.OwnerUserID <= 0 {
+		return nil, fmt.Errorf("insert %s for owner_user_id %d invalid owner_user_id: %w", collectionsTable, record.OwnerUserID, helpers.BadRequestError)
+	}
 	_, err := databaseEngine.Table(collectionsTable).Insert(&record)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("insert %s for owner_user_id %d: %w", collectionsTable, record.OwnerUserID, err)
 	}
 	return &record.CollectionID, nil
 }
@@ -195,7 +211,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	})
 	if err != nil {
 		_ = session.Rollback()
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): Failed to delete collection IDs")
+		return fmt.Errorf("delete %s for owner_user_id %d, collection_id %d: %w", collectionRelationsTable, userID, collectionID, err)
 	}
 	// primary collections can't be deleted
 	affected, err := session.Table(collectionsTable).Where("is_primary = ?", false).Delete(&CollectionRecord{
@@ -204,11 +220,11 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	})
 	if err != nil {
 		_ = session.Rollback()
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): Failed to delete comments")
+		return fmt.Errorf("delete %s for owner_user_id %d, collection_id %d: %w", collectionsTable, userID, collectionID, err)
 	}
 	if affected <= 0 {
 		_ = session.Rollback()
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCollection(): No collection found with this ID or invalid user")
+		return fmt.Errorf("query %s for owner_user_id %d, collection_id %d: %w", collectionsTable, userID, collectionID, helpers.NotFoundError)
 	}
 	err = session.Commit()
 	return err
@@ -222,13 +238,13 @@ func FindCollection(query CollectionRecord, limit int, offset int) ([]Collection
 	}
 	err := sess.Find(&records, &query)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("query %s: %w", collectionsTable, err)
 	}
 	// restart session to get total count
 	sess = databaseEngine.Table(collectionsTable)
 	totalRecords, err := sess.Count(&query)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("count %s: %w", collectionsTable, err)
 	}
 	return records, int(totalRecords), nil
 }

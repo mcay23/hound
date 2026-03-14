@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hound/helpers"
 	"log/slog"
 	"os"
@@ -58,12 +59,11 @@ func ClearCache() {
 // returns whether the key exists in bool
 func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	if db == nil {
-		return false, errors.New("cache not initialized")
+		return false, fmt.Errorf("cache not initialized: %w", helpers.InternalServerError)
 	}
 	data, err := json.Marshal(value)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "set cache: failed to marshal json for key: "+key)
-		return false, err
+		return false, fmt.Errorf("set cache for key %s: %w", key, err)
 	}
 	err = db.Update(func(txn *badger.Txn) error {
 		e := badger.NewEntry([]byte(key), data)
@@ -73,8 +73,7 @@ func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 		return txn.SetEntry(e)
 	})
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "set cache: failed to set/update cache for key: "+key)
-		return false, err
+		return false, fmt.Errorf("set cache for key %s: %w", key, err)
 	}
 	slog.Debug("Cache set", "key", key)
 	return true, nil
@@ -90,10 +89,14 @@ func GetCache(key string, out interface{}) (bool, error) {
 	err := db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
 		if err != nil {
-			return err
+			return fmt.Errorf("get cache for key %s: %w", key, err)
 		}
 		return item.Value(func(val []byte) error {
-			return json.Unmarshal(val, out)
+			err := json.Unmarshal(val, out)
+			if err != nil {
+				return fmt.Errorf("get cache for key %s: %w", key, err)
+			}
+			return nil
 		})
 	})
 	if err == badger.ErrKeyNotFound {
@@ -101,17 +104,16 @@ func GetCache(key string, out interface{}) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting cache key:"+key)
-		return false, err
+		return false, fmt.Errorf("get cache for key %s: %w", key, err)
 	}
-	// slog.Info("Cache found", "key", key)
+	slog.Debug("cache found", "key", key)
 	return true, nil
 }
 
 // Returns all keys starting with the given prefix
 func GetKeysWithPrefix(prefix string) ([]string, error) {
 	if db == nil {
-		return nil, errors.New("cache not initialized")
+		return nil, fmt.Errorf("cache not initialized")
 	}
 	var keys []string
 	err := db.View(func(txn *badger.Txn) error {
@@ -128,8 +130,7 @@ func GetKeysWithPrefix(prefix string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting keys with prefix: "+prefix)
-		return nil, err
+		return nil, fmt.Errorf("get cache for keys with prefix %s: %w", prefix, err)
 	}
 	return keys, nil
 }
@@ -143,9 +144,8 @@ func DeleteCache(key string) error {
 		return txn.Delete([]byte(key))
 	})
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error deleting cache key: "+key)
-		return err
+		return fmt.Errorf("delete cache for key %s: %w", key, err)
 	}
-	slog.Debug("Cache deleted", "key", key)
+	slog.Debug("cache deleted", "key", key)
 	return nil
 }

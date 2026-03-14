@@ -11,6 +11,7 @@ func SuccessResponse(c *gin.Context, payload interface{}, statusCode int) {
 }
 
 func ErrorResponse(c *gin.Context, err error) {
+	LogErrorWithMessage(err, "API Error")
 	c.AbortWithStatusJSON(GetErrorStatusCode(err), gin.H{"status": "error", "error": err.Error()})
 }
 

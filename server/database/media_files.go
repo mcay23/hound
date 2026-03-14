@@ -1,7 +1,6 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"hound/helpers"
 	"time"
@@ -87,7 +86,7 @@ func GetMediaFiles(limit *int, offset *int) (int, []*MediaFile, error) {
 	// total number of all media files
 	count, err := sess.Count()
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("count %s: %w", mediaFilesTable, err)
 	}
 	// necessary for second run
 	sess = sess.Table(mediaFilesTable)
@@ -99,14 +98,19 @@ func GetMediaFiles(limit *int, offset *int) (int, []*MediaFile, error) {
 		}
 	}
 	err = sess.Find(&files)
-	return int(count), files, err
+	if err != nil {
+		return 0, nil, fmt.Errorf("query %s: %w", mediaFilesTable, err)
+	}
+	return int(count), files, nil
 }
 
 func DeleteMediaFileRecord(fileID int) error {
 	affected, err := databaseEngine.Table(mediaFilesTable).ID(fileID).Delete(&MediaFile{})
-	if affected == 0 {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			fmt.Sprintf("Media file with id %d not found", fileID))
+	if err != nil {
+		return err
 	}
-	return err
+	if affected == 0 {
+		return fmt.Errorf("media file with id %d not found: %w", fileID, helpers.NotFoundError)
+	}
+	return nil
 }

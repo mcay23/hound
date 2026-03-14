@@ -86,7 +86,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 		Where("source_id = ?", mediaRecord.SourceID).
 		Get(&existingRecord)
 	if err != nil {
-		return err
+		return fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s: %w", mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err)
 	}
 
 	// source_id is either movie, show, season, or episode id
@@ -99,7 +99,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 			// hash changed, update record in internal library
 			_, err = databaseEngine.Table(mediaRecordsTable).ID(recordID).Update(mediaRecord)
 			if err != nil {
-				return err
+				return fmt.Errorf("update %s for record_id %d (hash changed): %w", mediaRecordsTable, recordID, err)
 			}
 		}
 		// mutate in place
@@ -111,19 +111,20 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 			// concurrent insert race, often happens when ingesting external items
 			// since two episodes might attempt to upsert at the same time for new records
 			if !isUniqueViolation(err) {
-				return err
+				return fmt.Errorf("insert %s for record_type %s, media_source %s, source_id %s: %w",
+					mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err)
 			}
 			has, err = databaseEngine.Table(mediaRecordsTable).Where("record_type = ?", mediaRecord.RecordType).
 				Where("media_source = ?", mediaRecord.MediaSource).
 				Where("source_id = ?", mediaRecord.SourceID).
 				Get(&existingRecord)
 			if err != nil {
-				return err
+				return fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (concurrent insert race): %w",
+					mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err)
 			}
 			if !has {
-				return helpers.
-					LogErrorWithMessage(errors.New(helpers.InternalServerError),
-						"Failed to find media record, raise issue in github, this should not happen")
+				return fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (unexpected concurrent insert race - please raise issue in github): %w: %w",
+					mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err, helpers.NotFoundError)
 			}
 			recordID = existingRecord.RecordID
 			if existingRecord.ContentHash != mediaRecord.ContentHash {
@@ -147,7 +148,8 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 		Where("source_id = ?", record.SourceID).
 		Get(&recordData)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s: %w",
+			mediaRecordsTable, record.RecordType, record.MediaSource, record.SourceID, err)
 	}
 	// it's possible that another process/worker has upserted this record between the first check and the insert,
 	// thus failing the insert
@@ -155,7 +157,7 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 		_, err := sess.Table(mediaRecordsTable).Insert(record)
 		if err != nil {
 			if !isUniqueViolation(err) {
-				return false, err
+				return false, fmt.Errorf("insert %s: %w", mediaRecordsTable, err)
 			}
 			// unique violation, refetch
 			has, err = sess.Table(mediaRecordsTable).Where("record_type = ?", record.RecordType).
@@ -163,12 +165,12 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 				Where("source_id = ?", record.SourceID).
 				Get(&recordData)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (concurrent insert race): %w",
+					mediaRecordsTable, record.RecordType, record.MediaSource, record.SourceID, err)
 			}
 			if !has {
-				return false, helpers.
-					LogErrorWithMessage(errors.New(helpers.InternalServerError),
-						"Failed to find media record, raise issue in github, this should not happen")
+				return false, fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (unexpected concurrent insert race - please raise issue in github): %w: %w",
+					mediaRecordsTable, record.RecordType, record.MediaSource, record.SourceID, err, helpers.NotFoundError)
 			}
 		} else {
 			return true, nil
@@ -180,7 +182,7 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 	}
 	_, err = sess.Table(mediaRecordsTable).ID(recordData.RecordID).Update(record)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("update %s for record_id %d: %w", mediaRecordsTable, recordData.RecordID, err)
 	}
 	return true, nil
 }
@@ -203,7 +205,7 @@ func BatchUpsertMediaRecords(sess *xorm.Session, records []*MediaRecord) error {
 		}
 		batch := records[start:end]
 		if err := batchUpsertChunk(sess, batch); err != nil {
-			return err
+			return fmt.Errorf("batch upsert %s of len %d, start %d, end %d: %w", mediaRecordsTable, len(batch), start, end, err)
 		}
 	}
 	return nil
@@ -393,10 +395,12 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
           AND show.source_id = ?;
     `, mediaSource, showSourceID).Find(&episodes)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("query %s for media_source %s, ancestor_id %s: %w", mediaRecordsTable,
+			mediaSource, showSourceID, err)
 	}
 	if len(episodes) <= 0 {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find any episodes for "+mediaSource+"-"+showSourceID)
+		return nil, nil, fmt.Errorf("query %s for media_source %s, ancestor_id %s (failed to find episodes): %w", mediaRecordsTable,
+			mediaSource, showSourceID, helpers.NotFoundError)
 	}
 	// Build index of episode IDs
 	episodesMap := make(map[string]string, len(episodes))
@@ -415,7 +419,8 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 		for _, item := range invalidIDs {
 			invalidIDStr += strconv.Itoa(int(item)) + ","
 		}
-		return nil, invalidIDs, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid episode IDs requested for "+mediaSource+"-"+showSourceID+" invalid ids:"+invalidIDStr)
+		return nil, invalidIDs, fmt.Errorf("query %s for media_source %s, ancestor_id %s (invalid episode IDs found %s): %w", mediaRecordsTable,
+			mediaSource, showSourceID, invalidIDStr, helpers.BadRequestError)
 	}
 	return episodesMap, nil, nil
 }
@@ -474,7 +479,8 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 		return &episodes[0], nil
 	}
 	// fails without logging, since some optimizations grab this without knowing if it exists yet
-	return nil, errors.New(helpers.BadRequest)
+	return nil, fmt.Errorf("query %s for media_source %s, ancestor_id %s, season_number %d, episode_number %d: %w", mediaRecordsTable,
+		mediaSource, showSourceID, seasonNumber, episodeNumber, helpers.NotFoundError)
 }
 
 // This returns the movie/show-level record, not the episodes
@@ -524,11 +530,16 @@ func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID
 	var totalRecords int64
 	_, err := databaseEngine.SQL(countQuery, args...).Get(&totalRecords)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("count %s for media_type %s, genre_ids %s: %w", mediaRecordsTable,
+			mediaType, genreIDs, err)
 	}
 	if limit > 0 && offset >= 0 {
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
 	err = databaseEngine.SQL(query, args...).Find(&recordGroups)
-	return recordGroups, totalRecords, err
+	if err != nil {
+		return nil, 0, fmt.Errorf("query %s for media_type %s, genre_ids %s: %w", mediaRecordsTable,
+			mediaType, genreIDs, err)
+	}
+	return recordGroups, totalRecords, nil
 }

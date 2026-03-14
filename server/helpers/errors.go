@@ -1,18 +1,19 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 )
 
-const InternalServerError = "internalServerError"
-const BadRequest = "badRequest"
-const Unauthorized = "unauthorized"
-const VideoDurationTooShort = "videoDurationTooShort"
-const AlreadyExists = "alreadyExists"
-const NotFound = "notFound"
-const MagnetInfoTimeout = "Failed to get Magnet Info"
+var InternalServerError = errors.New("internalServerError")
+var BadRequestError = errors.New("badRequest")
+var UnauthorizedError = errors.New("unauthorized")
+var VideoDurationTooShortError = errors.New("videoDurationTooShort")
+var AlreadyExistsError = errors.New("alreadyExists")
+var NotFoundError = errors.New("notFound")
+var MagnetInfoTimeoutError = errors.New("magnetInfoFailed")
 
 var (
 	InfoMsg  = Teal
@@ -35,20 +36,28 @@ func Color(colorString string) func(...interface{}) string {
 }
 
 func GetErrorStatusCode(err error) int {
-	statusCode := 500
-	switch err.Error() {
-	case InternalServerError:
-		statusCode = http.StatusInternalServerError
-	case BadRequest:
-		statusCode = http.StatusBadRequest
-	case Unauthorized:
-		statusCode = http.StatusUnauthorized
-	case VideoDurationTooShort:
-		statusCode = http.StatusInternalServerError
-	case AlreadyExists:
-		statusCode = http.StatusConflict
+	if errors.Is(err, InternalServerError) {
+		return http.StatusInternalServerError
 	}
-	return statusCode
+	if errors.Is(err, BadRequestError) {
+		return http.StatusBadRequest
+	}
+	if errors.Is(err, UnauthorizedError) {
+		return http.StatusUnauthorized
+	}
+	if errors.Is(err, NotFoundError) {
+		return http.StatusNotFound
+	}
+	if errors.Is(err, VideoDurationTooShortError) {
+		return http.StatusInternalServerError
+	}
+	if errors.Is(err, AlreadyExistsError) {
+		return http.StatusConflict
+	}
+	if errors.Is(err, MagnetInfoTimeoutError) {
+		return http.StatusGatewayTimeout
+	}
+	return http.StatusInternalServerError
 }
 
 // LogErrorWithMessage returns original error after logging for handling purposes

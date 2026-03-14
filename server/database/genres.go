@@ -1,8 +1,9 @@
 package database
 
 import (
-	"errors"
+	"fmt"
 	"hound/helpers"
+	"log/slog"
 	"sort"
 	"strconv"
 	"time"
@@ -33,11 +34,15 @@ type MediaRecordGenre struct {
 	UpdatedAt time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
+/*
+In Hound, genres are persisted to DB but also loaded to the cache for fast retrieval
+*/
+
 func PopulateGenresCache() error {
 	var genres []GenreRecord
 	err := databaseEngine.Table(genresTable).Find(&genres)
 	if err != nil {
-		return err
+		return fmt.Errorf("query %s: %w", genresTable, err)
 	}
 	for _, genre := range genres {
 		key := getGenreCacheKey(genre.MediaSource, genre.MediaType, genre.SourceID)
@@ -58,7 +63,7 @@ func GetGenreFromCache(mediaSource, mediaType string, sourceID int64) *GenreReco
 	var genre GenreRecord
 	exists, err := GetCache(key, &genre)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error fetching genre from cache, returning nil")
+		slog.Debug("Error retrieving genre from cache, returning nil", "error", err)
 		return nil
 	}
 	if exists {
@@ -73,14 +78,14 @@ func GetGenresByType(mediaType string) ([]GenreRecord, error) {
 	prefix := "genre:tmdb:" + mediaType + ":"
 	keys, err := GetKeysWithPrefix(prefix)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get genre keys from cache")
+		return nil, err
 	}
 	genres := make([]GenreRecord, 0, len(keys))
 	for _, key := range keys {
 		var genre GenreRecord
 		exists, err := GetCache(key, &genre)
 		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Error fetching genre from cache for key: "+key)
+			slog.Debug("error retrieving genre from cache", "error", err, "key", key)
 			continue
 		}
 		if exists {
@@ -164,7 +169,8 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 			Where("media_type = ?", mediaType).
 			Get(&existing)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("query %s for media_source %s, media_type %s, source_id %d: %w",
+				genresTable, mediaSource, mediaType, genre.SourceID, err)
 		}
 		if !has {
 			insert := GenreRecord{
@@ -176,7 +182,8 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 			_, err = sess.Table(genresTable).Insert(&insert)
 			if err != nil {
 				if !isUniqueViolation(err) {
-					return nil, err
+					return nil, fmt.Errorf("query %s for media_source %s, media_type %s, source_id %d: %w: %w",
+						genresTable, mediaSource, mediaType, genre.SourceID, helpers.AlreadyExistsError, err)
 				}
 				// concurrent upsert race, refetch
 				has, err = sess.Table(genresTable).
@@ -185,11 +192,12 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 					Where("media_type = ?", mediaType).
 					Get(&existing)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("query %s for media_source %s, media_type %s, source_id %d: %w",
+						genresTable, mediaSource, mediaType, genre.SourceID, err)
 				}
 				if !has {
-					return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-						"Failed to find genre after unique violation")
+					return nil, fmt.Errorf("query %s for media_source %s, media_type %s, source_id %d: %w",
+						genresTable, mediaSource, mediaType, genre.SourceID, err)
 				}
 			} else {
 				existing = insert
@@ -199,7 +207,8 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 			existing.Genre = genre.Genre
 			_, err = sess.Table(genresTable).ID(existing.GenreID).Cols("genre").Update(&existing)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("query %s for genre_id %d: %w",
+					genresTable, existing.GenreID, err)
 			}
 		}
 		sourceToInternal[genre.SourceID] = existing.GenreID
@@ -223,7 +232,8 @@ func ReplaceMediaRecordGenresByIDs(mediaRecordID int64, genreIDs []int64) error 
 
 func ReplaceMediaRecordGenresByIDsTrx(sess *xorm.Session, mediaRecordID int64, genreIDs []int64) error {
 	if _, err := sess.Table(mediaRecordGenresTable).Where("record_id = ?", mediaRecordID).Delete(&MediaRecordGenre{}); err != nil {
-		return err
+		return fmt.Errorf("query %s for media_record_id %d: %w",
+			mediaRecordGenresTable, mediaRecordID, err)
 	}
 	if len(genreIDs) == 0 {
 		return nil
@@ -247,5 +257,9 @@ func ReplaceMediaRecordGenresByIDsTrx(sess *xorm.Session, mediaRecordID int64, g
 		})
 	}
 	_, err := sess.Table(mediaRecordGenresTable).Insert(&records)
-	return err
+	if err != nil {
+		return fmt.Errorf("insert %s for media_record_id %d: %w",
+			mediaRecordGenresTable, mediaRecordID, err)
+	}
+	return nil
 }

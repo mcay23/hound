@@ -175,7 +175,7 @@ func GetMediaFilesHandler(c *gin.Context) {
 func DeleteMediaFileHandler(c *gin.Context) {
 	mediaFileID := c.Param("id")
 	if mediaFileID == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError,
 			"Media file ID not provided"))
 		return
 	}

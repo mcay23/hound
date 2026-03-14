@@ -1,7 +1,7 @@
 package model
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
@@ -18,14 +18,14 @@ func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog,
 	case "trending-movies":
 		return getTrendingMovies(*page)
 	default:
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid catalog id")
+		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, helpers.BadRequestError)
 	}
 }
 
 func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
+		return nil, fmt.Errorf("error getting popular tv shows: %w", err)
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range results.Results {
@@ -55,7 +55,7 @@ func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
+		return nil, fmt.Errorf("error getting popular movies: %w", err)
 	}
 	// convert url results
 	var viewArray []view.MediaRecordCatalog

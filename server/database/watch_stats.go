@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -46,7 +47,8 @@ func GetWatchStats(userID int64, startTime *time.Time, finishTime *time.Time) (*
 		Distinct("we.record_id").
 		Count()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count %s, %s, %s for user_id %d (counting unique movies): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	stats.MoviesWatched = moviesCount
 	// 2. Unique shows watched
@@ -59,7 +61,8 @@ func GetWatchStats(userID int64, startTime *time.Time, finishTime *time.Time) (*
 		Distinct("mr.ancestor_id").
 		Count()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count %s, %s, %s for user_id %d (counting unique shows): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	stats.ShowsWatched = showsCount
 	// 3. Unique episodes watched
@@ -72,7 +75,8 @@ func GetWatchStats(userID int64, startTime *time.Time, finishTime *time.Time) (*
 		Distinct("we.record_id").
 		Count()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count %s, %s, %s for user_id %d (counting unique episodes): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	stats.EpisodesWatched = episodesCount
 	// 4. Total movies duration
@@ -89,7 +93,8 @@ func GetWatchStats(userID int64, startTime *time.Time, finishTime *time.Time) (*
 		Select("SUM(mr.duration) as total").
 		Get(&movieDuration)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count %s, %s, %s for user_id %d (counting total movies duration): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	stats.TotalMoviesDuration = movieDuration.Total
 	// 4. Total shows duration
@@ -103,9 +108,9 @@ func GetWatchStats(userID int64, startTime *time.Time, finishTime *time.Time) (*
 		Select("SUM(mr.duration) as total").
 		Get(&showDuration)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count %s, %s, %s for user_id %d (counting total shows duration): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	stats.TotalEpisodesDuration = showDuration.Total
-
 	return stats, nil
 }

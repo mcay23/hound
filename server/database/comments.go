@@ -1,7 +1,7 @@
 package database
 
 import (
-	"errors"
+	"fmt"
 	"hound/helpers"
 	"time"
 )
@@ -46,7 +46,7 @@ func instantiateCommentTable() error {
 func AddComment(comment *CommentRecord) error {
 	if comment.CommentType != commentTypeReview && comment.CommentType != commentTypeComment &&
 		comment.CommentType != commentTypeNote && comment.CommentType != commentTypeHistory {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid comment type")
+		return fmt.Errorf("invalid comment type %s: %w", comment.CommentType, helpers.BadRequestError)
 	}
 	_, err := databaseEngine.Table(commentsTable).Insert(comment)
 	return err
@@ -70,7 +70,7 @@ func GetComments(recordID int64, commentType *string) (*[]CommentRecord, error) 
 	}
 	err := sess.Find(&comments)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetComments(): Failed to get comments")
+		return nil, fmt.Errorf("failed to get comments for recordID %d: %w", recordID, err)
 	}
 	return &comments, nil
 }
@@ -81,10 +81,10 @@ func DeleteComment(userID int64, commentID int64) error {
 		CommentID: commentID,
 	})
 	if err != nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteComment(): Failed to delete comments")
+		return fmt.Errorf("failed to delete commentid %d: %w", commentID, err)
 	}
 	if affected <= 0 {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteComment(): No comment found with this ID or invalid user")
+		return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, commentID, helpers.NotFoundError)
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func DeleteCommentBatch(userID int64, commentIDs []int64) error {
 		}
 		if affected <= 0 {
 			session.Rollback()
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "DeleteCommentBatch(): No comment found with this ID or invalid user")
+			return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, item, helpers.NotFoundError)
 		}
 	}
 	err := session.Commit()

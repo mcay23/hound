@@ -1,7 +1,7 @@
 package database
 
 import (
-	"errors"
+	"fmt"
 	"hound/helpers"
 	"time"
 
@@ -97,7 +97,8 @@ func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, li
 	}
 	totalRecords, err := query().Count()
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("count %s, %s, %s for user_id %d: %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
 	}
 	sess := query()
 	if limit > 0 {
@@ -106,7 +107,11 @@ func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, li
 	sess = sess.OrderBy("we.watched_at DESC, we.watch_event_id DESC")
 	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title")
 	err = sess.Find(&records)
-	return records, totalRecords, err
+	if err != nil {
+		return nil, 0, fmt.Errorf("query %s, %s, %s for user_id %d: %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, err)
+	}
+	return records, totalRecords, nil
 }
 
 // Gets the current active rewatch
@@ -127,12 +132,13 @@ func GetActiveRewatchFromSourceID(recordType string, mediaSource string, sourceI
 		Desc("started_at").
 		Get(&rewatchRecord)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query %s for user_id %d, record_id %d: %w",
+			rewatchesTable, userID, record.RecordID, err)
 	}
 	if !has {
 		return nil, nil
 	}
-	return &rewatchRecord, err
+	return &rewatchRecord, nil
 }
 
 // get rewatches for a certain show, given user id and show source id
@@ -249,7 +255,7 @@ func BatchInsertWatchEvents(records []WatchEventsRecord) error {
 		chunk := records[start:end]
 		if _, err := sess.Table(watchEventsTable).Insert(&chunk); err != nil {
 			_ = sess.Rollback()
-			return err
+			return fmt.Errorf("batch insert %s of len %d, start %d, end %d: %w", watchEventsTable, len(chunk), start, end, err)
 		}
 	}
 	return sess.Commit()
@@ -273,17 +279,20 @@ func BatchDeleteWatchEvents(watchEventIDs []int64, userID int64, recordID int) e
 		Count()
 	if err != nil {
 		_ = sess.Rollback()
-		return err
+		return fmt.Errorf("count %s, %s, %s for user_id %d, record_id %d: %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, recordID, err)
 	}
 	if count != int64(len(watchEventIDs)) {
 		_ = sess.Rollback()
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Watch history does not belong to the user")
+		return fmt.Errorf("count %s, %s, %s for user_id %d, record_id %d (not all watch events belong to this user): %w",
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, recordID, helpers.UnauthorizedError)
 	}
 	// count correct, delete
 	_, err = sess.Table(watchEventsTable).In("watch_event_id", watchEventIDs).Delete(&WatchEventsRecord{})
 	if err != nil {
 		_ = sess.Rollback()
-		return err
+		return fmt.Errorf("delete %s for user_id %d, record_id %d: %w",
+			watchEventsTable, userID, recordID, err)
 	}
 	return sess.Commit()
 }

@@ -1,6 +1,9 @@
 package database
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	externalLibraryItemsTable = "external_library_items"
@@ -47,7 +50,7 @@ func instantiateExternalLibraryItemsTable() error {
 			Status:    ExternalLibraryItemStatusFailed,
 			LastError: &lastError,
 		})
-	return err
+	return fmt.Errorf("failed to update pending, queued tasks: %w", err)
 }
 
 func GetExternalLibraryItemByPath(sourcePath string) (*ExternalLibraryItem, error) {
@@ -56,7 +59,7 @@ func GetExternalLibraryItemByPath(sourcePath string) (*ExternalLibraryItem, erro
 		Where("source_path = ?", sourcePath).
 		Get(&item)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query %s for source_path %s: %w", externalLibraryItemsTable, sourcePath, err)
 	}
 	if !has {
 		return nil, nil
@@ -73,16 +76,22 @@ func UpsertExternalLibraryItem(item *ExternalLibraryItem) error {
 		Where("source_path = ?", item.SourcePath).
 		Get(&existing)
 	if err != nil {
-		return err
+		return fmt.Errorf("query %s: %w", externalLibraryItemsTable, err)
 	}
 	if !has {
 		_, err = databaseEngine.Table(externalLibraryItemsTable).Insert(item)
-		return err
+		if err != nil {
+			return fmt.Errorf("insert %s: %w", externalLibraryItemsTable, err)
+		}
+		return nil
 	}
 	item.ItemID = existing.ItemID
 	_, err = databaseEngine.Table(externalLibraryItemsTable).
 		Where("item_id = ?", existing.ItemID).
 		AllCols().
 		Update(item)
-	return err
+	if err != nil {
+		return fmt.Errorf("update %s: %w", externalLibraryItemsTable, err)
+	}
+	return nil
 }
