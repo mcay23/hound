@@ -462,6 +462,8 @@ function MediaPageMovie(props: any) {
         }}
         open={isCreateHistoryModalOpen}
         type={"movie"}
+        mediaSource={props.data.media_source}
+        sourceID={props.data.source_id}
       />
     </>
   );

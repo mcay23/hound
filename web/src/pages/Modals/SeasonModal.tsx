@@ -120,6 +120,19 @@ function SeasonModal(props: any) {
       seasonOverviewPlaceholder = "Special Episodes";
     }
   }
+  const [historyModalType, setHistoryModalType] = useState<
+    "season" | "episode"
+  >("season");
+  const [historyModalEpisodeIDs, setHistoryModalEpisodeIDs] = useState<
+    number[]
+  >([]);
+
+  const handleOpenEpisodeHistoryModal = (episodeID: number) => {
+    setHistoryModalType("episode");
+    setHistoryModalEpisodeIDs([episodeID]);
+    setIsCreateHistoryModalOpen(true);
+  };
+
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   useEffect(() => {
@@ -251,6 +264,10 @@ function SeasonModal(props: any) {
                     >
                       <IconButton
                         onClick={() => {
+                          setHistoryModalType("season");
+                          setHistoryModalEpisodeIDs(
+                            seasonData.episodes.map((ep: any) => ep.source_id),
+                          );
                           setIsCreateHistoryModalOpen(true);
                         }}
                       >
@@ -303,6 +320,7 @@ function SeasonModal(props: any) {
                   props.handleStreamButtonClick,
                   props.isStreamButtonLoading,
                   props.isStreamSelectButtonLoading,
+                  handleOpenEpisodeHistoryModal,
                 );
               })}
             </div>
@@ -312,8 +330,10 @@ function SeasonModal(props: any) {
               setIsCreateHistoryModalOpen(false);
             }}
             open={isCreateHistoryModalOpen}
-            type={"season"}
-            seasonNumber={seasonNumber}
+            type={historyModalType}
+            mediaSource={mediaSource}
+            sourceID={sourceID}
+            episodeIDs={historyModalEpisodeIDs}
           />
           <DownloadSeasonModal
             onClose={() => {
@@ -341,6 +361,7 @@ function EpisodeCard(
   handleStreamButtonClick: Function,
   isStreamButtonLoading: boolean,
   isStreamSelectButtonLoading: boolean,
+  handleOpenEpisodeHistoryModal: Function,
 ) {
   var episodeNumber =
     episode.season_number.toString() &&
@@ -488,6 +509,13 @@ function EpisodeCard(
               ) : (
                 "Select Stream..."
               )}
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => {
+                handleOpenEpisodeHistoryModal(episode.source_id);
+              }}
+            >
+              Add Watch History...
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>

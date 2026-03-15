@@ -205,7 +205,7 @@ func AddWatchHistoryTVHandler(c *gin.Context) {
 		MediaSource:        mediaSource,
 		InsertedEpisodeIDs: insertedEpisodeIDs,
 	}
-	if *skippedEpisodeIDs != nil && len(*skippedEpisodeIDs) > 0 {
+	if len(*skippedEpisodeIDs) > 0 {
 		response.SkippedEpisodeIDs = skippedEpisodeIDs
 	}
 	helpers.SuccessResponse(c, response, 200)

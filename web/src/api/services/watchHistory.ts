@@ -61,17 +61,31 @@ export const fetchWatchStats = async (startTime?: string, endTime?: string) => {
       end_time: endTime,
     },
   });
+  console.log(data)
   return data;
 };
 
 export const createTVWatchHistory = async (
-  id: string,
+  mediaType: string,
+  sourceID: string,
   episodeIDs: number[],
   watchedAt?: string,
 ) => {
-  const { data } = await axios.post<any>(`/api/v1/tv/${id}/history`, {
+  const { data } = await axios.post<any>(`/api/v1/tv/${mediaType}-${sourceID}/history`, {
     action_type: "watch",
     episode_ids: episodeIDs,
+    watched_at: watchedAt,
+  });
+  return data;
+};
+
+export const createMovieWatchHistory = async (
+  mediaType: string,
+  sourceID: string,
+  watchedAt?: string,
+) => {
+  const { data } = await axios.post<any>(`/api/v1/movie/${mediaType}-${sourceID}/history`, {
+    action_type: "watch",
     watched_at: watchedAt,
   });
   return data;
