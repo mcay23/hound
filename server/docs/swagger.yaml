@@ -1303,8 +1303,10 @@ definitions:
 host: localhost:2323
 info:
   contact: {}
-  description: Hound Media Server Documentation
-  title: Hound API Documentation
+  description: |-
+    V1 Hound Media Server API Documentation
+    While in beta, please expect breaking api changes in short/no notice
+  title: Hound API Documentation V1
   version: beta-0.1.0
 paths:
   /api/v1/auth/login:
@@ -3177,5 +3179,5 @@ paths:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: Get Watch Activity for User
       tags:
-      - Watch History
+      - Watch Activity
 swagger: "2.0"

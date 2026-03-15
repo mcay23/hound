@@ -47,25 +47,32 @@ export const fetchWatchActivity = async (
 };
 
 export interface WatchStats {
-    movies_watched: number,
-    shows_watched: number,
-    episodes_watched: number,
-    total_movies_duration: number,
-    total_episodes_duration: number,
+  movies_watched: number;
+  shows_watched: number;
+  episodes_watched: number;
+  total_movies_duration: number;
+  total_episodes_duration: number;
 }
 
-export const fetchWatchStats = async (
-    startTime?: string,
-    endTime?: string
-) => {
-  const { data } = await axios.get<WatchStats>(
-    "/api/v1/watch_stats",
-    {
-      params: {
-        start_time: startTime,
-        end_time: endTime,
-      },
+export const fetchWatchStats = async (startTime?: string, endTime?: string) => {
+  const { data } = await axios.get<WatchStats>("/api/v1/watch_stats", {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
     },
-  );
+  });
+  return data;
+};
+
+export const createTVWatchHistory = async (
+  id: string,
+  episodeIDs: number[],
+  watchedAt?: string,
+) => {
+  const { data } = await axios.post<any>(`/api/v1/tv/${id}/history`, {
+    action_type: "watch",
+    episode_ids: episodeIDs,
+    watched_at: watchedAt,
+  });
   return data;
 };

@@ -17,7 +17,7 @@ import (
 
 // @Router /v1/watch_activity [get]
 // @Summary Get Watch Activity for User
-// @Tags Watch History
+// @Tags Watch Activity
 // @Accept json
 // @Produce json
 // @Param limit query int false "Limit - Defaults at 500"

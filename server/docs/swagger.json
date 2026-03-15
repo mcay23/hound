@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Hound Media Server Documentation",
-        "title": "Hound API Documentation",
+        "description": "V1 Hound Media Server API Documentation\nWhile in beta, please expect breaking api changes in short/no notice",
+        "title": "Hound API Documentation V1",
         "contact": {},
         "version": "beta-0.1.0"
     },
@@ -3023,7 +3023,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Watch History"
+                    "Watch Activity"
                 ],
                 "summary": "Get Watch Activity for User",
                 "parameters": [

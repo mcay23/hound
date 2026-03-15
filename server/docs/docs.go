@@ -3029,7 +3029,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Watch History"
+                    "Watch Activity"
                 ],
                 "summary": "Get Watch Activity for User",
                 "parameters": [
@@ -5012,8 +5012,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:2323",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Hound API Documentation",
-	Description:      "Hound Media Server Documentation",
+	Title:            "Hound API Documentation V1",
+	Description:      "V1 Hound Media Server API Documentation\nWhile in beta, please expect breaking api changes in short/no notice",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
