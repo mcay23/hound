@@ -7,7 +7,7 @@ COPY web/ .
 RUN npm run build
 
 # Stage 2: Build Server
-FROM golang:1.24-alpine as server-builder
+FROM golang:1.26.1-alpine as server-builder
 RUN apk add --no-cache git
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
