@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"errors"
+	"fmt"
 	"hound/helpers"
 	"hound/model"
 	"strings"
@@ -11,11 +11,11 @@ import (
 
 func extractBearerToken(header string) (string, error) {
 	if header == "" {
-		return "", helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "No auth token in header")
+		return "", fmt.Errorf("no auth token in header: %w", helpers.UnauthorizedError)
 	}
 	jwtToken := strings.Split(header, " ")
 	if len(jwtToken) != 2 {
-		return "", helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Invalid header token")
+		return "", fmt.Errorf("invalid header token: %w", helpers.UnauthorizedError)
 	}
 	return jwtToken[1], nil
 }

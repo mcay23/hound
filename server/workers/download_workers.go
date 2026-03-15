@@ -2,7 +2,6 @@ package workers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
@@ -397,7 +396,7 @@ func getHTTPFilename(resp *http.Response, rawURL string) (string, error) {
 		return path.Base(u.Path), nil
 	}
 	// at this point, no clue what the file extension is
-	return "", errors.New(helpers.BadRequest)
+	return "", fmt.Errorf("failed to get filename/extension from http url: %s: %w", rawURL, helpers.BadRequestError)
 }
 
 func startP2PDownload(workerID int, task *database.IngestTask) {
@@ -552,7 +551,7 @@ func failTask(task *database.IngestTask, err error) {
 			item.LastIngestTaskID = &task.IngestTaskID
 			err = database.UpsertExternalLibraryItem(item)
 			if err != nil {
-				helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+				slog.Error("Failed to upsert external library item", "error", err)
 			}
 		}
 	}
@@ -573,11 +572,11 @@ func resolveSourceURI(task *database.IngestTask) error {
 	switch record.RecordType {
 	case database.RecordTypeEpisode:
 		if record.AncestorID == nil {
-			return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Episode Record missing ancestorID")
+			return fmt.Errorf("episode record missing ancestorID: %w", helpers.InternalServerError)
 		}
 		showRecord, err := database.GetMediaRecordByID(*record.AncestorID)
 		if err != nil || showRecord == nil {
-			return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Episode Record missing ancestorID")
+			return fmt.Errorf("episode record missing ancestorID: %w", helpers.InternalServerError)
 		}
 		showSourceID = showRecord.SourceID
 		sID, _ := strconv.Atoi(showSourceID)
@@ -595,7 +594,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 			imdbID = movie.IMDbID
 		}
 	default:
-		return helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Invalid recordType")
+		return fmt.Errorf("invalid recordType: %s: %w", record.RecordType, helpers.InternalServerError)
 	}
 	query := providers.ProvidersQueryRequest{
 		IMDbID:          imdbID,
@@ -670,7 +669,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 StreamFound:
 	if bestStream == nil {
 		if task.DownloadPreferences != nil && task.DownloadPreferences.StrictMatch {
-			return helpers.LogErrorWithMessage(errors.New(helpers.NotFound), "No stream found using strict matching")
+			return fmt.Errorf("no stream found using strict matching: %w", helpers.NotFoundError)
 		}
 		for _, provider := range response.Providers {
 			if len(provider.Streams) > 0 {
@@ -680,7 +679,7 @@ StreamFound:
 		}
 	}
 	if bestStream == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.NotFound), "No stream found (no strict matching)")
+		return fmt.Errorf("no stream found (no strict matching): %w", helpers.NotFoundError)
 	}
 	task.SourceURI = &bestStream.URI
 	task.FileIdx = bestStream.FileIdx

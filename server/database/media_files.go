@@ -63,21 +63,21 @@ func instantiateMediaFilesTable() error {
 
 func InsertMediaFile(mediaFileMetadata *MediaFile) (*MediaFile, error) {
 	_, err := databaseEngine.Table(mediaFilesTable).Insert(mediaFileMetadata)
-	return mediaFileMetadata, err
+	return mediaFileMetadata, fmt.Errorf("insert %s: %w", mediaFilesTable, err)
 }
 
 func GetMediaFile(fileID int) (*MediaFile, error) {
 	var metadata MediaFile
 	_, err := databaseEngine.Table(mediaFilesTable).Where("file_id = ?", fileID).
 		Get(&metadata)
-	return &metadata, err
+	return &metadata, fmt.Errorf("query %s for file_id %d: %w", mediaFilesTable, fileID, err)
 }
 
 func GetMediaFileByRecordID(recordID int) ([]*MediaFile, error) {
 	var metadata []*MediaFile
 	err := databaseEngine.Table(mediaFilesTable).
 		Where("record_id = ?", recordID).Find(&metadata)
-	return metadata, err
+	return metadata, fmt.Errorf("query %s for record_id %d: %w", mediaFilesTable, recordID, err)
 }
 
 func GetMediaFiles(limit *int, offset *int) (int, []*MediaFile, error) {

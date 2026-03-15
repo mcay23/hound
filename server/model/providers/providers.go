@@ -1,11 +1,10 @@
 package providers
 
 import (
-	"errors"
 	"fmt"
 	"hound/database"
-	"hound/helpers"
 	"hound/sources"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -97,12 +96,11 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 	// This is an indication that we might want to use TVDB episode numbers
 	if query.MediaType == database.MediaTypeTVShow {
 		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"SeasonNumber and EpisodeNumber are required for TV shows")
+			return nil, fmt.Errorf("invalid season/episode number for %s %s-%s", query.MediaType, query.MediaSource, query.SourceID)
 		}
 		showID, err := strconv.Atoi(query.SourceID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid source id for %s %s-%s", query.MediaType, query.MediaSource, query.SourceID)
 		}
 		seasonDetails, err := sources.GetTVSeasonTMDB(showID, *query.SeasonNumber)
 		if err != nil {
@@ -173,7 +171,7 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		_, err = database.SetCache(providersCacheKey, result, providersCacheTTL)
 		if err != nil {
 			// just log error, no failed return
-			_ = helpers.LogErrorWithMessage(err, "Failed to set cache")
+			slog.Debug("Failed to set cache for providers", "cacheKey", providersCacheKey, "error", err)
 		}
 	}
 	return &result, nil
@@ -195,8 +193,7 @@ func getSeasonEpisodeFromEpisodeGroup(sourceID int, episodeID int, episodeGroupI
 			return -1, -1, err
 		}
 		if len(episodeGroups.Results) == 0 {
-			return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"No episode groups for id tmdb-"+strconv.Itoa(sourceID))
+			return -1, -1, fmt.Errorf("no episode groups found for tvshow tmdb-%d", sourceID)
 		}
 		for _, item := range episodeGroups.Results {
 			if strings.Contains(strings.ToLower(item.Name), "tvdb") ||
@@ -219,17 +216,15 @@ func getSeasonEpisodeFromEpisodeGroup(sourceID int, episodeID int, episodeGroupI
 	}
 	// not found case, episodeGroupID isn't updated yet
 	if episodeGroupID == "tvdb" {
-		return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Could not find tvdb episode group for id tmdb-"+strconv.Itoa(sourceID))
+		return -1, -1, fmt.Errorf("could not find episode group with keyword 'tvdb' for tvshow tmdb-%d", sourceID)
 	}
 	// search using episodeGroupID
 	episodeGroupDetails, err := sources.GetTVEpisodeGroupsDetailsTMDB(episodeGroupID)
 	if err != nil {
-		return -1, -1, helpers.LogErrorWithMessage(err, "Could not retrieve episode group details for id: tmdb-"+episodeGroupID)
+		return -1, -1, err
 	}
 	if len(episodeGroupDetails.Groups) == 0 || len(episodeGroupDetails.Groups[0].Episodes) == 0 {
-		return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Error parsing episode group details for id: tmdb-"+episodeGroupID)
+		return -1, -1, fmt.Errorf("error parsing episode group details for id: tmdb-%s", episodeGroupID)
 	}
 	var targetSeason int
 	var targetEpisode int
@@ -253,8 +248,7 @@ outerLoop:
 		}
 	}
 	if !found {
-		return -1, -1, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Episode not found in episode group tmdb-"+episodeGroupID)
+		return -1, -1, fmt.Errorf("episodeID %d not found in episode group %s for tvshow tmdb-%d", episodeID, episodeGroupID, sourceID)
 	}
 	// If specials (season number 0) exist, fix order's 0-index
 	// specials will be season 0

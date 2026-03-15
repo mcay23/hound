@@ -92,7 +92,7 @@ func GetTrendingTVShowsTMDB(page string) (*tmdb.Trending, error) {
 	urlOptions["page"] = page
 	shows, err := tmdbClient.GetTrending("tv", "week", urlOptions)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get trending tv shows from tmdb for page %s: %w", page, err)
 	}
 	if shows != nil {
 		_, _ = database.SetCache(cacheKey, shows, trendingCacheTTL)
@@ -109,7 +109,7 @@ func SearchTVShowTMDB(query string) (*tmdb.SearchTVShowsResults, error) {
 	}
 	shows, err := tmdbClient.GetSearchTVShow(query, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to search tv show from tmdb for query %s: %w", query, err)
 	}
 	if shows != nil {
 		_, _ = database.SetCache(cacheKey, shows, searchCacheTTL)
@@ -207,7 +207,7 @@ func GetTVEpisodeGroupsTMDB(tmdbID int) (*tmdb.TVEpisodeGroups, error) {
 	}
 	episodeGroups, err := tmdbClient.GetTVEpisodeGroups(tmdbID, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get tv episode groups from tmdb for source_id %d: %w", tmdbID, err)
 	}
 	if episodeGroups != nil {
 		_, _ = database.SetCache(cacheKey, episodeGroups, getCacheTTL)
@@ -224,7 +224,7 @@ func GetTVEpisodeGroupsDetailsTMDB(tmdbEpisodeGroupID string) (*tmdb.TVEpisodeGr
 	}
 	episodeGroupDetails, err := tmdbClient.GetTVEpisodeGroupsDetails(tmdbEpisodeGroupID, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get episode group details from tmdb for episode group id %s: %w", tmdbEpisodeGroupID, err)
 	}
 	if episodeGroupDetails != nil {
 		_, _ = database.SetCache(cacheKey, episodeGroupDetails, getCacheTTL)
@@ -290,7 +290,7 @@ func GetTrendingMoviesTMDB(page string) (*tmdb.Trending, error) {
 	urlOptions["page"] = page
 	movies, err := tmdbClient.GetTrending("movie", "week", urlOptions)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get trending movies from tmdb for page %s: %w", page, err)
 	}
 	if movies != nil {
 		_, _ = database.SetCache(cacheKey, movies, trendingCacheTTL)
@@ -307,7 +307,7 @@ func SearchMoviesTMDB(query string) (*tmdb.SearchMoviesResults, error) {
 	}
 	movies, err := tmdbClient.GetSearchMovies(query, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to search movies from tmdb for query %s: %w", query, err)
 	}
 	if movies != nil {
 		_, _ = database.SetCache(cacheKey, movies, searchCacheTTL)

@@ -14,6 +14,7 @@ var VideoDurationTooShortError = errors.New("videoDurationTooShort")
 var AlreadyExistsError = errors.New("alreadyExists")
 var NotFoundError = errors.New("notFound")
 var MagnetInfoTimeoutError = errors.New("magnetInfoFailed")
+var GatewayTimeoutError = errors.New("gatewayTimeout")
 
 var (
 	InfoMsg  = Teal
@@ -36,9 +37,9 @@ func Color(colorString string) func(...interface{}) string {
 }
 
 func GetErrorStatusCode(err error) int {
-	if errors.Is(err, InternalServerError) {
-		return http.StatusInternalServerError
-	}
+	// if errors.Is(err, InternalServerError) {
+	// 	return http.StatusInternalServerError
+	// }
 	if errors.Is(err, BadRequestError) {
 		return http.StatusBadRequest
 	}
@@ -54,7 +55,7 @@ func GetErrorStatusCode(err error) int {
 	if errors.Is(err, AlreadyExistsError) {
 		return http.StatusConflict
 	}
-	if errors.Is(err, MagnetInfoTimeoutError) {
+	if errors.Is(err, MagnetInfoTimeoutError) || errors.Is(err, GatewayTimeoutError) {
 		return http.StatusGatewayTimeout
 	}
 	return http.StatusInternalServerError

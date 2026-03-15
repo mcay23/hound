@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"time"
 )
@@ -49,11 +50,11 @@ func FFProbe(uri string) (*FfprobeOutput, error) {
 	cmd := exec.CommandContext(ctx, ffmpegEngine.ffprobePath, args...)
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ffprobe failed during cmd.Output(): %w", err)
 	}
 	var output FfprobeOutput
 	if err := json.Unmarshal(out, &output); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ffprobe failed during json.Unmarshal(): %w", err)
 	}
 	return &output, nil
 }

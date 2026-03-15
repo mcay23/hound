@@ -2,7 +2,6 @@ package providers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
@@ -12,8 +11,9 @@ import (
 )
 
 // first url with debrid, second p2p
-const BASE_URL2 = "http://localhost:3500/stremio/6bc22eb8-2cf3-4c1c-b264-3dd47b5972b0/eyJpdiI6InU5NEpFOFJGaVUrMEI0U216VStzaFE9PSIsImVuY3J5cHRlZCI6IldzUlYxbWR4dUdlb1B2RGxES2htTnc9PSIsInR5cGUiOiJhaW9FbmNyeXB0In0"
-const BASE_URL = "http://localhost:3500/stremio/2ed5877f-3ecf-4ec3-be65-f577c097e702/eyJpIjoiMUcrNUVHdU5meWxBQ1pLSmZjV2FZUT09IiwiZSI6IlVwSzFZS0twRVh5S1lYNVByVHpGYVE9PSIsInQiOiJhIn0"
+const BASE_URL = "http://localhost:3500/stremio/6bc22eb8-2cf3-4c1c-b264-3dd47b5972b0/eyJpdiI6InU5NEpFOFJGaVUrMEI0U216VStzaFE9PSIsImVuY3J5cHRlZCI6IldzUlYxbWR4dUdlb1B2RGxES2htTnc9PSIsInR5cGUiOiJhaW9FbmNyeXB0In0"
+
+// const BASE_URL = "http://localhost:3500/stremio/2ed5877f-3ecf-4ec3-be65-f577c097e702/eyJpIjoiMUcrNUVHdU5meWxBQ1pLSmZjV2FZUT09IiwiZSI6IlVwSzFZS0twRVh5S1lYNVByVHpGYVE9PSIsInQiOiJhIn0"
 
 // const BASE_URL = "https://aiostreamsfortheweebs.midnightignite.me/stremio/be1079b5-bc45-4338-aba5-12797469ae95/eyJpIjoiZzVBWHlRUEUzdVRYa0o1MzBrTzRmQT09IiwiZSI6IkdHN3FWcjRRRVdjVisyU29ITTU4a1E9PSIsInQiOiJhIn0"
 const MANIFEST_PATH = "/manifest.json"
@@ -53,11 +53,11 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 		url = BASE_URL + fmt.Sprintf(MOVIE_STREAMS_PATH, query.IMDbID)
 	case database.MediaTypeTVShow:
 		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid season/episode number")
+			return nil, fmt.Errorf("query %s invalid season/episode number", query.MediaType)
 		}
 		url = BASE_URL + fmt.Sprintf(TV_STREAMS_PATH, query.IMDbID, *query.SeasonNumber, *query.EpisodeNumber)
 	default:
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid media type")
+		return nil, fmt.Errorf("query %s invalid media type", query.MediaType)
 	}
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -68,20 +68,21 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Error querying stremio plugin"+resp.Status)
+		return nil, fmt.Errorf("query %s-%s non-200 response received from stremio plugin status %s: %w",
+			query.MediaSource, query.SourceID, resp.Status, helpers.GatewayTimeoutError)
 	}
 	var stremioResp StremioStreamResponse
 	if err := json.NewDecoder(resp.Body).Decode(&stremioResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query %s-%s error decoding stremio plugin response: %w",
+			query.MediaSource, query.SourceID, err)
 	}
 	var streamResponse []*StreamObject
 	for _, stream := range stremioResp.Streams {
 		obj, err := stream.toStreamObject(details, providerName)
 		// if unexpected response in an object, skip instead of blocking
 		if err != nil {
-			helpers.LogErrorWithMessage(err,
-				"Error converting stremio stream to generic stream object")
+			slog.Debug("convert stremio stream to generic stream object",
+				"stream", stream, "error", err)
 			continue
 		}
 		streamResponse = append(streamResponse, obj)
@@ -97,8 +98,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDetails,
 	providerName string) (*StreamObject, error) {
 	if stremioStream == nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid stremio stream")
+		return nil, fmt.Errorf("nil stremio stream: %w", helpers.BadRequestError)
 	}
 	uri := ""
 	infoHash := ""
@@ -114,8 +114,8 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	} else {
 		// p2p case
 		if stremioStream.InfoHash == nil {
-			slog.Info("Bad stream found", "stream", stremioStream)
-			return nil, errors.New(helpers.BadRequest)
+			slog.Debug("Bad stream found", "stream", stremioStream)
+			return nil, fmt.Errorf("invalid stremio stream, infohash is nil for type p2p: %w", helpers.BadRequestError)
 		}
 		streamProtocol = database.ProtocolP2P
 		infoHash = *stremioStream.InfoHash
@@ -123,8 +123,7 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	}
 	// last sanity check
 	if uri == "" {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid stremio stream, uri is empty")
+		return nil, fmt.Errorf("invalid stremio stream, uri is empty: %w", helpers.BadRequestError)
 	}
 	// stremio description is either the title (deprecated soon) or description
 	// for our object, the title is not the stremio 'title' field but the name
@@ -158,7 +157,7 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	}
 	encodedData, err := EncodeJsonStreamAES(streamObjectFull)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("aes encoding: %w", err)
 	}
 	streamObject.EncodedData = encodedData
 	return streamObject, nil

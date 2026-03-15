@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
@@ -119,46 +118,39 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	sourceID string, watchProgress *WatchProgress) error {
 
 	if watchProgress == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"invalid param: watchProgress is nil")
+		return fmt.Errorf("invalid param: watchProgress is nil: %w", helpers.BadRequestError)
 	}
 	if watchProgress.CurrentProgressSeconds > watchProgress.TotalDurationSeconds {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"invalid param: current progress is greater than total duration")
+		return fmt.Errorf("invalid param: current progress is greater than total video duration: %w", helpers.BadRequestError)
 	}
 	watchProgress.ClientPlatform = strings.ToLower(watchProgress.ClientPlatform)
 	if watchProgress.ClientPlatform != "" && !slices.Contains(SupportedClientPlatforms, watchProgress.ClientPlatform) {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"invalid param: X-Client-Platform is invalid: "+watchProgress.ClientPlatform)
+		return fmt.Errorf("invalid param: X-Client-Platform is invalid: %s: %w", watchProgress.ClientPlatform, helpers.BadRequestError)
 	}
 	// validate player settings correct
 	if watchProgress.PlayerSettings != nil {
 		watchProgress.PlayerSettings.Player = strings.ToLower(watchProgress.PlayerSettings.Player)
 		if watchProgress.PlayerSettings.Player != "" && !slices.Contains(SupportedPlayers, watchProgress.PlayerSettings.Player) {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"invalid param: player is not supported")
+			return fmt.Errorf("invalid param: player %s is not supported: %w", watchProgress.PlayerSettings.Player, helpers.BadRequestError)
 		}
 	}
 	if watchProgress.EncodedData != "" {
 		data, err := providers.DecodeJsonStreamAES(watchProgress.EncodedData)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to decode stream data")
+			return fmt.Errorf("failed to decode stream data: %w", err)
 		}
 		// sanity checks to see if tmdb ids passed in are the same as encoded data's id
 		if data.SourceID != sourceID {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"invalid param: source id mismatch between request and encodedData")
+			return fmt.Errorf("invalid param: source id mismatch between request and encodedData: %w", helpers.BadRequestError)
 		}
 		if data.MediaType == database.MediaTypeTVShow &&
 			data.SeasonNumber != nil && data.EpisodeNumber != nil &&
 			watchProgress.SeasonNumber != nil && watchProgress.EpisodeNumber != nil {
 			if *data.SeasonNumber != *watchProgress.SeasonNumber {
-				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-					"invalid param: season number mismatch between request and encodedData")
+				return fmt.Errorf("invalid param: season number mismatch between request and encodedData: %w", helpers.BadRequestError)
 			}
 			if *data.EpisodeNumber != *watchProgress.EpisodeNumber {
-				return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-					"invalid param: episode number mismatch between request and encodedData")
+				return fmt.Errorf("invalid param: episode number mismatch between request and encodedData: %w", helpers.BadRequestError)
 			}
 		}
 	}
@@ -169,23 +161,22 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	// dyamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {
 		if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
-			return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"invalid param: season/episode number is nil")
+			return fmt.Errorf("invalid param: season/episode number is nil: %w", helpers.BadRequestError)
 		}
 		showID, err := strconv.Atoi(sourceID)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to parse source id")
+			return fmt.Errorf("failed to parse source id: %w", err)
 		}
 		// get show details
 		showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to get show details")
+			return fmt.Errorf("failed to get show details: %w", err)
 		}
 		watchProgress.MediaTitle = showDetails.Name
 		targetEpisode, err := sources.GetEpisodeTMDB(showID,
 			*watchProgress.SeasonNumber, *watchProgress.EpisodeNumber)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to get episode id")
+			return fmt.Errorf("failed to get episode id: %w", err)
 		}
 		watchProgress.EpisodeTitle = &targetEpisode.Name
 		watchProgress.Overview = targetEpisode.Overview
@@ -206,11 +197,11 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		// in home screen when fetched
 		movieID, err := strconv.Atoi(sourceID)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to parse source id")
+			return fmt.Errorf("failed to parse source id: %w", err)
 		}
 		movieDetails, err := sources.GetMovieFromIDTMDB(movieID)
 		if err != nil {
-			return helpers.LogErrorWithMessage(err, "failed to get movie details")
+			return fmt.Errorf("failed to get movie details: %w", err)
 		}
 		watchProgress.MediaTitle = movieDetails.Title
 		watchProgress.Overview = movieDetails.Overview
@@ -266,7 +257,7 @@ func DeleteWatchProgress(userID int64, mediaType string, mediaSource string,
 		deleteError = database.DeleteCache(key)
 		if deleteError != nil {
 			// don't return
-			helpers.LogErrorWithMessage(err, "failed to delete watch progress")
+			slog.Debug("failed to delete watch progress", "key", key, "error", deleteError)
 		}
 	}
 	return deleteError

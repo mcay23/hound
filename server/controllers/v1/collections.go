@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
@@ -127,7 +126,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		return
 	}
 	if !has {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find Media Record"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "Could not find Media Record"))
 		return
 	}
 	err = database.DeleteCollectionRelation(userID, record.RecordID, *body.CollectionID)
@@ -202,7 +201,7 @@ func CreateCollectionHandler(c *gin.Context) {
 	}
 	collectionID, err := database.CreateCollection(record)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error creating colection"+err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "Error creating colection"+err.Error()))
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
@@ -317,19 +316,19 @@ func DeleteCollectionHandler(c *gin.Context) {
 	collectionID, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Invalid collection_id query param")
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		helpers.ErrorResponse(c, helpers.BadRequestError)
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Invalid user")
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		helpers.ErrorResponse(c, helpers.BadRequestError)
 		return
 	}
 	err = database.DeleteCollection(userID, collectionID)
 	if err != nil {
 		_ = helpers.LogErrorWithMessage(err, "Failed to delete collection")
-		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		helpers.ErrorResponse(c, helpers.InternalServerError)
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)

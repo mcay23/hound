@@ -1,11 +1,11 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -30,25 +30,24 @@ type WatchHistoryMoviePayload struct {
 func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watchHistoryPayload WatchHistoryTVShowPayload) (*[]int, *[]int, error) {
 	actionType := strings.ToLower(watchHistoryPayload.ActionType)
 	if actionType != database.ActionWatch && actionType != database.ActionScrobble {
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid action type")
+		return nil, nil, fmt.Errorf("invalid action type %s: %w", actionType, helpers.BadRequestError)
 	}
 	watchTime := time.Now().UTC()
 	if watchHistoryPayload.WatchedAt != nil && *watchHistoryPayload.WatchedAt != "" {
 		parsed, err := time.Parse(time.RFC3339, *watchHistoryPayload.WatchedAt)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid watched_at timestamp")
+			return nil, nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, helpers.BadRequestError)
 		}
 		watchTime = parsed.UTC()
 	}
 	if watchHistoryPayload.EpisodeIDs == nil || len(*watchHistoryPayload.EpisodeIDs) == 0 {
 		if watchHistoryPayload.SeasonNumber == nil || watchHistoryPayload.EpisodeNumber == nil {
-			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"No valid episode ids / season episode pair provided")
+			return nil, nil, fmt.Errorf("invalid episode ids / season episode pair: %w", helpers.BadRequestError)
 		}
 	}
 	// 1. Upsert show
 	if _, err := sources.UpsertTVShowRecordTMDB(showID); err != nil {
-		return nil, nil, helpers.LogErrorWithMessage(err, "Error upserting tv show: "+mediaSource+"-"+strconv.Itoa(showID))
+		return nil, nil, fmt.Errorf("error upserting tv show %s-%d: %w", mediaSource, showID, err)
 	}
 	// 2. if using season/episode number, get episode id
 	// if episodeIDs are not nil, season/episode number is ignored
@@ -57,11 +56,11 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		showIDstr := strconv.Itoa(showID)
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaSource, showIDstr, watchHistoryPayload.SeasonNumber, *watchHistoryPayload.EpisodeNumber)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(err, "Error getting episode record for this show, check if it exists")
+			return nil, nil, fmt.Errorf("error getting episode record for %s-%d: %w", mediaSource, showID, err)
 		}
 		targetEpisodeID, err := strconv.Atoi(episodeRecord.SourceID)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(err, "Error converting episode id to string")
+			return nil, nil, fmt.Errorf("error converting episode id to string: %w", err)
 		}
 		watchHistoryPayload.EpisodeIDs = &[]int{targetEpisodeID}
 	}
@@ -82,10 +81,10 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		for _, item := range invalidIDs {
 			errorStr += strconv.Itoa(item) + ","
 		}
-		return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid Episode IDs found:"+errorStr)
+		return nil, nil, fmt.Errorf("invalid episode ids found: %s: %w", errorStr, helpers.BadRequestError)
 	}
 	if err != nil {
-		return nil, nil, helpers.LogErrorWithMessage(err, "Error checking episode ids for tv show:"+mediaSource+"-"+strconv.Itoa(showID))
+		return nil, nil, fmt.Errorf("error checking episode ids for tv show %s-%d: %w", mediaSource, showID, err)
 	}
 	targetRewatchID := int64(-1)
 	if watchHistoryPayload.RewatchID != nil {
@@ -93,7 +92,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		// check if rewatch_id exists for this user
 		rewatchRecords, err := database.GetRewatchesFromSourceID(database.RecordTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(err, "Error getting show rewatch records")
+			return nil, nil, fmt.Errorf("error getting show rewatch records: %w", err)
 		}
 		found := false
 		for _, item := range rewatchRecords {
@@ -103,21 +102,21 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			}
 		}
 		if !found {
-			return nil, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Could not find this rewatch ID in the database")
+			return nil, nil, fmt.Errorf("could not find rewatch id %d for user %d: %w", targetRewatchID, userID, helpers.BadRequestError)
 		}
 	}
 	// 4. Get most current rewatch or create new rewatch if none if rewatch payload is empty
 	if targetRewatchID == -1 {
 		rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(err, "Error getting active rewatch: "+mediaSource+"-"+strconv.Itoa(showID))
+			return nil, nil, fmt.Errorf("error getting active rewatch for %s-%d: %w", mediaSource, showID, err)
 		}
 		// add rewatch record if none exists
 		if rewatchRecord == nil {
 			rewatchRecord, err = InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
 				strconv.Itoa(showID), userID, time.Now().UTC())
 			if err != nil {
-				return nil, nil, helpers.LogErrorWithMessage(err, "Error creating rewatch record")
+				return nil, nil, fmt.Errorf("error creating rewatch record: %w", err)
 			}
 		}
 		targetRewatchID = rewatchRecord.RewatchID
@@ -143,7 +142,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			var cached bool
 			cacheHit, err := database.GetCache(cacheKey, &cached)
 			if err != nil {
-				return nil, nil, helpers.LogErrorWithMessage(err, "Error checking scrobble cache")
+				return nil, nil, fmt.Errorf("error checking scrobble cache: %w", err)
 			}
 			// if cache hit and scrobble, skip insert
 			if cacheHit {
@@ -153,7 +152,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		}
 		int64Val, err := strconv.ParseInt(episodeMap[episodeIDStr], 10, 64)
 		if err != nil {
-			return nil, nil, helpers.LogErrorWithMessage(err, "Error parsing episode id")
+			return nil, nil, fmt.Errorf("error parsing episode id: %w", err)
 		}
 		pendingRecords = append(pendingRecords, database.WatchEventsRecord{
 			RewatchID: targetRewatchID,
@@ -171,7 +170,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		return nil, &skippedEpisodeIDs, nil
 	}
 	if err := database.BatchInsertWatchEvents(pendingRecords); err != nil {
-		return nil, nil, helpers.LogErrorWithMessage(err, "Error inserting watch events records")
+		return nil, nil, fmt.Errorf("error batch inserting watch events records: %w", err)
 	}
 	// set idempotence cache for scrobbles, 48 hours
 	// only set once inserts are successful
@@ -180,7 +179,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		insertedEpisodeIDs[idx] = meta.EpisodeID
 		if meta.CacheKey != "" {
 			if _, err := database.SetCache(meta.CacheKey, true, scrobbleCacheTTL); err != nil {
-				return nil, nil, helpers.LogErrorWithMessage(err, "Error caching scrobble entry")
+				return nil, nil, fmt.Errorf("error caching scrobble entry: %w", err)
 			}
 		}
 	}
@@ -191,7 +190,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		err = DeleteWatchProgress(userID, database.MediaTypeTVShow, mediaSource,
 			strconv.Itoa(showID), watchHistoryPayload.SeasonNumber, watchHistoryPayload.EpisodeNumber, &watchTime)
 		if err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Error deleting watch progress")
+			slog.Error("error deleteing watch progress", "error", err)
 		}
 	}
 	return &insertedEpisodeIDs, &skippedEpisodeIDs, nil
@@ -200,32 +199,32 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, watchHistoryPayload WatchHistoryMoviePayload) (*int, error) {
 	actionType := strings.ToLower(watchHistoryPayload.ActionType)
 	if actionType != database.ActionWatch && actionType != database.ActionScrobble {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid action type")
+		return nil, fmt.Errorf("invalid action type %s: %w", actionType, helpers.BadRequestError)
 	}
 	watchTime := time.Now().UTC()
 	if watchHistoryPayload.WatchedAt != nil && *watchHistoryPayload.WatchedAt != "" {
 		parsed, err := time.Parse(time.RFC3339, *watchHistoryPayload.WatchedAt)
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid watched_at timestamp")
+			return nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, helpers.BadRequestError)
 		}
 		watchTime = parsed.UTC()
 	}
 	// 1. Upsert movie record
 	movieRecord, err := sources.UpsertMovieRecordTMDB(sourceID)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Error upserting media record for "+mediaSource+"-"+strconv.Itoa(sourceID))
+		return nil, fmt.Errorf("error upserting media record for %s-%d: %w", mediaSource, sourceID, err)
 	}
 	// 2. Get most current rewatch or create new rewatch if none exists
 	rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeMovie, mediaSource, strconv.Itoa(sourceID), userID)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Error getting active rewatch: "+mediaSource+"-"+strconv.Itoa(sourceID))
+		return nil, fmt.Errorf("error getting active rewatch for %s-%d: %w", mediaSource, sourceID, err)
 	}
 	// add rewatch record if none exists
 	if rewatchRecord == nil {
 		rewatchRecord, err = InsertRewatchFromSourceID(database.MediaTypeMovie, mediaSource,
 			strconv.Itoa(sourceID), userID, time.Now().UTC())
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Error creating rewatch record")
+			return nil, fmt.Errorf("error creating rewatch record: %w", err)
 		}
 	}
 	watchEvent := database.WatchEventsRecord{
@@ -241,7 +240,7 @@ func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, wat
 		var cached bool
 		cacheHit, err := database.GetCache(cacheKey, &cached)
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Error checking scrobble cache")
+			return nil, fmt.Errorf("error checking scrobble cache: %w", err)
 		}
 		// if cache hit, return without inserting
 		if cacheHit {
@@ -249,18 +248,18 @@ func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, wat
 		}
 		// set cache for scrobbles to prevent accident duplicate inserts
 		if _, err := database.SetCache(cacheKey, true, scrobbleCacheTTL); err != nil {
-			_ = helpers.LogErrorWithMessage(err, "Error caching scrobble entry")
+			slog.Error("error caching scrobble entry", "error", err)
 		}
 	}
 	err = database.BatchInsertWatchEvents([]database.WatchEventsRecord{watchEvent})
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Error inserting watch event to db: "+mediaSource+"-"+strconv.Itoa(sourceID))
+		return nil, fmt.Errorf("error batch inserting watch event to db %s-%d: %w", mediaSource, sourceID, err)
 	}
 	// delete all watch progress before watchTime
 	err = DeleteWatchProgress(userID, database.MediaTypeMovie, mediaSource,
 		strconv.Itoa(sourceID), nil, nil, &watchTime)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error deleting watch progress")
+		slog.Error("error deleting watch progress", "error", err)
 	}
 	return &sourceID, nil
 }
@@ -273,8 +272,7 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 		return nil, err
 	}
 	if !has {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"No Media Record Found for "+recordType+":"+mediaSource+"-"+sourceID)
+		return nil, fmt.Errorf("no media record found for %s %s-%s: %w", recordType, mediaSource, sourceID, helpers.BadRequestError)
 	}
 	// get active rewatch
 	activeRewatch, err := database.GetActiveRewatchFromSourceID(recordType, mediaSource, sourceID, userID)
@@ -288,8 +286,7 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 			return nil, err
 		}
 		if len(watchEvents) == 0 {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Current active rewatch is empty, can't create new rewatch")
+			return nil, fmt.Errorf("current active rewatch is empty, can't create new rewatch: %w", helpers.BadRequestError)
 		}
 	}
 	rewatch := database.RewatchRecord{

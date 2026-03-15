@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"errors"
 	"hound/database"
 	"hound/helpers"
 	"hound/loggers"
@@ -267,14 +268,14 @@ func processExternalPath(item externalLibraryQueueItem) {
 	loggers.IngestLogger().Info("[External Library: File detected]", "path", item.Path)
 	err = database.UpsertExternalLibraryItem(upsert)
 	if err != nil {
-		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+		slog.Error("Failed to upsert external library item", "error", err)
 	}
 
 	ingestTask, parsed, err := model.QueueExternalLibraryFile(item.RootPath, item.Path, item.MediaType)
 	if err != nil {
 		status := database.ExternalLibraryItemStatusFailed
 		lastError := err.Error()
-		if err.Error() == helpers.AlreadyExists {
+		if errors.Is(err, helpers.AlreadyExistsError) {
 			status = database.ExternalLibraryItemStatusDone
 			lastError = ""
 		}
@@ -286,7 +287,7 @@ func processExternalPath(item externalLibraryQueueItem) {
 		}
 		err = database.UpsertExternalLibraryItem(upsert)
 		if err != nil {
-			helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+			slog.Error("Failed to upsert external library item", "error", err)
 		}
 		return
 	}
@@ -302,7 +303,7 @@ func processExternalPath(item externalLibraryQueueItem) {
 	upsert.LastQueuedAt = &now
 	err = database.UpsertExternalLibraryItem(upsert)
 	if err != nil {
-		helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+		slog.Error("Failed to upsert external library item", "error", err)
 	}
 }
 

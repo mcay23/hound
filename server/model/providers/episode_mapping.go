@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"errors"
 	"fmt"
 	"hound/helpers"
 )
@@ -36,7 +35,7 @@ func init() {
 
 func GetEpisodeGroupMapping(mediaSource string, sourceID string) (string, error) {
 	if episodeGroupMapping == nil {
-		return "", helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "episode group mapping not initialized")
+		return "", fmt.Errorf("episode group mapping not initialized: %w", helpers.InternalServerError)
 	}
 	id := fmt.Sprintf("%s-%s", mediaSource, sourceID)
 	if entry, ok := episodeGroupMapping[id]; ok {

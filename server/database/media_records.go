@@ -351,7 +351,7 @@ func GetMediaRecord(recordType string, mediaSource string, sourceID string) (boo
 func GetMediaRecordTrx(session *xorm.Session, recordType string, mediaSource string, sourceID string) (bool, *MediaRecord, error) {
 	var record MediaRecord
 	if session == nil {
-		return false, nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "GetMediaRecordTrx(): Session is nil")
+		return false, nil, fmt.Errorf("query %s nil xorm session", mediaRecordsTable)
 	}
 	query := session.Table(mediaRecordsTable).
 		Where("record_type = ?", recordType).

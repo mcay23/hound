@@ -34,7 +34,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	streamObjects := []*StreamObject{}
 	for _, file := range mediaFiles {
 		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-			slog.Error("File not found", "filepath", file.Filepath)
+			slog.Debug("File not found", "filepath", file.Filepath)
 			continue
 		}
 		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
@@ -47,7 +47,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 }
 
 func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObject, error) {
-	// check note on above
+	// check notes on GetLocalStreamsForMovie
 	title := ""
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 	if err == nil {
@@ -70,7 +70,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 		}
 		for _, file := range mediaFiles {
 			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-				slog.Error("File not found", "filepath", file.Filepath)
+				slog.Debug("File not found", "filepath", file.Filepath)
 				continue
 			}
 			epTitle := title

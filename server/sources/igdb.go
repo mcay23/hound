@@ -274,7 +274,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 		return nil, err
 	}
 	if len(response) == 0 {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "No game found with this igdbID")
+		return nil, helpers.LogErrorWithMessage(helpers.BadRequestError, "No game found with this igdbID")
 	}
 	game := response[0]
 	// get image urls

@@ -150,7 +150,11 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 			recordType, mediaSource, sourceID).
 		Desc("started_at").
 		Find(&records)
-	return records, err
+	if err != nil {
+		return nil, fmt.Errorf("query %s for user_id %d, record_type %s, media_source %s, source_id %s: %w",
+			rewatchesTable, userID, recordType, mediaSource, sourceID, err)
+	}
+	return records, nil
 }
 
 // useful to answer, what's the 10 most recent unique movies/shows the user has watched

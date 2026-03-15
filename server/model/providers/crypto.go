@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 )
@@ -29,19 +30,19 @@ For our purposes, we want a stable hash, so we use a fixed salt and nonce
 func EncodeJsonStreamAES(streamObject StreamObjectFull) (string, error) {
 	key, err := getAESKey([]byte(fixedSalt))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting AES key: %w", err)
 	}
 	bytes, err := json.Marshal(streamObject)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error marshaling stream object: %w", err)
 	}
 	block, err := aes.NewCipher(*key)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating AES cipher: %w", err)
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating GCM: %w", err)
 	}
 	ciphertext := gcm.Seal([]byte(fixedNonce), []byte(fixedNonce), bytes, nil)
 	final := append([]byte(fixedSalt), ciphertext...)
@@ -55,7 +56,7 @@ Decode a string back into StreamObjectFull data
 func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
 	fullCiphertext, err := base64.URLEncoding.DecodeString(encryptedText)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding base64: %w", err)
 	}
 	saltLen := len(fixedSalt)
 	if len(fullCiphertext) < saltLen {
@@ -66,15 +67,15 @@ func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
 
 	key, err := getAESKey(salt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting AES key: %w", err)
 	}
 	block, err := aes.NewCipher(*key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating AES cipher: %w", err)
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating GCM: %w", err)
 	}
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
@@ -83,11 +84,11 @@ func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
 	nonce, actualCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	bytes, err := gcm.Open(nil, nonce, actualCiphertext, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening GCM: %w", err)
 	}
 	var streamObject StreamObjectFull
 	if err := json.Unmarshal(bytes, &streamObject); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshaling stream object: %w", err)
 	}
 	return &streamObject, nil
 }

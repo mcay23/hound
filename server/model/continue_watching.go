@@ -1,7 +1,7 @@
 package model
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
@@ -56,8 +56,7 @@ type WatchActionMetadata struct {
 // A nil watch action means we don't have a next watch action
 func GetNextWatchAction(userID int64, mediaType string, mediaSource string, sourceID string) (*WatchAction, error) {
 	if mediaSource != sources.MediaSourceTMDB {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media source, only tmdb is supported at this time")
+		return nil, fmt.Errorf("invalid media source, only tmdb is supported at this time: %w", helpers.BadRequestError)
 	}
 	if mediaType == database.MediaTypeMovie {
 		return getNextWatchActionMovie(userID, mediaSource, sourceID)
@@ -65,8 +64,7 @@ func GetNextWatchAction(userID int64, mediaType string, mediaSource string, sour
 	if mediaType == database.MediaTypeTVShow {
 		return getNextWatchActionTVShow(userID, mediaSource, sourceID)
 	}
-	return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-		"Invalid media type, only movie and tv show are supported at this time")
+	return nil, fmt.Errorf("invalid media type, only movie and tvshow are supported at this time: %w", helpers.BadRequestError)
 }
 
 // gets the 10 most recent continue watching actions for the user
@@ -259,8 +257,7 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		}
 		// shouldn't happen since every completed watch has to have a show record
 		if !found {
-			return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Show record not found in database, contact dev, this shouldn't happen")
+			return nil, fmt.Errorf("show record not found in database, raise an issue in Github, this shouldn't happen: %w", helpers.BadRequestError)
 		}
 		nextEp.MediaTitle = showRecord.MediaTitle
 		nextEp.Overview = nextEpisodeRecord.Overview

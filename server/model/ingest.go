@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"hound/database"
 	"hound/helpers"
@@ -33,25 +32,22 @@ const (
 // Downloads torrent to server, not clients
 func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *database.IngestDownloadPreferences, skipDownloaded bool) error {
 	if streamDetails == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Nil stream details passed to DownloadTorrent()")
+		return fmt.Errorf("nil stream details passed to DownloadTorrent(): %w", helpers.BadRequestError)
 	}
 	if streamDetails.MediaSource != sources.MediaSourceTMDB {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media source, only tmdb is supported: "+streamDetails.MediaSource)
+		return fmt.Errorf("invalid media source, only tmdb is supported: %s: %w", streamDetails.MediaSource, helpers.BadRequestError)
 	}
 	if streamDetails.MediaType != database.RecordTypeMovie && streamDetails.MediaType != database.RecordTypeTVShow {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media type, only movie and tv show are supported: "+streamDetails.MediaType)
+		return fmt.Errorf("invalid media type, only movie and tvshow are supported: %s: %w", streamDetails.MediaType, helpers.BadRequestError)
 	}
 	// 1. Attempt upsert first, if failed, abort
 	tmdbID, err := strconv.Atoi(streamDetails.SourceID)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to convert source ID to int when downloading")
+		return fmt.Errorf("failed to convert source id to int: %s: %w", streamDetails.SourceID, err)
 	}
 	mediaRecord, err := sources.UpsertMediaRecordTMDB(streamDetails.MediaType, tmdbID)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to upsert media record when downloading")
+		return fmt.Errorf("failed to upsert media record: %s-%d: %w", streamDetails.MediaType, tmdbID, err)
 	}
 	// get movie/episode record, not shows/seasons
 	childRecord := mediaRecord
@@ -59,7 +55,8 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
 			mediaRecord.SourceID, streamDetails.SeasonNumber, *streamDetails.EpisodeNumber)
 		if err != nil || episodeRecord == nil {
-			return helpers.LogErrorWithMessage(err, "Failed to get episode media record when downloading")
+			return fmt.Errorf("failed to get episode media record for tvshow %s-%d s%d-e%d: %w",
+				streamDetails.MediaType, tmdbID, streamDetails.SeasonNumber, *streamDetails.EpisodeNumber, err)
 		}
 		childRecord = episodeRecord
 	}
@@ -78,14 +75,15 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 		tasks, _ := database.FindIngestTasks(database.IngestTask{RecordID: childRecord.RecordID})
 		for _, task := range tasks {
 			if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+				return fmt.Errorf("file already queued/downloading: %s-%d: %w",
+					childRecord.MediaSource, childRecord.SourceID, helpers.AlreadyExistsError)
 			}
 		}
 		if skipDownloaded {
 			// check already existing files
 			mediaFiles, err := database.GetMediaFileByRecordID(int(childRecord.RecordID))
 			if err != nil {
-				return helpers.LogErrorWithMessage(err, "Failed to get media files when checking duplicate")
+				return err
 			}
 			for _, file := range mediaFiles {
 				_, err := os.Stat(file.Filepath)
@@ -93,7 +91,8 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 				if os.IsNotExist(err) {
 					continue
 				}
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+				return fmt.Errorf("file already downloaded: %s-%d: %w",
+					childRecord.MediaSource, childRecord.SourceID, helpers.AlreadyExistsError)
 			}
 		}
 	}
@@ -110,7 +109,7 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 	}
 	_, _, err = database.InsertIngestTask(taskToInsert)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to insert ingest task when downloading")
+		return err
 	}
 	slog.Info("Ingest task inserted successfully", "ingestTask", taskToInsert)
 	return nil
@@ -123,16 +122,16 @@ This is not a fool-proof check, false negatives may occur
 func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID int64, protocol string,
 	sourceURI string, currInfoHash string, currFileIdx *int, skipDownloaded bool) error {
 	if mediaRecord == nil {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "mediaRecord is nil")
+		return fmt.Errorf("nil mediaRecord: %w", helpers.BadRequestError)
 	}
 	if sourceURI == "" {
-		return helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "sourceURI is empty")
+		return fmt.Errorf("empty sourceURI: %w", helpers.BadRequestError)
 	}
 	tasks, err := database.FindIngestTasks(database.IngestTask{
 		RecordID: mediaRecord.RecordID,
 	})
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to get ingest task when checking duplicate")
+		return fmt.Errorf("failed to get ingest tasks during duplicate check for record %d: %w", mediaRecord.RecordID, err)
 	}
 	// 1. Check ingest tasks for queued/downloaded tasks for this particular record
 	for _, task := range tasks {
@@ -146,7 +145,8 @@ func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID
 			switch protocol {
 			case database.ProtocolProxyHTTP:
 				if *task.SourceURI == sourceURI {
-					return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+					return fmt.Errorf("http file already queued/downloading for %s %s-%d: %w", mediaRecord.RecordType,
+						mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 				}
 			case database.ProtocolP2P:
 				// for p2p case, sourceURI is the magnetURI w/ trackers, depending on the file index
@@ -158,11 +158,13 @@ func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID
 				if err == nil && strings.EqualFold(magnet.InfoHash.HexString(), currInfoHash) {
 					// if it does, we still need to know if the file idx is the same
 					if currFileIdx != nil && task.FileIdx != nil && *currFileIdx == *task.FileIdx {
-						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+						return fmt.Errorf("p2p file already queued/downloading for %s %s-%d: %w", mediaRecord.RecordType,
+							mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 					} else if currFileIdx == nil && task.FileIdx == nil {
 						// when both is nil, some providers implicitly expect largest file
 						// here, we assume it refers to the same file
-						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already queued/downloading")
+						return fmt.Errorf("p2p file already queued/downloading for %s %s-%d: %w", mediaRecord.RecordType,
+							mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 					}
 				}
 			}
@@ -171,12 +173,12 @@ func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID
 	// 2. Check against media_files table
 	mediaFiles, err := database.GetMediaFileByRecordID(int(mediaRecord.RecordID))
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to get media files when checking duplicate")
+		return fmt.Errorf("failed to get media files for record %d: %w", mediaRecord.RecordID, err)
 	}
 
 	if skipDownloaded && len(mediaFiles) > 0 {
-		return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists),
-			"Episode already downloaded (skipDownloaded true)")
+		return fmt.Errorf("(skipDownloaded=true) file already downloaded for %s %s-%d: %w", mediaRecord.RecordType,
+			mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 	}
 
 	for _, mediaFile := range mediaFiles {
@@ -191,14 +193,17 @@ func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID
 			}
 			if protocol == database.ProtocolProxyHTTP && strings.HasPrefix(*mediaFile.SourceURI, "http") &&
 				*mediaFile.SourceURI == sourceURI {
-				return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+				return fmt.Errorf("http file already downloaded for %s %s-%d: %w", mediaRecord.RecordType,
+					mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 			} else if protocol == database.ProtocolP2P {
 				magnet, err := metainfo.ParseMagnetUri(*mediaFile.SourceURI)
 				if err == nil && strings.EqualFold(magnet.InfoHash.HexString(), currInfoHash) {
 					if currFileIdx != nil && mediaFile.FileIdx != nil && *currFileIdx == *mediaFile.FileIdx {
-						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+						return fmt.Errorf("p2p file already downloaded for %s %s-%d: %w", mediaRecord.RecordType,
+							mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 					} else if currFileIdx == nil && mediaFile.FileIdx == nil {
-						return helpers.LogErrorWithMessage(errors.New(helpers.AlreadyExists), "File already downloaded")
+						return fmt.Errorf("p2p file already downloaded for %s %s-%d: %w", mediaRecord.RecordType,
+							mediaRecord.MediaSource, mediaRecord.SourceID, helpers.AlreadyExistsError)
 					}
 				}
 			}
@@ -210,28 +215,27 @@ func CheckDuplicateDownloadTask(mediaRecord *database.MediaRecord, currentTaskID
 func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int,
 	infoHash *string, fileIdx *int, sourceURI *string, sourcePath string, transferMode string, fileOrigin string) (*database.MediaFile, error) {
 	if mediaRecord == nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Nil media record passed to IngestFile()")
+		return nil, fmt.Errorf("nil mediaRecord: %w", helpers.BadRequestError)
 	}
 	if transferMode != IngestTransferMove && transferMode != IngestTransferCopy && transferMode != IngestTransferPreserve {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid ingest transfer mode")
+		return nil, fmt.Errorf("invalid ingest transfer mode: %s: %w", transferMode, helpers.BadRequestError)
 	}
 	if fileOrigin != database.FileOriginHoundManaged && fileOrigin != database.FileOriginExternalLibrary {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid file origin")
+		return nil, fmt.Errorf("invalid file origin: %s: %w", fileOrigin, helpers.BadRequestError)
 	}
 	if !IsVideoFile(filepath.Ext(sourcePath)) {
-		return nil, helpers.LogErrorWithMessage(fmt.Errorf("File is not a video file %s", sourcePath), "File is not a video file")
+		return nil, fmt.Errorf("file is not a video file: %s: %w", sourcePath, helpers.BadRequestError)
 	}
 	// ffprobe video
 	videoMetadata, err := ProbeVideoFromURI(sourcePath)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to probe video + "+sourcePath)
+		return nil, fmt.Errorf("failed to probe video: %s: %w", sourcePath, err)
 	}
 	// less than 1 min is invalid, used by some providers to display
 	// video not cached message, might want to explore fallback to p2p
 	// in this case
 	if videoMetadata.Duration < 1*time.Minute {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.VideoDurationTooShort),
-			fmt.Sprintf("Video duration too short: %v (<1 minute)", videoMetadata.Duration))
+		return nil, fmt.Errorf("video duration too short: %v (<1 minute): %w", videoMetadata.Duration, helpers.BadRequestError)
 	}
 
 	var targetRecordID int64
@@ -239,7 +243,8 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	// for tv shows, get episode's record id
 	targetRecordID, err = getIngestTargetRecordID(mediaRecord, seasonNumber, episodeNumber)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get ingest target record id")
+		return nil, fmt.Errorf("failed to get ingest target for %s %s-%d: %w", mediaRecord.RecordType,
+			mediaRecord.MediaSource, mediaRecord.SourceID, err)
 	}
 	if transferMode == IngestTransferPreserve {
 		targetPath = sourcePath
@@ -247,11 +252,11 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 		targetDir, targetFilename, _, err := getMediaDestinationDir(mediaRecord, seasonNumber, episodeNumber,
 			infoHash, fileIdx, filepath.Ext(sourcePath))
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Failed to get media destination dir")
+			return nil, fmt.Errorf("failed to get media destination dir: %w", err)
 		}
 		err = os.MkdirAll(targetDir, 0755)
 		if err != nil {
-			return nil, helpers.LogErrorWithMessage(err, "Failed to create directory")
+			return nil, fmt.Errorf("failed to create directory: %s: %w", targetDir, err)
 		}
 		targetPath = filepath.Join(targetDir, targetFilename)
 		// for external library cases, we probably just want to preserve source in original location
@@ -268,7 +273,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 				// fallback to link when source is still open/locked
 				linkErr := os.Link(sourcePath, targetPath)
 				if linkErr != nil {
-					return nil, helpers.LogErrorWithMessage(linkErr, "Failed to move file with rename+link fallback")
+					return nil, fmt.Errorf("failed to move file with rename+link fallback: %w", linkErr)
 				}
 			}
 		case IngestTransferCopy:
@@ -277,7 +282,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			if err != nil {
 				err = copyFile(sourcePath, targetPath)
 				if err != nil {
-					return nil, helpers.LogErrorWithMessage(err, "Failed to copy file")
+					return nil, fmt.Errorf("failed to copy file: %w", err)
 				}
 			}
 		}
@@ -293,7 +298,7 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 	}
 	insertedMediaFile, err := database.InsertMediaFile(&mediaFile)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to insert media file to db "+targetPath)
+		return nil, err
 	}
 	slog.Info("Ingestion Complete", "file", filepath.Base(sourcePath))
 	loggers.IngestLogger().Info("[External Library: Ingestion Complete]", "path", sourcePath, "SourceID", mediaRecord.SourceID,
@@ -307,25 +312,24 @@ func getIngestTargetRecordID(mediaRecord *database.MediaRecord, seasonNumber *in
 		return mediaRecord.RecordID, nil
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
-			return 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Season number or episode number is nil")
+			return 0, fmt.Errorf("season number or episode number is nil: %w", helpers.BadRequestError)
 		}
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
 			mediaRecord.SourceID, seasonNumber, *episodeNumber)
 		if err != nil || episodeRecord == nil {
-			return 0, helpers.LogErrorWithMessage(err, "Failed to get episode media record")
+			return 0, fmt.Errorf("failed to get episode media record for %s %s-%d: %w", mediaRecord.RecordType,
+				mediaRecord.MediaSource, mediaRecord.SourceID, err)
 		}
 		return episodeRecord.RecordID, nil
 	default:
-		return 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
+		return 0, fmt.Errorf("invalid record type: %s: %w", mediaRecord.RecordType, helpers.BadRequestError)
 	}
 }
 
 func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNumber *int, infoHash *string,
 	fileIdx *int, fileExt string) (string, string, int64, error) {
 	if fileExt == "" || fileExt[0] != '.' {
-		return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"File extension is empty or does not include .")
+		return "", "", 0, fmt.Errorf("file extension is empty or does not include . for %s: %w", fileExt, helpers.BadRequestError)
 	}
 	targetDir := ""
 	// construct title, append this later for each type
@@ -359,14 +363,14 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		targetRecordID = mediaRecord.RecordID
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
-			return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Season number or episode number is nil")
+			return "", "", 0, fmt.Errorf("season number or episode number is nil for %s %s-%d: %w", mediaRecord.RecordType,
+				mediaRecord.MediaSource, mediaRecord.SourceID, helpers.BadRequestError)
 		}
 		// check if season/episode pair actually exists, and get record id of episode
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
 			mediaRecord.SourceID, seasonNumber, *episodeNumber)
 		if err != nil || episodeRecord == nil {
-			return "", "", 0, helpers.LogErrorWithMessage(err, "Failed to get episode media record")
+			return "", "", 0, fmt.Errorf("failed to get episode media record: %w", err)
 		}
 		targetRecordID = episodeRecord.RecordID
 		// continue to construct dir
@@ -383,7 +387,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		seasonPath := fmt.Sprintf("Season %02d", *seasonNumber)
 		targetDir = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonPath)
 	default:
-		return "", "", 0, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Invalid record type")
+		return "", "", 0, fmt.Errorf("invalid record type: %s: %w", mediaRecord.RecordType, helpers.BadRequestError)
 	}
 	name := targetFilename
 	targetFilename += fileExt
@@ -406,7 +410,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 			targetFilename = candidate
 			break
 		} else {
-			return "", "", 0, helpers.LogErrorWithMessage(err, "Failed to stat file: "+path)
+			return "", "", 0, fmt.Errorf("failed to stat file: %s: %w", path, err)
 		}
 	}
 	return targetDir, targetFilename, targetRecordID, nil

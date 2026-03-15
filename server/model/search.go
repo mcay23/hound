@@ -43,7 +43,6 @@ func SearchMovies(queryString string) (*[]view.MediaRecordCatalog, error) {
 func SearchTVShows(queryString string) (*[]view.MediaRecordCatalog, error) {
 	results, err := sources.SearchTVShowTMDB(queryString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
 		return nil, err
 	}
 	// convert url results

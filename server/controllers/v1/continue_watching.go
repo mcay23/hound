@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -32,7 +31,7 @@ func GetNextWatchActionHandler(c *gin.Context) {
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "request id param invalid"+err.Error()))
 		return
 	}
 	username := c.GetHeader("X-Username")
