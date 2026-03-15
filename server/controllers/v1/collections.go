@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
@@ -38,13 +39,13 @@ func AddToCollectionHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	body := AddToCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind body: %w : %w", helpers.BadRequestError, err))
 		return
 	}
 	idParam := c.Param("id")
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	temp := int64(collectionID)
@@ -58,27 +59,26 @@ func AddToCollectionHandler(c *gin.Context) {
 	// get source ID as int, right now all sources have int ids
 	sourceID, err := strconv.Atoi(body.SourceID)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to convert sourceID string to int")
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w", helpers.BadRequestError))
 		return
 	}
 	switch body.MediaType {
 	case database.MediaTypeTVShow:
 		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add tv show to collection"))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to add tv show to collection: %w", err))
 			return
 		}
 	case database.MediaTypeMovie:
 		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add movie to collection"))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to add movie to collection: %w", err))
 			return
 		}
 	case database.MediaTypeGame:
 		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, body.CollectionID)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to add game to collection"))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to add game to collection: %w", err))
 			return
 		}
 	}
@@ -98,18 +98,18 @@ func AddToCollectionHandler(c *gin.Context) {
 func DeleteFromCollectionHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	body := AddToCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind body"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	idParam := c.Param("id")
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	temp := int64(collectionID)
@@ -122,16 +122,16 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 	}
 	has, record, err := database.GetMediaRecord(body.MediaType, body.MediaSource, body.SourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error retrieving Media Record"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
 		return
 	}
 	if !has {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "Could not find Media Record"))
+		helpers.ErrorResponse(c, fmt.Errorf("could not find media record: %w", helpers.BadRequestError))
 		return
 	}
 	err = database.DeleteCollectionRelation(userID, record.RecordID, *body.CollectionID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete collection record"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to delete collection record: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)
@@ -148,12 +148,12 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 func GetUserCollectionsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, -1)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error searching collection"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", helpers.InternalServerError, err))
 		return
 	}
 	var collectionResponse []view.CollectionObject
@@ -184,12 +184,12 @@ func GetUserCollectionsHandler(c *gin.Context) {
 func CreateCollectionHandler(c *gin.Context) {
 	body := CreateCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind registration body"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	record := database.CollectionRecord{
@@ -201,7 +201,7 @@ func CreateCollectionHandler(c *gin.Context) {
 	}
 	collectionID, err := database.CreateCollection(record)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "Error creating colection"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to create collection: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
@@ -225,22 +225,22 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	// -1 means no limit, offset
 	limit, offset, err := getLimitOffset(limitQuery, offsetQuery)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get limit/offset: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid collection id in url param"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	records, collection, totalRecords, err := database.GetCollectionRecords(userID, int64(collectionID), limit, offset)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get collection records"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get collection records: %w", err))
 		return
 	}
 	var viewArray []view.MediaRecordCatalog
@@ -251,7 +251,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	// note collection owner can be different from calling user (public collections)
 	collectionOwner, err := database.GetUsernameFromID(collection.OwnerUserID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w", err))
 		return
 	}
 	res := view.CollectionView{
@@ -285,13 +285,13 @@ func GetCollectionContentsHandler(c *gin.Context) {
 func GetRecentCollectionContentsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	// return 20 most recent
 	records, err := database.GetRecentCollectionRecords(userID, 20)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get recent collection records"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get recent collection records: %w: %w", helpers.InternalServerError, err))
 		return
 	}
 	var viewArray []view.MediaRecordCatalog
@@ -315,20 +315,17 @@ func DeleteCollectionHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	collectionID, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Invalid collection_id query param")
-		helpers.ErrorResponse(c, helpers.BadRequestError)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Invalid user")
-		helpers.ErrorResponse(c, helpers.BadRequestError)
+		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	err = database.DeleteCollection(userID, collectionID)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to delete collection")
-		helpers.ErrorResponse(c, helpers.InternalServerError)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to delete collection: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)

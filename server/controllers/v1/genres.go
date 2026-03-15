@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 
@@ -18,7 +19,7 @@ import (
 func GetTVGenresHandler(c *gin.Context) {
 	genres, err := database.GetGenresByType(database.MediaTypeTVShow)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get TV genres"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv genres: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, genres, 200)
@@ -35,7 +36,7 @@ func GetTVGenresHandler(c *gin.Context) {
 func GetMovieGenresHandler(c *gin.Context) {
 	genres, err := database.GetGenresByType(database.MediaTypeMovie)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get movie genres"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get movie genres: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, genres, 200)

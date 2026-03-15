@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/view"
@@ -40,8 +40,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 		case database.MediaTypeTVShow:
 			mediaType = database.MediaTypeTVShow
 		default:
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Invalid media type, needs to be 'movie' or 'tvshow'"))
+			helpers.ErrorResponse(c, fmt.Errorf("invalid media type %s: %w", mediaTypeQuery, helpers.BadRequestError))
 			return
 		}
 	}
@@ -57,7 +56,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 	}
 	collectionView, err := getHoundDownloadedRecords(limit, offset, mediaType, genreIDs)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get hound downloaded records"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get hound downloaded records: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, collectionView, 200)
@@ -66,7 +65,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs []int64) (view.CollectionView, error) {
 	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
 	if err != nil {
-		return view.CollectionView{}, helpers.LogErrorWithMessage(err, "Failed to get downloaded records")
+		return view.CollectionView{}, fmt.Errorf("failed to get downloaded records: %w", err)
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {

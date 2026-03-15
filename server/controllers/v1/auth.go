@@ -77,7 +77,6 @@ type LoginResponse struct {
 func LoginHandler(c *gin.Context) {
 	userPayload := model.LoginUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to bind registration body")
 		helpers.ErrorResponse(c, err)
 		return
 	}
@@ -107,14 +106,11 @@ func LoginHandler(c *gin.Context) {
 func validateClientHeaders(c *gin.Context) (string, string, error) {
 	clientID := strings.ToLower(c.GetHeader("X-Client-Id"))
 	if !slices.Contains(model.SupportedClientIDs, clientID) {
-		err := helpers.LogErrorWithMessage(helpers.BadRequestError, "Invalid or missing X-Client-Id header")
-		return "", "", err
+		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Id header", helpers.BadRequestError)
 	}
 	clientPlatform := strings.ToLower(c.GetHeader("X-Client-Platform"))
 	if !slices.Contains(model.SupportedClientPlatforms, clientPlatform) {
-		err := helpers.LogErrorWithMessage(helpers.BadRequestError, "Invalid or missing X-Client-Platform header")
-		_ = helpers.LogErrorWithMessage(err, "Invalid or missing X-Client-Platform header")
-		return "", "", err
+		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Platform header", helpers.BadRequestError)
 	}
 	return clientID, clientPlatform, nil
 }

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"hound/database"
 	"hound/helpers"
 	"hound/sources"
@@ -27,13 +26,13 @@ func GetGameFromIDHandler(c *gin.Context) {
 	param := c.Param("id")
 	split := strings.Split(param, "-")
 	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		helpers.ErrorResponse(c, helpers.BadRequestError)
 		return
 	}
 	sourceID, err := strconv.Atoi(split[1])
 	// only accept tmdb ids for now
 	if err != nil || split[0] != "igdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		helpers.ErrorResponse(c, helpers.BadRequestError)
 		return
 	}
 	result, err := sources.GetGameFromIDIGDB(sourceID)
@@ -49,7 +48,7 @@ func GetGameFromIDHandler(c *gin.Context) {
 		commentType := c.Query("type")
 		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
+			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.InternalServerError, "Error retrieving comments"))
 			return
 		}
 		resultView.Comments = comments

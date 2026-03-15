@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -27,8 +27,7 @@ func SearchMoviesHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := model.SearchMovies(queryString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to search for movies: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)
@@ -46,7 +45,7 @@ func SearchMoviesHandler(c *gin.Context) {
 func GetMovieFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID)

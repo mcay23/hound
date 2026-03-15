@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -32,8 +32,7 @@ Proxies links through the server
 func StreamHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Failed to parse encoded string:"+c.Param("encodedString")))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to decode aes stream with encodedString %s: %w", c.Param("encodedString"), err))
 		return
 	}
 	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
@@ -54,18 +53,16 @@ func StreamHandler(c *gin.Context) {
 func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
 	filePath := streamDetails.URI
 	if filePath == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"File path not provided"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid filePath: %w", helpers.BadRequestError))
 		return
 	}
 	// Verify file exists
 	_, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"File not found: "+filePath))
+			helpers.ErrorResponse(c, fmt.Errorf("file not found: %s: %w", filePath, err))
 		} else {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error accessing file"))
+			helpers.ErrorResponse(c, fmt.Errorf("error accessing file: %w", err))
 		}
 		return
 	}
@@ -77,8 +74,7 @@ func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull)
 
 func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
 	if streamDetails.InfoHash == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Infohash not provided"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid infohash: %w", helpers.BadRequestError))
 		return
 	}
 	// fileIdx can sometimes be null, gettorrentfile will automatically grab
@@ -91,8 +87,7 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 	}
 	// GetTorrentFile could return nil
 	if file == nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Could not find file in torrent"+streamDetails.InfoHash))
+		helpers.ErrorResponse(c, fmt.Errorf("could not find file in torrent %s: %w", streamDetails.InfoHash, helpers.BadRequestError))
 		return
 	}
 	c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
@@ -106,13 +101,11 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 	if err == nil {
 		f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
-				"Failed to open file"))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to open file: %w", err))
 			return
 		}
 		if file.Length() != stat.Size() {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err,
-				"File exists but size mismatch"))
+			helpers.ErrorResponse(c, fmt.Errorf("file exists but size mismatch: %w", err))
 			return
 		}
 		_ = model.AddActiveTorrentStream(streamDetails.InfoHash, fileIdx)
@@ -150,8 +143,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	}
 	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", videoURL, nil)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Error creating URL: "+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
 		return
 	}
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
@@ -170,8 +162,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"HTTP error fetching URL: "+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("http error fetching url: %w", err))
 		return
 	}
 	defer resp.Body.Close()
@@ -189,8 +180,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"IO copy error: "+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("io copy error: %w", err))
 		return
 	}
 }
@@ -209,19 +199,16 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 func AddTorrentHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Failed to parse encoded string:"+c.Param("encodedString")))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to decode aes stream with encodedString %s: %w", c.Param("encodedString"), err))
 		return
 	}
 	if streamDetails.StreamProtocol != database.ProtocolP2P {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid stream protocol, has to be p2p: "+streamDetails.StreamProtocol))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid stream protocol, has to be p2p: %s: %w", streamDetails.StreamProtocol, helpers.BadRequestError))
 		return
 	}
 	// may want to be more lax in the future
 	if streamDetails.FileIdx == nil || streamDetails.InfoHash == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Torrent hash, File Index and/or File name not provided"))
+		helpers.ErrorResponse(c, fmt.Errorf("torrent hash, file index and/or file name not provided: %w", helpers.BadRequestError))
 		return
 	}
 	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources)

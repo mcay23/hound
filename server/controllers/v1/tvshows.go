@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -26,7 +26,7 @@ func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := model.SearchTVShows(queryString)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to search for tv show"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to search tv show for query %s: %w", queryString, err))
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)
@@ -44,12 +44,12 @@ func SearchTVShowHandler(c *gin.Context) {
 func GetTVShowFromIDHandler(c *gin.Context) {
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %s: %w", showID, err))
 		return
 	}
 	// create top level show
@@ -151,12 +151,12 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 func GetTVSeasonHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	seasonDetails, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
@@ -223,13 +223,12 @@ func GetTVSeasonHandler(c *gin.Context) {
 func GetTVEpisodeGroupsHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	episodeGroups, err := sources.GetTVEpisodeGroupsTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %s: %w", sourceID, err))
 		return
 	}
 	helpers.SuccessResponse(c, episodeGroups.Results, 200)

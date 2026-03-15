@@ -50,7 +50,10 @@ func instantiateExternalLibraryItemsTable() error {
 			Status:    ExternalLibraryItemStatusFailed,
 			LastError: &lastError,
 		})
-	return fmt.Errorf("failed to update pending, queued tasks: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to update pending, queued tasks: %w", err)
+	}
+	return nil
 }
 
 func GetExternalLibraryItemByPath(sourcePath string) (*ExternalLibraryItem, error) {

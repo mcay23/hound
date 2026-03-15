@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -26,13 +26,12 @@ import (
 func GetMovieMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	streamObjects, err := providers.GetLocalStreamsForMovie(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get local streams"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
 	}
 	res := &providers.ProviderResponseObject{
@@ -65,16 +64,14 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 func GetTVShowMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	var seasonNumber *int
 	if c.Query("season") != "" {
 		s, err := strconv.Atoi(c.Query("season"))
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Invalid season query param"+err.Error()))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to get season param: %w: %w", helpers.BadRequestError, err))
 			return
 		}
 		seasonNumber = &s
@@ -83,15 +80,14 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 	if c.Query("episode") != "" {
 		e, err := strconv.Atoi(c.Query("episode"))
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-				"Invalid episode query param"+err.Error()))
+			helpers.ErrorResponse(c, fmt.Errorf("failed to get episode param: %w: %w", helpers.BadRequestError, err))
 			return
 		}
 		episodeNumber = &e
 	}
 	streamObjects, err := providers.GetLocalStreamsForTVShow(sourceID, seasonNumber, episodeNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get local streams"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
 	}
 	// in regular flows, should be a cached call
@@ -141,17 +137,14 @@ func GetMediaFilesHandler(c *gin.Context) {
 	if offset == "" {
 		offset = "0"
 	}
-	limitNum, err := strconv.Atoi(limit)
+	limitNum, offsetNum, err := getLimitOffset(limit, offset)
 	if err != nil {
-		helpers.LogErrorWithMessage(err, "Invalid limit query param")
-	}
-	offsetNum, err := strconv.Atoi(offset)
-	if err != nil {
-		helpers.LogErrorWithMessage(err, "Invalid offset query param")
+		helpers.ErrorResponse(c, err)
+		return
 	}
 	totalRecords, files, err := database.GetMediaFiles(&limitNum, &offsetNum)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get media files"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get media files: %w", err))
 		return
 	}
 	res := &view.MediaFilesResponse{
@@ -175,18 +168,17 @@ func GetMediaFilesHandler(c *gin.Context) {
 func DeleteMediaFileHandler(c *gin.Context) {
 	mediaFileID := c.Param("id")
 	if mediaFileID == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError,
-			"Media file ID not provided"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w", helpers.BadRequestError))
 		return
 	}
 	fileID, err := strconv.Atoi(mediaFileID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid media file ID"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	err = model.DeleteMediaFile(fileID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to delete media file"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to delete media file: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)

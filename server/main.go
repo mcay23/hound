@@ -10,7 +10,10 @@ import (
 	"hound/workers"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // @title Hound API Documentation V1
@@ -22,7 +25,16 @@ import (
 func main() {
 	// initialize logging
 	time.Local, _ = time.LoadLocation("UTC")
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+
+	// load env file to os for dev
+	if os.Getenv("APP_ENV") != "production" {
+		_ = godotenv.Load("dev.env")
+	}
+	logLevel := slog.LevelInfo
+	if strings.ToLower(os.Getenv("DEBUG_LOGGING")) == "true" {
+		logLevel = slog.LevelDebug
+	}
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	slog.SetDefault(slog.New(handler))
 
 	model.InitializeConfig()

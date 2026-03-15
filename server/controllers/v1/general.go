@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -72,12 +72,12 @@ func GetMediaBackdrops(c *gin.Context) {
 	}
 	shows, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
-		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get trending tv shows: %w", err))
 		return
 	}
 	movies, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
-		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get trending movies: %w", err))
 		return
 	}
 	candidateURL := ""
@@ -92,8 +92,7 @@ func GetMediaBackdrops(c *gin.Context) {
 		}
 	}
 	if candidateURL == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"failed to get backdrop"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get backdrop: %w", helpers.InternalServerError))
 		return
 	}
 	_, _ = database.SetCache(backdropCacheKey, candidateURL, time.Hour*24)
@@ -103,12 +102,12 @@ func GetMediaBackdrops(c *gin.Context) {
 func GetCommentsHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "request id param invalid"+err.Error()))
 		return
 	}
 	requestURL := strings.Split(c.Request.URL.Path, "/")
 	if len(requestURL) <= 0 {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "request url invalid (should not happen)"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "request url invalid (should not happen)"))
 		return
 	}
 	mediaType := requestURL[3]
@@ -118,7 +117,7 @@ func GetCommentsHandler(c *gin.Context) {
 	}
 	has, record, err := database.GetMediaRecord(mediaType, mediaSource, strconv.Itoa(sourceID))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Error getting Media Record"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.BadRequestError, "Error getting Media Record"))
 		return
 	}
 	if !has {
@@ -127,7 +126,7 @@ func GetCommentsHandler(c *gin.Context) {
 	commentType := c.Query("type")
 	comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
+		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.InternalServerError, "Error retrieving comments"))
 		return
 	}
 	helpers.SuccessResponse(c, comments, 200)

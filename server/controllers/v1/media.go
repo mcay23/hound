@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
@@ -38,29 +38,28 @@ type GetTVEpisodesResponse struct {
 func IngestFileHandler(c *gin.Context) {
 	var body IngestFileRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind JSON"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind json: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	if body.MediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid media source, only tmdb is supported at the current time"))
+		helpers.ErrorResponse(c, fmt.Errorf("invalid media source: %w", helpers.BadRequestError))
 		return
 	}
 	sourceID, err := strconv.Atoi(body.SourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to convert source id to int"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert source id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	record, err := sources.UpsertMediaRecordTMDB(body.MediaType, sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to upsert media record"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to upsert media record: %w", err))
 		return
 	}
 	infoHash := "12345"
 	fileIdx := 1
 	mediaFile, err := model.IngestFile(record, body.SeasonNumber, body.EpisodeNumber, &infoHash, &fileIdx, nil, body.FilePath, model.IngestTransferMove, database.FileOriginHoundManaged)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to ingest file"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	helpers.SuccessResponse(c, IngestFileResponse{MediaFile: mediaFile}, 200)
@@ -79,13 +78,13 @@ func GetMetadataHandler(c *gin.Context) {
 func GetTVEpisodesHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	sourceIDstr := strconv.Itoa(sourceID)
 	episodeRecords, err := database.GetEpisodeMediaRecords(mediaSource, sourceIDstr, nil, nil)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get episodes"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get episode media records: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, GetTVEpisodesResponse{Episodes: episodeRecords}, 200)
@@ -116,17 +115,14 @@ func GetIngestTasksHandler(c *gin.Context) {
 	if offset == "" {
 		offset = "0"
 	}
-	limitNum, err := strconv.Atoi(limit)
+	limitNum, offsetNum, err := getLimitOffset(limit, offset)
 	if err != nil {
-		helpers.LogErrorWithMessage(err, "Invalid limit query param")
-	}
-	offsetNum, err := strconv.Atoi(offset)
-	if err != nil {
-		helpers.LogErrorWithMessage(err, "Invalid offset query param")
+		helpers.ErrorResponse(c, err)
+		return
 	}
 	totalRecords, tasks, err := database.FindIngestTasksForStatus(statusSlice, limitNum, offsetNum)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to get downloads"))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to find ingest tasks for status: %w", err))
 		return
 	}
 	response := view.IngestTaskResponse{

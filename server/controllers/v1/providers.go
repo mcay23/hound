@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"hound/database"
 	"hound/helpers"
 	"hound/model/providers"
@@ -15,7 +15,7 @@ func DecodeTestHandler(c *gin.Context) {
 	str := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoie1wibWVkaWFfc291cmNlXCI6XCJ0bWRiXCIsXCJzb3VyY2VfaWRcIjozNzIwNTgsXCJtZWRpYV90eXBlXCI6XCJtb3ZpZVwiLFwiaW1kYl9pZFwiOlwidHQ1MzExNTE0XCIsXCJzZWFzb25cIjowLFwiZXBpc29kZVwiOjAsXCJhZGRvblwiOlwiVG9ycmVudGlvXCIsXCJjYWNoZWRcIjpcInRydWVcIixcInNlcnZpY2VcIjpcIlJEXCIsXCJwMnBcIjpcImRlYnJpZFwiLFwiaW5mb2hhc2hcIjpcIjcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTVcIixcImluZGV4ZXJcIjpcIlRvcnJlbnRHYWxheHlcIixcImZpbGVfbmFtZVwiOlwiWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImZvbGRlcl9uYW1lXCI6XCJJTURCIFRvcCAyNTAgLSAyMDI0IEVkaXRpb24gLSAxMDgwcCBCbHVSYXkgZVN1YnMgalpRXCIsXCJyZXNvbHV0aW9uXCI6XCIxMDgwcFwiLFwiZmlsZV9pZHhcIjotMSxcImZpbGVfc2l6ZVwiOjIxNzk2OTU5MDMsXCJyYW5rXCI6MTExNTAsXCJzZWVkZXJzXCI6NTI4LFwibGVlY2hlcnNcIjotMSxcInVybFwiOlwiaHR0cHM6Ly90b3JyZW50aW8uc3RyZW0uZnVuL3Jlc29sdmUvcmVhbGRlYnJpZC80RkhDTlBJVEhNQ1VDUkVHRDNETkNMNDVNNUpPV1RHQ0pMVkJGR1JFNEVBNEtYM1hNVVRRLzcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTUvbnVsbC82NTkvWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImVuY29kZWRfZGF0YVwiOlwiXCIsXCJkYXRhXCI6e1wiY29kZWNcIjpcImF2Y1wiLFwiYXVkaW9cIjpbXCJBQUNcIl0sXCJjaGFubmVsc1wiOltdLFwiY29udGFpbmVyXCI6XCJtcDRcIixcImxhbmd1YWdlc1wiOltcImphXCJdLFwiYml0X2RlcHRoXCI6XCJcIixcImhkclwiOltdfX0ifQ.RqCPlPNTk2BRPto2vqPHvI8nHgItOW4kNR-lKfRyXg0"
 	obj, err := providers.DecodeJsonStreamAES(str)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to decode json stream aes: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	helpers.SuccessResponse(c, obj, 200)
@@ -41,12 +41,12 @@ func ClearCacheHandler(c *gin.Context) {
 func SearchProvidersTVShowsHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	imdbID, err := sources.GetTVShowIMDBID(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving TMDB imdb id"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv show imdb id: %w", err))
 		return
 	}
 	// cannot find IMDB id
@@ -62,18 +62,17 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 	}
 	seasonNumber, err := strconv.Atoi(c.Query("season"))
 	if err != nil || c.Query("season") == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid season query param"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get season query param: %w: %w", helpers.BadRequestError, err))
+		return
 	}
 	episodeNumber, err := strconv.Atoi(c.Query("episode"))
 	if err != nil || c.Query("episode") == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"Invalid episode query param"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get episode query param: %w: %w", helpers.BadRequestError, err))
+		return
 	}
 	episode, err := sources.GetEpisodeTMDB(sourceID, seasonNumber, episodeNumber)
 	if err != nil || episode == nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Error retrieving TMDB episode"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get episode from tmdb: %w", err))
 		return
 	}
 	sourceEpisodeIDstr := strconv.Itoa(int(episode.ID))
@@ -89,8 +88,7 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 	}
 	results, err := providers.QueryProviders(query)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Error retrieving Stremio streams "+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to query providers: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, results, 200)
@@ -108,14 +106,12 @@ func SearchProvidersTVShowsHandler(c *gin.Context) {
 func SearchProvidersMovieHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest),
-			"request id param invalid"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	movie, err := sources.GetMovieFromIDTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError),
-			"Error retrieving TMDB movie"+err.Error()))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get movie from tmdb: %w", err))
 		return
 	}
 	query := providers.ProvidersQueryRequest{
@@ -130,8 +126,7 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 	}
 	res, err := providers.QueryProviders(query)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to search providers")
-		helpers.ErrorResponse(c, errors.New(helpers.InternalServerError))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to query providers: %w", err))
 		return
 	}
 	helpers.SuccessResponse(c, res, 200)

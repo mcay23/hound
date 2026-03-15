@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -31,28 +31,23 @@ func GetWatchActivityHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	limitQuery := c.DefaultQuery("limit", "500")
 	offsetQuery := c.DefaultQuery("offset", "0")
 	startQuery := c.Query("start_time")
 	endQuery := c.Query("end_time")
-	limit, err := strconv.Atoi(limitQuery)
+	limit, offset, err := getLimitOffset(limitQuery, offsetQuery)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid limit query"))
-		return
-	}
-	offset, err := strconv.Atoi(offsetQuery)
-	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid offset query"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	var startTime, endTime *time.Time
 	if startQuery != "" {
 		t, err := time.Parse(time.RFC3339, startQuery)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid start time format"))
+			helpers.ErrorResponse(c, fmt.Errorf("error parsing start time: %w (must be RFC3339): %w", helpers.BadRequestError, err))
 			return
 		}
 		startTime = &t
@@ -60,14 +55,14 @@ func GetWatchActivityHandler(c *gin.Context) {
 	if endQuery != "" {
 		t, err := time.Parse(time.RFC3339, endQuery)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid end time format"))
+			helpers.ErrorResponse(c, fmt.Errorf("error parsing end time: %w (must be RFC3339): %w", helpers.BadRequestError, err))
 			return
 		}
 		endTime = &t
 	}
 	activity, total, err := database.GetWatchActivity(userID, startTime, endTime, limit, offset)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to fetch watch events"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	res := view.WatchActivityResponse{
@@ -110,22 +105,22 @@ func GetWatchHistoryMovieHandler(c *gin.Context) {
 func handleGetWatchHistory(c *gin.Context, recordType string) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, parentSourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("error parsing id: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	rewatchRecords, err := database.GetRewatchesFromSourceID(recordType, mediaSource, strconv.Itoa(parentSourceID), userID)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting show rewatch records"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	// exit early if rewatch record doesn't exist, since this means no watch history
@@ -136,13 +131,12 @@ func handleGetWatchHistory(c *gin.Context, recordType string) {
 	var targetSeason *int
 	if c.Param("seasonNumber") != "" {
 		if recordType != database.RecordTypeTVShow {
-			errMsg := "Season number is only valid for tv shows"
-			helpers.ErrorResponseWithMessage(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), errMsg), errMsg)
+			helpers.ErrorResponse(c, fmt.Errorf("season number passed for non-tvshow: %w", helpers.BadRequestError))
 			return
 		}
 		temp, err := strconv.Atoi(c.Param("seasonNumber"))
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing target season"))
+			helpers.ErrorResponse(c, fmt.Errorf("error parsing season number: %w: %w", helpers.BadRequestError, err))
 			return
 		}
 		targetSeason = &temp
@@ -151,7 +145,7 @@ func handleGetWatchHistory(c *gin.Context, recordType string) {
 	for _, rewatchRecord := range rewatchRecords {
 		watchEvents, err := database.GetWatchEventsFromRewatchID(rewatchRecord.RewatchID, targetSeason)
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting watch events from rewatch id"))
+			helpers.ErrorResponse(c, fmt.Errorf("error getting watch events from rewatch id: %w: %w", helpers.BadRequestError, err))
 			return
 		}
 		rewatchObjects = append(rewatchObjects, &view.MediaRewatchRecordWatchEvents{
@@ -182,29 +176,29 @@ type AddWatchHistoryTVResponse struct {
 func AddWatchHistoryTVHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("error parsing id param: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	// Only episode ids that belong to the same show should be inserted at the same time
 	watchHistoryPayload := model.WatchHistoryTVShowPayload{}
 	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	insertedEpisodeIDs, skippedEpisodeIDs, err :=
 		model.CreateTVShowWatchHistory(userID, mediaSource, showID, watchHistoryPayload)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating watch history"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	response := AddWatchHistoryTVResponse{
@@ -252,33 +246,33 @@ type DeleteWatchHistoryPayload struct {
 func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	// Only episode ids that belong to the same show should be inserted at the same time
 	payload := DeleteWatchHistoryPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", helpers.BadRequestError, err))
 		return
 	}
-	// get record id from show source id
-	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
+	// get record id from source id
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		helpers.ErrorResponse(c, err)
 		return
 	}
-	has, record, err := database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(showID))
+	has, record, err := database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(sourceID))
 	if !has || err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting media record"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting media record for %s-%s: %w", mediaSource, sourceID, err))
 		return
 	}
 	if err := database.BatchDeleteWatchEvents(payload.WatchEventIDs, userID, int(record.RecordID)); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error deleting watch history records"))
+		helpers.ErrorResponse(c, fmt.Errorf("error deleting watch history records for %s-%s: %w", mediaSource, sourceID, err))
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)
@@ -297,17 +291,17 @@ func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 func AddTVShowRewatchHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id for watch history"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	startedAt := time.Now().UTC()
@@ -334,7 +328,7 @@ func AddTVShowRewatchHandler(c *gin.Context) {
 	rewatchRecord, err := model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
 		strconv.Itoa(showID), userID, startedAt)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating rewatch record"))
+		helpers.ErrorResponse(c, err)
 		return
 	}
 	helpers.SuccessResponse(c, rewatchRecord, 200)
@@ -359,22 +353,22 @@ type AddWatchHistoryMovieResponse struct {
 func AddWatchHistoryMovieHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.BadRequest), "Username not found in header"))
+		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error getting user id"))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error parsing source_id: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("error param %s: %w", c.Param("id"), err))
 		return
 	}
 	watchHistoryPayload := model.WatchHistoryMoviePayload{}
 	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", helpers.BadRequestError, err))
 		return
 	}
 	insertedSourceID, err := model.CreateMovieWatchHistory(userID, mediaSource, sourceID, watchHistoryPayload)

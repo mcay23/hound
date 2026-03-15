@@ -48,7 +48,16 @@ type TMDBEpisode struct {
 
 func InitializeTMDB() {
 	var err error
-	tmdbClient, err = tmdb.InitV4(os.Getenv("TMDB_API_KEY"))
+	apiKey := os.Getenv("TMDB_API_KEY")
+	// if user doesn't use their own api key, use the default one
+	// as I understand, this is allowed by the devs
+	// jellyfin, etc. uses a single api key for all their users
+	// however, if rate-limiting were to be added to tmdb apis, user's
+	// should set their own key
+	if apiKey == "" {
+		apiKey = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMDZkMDdiOTk1ZmY2NjQxNjY0OWMzNjA4YzllMGE2NyIsIm5iZiI6MTYzMjc1Nzg2MS4zMDA5OTk5LCJzdWIiOiI2MTUxZTg2NTFjNjM1YjAwMmExMGNmNTciLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.xTmUqmj38ElN1n0UWfsaL-1IJ46SAhCd1WtBD_Of_2A"
+	}
+	tmdbClient, err = tmdb.InitV4(apiKey)
 	if err != nil {
 		slog.Error("Failed to initialize tmdb client", "error", err)
 		panic(err)
