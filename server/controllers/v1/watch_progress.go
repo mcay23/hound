@@ -55,12 +55,12 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("error binding JSON for watch history: %w: %w", helpers.BadRequestError, err))
 		return
 	}
-	if watchProgress.CurrentProgressSeconds < 120 {
-		helpers.ErrorResponse(c, fmt.Errorf("less than 2 minutes watched, skipping saving progress: %w", helpers.BadRequestError))
-		return
-	}
 	if watchProgress.TotalDurationSeconds < 60 {
 		helpers.ErrorResponse(c, fmt.Errorf("invalid param: total duration is < 60 seconds, likely invalid video: %w", helpers.BadRequestError))
+		return
+	}
+	if watchProgress.CurrentProgressSeconds < 120 {
+		helpers.ErrorResponse(c, fmt.Errorf("less than 2 minutes watched, skipping saving progress: %w", helpers.BadRequestError))
 		return
 	}
 	// if progress is > 85% of total duration or less than 5 minutes left, mark as watched

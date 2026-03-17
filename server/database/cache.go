@@ -99,7 +99,7 @@ func GetCache(key string, out interface{}) (bool, error) {
 			return nil
 		})
 	})
-	if err == badger.ErrKeyNotFound {
+	if errors.Is(err, badger.ErrKeyNotFound) {
 		// don't treat as an actual error
 		return false, nil
 	}

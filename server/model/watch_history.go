@@ -105,7 +105,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			return nil, nil, fmt.Errorf("could not find rewatch id %d for user %d: %w", targetRewatchID, userID, helpers.BadRequestError)
 		}
 	}
-	// 4. Get most current rewatch or create new rewatch if none if rewatch payload is empty
+	// 4. Get most current rewatch or create new rewatch if rewatch payload is empty
 	if targetRewatchID == -1 {
 		rewatchRecord, err := database.GetActiveRewatchFromSourceID(database.MediaTypeTVShow, mediaSource, strconv.Itoa(showID), userID)
 		if err != nil {
@@ -140,13 +140,11 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			cacheKey = fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%s", userID, targetRewatchID,
 				database.RecordTypeEpisode, mediaSource, episodeIDStr)
 			var cached bool
-			cacheHit, err := database.GetCache(cacheKey, &cached)
-			if err != nil {
-				return nil, nil, fmt.Errorf("error checking scrobble cache: %w", err)
-			}
+			cacheHit, _ := database.GetCache(cacheKey, &cached)
 			// if cache hit and scrobble, skip insert
 			if cacheHit {
 				skippedEpisodeIDs = append(skippedEpisodeIDs, episodeID)
+				slog.Debug("skipping scrobble insert", "episode_id", episodeID)
 				continue
 			}
 		}
@@ -190,7 +188,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		err = DeleteWatchProgress(userID, database.MediaTypeTVShow, mediaSource,
 			strconv.Itoa(showID), watchHistoryPayload.SeasonNumber, watchHistoryPayload.EpisodeNumber, &watchTime)
 		if err != nil {
-			slog.Error("error deleteing watch progress", "error", err)
+			slog.Error("error deleting watch progress", "error", err)
 		}
 	}
 	return &insertedEpisodeIDs, &skippedEpisodeIDs, nil
@@ -238,10 +236,7 @@ func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, wat
 		cacheKey := fmt.Sprintf("watch_history:scrobble:userid-%d:rewatchid-%d:%s:%s-%d",
 			userID, rewatchRecord.RewatchID, database.RecordTypeMovie, mediaSource, sourceID)
 		var cached bool
-		cacheHit, err := database.GetCache(cacheKey, &cached)
-		if err != nil {
-			return nil, fmt.Errorf("error checking scrobble cache: %w", err)
-		}
+		cacheHit, _ := database.GetCache(cacheKey, &cached)
 		// if cache hit, return without inserting
 		if cacheHit {
 			return nil, nil

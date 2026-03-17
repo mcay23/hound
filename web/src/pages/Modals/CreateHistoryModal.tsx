@@ -5,7 +5,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React, { useState } from "react";
 import {
   useAddMovieWatchActivityMutation,
-  useAddTVWatchActivityMutation,
+  useAddTVWatchHistoryMutation,
 } from "../../api/hooks/watchHistory";
 
 interface CreateHistoryModalProps {
@@ -15,27 +15,31 @@ interface CreateHistoryModalProps {
   mediaSource: string;
   sourceID: string;
   episodeIDs?: number[];
+  seasonNumber?: number;
+  episodeNumber?: number;
 }
 
-function CreateHistoryModal({
-  onClose,
-  open,
-  type,
-  mediaSource,
-  sourceID,
-  episodeIDs,
-}: CreateHistoryModalProps) {
+const CreateHistoryModal = (props: CreateHistoryModalProps) => {
+  const {
+    onClose,
+    open,
+    type,
+    mediaSource,
+    sourceID,
+    episodeIDs,
+    seasonNumber,
+    episodeNumber,
+  } = props;
   const [date, setDate] = useState<Dayjs | null>(dayjs());
 
-  const addTVWatchActivityMutation = useAddTVWatchActivityMutation();
+  const addTVWatchActivityMutation = useAddTVWatchHistoryMutation();
   const addMovieWatchActivityMutation = useAddMovieWatchActivityMutation();
 
   const handleClose = () => {
-    setDate(dayjs());
     onClose();
   };
 
-  const createHistoryHandler = async () => {
+  const handleSave = async () => {
     if (!date) {
       toast.error("Please select a date");
       return;
@@ -49,6 +53,8 @@ function CreateHistoryModal({
           sourceID,
           episodeIDs: cleanNumbers || [],
           watchedAt,
+          seasonNumber,
+          episodeNumber,
         });
       } else if (type === "movie") {
         await addMovieWatchActivityMutation.mutateAsync({
@@ -89,7 +95,7 @@ function CreateHistoryModal({
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button
-          onClick={createHistoryHandler}
+          onClick={handleSave}
           disabled={
             addTVWatchActivityMutation.isPending ||
             addMovieWatchActivityMutation.isPending
@@ -100,6 +106,6 @@ function CreateHistoryModal({
       </DialogActions>
     </Dialog>
   );
-}
+};
 
 export default CreateHistoryModal;

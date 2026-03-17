@@ -84,7 +84,7 @@ func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string)
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(user.Password))
 	if err != nil {
-		return "", fmt.Errorf("Failed to verify password (incorrect?): %w", err)
+		return "", fmt.Errorf("Failed to verify password (incorrect?): %w", helpers.UnauthorizedError)
 	}
 	// expiration time in seconds
 	expirationTime := time.Now().Add(time.Duration(viper.GetInt("auth.jwt-access-token-expiration")) * time.Second)

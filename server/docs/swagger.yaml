@@ -2834,6 +2834,12 @@ paths:
     post:
       consumes:
       - application/json
+      description: |-
+        Only one of season_number and episode_number, or []episode_ids should be defined.
+        By default, if []episode_ids are used, this won't clear existing playback progress for
+        those episodes, however, this behavior might change in the future. For the season_number,
+        episode_number case, the current playback progress will be cleared if the watched_at is newer
+        than the existing playback progress.
       parameters:
       - description: Media ID
         in: path

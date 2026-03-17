@@ -65,17 +65,42 @@ export const fetchWatchStats = async (startTime?: string, endTime?: string) => {
   return data;
 };
 
+export const fetchTVSeasonHistory = async (
+  mediaSource: string,
+  sourceID: string,
+  seasonNumber: number,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`,
+  );
+  return data;
+};
+
 export const createTVWatchHistory = async (
-  mediaType: string,
+  mediaSource: string,
   sourceID: string,
   episodeIDs: number[],
   watchedAt?: string,
+  seasonNumber?: number,
+  episodeNumber?: number,
 ) => {
-  const { data } = await axios.post<any>(`/api/v1/tv/${mediaType}-${sourceID}/history`, {
+  const payload: any = {
     action_type: "watch",
-    episode_ids: episodeIDs,
-    watched_at: watchedAt,
-  });
+  };
+  if (watchedAt) {
+    payload.watched_at = watchedAt;
+  }
+  if (seasonNumber !== undefined && episodeNumber !== undefined) {
+    payload.season_number = seasonNumber;
+    payload.episode_number = episodeNumber;
+  } else {
+    payload.episode_ids = episodeIDs;
+  }
+
+  const { data } = await axios.post(
+    `/api/v1/tv/${mediaSource}-${sourceID}/history`,
+    payload,
+  );
   return data;
 };
 

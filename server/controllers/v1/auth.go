@@ -87,7 +87,7 @@ func LoginHandler(c *gin.Context) {
 	}
 	token, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		helpers.ErrorResponse(c, helpers.UnauthorizedError)
 		return
 	}
 	cookie := &http.Cookie{

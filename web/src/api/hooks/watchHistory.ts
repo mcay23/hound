@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { createMovieWatchHistory, createTVWatchHistory, fetchWatchActivity, fetchWatchStats } from "../services/watchHistory";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createMovieWatchHistory, createTVWatchHistory, fetchTVSeasonHistory, fetchWatchActivity, fetchWatchStats } from "../services/watchHistory";
 
 export const useWatchActivity = (
   limit: number,
@@ -18,28 +18,62 @@ export const useWatchStats = (
   endTime?: string,
 ) => {
   return useQuery({
-    queryKey: ["watch-activity", startTime, endTime],
+    queryKey: ["watch-stats", startTime, endTime],
     queryFn: () => fetchWatchStats(startTime, endTime),
   });
 };
 
-export const useAddTVWatchActivityMutation = () => {
+export const useTVSeasonHistory = (
+  mediaSource: string,
+  sourceID: string,
+  seasonNumber: number,
+  enabled: boolean = true,
+) => {
+  return useQuery({
+    queryKey: ["tv-season-history", mediaSource, sourceID, seasonNumber],
+    queryFn: () => fetchTVSeasonHistory(mediaSource, sourceID, seasonNumber),
+    enabled: enabled && !!mediaSource && !!sourceID && seasonNumber !== undefined,
+  });
+};
+
+export const useAddTVWatchHistoryMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       mediaSource,
       sourceID,
       episodeIDs,
       watchedAt,
+      seasonNumber,
+      episodeNumber,
     }: {
       mediaSource: string;
       sourceID: string;
       episodeIDs: number[];
       watchedAt?: string;
-    }) => createTVWatchHistory(mediaSource, sourceID, episodeIDs, watchedAt),
+      seasonNumber?: number;
+      episodeNumber?: number;
+    }) =>
+      createTVWatchHistory(
+        mediaSource,
+        sourceID,
+        episodeIDs,
+        watchedAt,
+        seasonNumber,
+        episodeNumber,
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["watch-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["watch-stats"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["tv-season-history", variables.mediaSource, variables.sourceID] 
+      });
+    },
   });
 };
 
 export const useAddMovieWatchActivityMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       mediaSource,
@@ -50,5 +84,9 @@ export const useAddMovieWatchActivityMutation = () => {
       sourceID: string;
       watchedAt?: string;
     }) => createMovieWatchHistory(mediaSource, sourceID, watchedAt),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watch-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["watch-stats"] });
+    },
   });
 };

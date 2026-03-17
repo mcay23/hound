@@ -2584,6 +2584,7 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "description": "Only one of season_number and episode_number, or []episode_ids should be defined.\nBy default, if []episode_ids are used, this won't clear existing playback progress for\nthose episodes, however, this behavior might change in the future. For the season_number,\nepisode_number case, the current playback progress will be cleared if the watched_at is newer\nthan the existing playback progress.",
                 "consumes": [
                     "application/json"
                 ],

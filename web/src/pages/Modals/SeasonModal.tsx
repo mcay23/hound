@@ -54,6 +54,11 @@ type WatchProgressItem = {
   encoded_data: string;
 };
 
+import {
+  useAddTVWatchHistoryMutation,
+  useTVSeasonHistory,
+} from "../../api/hooks/watchHistory";
+
 function SeasonModal(props: any) {
   const {
     onClose,
@@ -79,6 +84,14 @@ function SeasonModal(props: any) {
     overview: "",
     watch_info: [],
   });
+
+  const { data: historyData } = useTVSeasonHistory(
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    open,
+  );
+
   const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [watchProgress, setWatchProgress] = useState<
     Map<string, WatchProgressItem>
@@ -88,31 +101,77 @@ function SeasonModal(props: any) {
     useState(false);
   const [isDownloadSeasonModalOpen, setIsDownloadSeasonModalOpen] =
     useState(false);
+
+  const addTVWatchActivityMutation = useAddTVWatchHistoryMutation();
+
+  useEffect(() => {
+    if (historyData) {
+      const latest = historyData.reduce(
+        (a: any, b: any) =>
+          new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
+            ? a
+            : b,
+        historyData[0],
+      );
+      if (latest) {
+        const sourceIDs = (latest.watch_events || []).map(
+          (event: any) => event.source_id,
+        );
+        setWatchedEpisodes(sourceIDs);
+      }
+    }
+  }, [historyData]);
+
   const handleWatchEpisode = (
     season: number,
     episode: number,
     episodeID: string,
   ) => {
-    // don't send in episode_id array, since this doesn't delete
-    // resume progress if mark as watched
-    var payload = {
-      season_number: season,
-      episode_number: episode,
-      action_type: "watch",
-    };
-    axios
-      .post(`/api/v1/tv/${mediaSource}-${sourceID}/history`, payload)
-      .then((res) => {
-        setWatchedEpisodes([...watchedEpisodes, episodeID]);
-        if (res.status === 200) {
+    addTVWatchActivityMutation.mutate(
+      {
+        mediaSource,
+        sourceID,
+        episodeIDs: [],
+        seasonNumber: season,
+        episodeNumber: episode,
+      },
+      {
+        onSuccess: () => {
           toast.success("Episode marked as watched");
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        toast.error("Failed to mark episode as watched");
-      });
+        },
+        onError: (err) => {
+          console.error(err);
+          toast.error("Failed to mark episode as watched");
+        },
+      },
+    );
   };
+
+  const [historyModalType, setHistoryModalType] = useState<
+    "season" | "episode"
+  >("season");
+  const [historyModalEpisodeIDs, setHistoryModalEpisodeIDs] = useState<
+    number[]
+  >([]);
+  const [historyModalSeasonNumber, setHistoryModalSeasonNumber] = useState<
+    number | undefined
+  >();
+  const [historyModalEpisodeNumber, setHistoryModalEpisodeNumber] = useState<
+    number | undefined
+  >();
+
+  const handleOpenEpisodeHistoryModal = (
+    episodeID: number,
+    seasonNumber: number,
+    episodeNumber: number,
+  ) => {
+    setHistoryModalType("episode");
+    setHistoryModalEpisodeIDs([episodeID]);
+    setHistoryModalSeasonNumber(seasonNumber);
+    setHistoryModalEpisodeNumber(episodeNumber);
+    setIsCreateHistoryModalOpen(true);
+  };
+
   var seasonOverviewPlaceholder = "No description available.";
   if (isSeasonDataLoaded) {
     seasonOverviewPlaceholder = `Season ${seasonData.season_number} of ${props.mediaTitle}`;
@@ -120,18 +179,6 @@ function SeasonModal(props: any) {
       seasonOverviewPlaceholder = "Special Episodes";
     }
   }
-  const [historyModalType, setHistoryModalType] = useState<
-    "season" | "episode"
-  >("season");
-  const [historyModalEpisodeIDs, setHistoryModalEpisodeIDs] = useState<
-    number[]
-  >([]);
-
-  const handleOpenEpisodeHistoryModal = (episodeID: number) => {
-    setHistoryModalType("episode");
-    setHistoryModalEpisodeIDs([episodeID]);
-    setIsCreateHistoryModalOpen(true);
-  };
 
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
@@ -150,27 +197,7 @@ function SeasonModal(props: any) {
       if (!seasonRes) return;
       setSeasonData(seasonRes.data);
       setIsSeasonDataLoaded(true);
-      // get watch data
-      axios
-        .get(
-          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/history`,
-        )
-        .then((historyRes) => {
-          if (historyRes.data) {
-            const latest = historyRes.data.reduce((a: any, b: any) =>
-              new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
-                ? a
-                : b,
-            );
-            const sourceIDs = (latest.watch_events || []).map(
-              (event: any) => event.source_id,
-            );
-            setWatchedEpisodes(sourceIDs);
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+
       // get watch progress
       axios
         .get(
@@ -268,6 +295,8 @@ function SeasonModal(props: any) {
                           setHistoryModalEpisodeIDs(
                             seasonData.episodes.map((ep: any) => ep.source_id),
                           );
+                          setHistoryModalSeasonNumber(undefined);
+                          setHistoryModalEpisodeNumber(undefined);
                           setIsCreateHistoryModalOpen(true);
                         }}
                       >
@@ -311,7 +340,7 @@ function SeasonModal(props: any) {
               </div>
             </div>
             <div className="season-episode-card-container">
-              {seasonData.episodes.map((episode) => {
+              {seasonData.episodes.map((episode: any) => {
                 return EpisodeCard(
                   episode,
                   watchedEpisodes.includes(episode["source_id"]),
@@ -334,6 +363,8 @@ function SeasonModal(props: any) {
             mediaSource={mediaSource}
             sourceID={sourceID}
             episodeIDs={historyModalEpisodeIDs}
+            seasonNumber={historyModalSeasonNumber}
+            episodeNumber={historyModalEpisodeNumber}
           />
           <DownloadSeasonModal
             onClose={() => {
@@ -512,7 +543,11 @@ function EpisodeCard(
             </Dropdown.Item>
             <Dropdown.Item
               onClick={() => {
-                handleOpenEpisodeHistoryModal(episode.source_id);
+                handleOpenEpisodeHistoryModal(
+                  episode.source_id,
+                  episode.season_number,
+                  episode.episode_number,
+                );
               }}
             >
               Add Watch History...

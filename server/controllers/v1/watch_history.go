@@ -165,6 +165,11 @@ type AddWatchHistoryTVResponse struct {
 
 // @Router /v1/tv/{id}/history [post]
 // @Summary Add TV Show Watch History
+// @Description Only one of season_number and episode_number, or []episode_ids should be defined.
+// @Description By default, if []episode_ids are used, this won't clear existing playback progress for
+// @Description those episodes, however, this behavior might change in the future. For the season_number,
+// @Description episode_number case, the current playback progress will be cleared if the watched_at is newer
+// @Description than the existing playback progress.
 // @Tags Watch History
 // @Accept json
 // @Produce json
