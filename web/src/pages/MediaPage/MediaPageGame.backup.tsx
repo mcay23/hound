@@ -223,7 +223,11 @@ function MediaPageGame(props: any) {
           itemType="image"
           itemOnClick={handleImageButtonClick}
         />
-        <Reviews data={props.data.comments} />
+        <Reviews
+          mediaType={props.data.media_type}
+          mediaSource={props.data.media_source}
+          sourceId={props.data.source_id}
+        />
       </div>
       <AddToCollectionModal
         onClose={handleAddToCollectionClose}

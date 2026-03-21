@@ -56,21 +56,16 @@ func getLimitOffset(limitQuery, offsetQuery string) (int, int, error) {
 }
 
 func getSeasonEpisode(seasonQuery, episodeQuery string) (int, int, error) {
-	var seasonNumber int
-	if seasonQuery != "" {
-		s, err := strconv.Atoi(seasonQuery)
-		if err != nil {
-			return -1, -1, fmt.Errorf("invalid season query param: %w", helpers.BadRequestError)
-		}
-		seasonNumber = s
+	if seasonQuery == "" || episodeQuery == "" {
+		return -1, -1, fmt.Errorf("invalid season query param: %w", helpers.BadRequestError)
 	}
-	var episodeNumber int
-	if episodeQuery != "" {
-		e, err := strconv.Atoi(episodeQuery)
-		if err != nil {
-			return -1, -1, fmt.Errorf("invalid episode query param: %w", helpers.BadRequestError)
-		}
-		episodeNumber = e
+	seasonNumber, err := strconv.Atoi(seasonQuery)
+	if err != nil {
+		return -1, -1, fmt.Errorf("invalid season query param: %w", helpers.BadRequestError)
+	}
+	episodeNumber, err := strconv.Atoi(episodeQuery)
+	if err != nil {
+		return -1, -1, fmt.Errorf("invalid episode query param: %w", helpers.BadRequestError)
 	}
 	return seasonNumber, episodeNumber, nil
 }

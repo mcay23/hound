@@ -61,7 +61,6 @@ export const fetchWatchStats = async (startTime?: string, endTime?: string) => {
       end_time: endTime,
     },
   });
-  console.log(data)
   return data;
 };
 

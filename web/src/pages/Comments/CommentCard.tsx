@@ -12,9 +12,11 @@ import toast from "react-hot-toast";
 import "./CommentCard.css";
 import { useState } from "react";
 import axios from "axios";
+import { useDeleteComment } from "../../api/hooks/comments";
 
 function CommentCard(props: any) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const deleteComment = useDeleteComment();
   const handleDeleteClickOpen = () => {
     setIsDeleteDialogOpen(true);
   };
@@ -23,18 +25,18 @@ function CommentCard(props: any) {
   };
   const handleDeleteItem = () => {
     if (props.item) {
-      axios
-        .delete(`/api/v1/comments/${props.item.comment_id}`)
-        .then((res) => {
+      deleteComment.mutate(props.item.comment_id, {
+        onSuccess: () => {
+          toast.success("Review deleted");
           setIsDeleteDialogOpen(false);
-          window.scrollTo(0, 0);
-          window.location.reload();
-        })
-        .catch((err) => {
-          console.log(err);
+          // window.scrollTo(0, 0);
+          // window.location.reload();
+        },
+        onError: () => {
           toast.error("Failed to remove review");
           setIsDeleteDialogOpen(false);
-        });
+        },
+      });
     }
   };
   return (

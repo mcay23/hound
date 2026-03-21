@@ -26,8 +26,6 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
-	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*
 		Catalog Routes
@@ -90,18 +88,12 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Comments
 	*/
-	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
-	privateRoutes.POST("/tv/:id/comments", handlePostComment)
-	privateRoutes.POST("/movie/:id/comments", handlePostComment)
-	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
-
-	/*
-		Games Routes - games are being deprecated
-	*/
-	// privateRoutes.GET("/game/search", SearchGamesHandler)
-	// privateRoutes.GET("/game/:id", GetGameFromIDHandler)
-	// privateRoutes.POST("/game/:id/comments", PostCommentHandler)
-	// privateRoutes.GET("/game/:id/comments", GetCommentsHandler)
+	privateRoutes.GET("/tv/:id/comments", GetCommentsTVHandler)
+	privateRoutes.POST("/tv/:id/comments", PostCommentTVHandler)
+	privateRoutes.GET("/movie/:id/comments", GetCommentsMovieHandler)
+	privateRoutes.POST("/movie/:id/comments", PostCommentMovieHandler)
+	// privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
+	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*
 		Video Streaming, Downloads Routes

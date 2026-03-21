@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
-import MediaPageGame from "./MediaPageGame";
+import MediaPageGame from "./MediaPageGame.backup";
 import toast from "react-hot-toast";
 
 function MediaPageLanding() {

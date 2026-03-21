@@ -15,8 +15,7 @@ import (
 
 type CommentRequest struct {
 	CommentType   string `json:"comment_type" binding:"required,gt=0"` // review, etc.
-	IsPublic      bool   `json:"is_public"`
-	SeasonNumber  *int   `json:"season_number"` // only for tvshows, when commenting on a particular episode
+	SeasonNumber  *int   `json:"season_number"`                        // only for tvshows, when commenting on a particular episode
 	EpisodeNumber *int   `json:"episode_number"`
 	CommentTitle  string `json:"title"`
 	Comment       string `json:"comment"` // actual content of comment, review
@@ -40,7 +39,7 @@ func handleGetComments(c *gin.Context, recordType string) {
 	var seasonNumber, episodeNumber int
 	if recordType == database.RecordTypeTVShow {
 		var err error
-		seasonNumber, episodeNumber, err = getSeasonEpisode(c.Query("season"), c.Query("episode"))
+		seasonNumber, episodeNumber, err = getSeasonEpisode(c.Query("season_number"), c.Query("episode_number"))
 		if err == nil {
 			recordType = database.RecordTypeEpisode
 		}
@@ -141,17 +140,21 @@ func handlePostComment(c *gin.Context, recordType string) {
 		return
 	}
 	// if season and episode is specified, use episode record
-	if body.SeasonNumber != nil && body.EpisodeNumber != nil {
+	if recordType == database.RecordTypeTVShow && body.SeasonNumber != nil && body.EpisodeNumber != nil {
 		record, err = database.GetEpisodeMediaRecord(mediaSource, strconv.Itoa(sourceID), body.SeasonNumber, body.EpisodeNumber)
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to get episode media record: %w", err))
 			return
 		}
 	}
+	isPublic := false
+	if body.CommentType == database.CommentTypeNote {
+		isPublic = true
+	}
 	comment := database.CommentRecord{
 		UserID:       userID,
 		CommentTitle: body.CommentTitle,
-		IsPublic:     body.IsPublic,
+		IsPublic:     isPublic,
 		CommentType:  body.CommentType,
 		Comment:      body.Comment,
 		Score:        body.Score,

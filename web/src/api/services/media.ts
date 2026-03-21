@@ -113,7 +113,6 @@ export const downloadSeason = async ({
     skip_downloaded_episodes: skipDownloadedEpisodes,
     preference_list: preferenceList
   }
-  console.log(payload)
   const { data } = await axios.post(
     `/api/v1/${mediaType}/${mediaSource}-${sourceID}/season/${seasonNum}/download`,
     payload,

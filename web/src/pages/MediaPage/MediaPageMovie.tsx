@@ -417,7 +417,11 @@ function MediaPageMovie(props: any) {
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
-        <Reviews data={props.data.comments} />
+        <Reviews
+          mediaType={props.data.media_type}
+          mediaSource={props.data.media_source}
+          sourceId={props.data.source_id}
+        />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal

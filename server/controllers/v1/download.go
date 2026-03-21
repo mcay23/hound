@@ -69,7 +69,7 @@ type skippedEpisode struct {
 
 type TVSeasonDownloadResponse struct {
 	Status          string           `json:"status" example:"queued"`
-	Season          int              `json:"season"`
+	Season          int              `json:"season_number"`
 	QueuedEpisodes  []int            `json:"queued_episodes"`
 	SkippedEpisodes []skippedEpisode `json:"skipped_episodes"`
 }

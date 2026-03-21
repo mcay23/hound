@@ -263,25 +263,6 @@ func AddTVShowToCollectionTMDB(username string, source string, sourceID int, col
 	return nil
 }
 
-func MarkTVSeasonAsWatchedTMDB(userID int64, recordID int64, seasonNumber int, minEp int, maxEp int, date time.Time) error {
-	var records []database.CommentRecord
-	for i := minEp; i <= maxEp; i++ {
-		tagData := "S" + strconv.Itoa(seasonNumber) + "E" + strconv.Itoa(i)
-		records = append(records, database.CommentRecord{
-			CommentType:  "history",
-			UserID:       userID,
-			RecordID:     recordID,
-			IsPrivate:    true,
-			CommentTitle: "",
-			Comment:      "",
-			TagData:      tagData,
-			StartDate:    date,
-			EndDate:      date,
-		})
-	}
-	return database.AddCommentsBatch(&records)
-}
-
 /*
 ------------------------------
 	TMDB MOVIES FUNCTIONS

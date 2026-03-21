@@ -12,10 +12,9 @@ import (
 )
 
 type AddToCollectionRequest struct {
-	MediaSource  string `json:"media_source" binding:"required,gt=0"`
-	MediaType    string `json:"media_type"  binding:"required,gt=0"`
-	SourceID     string `json:"source_id" binding:"required,gt=0"`
-	CollectionID *int64 `json:"collection_id"`
+	MediaSource string `json:"media_source" binding:"required,gt=0"`
+	MediaType   string `json:"media_type"  binding:"required,gt=0"`
+	SourceID    string `json:"source_id" binding:"required,gt=0"`
 }
 
 type CreateCollectionRequest struct {
@@ -48,8 +47,6 @@ func AddToCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
-	temp := int64(collectionID)
-	body.CollectionID = &temp
 	// check valid mediaType and source
 	err = validateMediaParams(body.MediaType, body.MediaSource)
 	if err != nil {
@@ -62,21 +59,22 @@ func AddToCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w", helpers.BadRequestError))
 		return
 	}
+	tempID := int64(collectionID)
 	switch body.MediaType {
 	case database.MediaTypeTVShow:
-		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
+		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, &tempID)
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add tv show to collection: %w", err))
 			return
 		}
 	case database.MediaTypeMovie:
-		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, body.CollectionID)
+		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, &tempID)
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add movie to collection: %w", err))
 			return
 		}
 	case database.MediaTypeGame:
-		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, body.CollectionID)
+		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, &tempID)
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add game to collection: %w", err))
 			return
@@ -91,7 +89,7 @@ func AddToCollectionHandler(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Collection ID"
-// @Param body body AddToCollectionRequest true "Add to Collection Request"
+// @Param body body AddToCollectionRequest true "Delete from Collection Request"
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
@@ -109,11 +107,9 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	collectionID, err := strconv.Atoi(idParam)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", helpers.BadRequestError, err))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to convert param id to int: %w: %w", helpers.BadRequestError, err))
 		return
 	}
-	temp := int64(collectionID)
-	body.CollectionID = &temp
 	// check valid mediaType and source
 	err = validateMediaParams(body.MediaType, body.MediaSource)
 	if err != nil {
@@ -129,7 +125,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("could not find media record: %w", helpers.BadRequestError))
 		return
 	}
-	err = database.DeleteCollectionRelation(userID, record.RecordID, *body.CollectionID)
+	err = database.DeleteCollectionRelation(userID, record.RecordID, int64(collectionID))
 	if err != nil {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to delete collection record: %w", err))
 		return
