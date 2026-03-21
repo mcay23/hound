@@ -91,8 +91,8 @@ func SetupRoutes(r *gin.Engine) {
 		Comments
 	*/
 	privateRoutes.GET("/tv/:id/comments", GetCommentsHandler)
-	privateRoutes.POST("/tv/:id/comments", PostCommentHandler)
-	privateRoutes.POST("/movie/:id/comments", PostCommentHandler)
+	privateRoutes.POST("/tv/:id/comments", handlePostComment)
+	privateRoutes.POST("/movie/:id/comments", handlePostComment)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsHandler)
 
 	/*
@@ -117,7 +117,7 @@ func SetupRoutes(r *gin.Engine) {
 		Query Providers Routes
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
-	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVShowsHandler)
+	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVHandler)
 	privateRoutes.GET("/movie/:id/media_files", GetMovieMediaFilesHandler)
 	privateRoutes.GET("/tv/:id/media_files", GetTVShowMediaFilesHandler)
 

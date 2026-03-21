@@ -113,7 +113,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		// Fast path for repeat episodes - if already in DB, skip show upsert
 		// however, with concurrent workers, good possibility multiple upserts are attempted.
 		// use a lock to prevent multiple upserts for the same show.
-		epRecord, err := database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+		epRecord, err := database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, parsed.EpisodeNumber)
 		if err == nil && epRecord != nil {
 			ingestRecordID = epRecord.RecordID
 		} else {
@@ -121,7 +121,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 			mu := lock.(*sync.Mutex)
 			mu.Lock()
 
-			epRecord, err = database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, *parsed.EpisodeNumber)
+			epRecord, err = database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, parsed.SourceID, parsed.SeasonNumber, parsed.EpisodeNumber)
 			if err == nil && epRecord != nil {
 				ingestRecordID = epRecord.RecordID
 				mu.Unlock()
@@ -136,7 +136,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 				logTitle = record.MediaTitle
 				logReleaseDate = record.ReleaseDate
 				epRecord, err = database.GetEpisodeMediaRecord(record.MediaSource, record.SourceID,
-					parsed.SeasonNumber, *parsed.EpisodeNumber)
+					parsed.SeasonNumber, parsed.EpisodeNumber)
 				mu.Unlock()
 				if err != nil || epRecord == nil {
 					loggers.IngestLogger().Info("[Match TV Show Failed]", "error", "Failed to get episode record",

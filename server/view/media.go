@@ -40,17 +40,14 @@ type CollectionObject struct {
 }
 
 type CommentObject struct {
-	CommentTitle string    `json:"title"`
 	CommentID    int64     `json:"comment_id"`
 	CommentType  string    `json:"comment_type"`
 	UserID       string    `json:"user_id"`
 	RecordID     int64     `json:"record_id"`
-	IsPrivate    bool      `json:"is_private"`
-	Comment      string    `json:"comment"`  // actual content of comment, review
-	TagData      string    `json:"tag_data"` // extra tag info, eg. season, episode
+	IsPublic     bool      `json:"is_public"`
+	CommentTitle string    `json:"title"`
+	Comment      string    `json:"comment"` // actual content of comment, review
 	Score        int       `json:"score"`
-	StartDate    time.Time `json:"start_date"`
-	EndDate      time.Time `json:"end_date"`
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }

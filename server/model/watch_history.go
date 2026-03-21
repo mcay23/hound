@@ -54,7 +54,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 	// might want to refactor to allow batch entry by season/episode number
 	if watchHistoryPayload.EpisodeIDs == nil {
 		showIDstr := strconv.Itoa(showID)
-		episodeRecord, err := database.GetEpisodeMediaRecord(mediaSource, showIDstr, watchHistoryPayload.SeasonNumber, *watchHistoryPayload.EpisodeNumber)
+		episodeRecord, err := database.GetEpisodeMediaRecord(mediaSource, showIDstr, watchHistoryPayload.SeasonNumber, watchHistoryPayload.EpisodeNumber)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting episode record for %s-%d: %w", mediaSource, showID, err)
 		}

@@ -469,11 +469,15 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 	return episodes, nil
 }
 
+// easier to accept nil then to check for nil everywhere else
 func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
-	seasonNumber *int, episodeNumber int) (*MediaRecord, error) {
-	episodes, err := GetEpisodeMediaRecords(mediaSource, showSourceID, seasonNumber, &episodeNumber)
+	seasonNumber *int, episodeNumber *int) (*MediaRecord, error) {
+	if seasonNumber == nil || episodeNumber == nil {
+		return nil, fmt.Errorf("season number or episode number is nil: %w", helpers.BadRequestError)
+	}
+	episodes, err := GetEpisodeMediaRecords(mediaSource, showSourceID, seasonNumber, episodeNumber)
 	if err != nil {
-		return nil, helpers.LogErrorWithMessage(err, "Failed to get episode media records")
+		return nil, fmt.Errorf("failed to get episode media records: %w: %w", helpers.InternalServerError, err)
 	}
 	if len(episodes) > 0 {
 		return &episodes[0], nil

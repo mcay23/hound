@@ -46,7 +46,7 @@ func GetGameFromIDHandler(c *gin.Context) {
 	has, record, err := database.GetMediaRecord(database.MediaTypeGame, sources.SourceIGDB, strconv.Itoa(sourceID))
 	if err == nil && has {
 		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), record.RecordID, &commentType)
+		comments, err := handleGetComments(c.GetHeader("X-Username"), record.RecordID, &commentType)
 		if err != nil {
 			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(helpers.InternalServerError, "Error retrieving comments"))
 			return

@@ -53,7 +53,7 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 	childRecord := mediaRecord
 	if mediaRecord.RecordType == database.RecordTypeTVShow {
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
-			mediaRecord.SourceID, streamDetails.SeasonNumber, *streamDetails.EpisodeNumber)
+			mediaRecord.SourceID, streamDetails.SeasonNumber, streamDetails.EpisodeNumber)
 		if err != nil || episodeRecord == nil {
 			return fmt.Errorf("failed to get episode media record for tvshow %s-%d s%d-e%d: %w",
 				streamDetails.MediaType, tmdbID, streamDetails.SeasonNumber, *streamDetails.EpisodeNumber, err)
@@ -315,7 +315,7 @@ func getIngestTargetRecordID(mediaRecord *database.MediaRecord, seasonNumber *in
 			return 0, fmt.Errorf("season number or episode number is nil: %w", helpers.BadRequestError)
 		}
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
-			mediaRecord.SourceID, seasonNumber, *episodeNumber)
+			mediaRecord.SourceID, seasonNumber, episodeNumber)
 		if err != nil || episodeRecord == nil {
 			return 0, fmt.Errorf("failed to get episode media record for %s %s-%d: %w", mediaRecord.RecordType,
 				mediaRecord.MediaSource, mediaRecord.SourceID, err)
@@ -368,7 +368,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 		}
 		// check if season/episode pair actually exists, and get record id of episode
 		episodeRecord, err := database.GetEpisodeMediaRecord(mediaRecord.MediaSource,
-			mediaRecord.SourceID, seasonNumber, *episodeNumber)
+			mediaRecord.SourceID, seasonNumber, episodeNumber)
 		if err != nil || episodeRecord == nil {
 			return "", "", 0, fmt.Errorf("failed to get episode media record: %w", err)
 		}

@@ -9,11 +9,9 @@ import (
 const (
 	// for comments, notes, reviews
 	commentsTable      = "comments"
-	commentTypeReview  = "review"
-	commentTypeNote    = "note"
-	commentTypeComment = "comment"
-	// watch history, play history, etc.
-	commentTypeHistory = "history"
+	CommentTypeReview  = "review"
+	CommentTypeNote    = "note"
+	CommentTypeComment = "comment"
 )
 
 /*
@@ -24,13 +22,10 @@ type CommentRecord struct {
 	CommentType  string    `json:"comment_type"`
 	UserID       int64     `xorm:"'user_id'" json:"user_id"`
 	RecordID     int64     `xorm:"index 'record_id'" json:"record_id"`
-	IsPrivate    bool      `xorm:"'is_private'" json:"is_private"`
 	CommentTitle string    `xorm:"'title'" json:"title"`
 	Comment      string    `xorm:"text 'comment'" json:"comment"` // actual content of comment, review
-	TagData      string    `xorm:"'tag_data'" json:"tag_data"`    // extra tag info, eg. season, episode
-	Score        int       `xorm:"'score'" json:"score"`
-	StartDate    time.Time `xorm:"timestampz 'start_date'" json:"start_date"`
-	EndDate      time.Time `xorm:"timestampz 'end_date'" json:"end_date"`
+	IsPublic     bool      `xorm:"'is_public'" json:"is_public"`
+	Score        int       `xorm:"'score'" json:"score"` // for review types
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
@@ -44,8 +39,8 @@ func instantiateCommentTable() error {
 }
 
 func AddComment(comment *CommentRecord) error {
-	if comment.CommentType != commentTypeReview && comment.CommentType != commentTypeComment &&
-		comment.CommentType != commentTypeNote && comment.CommentType != commentTypeHistory {
+	if comment.CommentType != CommentTypeReview && comment.CommentType != CommentTypeComment &&
+		comment.CommentType != CommentTypeNote {
 		return fmt.Errorf("invalid comment type %s: %w", comment.CommentType, helpers.BadRequestError)
 	}
 	_, err := databaseEngine.Table(commentsTable).Insert(comment)
@@ -59,12 +54,7 @@ func AddCommentsBatch(comments *[]CommentRecord) error {
 
 func GetComments(recordID int64, commentType *string) (*[]CommentRecord, error) {
 	var comments []CommentRecord
-	sess := databaseEngine.Table(commentsTable).Where("record_id = ?", recordID)
-	if *commentType == commentTypeHistory {
-		sess = sess.OrderBy("start_date desc")
-	} else {
-		sess = sess.OrderBy("updated_at desc")
-	}
+	sess := databaseEngine.Table(commentsTable).Where("record_id = ?", recordID).OrderBy("updated_at desc")
 	if commentType != nil && *commentType != "" {
 		sess.Where("comment_type = ?", commentType)
 	}

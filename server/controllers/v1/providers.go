@@ -38,7 +38,7 @@ func ClearCacheHandler(c *gin.Context) {
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func SearchProvidersTVShowsHandler(c *gin.Context) {
+func SearchProvidersTVHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
