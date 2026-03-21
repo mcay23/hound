@@ -21,8 +21,7 @@ export const fetchComments = async (
   seasonNumber?: number,
   episodeNumber?: number,
 ) => {
-
-  const { data } = await axios.get<Comment[]>(
+  const { data } = await axios.get<any>(
     `/api/v1/${mediaType === "tvshow" ? "tv" : mediaType}/${mediaSource}-${sourceId}/comments`,
     {
       params: {

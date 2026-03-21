@@ -29,8 +29,6 @@ function CommentCard(props: any) {
         onSuccess: () => {
           toast.success("Review deleted");
           setIsDeleteDialogOpen(false);
-          // window.scrollTo(0, 0);
-          // window.location.reload();
         },
         onError: () => {
           toast.error("Failed to remove review");

@@ -7,7 +7,7 @@ function Topnav() {
     <Navbar id="top-navbar" sticky="top" variant="dark" expand="sm">
       <Container fluid>
         <Navbar.Brand id="top-navbar-brand" href="/">
-          HOUND
+          <img src="/hound-logo.png" alt="Hound Logo" height="40" />
         </Navbar.Brand>
         <Navbar.Toggle
           id="top-navbar-toggle"

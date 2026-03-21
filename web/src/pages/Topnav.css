@@ -3,13 +3,16 @@
 }
 
 #top-navbar-brand {
-    pointer-events: none;
-    user-select: none;
     margin-left: 0.5em;
-    font-size: 1.7em;
-    color: rgba(var(--hound-secondary), 1);
-    font-family: 'Cabin', sans-serif;
-    font-weight: 500;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+#top-navbar-brand img {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
 }
 
 .navbar.center .navbar-inner {

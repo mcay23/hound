@@ -69,6 +69,7 @@ func handleGetComments(c *gin.Context, recordType string) {
 		}
 		if !has {
 			helpers.SuccessResponse(c, nil, 200)
+			return
 		}
 	}
 	if record == nil {
