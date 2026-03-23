@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"hound/database"
 	"hound/helpers"
-	"hound/model/providers"
+	"hound/providers"
 	"hound/sources"
 	"log/slog"
 	"slices"

@@ -6,12 +6,15 @@ import {
   ListItemText,
 } from "@mui/material";
 import "./Admin.css";
-import AdminDownloads from "./AdminDownloads";
+import Downloads from "./Downloads";
+import { useState } from "react";
+import ProviderProfiles from "./ProviderProfiles";
 
-function Admin(props: any) {
+export default function Admin(props: any) {
+  const [activeTab, setActiveTab] = useState(0);
   return (
     <>
-      <div className="settings-main-container">
+      <div className="admin-main-container">
         <div className="d-flex">
           <Drawer
             variant="permanent"
@@ -27,14 +30,14 @@ function Admin(props: any) {
               },
             }}
           >
-            <div className="settings-header">
+            <div className="admin-header">
               <h2>Settings</h2>
             </div>
             <List>
-              {["Downloads", "Starred", "Send email", "Drafts"].map(
+              {["Downloads", "Users", "Provider Profiles"].map(
                 (text, index) => (
                   <ListItem key={text} disablePadding>
-                    <ListItemButton>
+                    <ListItemButton onClick={() => setActiveTab(index)}>
                       {/* <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                 </ListItemIcon> */}
@@ -45,13 +48,13 @@ function Admin(props: any) {
               )}
             </List>
           </Drawer>
-          <div className="settings-content">
-            <AdminDownloads />
+          <div className="admin-content">
+            {activeTab === 0 && <Downloads />}
+            {activeTab === 1 && <></>}
+            {activeTab === 2 && <ProviderProfiles />}
           </div>
         </div>
       </div>
     </>
   );
 }
-
-export default Admin;

@@ -22,10 +22,30 @@ type CommentRequest struct {
 	Score         int    `json:"score"`   // only required for reviews
 }
 
+// @Router /api/v1/tv/{id}/comments [get]
+// @Summary Get comments for a TV show
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param type query string true "Comment Type"
+// @Success 200 {object} V1SuccessResponse{data=[]view.CommentObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetCommentsTVHandler(c *gin.Context) {
 	handleGetComments(c, database.RecordTypeTVShow)
 }
 
+// @Router /api/v1/movie/{id}/comments [get]
+// @Summary Get comments for a movie
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param type query string true "Comment Type"
+// @Success 200 {object} V1SuccessResponse{data=[]view.CommentObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetCommentsMovieHandler(c *gin.Context) {
 	handleGetComments(c, database.RecordTypeMovie)
 }
@@ -104,10 +124,30 @@ func handleGetComments(c *gin.Context, recordType string) {
 	helpers.SuccessResponse(c, commentsView, 200)
 }
 
+// @Router /api/v1/tv/{id}/comments [post]
+// @Summary Post a comment for a TV show
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param comment body CommentRequest true "Comment"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func PostCommentTVHandler(c *gin.Context) {
 	handlePostComment(c, database.RecordTypeTVShow)
 }
 
+// @Router /api/v1/movie/{id}/comments [post]
+// @Summary Post a comment for a movie
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param comment body CommentRequest true "Comment"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func PostCommentMovieHandler(c *gin.Context) {
 	handlePostComment(c, database.RecordTypeMovie)
 }
@@ -169,6 +209,15 @@ func handlePostComment(c *gin.Context, recordType string) {
 	helpers.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
 }
 
+// @Router /api/v1/comments/{id} [delete]
+// @Summary Delete a comment
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Comment ID"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeleteCommentHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)

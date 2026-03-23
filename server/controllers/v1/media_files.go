@@ -5,7 +5,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
-	"hound/model/providers"
+	"hound/providers"
 	"hound/sources"
 	"hound/view"
 	"strconv"

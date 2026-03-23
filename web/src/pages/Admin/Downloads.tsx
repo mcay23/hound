@@ -2,18 +2,15 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
-  ChipProps,
-  Divider,
   LinearProgress,
   Pagination,
 } from "@mui/material";
 import { useDownloads } from "../../api/hooks/media";
-import "./AdminDownloads.css";
+import "./Downloads.css";
 import { cancelDownload } from "../../api/services/media";
 import { useMemo, useState } from "react";
 
-function AdminDownloads() {
+export default function Downloads() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -191,15 +188,3 @@ function getFilename(path: string) {
   }
   return name;
 }
-
-function getStatusChip(status: string) {
-  let color: ChipProps["color"] = "primary";
-  if (status === "done") {
-    color = "success";
-  } else if (status === "failed") {
-    color = "error";
-  }
-  const label = status[0].toUpperCase() + status.slice(1);
-  return <Chip label={label} color={color} />;
-}
-export default AdminDownloads;

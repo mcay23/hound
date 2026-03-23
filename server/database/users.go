@@ -54,7 +54,6 @@ func GetUser(username string) (*User, error) {
 func GetUserIDFromUsername(username string) (int64, error) {
 	cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
 	var userID int64
-	_, err := GetCache(cacheKey, &userID)
 	cacheExists, _ := GetCache(cacheKey, &userID)
 	if cacheExists {
 		return userID, nil

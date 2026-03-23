@@ -1,0 +1,88 @@
+package v1
+
+import (
+	"fmt"
+	"hound/database"
+	"hound/helpers"
+	"hound/providers"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+type CreateProviderRequest struct {
+	Name        string `json:"name"`
+	ManifestURL string `json:"manifest_url"`
+}
+
+// @Router /api/v1/provider_profiles [get]
+// @Summary Get all provider profiles
+// @Tags Provider Profiles
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]database.ProviderProfile}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetProviderProfilesHandler(c *gin.Context) {
+	providerProfiles, err := database.GetProviderProfiles()
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get provider profiles: %w", err))
+		return
+	}
+	helpers.SuccessResponse(c, providerProfiles, 200)
+}
+
+// @Router /api/v1/provider_profiles [post]
+// @Summary Create a provider profile
+// @Tags Provider Profiles
+// @Accept json
+// @Produce json
+// @Param provider_profile body CreateProviderRequest true "Provider Profile"
+// @Success 200 {object} V1SuccessResponse{data=database.ProviderProfile}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func CreateProviderProfileHandler(c *gin.Context) {
+	var body CreateProviderRequest
+	if err := c.ShouldBindJSON(&body); err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
+		return
+	}
+	if !strings.Contains(body.ManifestURL, "http://") && !strings.Contains(body.ManifestURL, "https://") {
+		helpers.ErrorResponse(c, fmt.Errorf("invalid provider manifest url, prepend http:// or https:// : %w", helpers.BadRequestError))
+		return
+	}
+	err := providers.PingProviderManifest(body.ManifestURL)
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to ping provider manifest: %w", err))
+		return
+	}
+	provider, err := database.InsertProviderProfile(body.Name, body.ManifestURL)
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to create provider profile: %w", err))
+		return
+	}
+	helpers.SuccessResponse(c, provider, 200)
+}
+
+// @Router /api/v1/provider_profiles/{id} [delete]
+// @Summary Delete a provider profile
+// @Tags Provider Profiles
+// @Accept json
+// @Produce json
+// @Param id path int true "Provider ID"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteProviderProfileHandler(c *gin.Context) {
+	providerID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", helpers.BadRequestError, err))
+		return
+	}
+	if err := database.DeleteProviderProfile(providerID); err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to delete provider profile: %w", err))
+		return
+	}
+	helpers.SuccessResponse(c, nil, 200)
+}

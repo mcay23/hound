@@ -273,11 +273,11 @@ func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 	}
 	has, record, err := database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(sourceID))
 	if !has || err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting media record for %s-%s: %w", mediaSource, sourceID, err))
+		helpers.ErrorResponse(c, fmt.Errorf("error getting media record for %s-%d: %w", mediaSource, sourceID, err))
 		return
 	}
 	if err := database.BatchDeleteWatchEvents(payload.WatchEventIDs, userID, int(record.RecordID)); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error deleting watch history records for %s-%s: %w", mediaSource, sourceID, err))
+		helpers.ErrorResponse(c, fmt.Errorf("error deleting watch history records for %s-%d: %w", mediaSource, sourceID, err))
 		return
 	}
 	helpers.SuccessResponse(c, nil, 200)

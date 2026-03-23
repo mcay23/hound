@@ -259,6 +259,21 @@ definitions:
       updated_at:
         type: string
     type: object
+  database.ProviderProfile:
+    properties:
+      createdAt:
+        type: string
+      manifest_url:
+        description: url to manifest.json for stremio providers
+        type: string
+      name:
+        description: profile name, eg. Performance, Quality, etc.
+        type: string
+      provider_id:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
   database.RewatchRecord:
     properties:
       created_at:
@@ -754,8 +769,6 @@ definitions:
     type: object
   v1.AddToCollectionRequest:
     properties:
-      collection_id:
-        type: integer
       media_source:
         type: string
       media_type:
@@ -795,6 +808,34 @@ definitions:
         type: integer
       status:
         example: pending_cancel
+        type: string
+    type: object
+  v1.CommentRequest:
+    properties:
+      comment:
+        description: actual content of comment, review
+        type: string
+      comment_type:
+        description: review, etc.
+        type: string
+      episode_number:
+        type: integer
+      score:
+        description: only required for reviews
+        type: integer
+      season_number:
+        description: only for tvshows, when commenting on a particular episode
+        type: integer
+      title:
+        type: string
+    required:
+    - comment_type
+    type: object
+  v1.CreateProviderRequest:
+    properties:
+      manifest_url:
+        type: string
+      name:
         type: string
     type: object
   v1.DeletePlaybackProgressPayload:
@@ -859,7 +900,7 @@ definitions:
         items:
           type: integer
         type: array
-      season:
+      season_number:
         type: integer
       skipped_episodes:
         items:
@@ -937,6 +978,30 @@ definitions:
         type: array
       total_records:
         type: integer
+    type: object
+  view.CommentObject:
+    properties:
+      comment:
+        description: actual content of comment, review
+        type: string
+      comment_id:
+        type: integer
+      comment_type:
+        type: string
+      created_at:
+        type: string
+      is_public:
+        type: boolean
+      record_id:
+        type: integer
+      score:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
     type: object
   view.Credit:
     properties:
@@ -1487,6 +1552,39 @@ paths:
       summary: Get Hound Library
       tags:
       - Collections
+  /api/v1/comments/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a comment
+      tags:
+      - Comments
   /api/v1/continue_watching:
     get:
       consumes:
@@ -1691,6 +1789,86 @@ paths:
       summary: Delete a media file
       tags:
       - Media Files
+  /api/v1/movie/{id}/comments:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment Type
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CommentObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get comments for a movie
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Post a comment for a movie
+      tags:
+      - Comments
   /api/v1/movie/{id}/continue_watching:
     get:
       consumes:
@@ -1822,6 +2000,101 @@ paths:
       tags:
       - TV Shows
       - Genres
+  /api/v1/provider_profiles:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.ProviderProfile'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get all provider profiles
+      tags:
+      - Provider Profiles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider Profile
+        in: body
+        name: provider_profile
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.ProviderProfile'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create a provider profile
+      tags:
+      - Provider Profiles
+  /api/v1/provider_profiles/{providerID}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider ID
+        in: path
+        name: providerID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a provider profile
+      tags:
+      - Provider Profiles
   /api/v1/search:
     get:
       consumes:
@@ -1925,6 +2198,86 @@ paths:
       summary: Add Torrent
       tags:
       - Stream
+  /api/v1/tv/{id}/comments:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment Type
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CommentObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get comments for a TV show
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Post a comment for a TV show
+      tags:
+      - Comments
   /api/v1/tv/{id}/continue_watching:
     get:
       consumes:
@@ -2244,7 +2597,7 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Add to Collection Request
+      - description: Delete from Collection Request
         in: body
         name: body
         required: true

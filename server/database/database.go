@@ -88,6 +88,11 @@ func InstantiateDB() {
 		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate external library items table")
 		panic(err)
 	}
+	err = instantiateProviderProfilesTable()
+	if err != nil {
+		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate provider profiles table")
+		panic(err)
+	}
 	slog.Info("DB tables initialized")
 	err = runMigrations()
 	if err != nil {

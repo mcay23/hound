@@ -106,6 +106,13 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
 
 	/*
+		Provider Profiles
+	*/
+	privateRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
+	privateRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
+	privateRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
+
+	/*
 		Query Providers Routes
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)

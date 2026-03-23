@@ -6,7 +6,7 @@ import (
 	"hound/database"
 	"hound/helpers"
 	"hound/model"
-	"hound/model/providers"
+	"hound/providers"
 	"hound/sources"
 	"log/slog"
 	"slices"

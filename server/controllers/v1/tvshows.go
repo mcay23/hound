@@ -49,7 +49,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	}
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %s: %w", showID, err))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %d: %w", showID, err))
 		return
 	}
 	// create top level show
@@ -228,7 +228,7 @@ func GetTVEpisodeGroupsHandler(c *gin.Context) {
 	}
 	episodeGroups, err := sources.GetTVEpisodeGroupsTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %s: %w", sourceID, err))
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %d: %w", sourceID, err))
 		return
 	}
 	helpers.SuccessResponse(c, episodeGroups.Results, 200)

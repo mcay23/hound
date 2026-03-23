@@ -36,6 +36,7 @@ type MediaRecordGenre struct {
 
 /*
 In Hound, genres are persisted to DB but also loaded to the cache for fast retrieval
+Might refactor to use in memory vars instead of cache to simplify code
 */
 
 func PopulateGenresCache() error {

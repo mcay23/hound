@@ -7,7 +7,7 @@ import (
 	"hound/helpers"
 	"hound/loggers"
 	"hound/model"
-	"hound/model/providers"
+	"hound/providers"
 	"hound/sources"
 	"io"
 	"log/slog"
