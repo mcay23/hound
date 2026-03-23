@@ -14,6 +14,7 @@ import (
 
 type RegistrationResponse struct {
 	Username string `json:"username"`
+	Role     string `json:"role"`
 }
 
 // @Router /api/v1/auth/register [post]
@@ -51,18 +52,19 @@ func RegistrationHandler(c *gin.Context) {
 		Username: userPayload.Username,
 		Password: userPayload.Password,
 	}
-	token, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)
+	token, role, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
 	}
 	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
-	helpers.SuccessResponse(c, RegistrationResponse{Username: userPayload.Username}, 200)
+	helpers.SuccessResponse(c, RegistrationResponse{Username: userPayload.Username, Role: role}, 200)
 }
 
 type LoginResponse struct {
 	Username string `json:"username"`
 	Token    string `json:"token"`
+	Role     string `json:"role"`
 }
 
 // @Router /api/v1/auth/login [post]
@@ -85,7 +87,7 @@ func LoginHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	token, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
+	token, role, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
 	if err != nil {
 		helpers.ErrorResponse(c, helpers.UnauthorizedError)
 		return
@@ -100,7 +102,7 @@ func LoginHandler(c *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(c.Writer, cookie)
-	helpers.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token}, 200)
+	helpers.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token, Role: role}, 200)
 }
 
 func validateClientHeaders(c *gin.Context) (string, string, error) {

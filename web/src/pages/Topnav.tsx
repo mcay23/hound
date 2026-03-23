@@ -26,9 +26,11 @@ function Topnav() {
             </Nav.Link>
           </Nav>
           {/* <SearchBar type={"nav"} /> */}
-          <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/admin">
-            Admin
-          </Nav.Link>
+          {localStorage.getItem("role") === "admin" && (
+            <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/admin">
+              Admin
+            </Nav.Link>
+          )}
           <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/logout">
             Logout
           </Nav.Link>

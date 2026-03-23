@@ -31,7 +31,7 @@ export default function Admin(props: any) {
             }}
           >
             <div className="admin-header">
-              <h2>Settings</h2>
+              <h2>Admin Panel</h2>
             </div>
             <List>
               {["Downloads", "Users", "Provider Profiles"].map(

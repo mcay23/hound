@@ -34,7 +34,6 @@ axios.defaults.headers.common["X-Client-Id"] =
 axios.defaults.headers.common["X-Client-Platform"] =
   AXIOS_CONFIG.headers["X-Client-Platform"];
 
-// Add a request interceptor
 axios.interceptors.request.use(
   function (config) {
     return config;
@@ -43,7 +42,6 @@ axios.interceptors.request.use(
     return Promise.reject(error);
   },
 );
-// Add a response interceptor
 axios.interceptors.response.use(
   function (response) {
     if (
@@ -59,7 +57,6 @@ axios.interceptors.response.use(
     console.log(error);
     const statusCode = error.response.status;
     if (statusCode === 401) {
-      console.log("logging out");
       const win: Window = window;
       win.location = "/logout";
     }
@@ -109,10 +106,12 @@ function App() {
                 path="logout"
                 element={<ProtectedRoute component={<Logout />} />}
               />
-              <Route
-                path="admin"
-                element={<ProtectedRoute component={<Admin />} />}
-              />
+              {localStorage.getItem("role") === "admin" && (
+                <Route
+                  path="admin"
+                  element={<ProtectedRoute component={<Admin />} />}
+                />
+              )}
               <Route
                 path="activity"
                 element={<ProtectedRoute component={<Activity />} />}

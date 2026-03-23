@@ -75,7 +75,7 @@ func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("set cache for key %s: %w", key, err)
 	}
-	slog.Debug("Cache set", "key", key)
+	slog.Debug("cache set", "key", key)
 	return true, nil
 }
 

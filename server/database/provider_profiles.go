@@ -34,6 +34,9 @@ func GetProviderProfiles() ([]ProviderProfile, error) {
 	if len(providers) > 0 {
 		SetCache(cacheKey, providers, 12*time.Hour)
 	}
+	if len(providers) == 0 {
+		return []ProviderProfile{}, nil
+	}
 	return providers, nil
 }
 

@@ -42,6 +42,7 @@ type JWTClaims struct {
 	Username       string `json:"username"`
 	ClientID       string `json:"client_id"`
 	ClientPlatform string `json:"client_platform"`
+	Role           string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -76,18 +77,26 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
 }
 
 // GenerateAccessToken JWT access token
-func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string) (string, error) {
+func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string) (string, string, error) {
 	jwtKey := []byte(os.Getenv("HOUND_SECRET"))
 	dbUser, err := database.GetUser(user.Username)
 	if err != nil {
-		return "", fmt.Errorf("Failed to fetch user from database: %w", err)
+		return "", "", fmt.Errorf("Failed to fetch user from database: %w", err)
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(user.Password))
 	if err != nil {
-		return "", fmt.Errorf("Failed to verify password (incorrect?): %w", helpers.UnauthorizedError)
+		return "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", helpers.UnauthorizedError)
 	}
 	// expiration time in seconds
-	expirationTime := time.Now().Add(time.Duration(viper.GetInt("auth.jwt-access-token-expiration")) * time.Second)
+	expirationTime := time.Now().
+		Add(time.Duration(viper.GetInt("auth.jwt-access-token-expiration")) * time.Second)
+	var role string
+	// should change to a scope-based system in the future
+	if dbUser.IsAdmin {
+		role = "admin"
+	} else {
+		role = "user"
+	}
 	claims := &JWTClaims{
 		Username:       user.Username,
 		ClientID:       clientID,
@@ -95,14 +104,15 @@ func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string)
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
+		Role: role,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// Create the JWT string
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		return "", fmt.Errorf("Error signing JWT token: %w", helpers.InternalServerError)
+		return "", "", fmt.Errorf("Error signing JWT token: %w", helpers.InternalServerError)
 	}
-	return tokenString, nil
+	return tokenString, role, nil
 }
 
 func ParseAccessToken(token string) (*JWTClaims, error) {

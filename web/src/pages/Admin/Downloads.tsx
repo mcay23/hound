@@ -53,7 +53,9 @@ export default function Downloads() {
         <div>Loading...</div>
       ) : (
         sortedTasks?.map((item: any) => {
-          return <DownloadCard key={item.id} item={item} />;
+          return (
+            <DownloadCard key={item.source_uri + item.started_at} item={item} />
+          );
         })
       )}
       <div className="d-flex w-100 mt-3 justify-content-center">

@@ -39,10 +39,21 @@ func JWTMiddleware(c *gin.Context) {
 	c.Request.Header.Del("X-Username")
 	c.Request.Header.Del("X-Client-Id")
 	c.Request.Header.Del("X-Client-Platform")
+	c.Request.Header.Del("X-Role")
 
 	c.Request.Header.Add("X-Username", claims.Username)
 	c.Request.Header.Add("X-Client-Id", claims.ClientID)
 	c.Request.Header.Add("X-Client-Platform", claims.ClientPlatform)
+	c.Set("role", claims.Role)
+	c.Next()
+}
+
+func AdminMiddleware(c *gin.Context) {
+	role := c.GetString("role")
+	if role != "admin" {
+		helpers.ErrorResponse(c, fmt.Errorf("admin role required: %w", helpers.UnauthorizedError))
+		return
+	}
 	c.Next()
 }
 

@@ -19,7 +19,7 @@ export const createProviderProfile = async (
 };
 
 export const deleteProviderProfile = async(
-    id: string,
+    id: number,
 ) => {
     const { data } = await axios.delete<any>(`/api/v1/provider_profiles/${id}`);
     return data;

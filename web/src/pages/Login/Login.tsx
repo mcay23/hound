@@ -21,9 +21,9 @@ function Login() {
     axios
       .post("/api/v1/auth/login", data)
       .then((res) => {
-        console.log("RESPONSE RECEIVED: ", res.data);
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("role", res.data.role);
         window.location.reload();
         setAlertVisible(false);
       })

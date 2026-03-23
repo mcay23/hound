@@ -9,15 +9,19 @@ export const useProviderProfiles = () => {
 };
 
 export const useCreateProviderProfile = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (profile: any) => createProviderProfile(profile.name, profile.manifestURL),
+    mutationFn: (profile: {name: string, manifestURL: string}) => createProviderProfile(profile.name, profile.manifestURL),
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
+    }
   });
 };
 
 export const useDeleteProviderProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteProviderProfile(id),
+    mutationFn: (id: number) => deleteProviderProfile(id),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
     }

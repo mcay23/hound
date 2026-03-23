@@ -19,6 +19,11 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes := r.Group("/api/v1")
 	privateRoutes.Use(middlewares.JWTMiddleware)
 
+	// admin routes, admin only apis
+	adminRoutes := r.Group("/api/v1")
+	adminRoutes.Use(middlewares.JWTMiddleware)
+	adminRoutes.Use(middlewares.AdminMiddleware)
+
 	/*
 		General Routes
 	*/
@@ -108,9 +113,9 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Provider Profiles
 	*/
-	privateRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
-	privateRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
-	privateRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
+	adminRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
+	adminRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
+	adminRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
 
 	/*
 		Query Providers Routes
