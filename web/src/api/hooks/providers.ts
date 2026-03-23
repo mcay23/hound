@@ -8,12 +8,13 @@ export const useProviders = (
   sourceId: string,
   season?: number,
   episode?: number,
+  providerProfileId?: number,
   enabled: boolean = true
 ) => {
   return useQuery({
-    queryKey: ["providers", mediaType, mediaSource, sourceId, season, episode],
+    queryKey: ["providers", mediaType, mediaSource, sourceId, season, episode, providerProfileId],
     queryFn: () =>
-      fetchProviders(mediaType, mediaSource, sourceId, season, episode),
+      fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId),
     enabled,
   });
 };
@@ -26,13 +27,15 @@ export const useProvidersMutation = () => {
       sourceId,
       season,
       episode,
+      providerProfileId,
     }: {
       mediaType: string;
       mediaSource: string;
       sourceId: string;
       season?: number;
       episode?: number;
-    }) => fetchProviders(mediaType, mediaSource, sourceId, season, episode),
+      providerProfileId?: number;
+    }) => fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId),
   });
 };
 
@@ -42,14 +45,15 @@ export const useUnifiedStreams = (
   sourceId: string,
   season?: number,
   episode?: number,
+  providerProfileId?: number,
   enabled: boolean = true
 ) => {
   return useQuery({
-    queryKey: ["unified-streams", mediaType, mediaSource, sourceId, season, episode],
+    queryKey: ["unified-streams", mediaType, mediaSource, sourceId, season, episode, providerProfileId],
     queryFn: async () => {
       const [mediaFilesData, providersData] = await Promise.all([
         fetchMediaFiles(mediaType, mediaSource, sourceId, season, episode).catch((err) => {console.log("mediaFilesData failed", err); return null}),
-        fetchProviders(mediaType, mediaSource, sourceId, season, episode).catch((err) => {console.log("providersData failed", err); return null}),
+        fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId).catch((err) => {console.log("providersData failed", err); return null}),
       ]);
 
       // media files return their own ProviderResponseObject mimicking the main providers response
@@ -78,16 +82,18 @@ export const useUnifiedStreamsMutation = () => {
       sourceId,
       season,
       episode,
+      providerProfileId,
     }: {
       mediaType: string;
       mediaSource: string;
       sourceId: string;
       season?: number;
       episode?: number;
+      providerProfileId?: number;
     }) => {
       const [mediaFilesData, providersData] = await Promise.all([
         fetchMediaFiles(mediaType, mediaSource, sourceId, season, episode).catch(() => null),
-        fetchProviders(mediaType, mediaSource, sourceId, season, episode).catch(() => null),
+        fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId).catch(() => null),
       ]);
       const mediaFilesProviders = mediaFilesData?.providers || [];
       const externalProviders = providersData?.providers || [];

@@ -48,14 +48,14 @@ func InitializeDownloadWorkers() {
 	for _, task := range tasks {
 		failTask(&task.IngestTask, fmt.Errorf("invalid download task - process crashed during download"))
 	}
-	slog.Info("Starting download workers", "count", model.MaxConcurrentDownloads)
+	slog.Debug("Starting download workers", "count", model.MaxConcurrentDownloads)
 	for i := range model.MaxConcurrentDownloads {
 		go downloadWorker(i)
 	}
 }
 
 func downloadWorker(id int) {
-	slog.Info("Download worker started", "workerID", id)
+	slog.Debug("Download worker started", "workerID", id)
 	for {
 		task, err := database.GetNextPendingDownloadTask()
 		if err != nil {

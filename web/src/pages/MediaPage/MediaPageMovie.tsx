@@ -442,7 +442,11 @@ function MediaPageMovie(props: any) {
         modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
-        streamData={streams?.streams}
+        fetchParams={{
+          mediaType: "movie",
+          mediaSource: props.data.media_source,
+          sourceId: props.data.source_id,
+        }}
         setMainStream={setMainStream}
         setIsStreamModalOpen={setIsStreamModalOpen}
       />

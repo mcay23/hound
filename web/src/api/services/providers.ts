@@ -5,12 +5,13 @@ export const fetchProviders = async (
   mediaSource: string,
   sourceId: string,
   season?: number,
-  episode?: number
+  episode?: number,
+  providerProfileId?: number
 ) => {
   const { data } = await axios.get(
     `/api/v1/${mediaType}/${mediaSource}-${sourceId}/providers`,
     {
-      params: { season, episode },
+      params: { season, episode, provider_profile_id: providerProfileId },
     }
   );
   return data;

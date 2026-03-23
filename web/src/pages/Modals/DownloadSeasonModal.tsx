@@ -26,14 +26,10 @@ import {
   MatchTypeString,
 } from "../../api/services/media";
 import { useEffect, useMemo, useState } from "react";
-import { useProvidersMutation } from "../../api/hooks/providers";
-import { Spinner } from "react-bootstrap";
 import SelectStreamModal from "./StreamSelectModal";
 
 function DownloadSeasonModal(props: any) {
   const { onClose, open, mediaSource, sourceID, seasonData } = props;
-  const searchProviders = useProvidersMutation();
-  const [streams, setStreams] = useState<any[]>([]);
   const [mainStream, setMainStream] = useState<any>(undefined);
   // form states
   const [strictMatch, setStrictMatch] = useState<boolean>(false);
@@ -92,25 +88,6 @@ function DownloadSeasonModal(props: any) {
         (ep: any) => ep.episode_number,
       );
       setEpisodesToDownload(episodesList);
-      searchProviders.mutate(
-        {
-          mediaType: "tv",
-          mediaSource: mediaSource,
-          sourceId: sourceID,
-          season: seasonData.season_number,
-          episode: seasonData.episodes[0].episode_number,
-        },
-        {
-          onSuccess: (data) => {
-            if (data?.providers?.length > 0) {
-              const allStreams = data.providers.flatMap(
-                (p: any) => p.streams || [],
-              );
-              setStreams(allStreams || []);
-            }
-          },
-        },
-      );
     }
   }, [open, mediaSource, sourceID, seasonData.season_number]);
 
@@ -150,121 +127,113 @@ function DownloadSeasonModal(props: any) {
         </p>
         <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
         <div className="download-season-main-content">
-          {searchProviders.isPending ? (
-            <div className="d-flex justify-content-center">
-              <Spinner />
-            </div>
-          ) : searchProviders.isError ? (
-            <p>Error fetching streams.</p>
-          ) : (
-            <div>
-              {seasonData ? (
-                <>
-                  <div className="mb-1">1. Select Episodes</div>
-                  <EpisodeSelector
-                    episodesData={seasonData?.episodes}
-                    episodesToDownload={episodesToDownload}
-                    setEpisodesToDownload={setEpisodesToDownload}
-                  />
-                </>
-              ) : (
-                ""
-              )}
-              <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
-              {mainStream ? (
-                <>
-                  <SelectedSeasonPack
-                    mainStream={mainStream}
-                    setMainStream={setMainStream}
-                    setIsSelectStreamModalOpen={setIsSelectStreamModalOpen}
-                  />
-                </>
-              ) : (
-                <div>
-                  <div className="mb-2">
-                    2. (Optional) Select a season pack to match against:{" "}
-                  </div>
-                  <Button
-                    onClick={() => setIsSelectStreamModalOpen(true)}
-                    variant="outlined"
-                  >
-                    Select Season Pack
-                  </Button>
-                </div>
-              )}
-              <div className="px-1 mt-2 mb-2 text-muted">
-                Episodes in this season pack will be prioritized. Make sure this
-                is a season pack and not an individual episode!
-              </div>
-              <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
-              <div>
-                <div className="mb-1">
-                  3. (Optional) Add a string to match against:
-                </div>
-                <div>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={caseSensitive}
-                        onChange={(
-                          event: React.ChangeEvent<HTMLInputElement>,
-                        ) => {
-                          setCaseSensitive(event.target.checked);
-                        }}
-                      />
-                    }
-                    label="Case Sensitive"
-                  />
-                </div>
-                <TextField
-                  id="standard-helperText"
-                  label="String Match"
-                  value={preferredStringMatch}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setPreferredStringMatch(event.target.value);
-                  }}
-                  fullWidth
+          <div>
+            {seasonData ? (
+              <>
+                <div className="mb-1">1. Select Episodes</div>
+                <EpisodeSelector
+                  episodesData={seasonData?.episodes}
+                  episodesToDownload={episodesToDownload}
+                  setEpisodesToDownload={setEpisodesToDownload}
                 />
-                <div className="text-muted pe-5 mt-2">
-                  Streams that include this string will be prioritized.
-                  Evaluated after season packs (if selected). Useful to target
-                  specific release groups.
+              </>
+            ) : (
+              ""
+            )}
+            <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
+            {mainStream ? (
+              <>
+                <SelectedSeasonPack
+                  mainStream={mainStream}
+                  setMainStream={setMainStream}
+                  setIsSelectStreamModalOpen={setIsSelectStreamModalOpen}
+                />
+              </>
+            ) : (
+              <div>
+                <div className="mb-2">
+                  2. (Optional) Select a season pack to match against:{" "}
                 </div>
+                <Button
+                  onClick={() => setIsSelectStreamModalOpen(true)}
+                  variant="outlined"
+                >
+                  Select Season Pack
+                </Button>
               </div>
-              <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={strictMatch}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setStrictMatch(event.target.checked);
-                    }}
-                  />
-                }
-                label="Strict Matching"
-              />
-              <div className="text-muted mb-2 pe-5">
-                If selected, only streams matching the above criteria are
-                downloaded.
-              </div>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={skipDownloaded}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setSkipDownloaded(event.target.checked);
-                    }}
-                  />
-                }
-                label="Download Missing Episodes Only"
-              />
-              <div className="text-muted pe-5">
-                If selected, episodes that are already downloaded to hound will
-                be skipped even if it's selected above
-              </div>
-              <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
+            )}
+            <div className="px-1 mt-2 mb-2 text-muted">
+              Episodes in this season pack will be prioritized. Make sure this
+              is a season pack and not an individual episode!
             </div>
-          )}
+            <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
+            <div>
+              <div className="mb-1">
+                3. (Optional) Add a string to match against:
+              </div>
+              <div>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={caseSensitive}
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>,
+                      ) => {
+                        setCaseSensitive(event.target.checked);
+                      }}
+                    />
+                  }
+                  label="Case Sensitive"
+                />
+              </div>
+              <TextField
+                id="standard-helperText"
+                label="String Match"
+                value={preferredStringMatch}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setPreferredStringMatch(event.target.value);
+                }}
+                fullWidth
+              />
+              <div className="text-muted pe-5 mt-2">
+                Streams that include this string will be prioritized. Evaluated
+                after season packs (if selected). Useful to target specific
+                release groups.
+              </div>
+            </div>
+            <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={strictMatch}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setStrictMatch(event.target.checked);
+                  }}
+                />
+              }
+              label="Strict Matching"
+            />
+            <div className="text-muted mb-2 pe-5">
+              If selected, only streams matching the above criteria are
+              downloaded.
+            </div>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={skipDownloaded}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setSkipDownloaded(event.target.checked);
+                  }}
+                />
+              }
+              label="Download Missing Episodes Only"
+            />
+            <div className="text-muted pe-5">
+              If selected, episodes that are already downloaded to hound will be
+              skipped even if it's selected above
+            </div>
+            <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
+          </div>
         </div>
         <div className="d-flex justify-content-end mt-1">
           <Button onClick={onClose}>Cancel</Button>
@@ -276,7 +245,13 @@ function DownloadSeasonModal(props: any) {
         open={open && isSelectStreamModalOpen}
         setOpen={setIsSelectStreamModalOpen}
         setMainStream={setMainStream}
-        streamData={streams}
+        fetchParams={{
+          mediaType: "tv",
+          mediaSource: mediaSource,
+          sourceId: sourceID,
+          season: seasonData.season_number,
+          episode: seasonData.episodes?.[0]?.episode_number,
+        }}
       />
     </Dialog>
   );

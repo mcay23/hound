@@ -13,14 +13,14 @@ import (
 )
 
 func InitializeIngestWorkers() {
-	slog.Info("Starting ingest workers", "count", model.MaxConcurrentIngests)
+	slog.Debug("Starting ingest workers", "count", model.MaxConcurrentIngests)
 	for i := range model.MaxConcurrentIngests {
 		go ingestWorker(i)
 	}
 }
 
 func ingestWorker(id int) {
-	slog.Info("Ingest worker started", "workerID", id)
+	slog.Debug("Ingest worker started", "workerID", id)
 	for {
 		task, err := database.GetNextPendingIngestTask()
 		if err != nil {

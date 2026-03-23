@@ -66,6 +66,16 @@ function MediaPageTV(props: any) {
     useState(false);
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
+  const [selectStreamFetchParams, setSelectStreamFetchParams] = useState<
+    | {
+        mediaType: string;
+        mediaSource: string;
+        sourceId: string;
+        season?: number;
+        episode?: number;
+      }
+    | undefined
+  >(undefined);
   const [streamStartTime, setStreamStartTime] = useState(0);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
   const { data: mediaFiles } = useMediaFiles(
@@ -176,15 +186,16 @@ function MediaPageTV(props: any) {
     const sourceID = props.data.source_id;
     const searchProvidersToast = toast.loading("Searching providers...");
     // if we have current watch data, use encodedData to match a stream
+    const fetchParams = {
+      mediaType: "tv",
+      mediaSource,
+      sourceId: sourceID,
+      season,
+      episode,
+    };
     const requestProviderStream = (startTime: number, encodedData: string) => {
       setStreamStartTime(startTime);
-      return searchProviders({
-        mediaType: "tv",
-        mediaSource,
-        sourceId: sourceID,
-        season,
-        episode,
-      })
+      return searchProviders(fetchParams)
         .then((data) => {
           toast.dismiss(searchProvidersToast);
           setStreams(data);
@@ -206,6 +217,7 @@ function MediaPageTV(props: any) {
             if (mode === "direct") {
               setIsStreamModalOpen(true);
             } else {
+              setSelectStreamFetchParams(fetchParams);
               setIsSelectStreamModalOpen(true);
             }
           } else {
@@ -555,7 +567,7 @@ function MediaPageTV(props: any) {
         modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
-        streamData={streams?.streams}
+        fetchParams={selectStreamFetchParams}
         setMainStream={setMainStream}
         setIsStreamModalOpen={setIsStreamModalOpen}
       />
