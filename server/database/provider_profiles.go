@@ -7,11 +7,11 @@ import (
 )
 
 type ProviderProfile struct {
-	ProviderID  int64     `json:"provider_profile_id" xorm:"pk autoincr 'provider_profile_id'"`
-	Name        string    `json:"name" xorm:"not null 'name'"`                             // profile name, eg. Performance, Quality, etc.
-	ManifestURL string    `json:"manifest_url" xorm:"text not null unique 'manifest_url'"` // url to manifest.json for stremio providers
-	CreatedAt   time.Time `json:"created_at" xorm:"timestampz created"`
-	UpdatedAt   time.Time `json:"updated_at" xorm:"timestampz updated"`
+	ProviderProfileID int64     `json:"provider_profile_id" xorm:"pk autoincr 'provider_profile_id'"`
+	Name              string    `json:"name" xorm:"not null 'name'"`                             // profile name, eg. Performance, Quality, etc.
+	ManifestURL       string    `json:"manifest_url" xorm:"text not null unique 'manifest_url'"` // url to manifest.json for stremio providers
+	CreatedAt         time.Time `json:"created_at" xorm:"timestampz created"`
+	UpdatedAt         time.Time `json:"updated_at" xorm:"timestampz updated"`
 }
 
 const providerProfilesTable = "provider_profiles"

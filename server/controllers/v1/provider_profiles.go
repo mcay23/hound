@@ -57,7 +57,9 @@ func CreateProviderProfileHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to ping provider manifest: %w", err))
 		return
 	}
-	provider, err := database.InsertProviderProfile(body.Name, body.ManifestURL)
+	// store url without manifest.json
+	provider, err := database.InsertProviderProfile(body.Name,
+		strings.TrimSuffix(body.ManifestURL, "/manifest.json"))
 	if err != nil {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to create provider profile: %w", err))
 		return

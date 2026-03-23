@@ -24,8 +24,9 @@ export default function Admin(props: any) {
               flexShrink: 0,
               "& .MuiDrawer-paper": {
                 width: 300,
-                position: "sticky",
+                position: "fixed",
                 top: 100,
+                left: 30,
                 height: "calc(100vh - 100px)",
               },
             }}
@@ -48,7 +49,7 @@ export default function Admin(props: any) {
               )}
             </List>
           </Drawer>
-          <div className="admin-content">
+          <div className="d-flex admin-content">
             {activeTab === 0 && <Downloads />}
             {activeTab === 1 && <></>}
             {activeTab === 2 && <ProviderProfiles />}

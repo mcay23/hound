@@ -34,6 +34,7 @@ func ClearCacheHandler(c *gin.Context) {
 // @Param id path string true "Media ID" example(tmdb-1234)
 // @Param season query int true "Season Number"
 // @Param episode query int true "Episode Number"
+// @Param provider_profile_id query int false "Provider Profile ID"
 // @Param episode_group_id query string false "Episode Group ID"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
 // @Failure 400 {object} V1ErrorResponse
@@ -86,6 +87,18 @@ func SearchProvidersTVHandler(c *gin.Context) {
 		EpisodeSourceID: &sourceEpisodeIDstr,
 		EpisodeGroupID:  c.Query("episode_group_id"),
 	}
+	// if not supplied, will use defaults
+	providerQuery := c.Query("provider_profile_id")
+	if providerQuery != "" {
+		temp, err := strconv.Atoi(c.Query("provider_profile_id"))
+		if err != nil {
+			helpers.ErrorResponse(c, fmt.Errorf("invalid provider profile id query param: %w: %w", helpers.BadRequestError, err))
+			return
+		}
+		query.ProviderProfileID = &temp
+	} else {
+		query.ProviderProfileID = nil
+	}
 	results, err := providers.QueryProviders(query)
 	if err != nil {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to query providers: %w", err))
@@ -100,6 +113,7 @@ func SearchProvidersTVHandler(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Media ID" example(tmdb-1234)
+// @Param provider_profile_id query int false "Provider Profile ID"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
@@ -124,10 +138,22 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 		EpisodeSourceID: nil,
 		EpisodeGroupID:  "",
 	}
-	res, err := providers.QueryProviders(query)
+	// if not supplied, will use defaults
+	providerQuery := c.Query("provider_profile_id")
+	if providerQuery != "" {
+		temp, err := strconv.Atoi(c.Query("provider_profile_id"))
+		if err != nil {
+			helpers.ErrorResponse(c, fmt.Errorf("invalid provider profile id query param: %w: %w", helpers.BadRequestError, err))
+			return
+		}
+		query.ProviderProfileID = &temp
+	} else {
+		query.ProviderProfileID = nil
+	}
+	results, err := providers.QueryProviders(query)
 	if err != nil {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to query providers: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, res, 200)
+	helpers.SuccessResponse(c, results, 200)
 }

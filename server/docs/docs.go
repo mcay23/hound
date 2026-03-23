@@ -1015,6 +1015,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1155,7 +1161,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/provider_profiles/{providerID}": {
+        "/api/v1/provider_profiles/{id}": {
             "delete": {
                 "consumes": [
                     "application/json"
@@ -1171,7 +1177,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Provider ID",
-                        "name": "providerID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -1712,6 +1718,12 @@ const docTemplate = `{
                         "name": "episode",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -3948,7 +3960,7 @@ const docTemplate = `{
         "database.ProviderProfile": {
             "type": "object",
             "properties": {
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "manifest_url": {
@@ -3959,10 +3971,10 @@ const docTemplate = `{
                     "description": "profile name, eg. Performance, Quality, etc.",
                     "type": "string"
                 },
-                "provider_id": {
+                "provider_profile_id": {
                     "type": "integer"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4832,6 +4844,9 @@ const docTemplate = `{
         "v1.LoginResponse": {
             "type": "object",
             "properties": {
+                "role": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 },
@@ -4843,6 +4858,9 @@ const docTemplate = `{
         "v1.RegistrationResponse": {
             "type": "object",
             "properties": {
+                "role": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }

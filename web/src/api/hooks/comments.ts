@@ -32,9 +32,6 @@ export const useCreateComment = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["comments", variables.commentType, variables.mediaType, variables.mediaSource, variables.sourceId, variables.seasonNumber, variables.episodeNumber] });
     },
-    onError: () => {
-      console.log("Error posting comment");
-    },
   });
 };
 
@@ -44,9 +41,6 @@ export const useDeleteComment = () => {
     mutationFn: (commentId: number) => deleteComment(commentId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["comments"]});
-    },
-    onError: () => {
-      console.log("Error deleting comment");
     },
   });
 };

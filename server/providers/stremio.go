@@ -10,12 +10,6 @@ import (
 	"time"
 )
 
-// first url with debrid, second p2p
-// const BASE_URL = "http://localhost:3500/stremio/6bc22eb8-2cf3-4c1c-b264-3dd47b5972b0/eyJpdiI6InU5NEpFOFJGaVUrMEI0U216VStzaFE9PSIsImVuY3J5cHRlZCI6IldzUlYxbWR4dUdlb1B2RGxES2htTnc9PSIsInR5cGUiOiJhaW9FbmNyeXB0In0"
-
-// const BASE_URL = "http://localhost:3500/stremio/2ed5877f-3ecf-4ec3-be65-f577c097e702/eyJpIjoiMUcrNUVHdU5meWxBQ1pLSmZjV2FZUT09IiwiZSI6IlVwSzFZS0twRVh5S1lYNVByVHpGYVE9PSIsInQiOiJhIn0"
-
-const BASE_URL = "https://aiostreamsfortheweebs.midnightignite.me/stremio/be1079b5-bc45-4338-aba5-12797469ae95/eyJpIjoiZzVBWHlRUEUzdVRYa0o1MzBrTzRmQT09IiwiZSI6IkdHN3FWcjRRRVdjVisyU29ITTU4a1E9PSIsInQiOiJhIn0"
 const MANIFEST_PATH = "/manifest.json"
 const TV_STREAMS_PATH = "/stream/series/%s:%d:%d.json"
 const MOVIE_STREAMS_PATH = "/stream/movie/%s.json"
@@ -46,16 +40,21 @@ type StremioStreamResponse struct {
 }
 
 func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) (*ProviderObject, error) {
+	providerName := "AIOStreams"
 	url := ""
-	providerName := "Stremio"
+	provider, err := database.GetProviderProfile(*query.ProviderProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider profile: %w", err)
+	}
+	url += provider.ManifestURL
 	switch query.MediaType {
 	case database.MediaTypeMovie:
-		url = BASE_URL + fmt.Sprintf(MOVIE_STREAMS_PATH, query.IMDbID)
+		url += fmt.Sprintf(MOVIE_STREAMS_PATH, query.IMDbID)
 	case database.MediaTypeTVShow:
 		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
 			return nil, fmt.Errorf("query %s invalid season/episode number", query.MediaType)
 		}
-		url = BASE_URL + fmt.Sprintf(TV_STREAMS_PATH, query.IMDbID, *query.SeasonNumber, *query.EpisodeNumber)
+		url += fmt.Sprintf(TV_STREAMS_PATH, query.IMDbID, *query.SeasonNumber, *query.EpisodeNumber)
 	default:
 		return nil, fmt.Errorf("query %s invalid media type", query.MediaType)
 	}

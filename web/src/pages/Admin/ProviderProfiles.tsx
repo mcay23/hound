@@ -34,8 +34,11 @@ export default function ProviderProfiles() {
         <p className="provider-profile-text">
           Add a provider to start streaming and downloading. Multiple profiles
           are useful if you want different presets for streaming and downloading
-          (eg. prioritize performance for streaming, quality for downloads,
-          etc.)
+          (eg. prioritize speed/compatibility for streaming, and quality for
+          downloads)
+        </p>
+        <p className="provider-profile-text">
+          For help setting up a provider, visit the docs.
         </p>
         {providerProfiles?.length === 0 && (
           <div className="text-muted">
@@ -155,15 +158,13 @@ function AddProviderModal({
   const [name, setName] = useState("");
   const [manifestURL, setManifestURL] = useState("");
   const addProviderProfile = useCreateProviderProfile();
+  const handleClose = () => {
+    setName("");
+    setManifestURL("");
+    setOpen(false);
+  };
   return (
-    <Dialog
-      open={open}
-      onClose={() => {
-        setName("");
-        setManifestURL("");
-        setOpen(false);
-      }}
-    >
+    <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Add Provider</DialogTitle>
       <DialogContent className="provider-profile-container">
         <hr />
@@ -187,7 +188,7 @@ function AddProviderModal({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setOpen(false)}>Cancel</Button>
+        <Button onClick={handleClose}>Cancel</Button>
         <Button
           onClick={() => {
             if (name === "" || manifestURL === "") {
@@ -210,11 +211,11 @@ function AddProviderModal({
               {
                 onSuccess: () => {
                   toast.success("Provider profile added");
-                  setOpen(false);
+                  handleClose();
                 },
                 onError: () => {
                   toast.error("Failed to add provider profile");
-                  setOpen(false);
+                  handleClose();
                 },
               },
             );

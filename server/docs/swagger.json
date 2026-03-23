@@ -1009,6 +1009,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1149,7 +1155,7 @@
                 }
             }
         },
-        "/api/v1/provider_profiles/{providerID}": {
+        "/api/v1/provider_profiles/{id}": {
             "delete": {
                 "consumes": [
                     "application/json"
@@ -1165,7 +1171,7 @@
                     {
                         "type": "integer",
                         "description": "Provider ID",
-                        "name": "providerID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -1706,6 +1712,12 @@
                         "name": "episode",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -3942,7 +3954,7 @@
         "database.ProviderProfile": {
             "type": "object",
             "properties": {
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "manifest_url": {
@@ -3953,10 +3965,10 @@
                     "description": "profile name, eg. Performance, Quality, etc.",
                     "type": "string"
                 },
-                "provider_id": {
+                "provider_profile_id": {
                     "type": "integer"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4826,6 +4838,9 @@
         "v1.LoginResponse": {
             "type": "object",
             "properties": {
+                "role": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 },
@@ -4837,6 +4852,9 @@
         "v1.RegistrationResponse": {
             "type": "object",
             "properties": {
+                "role": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }

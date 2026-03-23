@@ -3,6 +3,7 @@ package providers
 import (
 	"fmt"
 	"hound/database"
+	"hound/helpers"
 	"hound/sources"
 	"log/slog"
 	"strconv"
@@ -11,16 +12,17 @@ import (
 )
 
 type ProvidersQueryRequest struct {
-	MediaSource     string   `json:"media_source"` // eg. tmdb
-	SourceID        string   `json:"source_id"`
-	IMDbID          string   `json:"imdb_id,omitempty"` // starts with 'tt'
-	MediaType       string   `json:"media_type"`        // movies or tvshows, etc.
-	SeasonNumber    *int     `json:"season_number,omitempty"`
-	EpisodeNumber   *int     `json:"episode_number,omitempty"`
-	EpisodeSourceID *string  `json:"episode_source_id,omitempty"`
-	EpisodeGroupID  string   `json:"episode_group_id,omitempty"`
-	Query           string   `json:"search_query,omitempty"` // not used for now
-	Params          []string `json:"params"`
+	ProviderProfileID *int     `json:"provider_profile_id,omitempty"` // which provider profile to use
+	MediaSource       string   `json:"media_source"`                  // eg. tmdb
+	SourceID          string   `json:"source_id"`
+	IMDbID            string   `json:"imdb_id,omitempty"` // starts with 'tt'
+	MediaType         string   `json:"media_type"`        // movies or tvshows, etc.
+	SeasonNumber      *int     `json:"season_number,omitempty"`
+	EpisodeNumber     *int     `json:"episode_number,omitempty"`
+	EpisodeSourceID   *string  `json:"episode_source_id,omitempty"`
+	EpisodeGroupID    string   `json:"episode_group_id,omitempty"`
+	Query             string   `json:"search_query,omitempty"` // not used for now
+	Params            []string `json:"params"`
 }
 
 // to encode into JWT string
@@ -69,7 +71,19 @@ type ProviderResponseObject struct {
 const providersCacheTTL = time.Hour * 2
 
 func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
-	providersCacheKey := fmt.Sprintf("providers|%s|%s-%s", query.MediaType, query.MediaSource, query.SourceID)
+	// automatically select provider if none supplied
+	if query.ProviderProfileID == nil {
+		providers, err := database.GetProviderProfiles()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get providers: %w", err)
+		}
+		if len(providers) == 0 {
+			return nil, fmt.Errorf("no providers profiles found: %w", helpers.NotFoundError)
+		}
+		temp := int(providers[0].ProviderProfileID)
+		query.ProviderProfileID = &temp
+	}
+	providersCacheKey := fmt.Sprintf("providers|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {
 		providersCacheKey += fmt.Sprintf("|S%d|E%d|episode_group_id:%s", *query.SeasonNumber, *query.EpisodeNumber, query.EpisodeGroupID)
 	}

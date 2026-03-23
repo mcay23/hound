@@ -97,7 +97,6 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/tv/:id/comments", PostCommentTVHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsMovieHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentMovieHandler)
-	// privateRoutes.DELETE("/comments", DeleteCommentHandler)     // ?ids=23,52,43 (batch deletion)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*

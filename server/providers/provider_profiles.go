@@ -13,7 +13,10 @@ func PingProviderManifest(manifestURL string) error {
 		return fmt.Errorf("manifest url is empty: %w", helpers.BadRequestError)
 	}
 	if !strings.Contains(manifestURL, "manifest.json") {
-		return fmt.Errorf("manifest url is invalid, must contain manifest.json: %w", helpers.BadRequestError)
+		if !strings.HasSuffix(manifestURL, "/") {
+			manifestURL += "/"
+		}
+		manifestURL += "manifest.json"
 	}
 	req, err := http.NewRequest("GET", manifestURL, nil)
 	if err != nil {
