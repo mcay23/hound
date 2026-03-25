@@ -115,6 +115,7 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
 	adminRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
 	adminRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
+	adminRoutes.PUT("/provider_profiles/:id", UpdateProviderProfileHandler)
 
 	/*
 		Query Providers Routes

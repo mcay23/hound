@@ -67,6 +67,45 @@ func CreateProviderProfileHandler(c *gin.Context) {
 	helpers.SuccessResponse(c, provider, 200)
 }
 
+type UpdateProviderProfileRequest struct {
+	IsDefaultStreaming   bool `json:"is_default_streaming"`
+	IsDefaultDownloading bool `json:"is_default_downloading"`
+}
+
+// @Router /api/v1/provider_profiles/{id} [put]
+// @Summary Update a provider profile
+// @Description Set the default provider profiles for streaming, downloading. Note that clients may choose to override their own defaults.
+// @Tags Provider Profiles
+// @Accept json
+// @Produce json
+// @Param id path int true "Provider ID"
+// @Param provider_profile body UpdateProviderProfileRequest true "Provider Profile Body"
+// @Success 200 {object} V1SuccessResponse{data=database.ProviderProfile}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateProviderProfileHandler(c *gin.Context) {
+	providerID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", helpers.BadRequestError, err))
+		return
+	}
+	var body UpdateProviderProfileRequest
+	if err := c.ShouldBindJSON(&body); err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
+		return
+	}
+	if err := database.UpdateDefaultProviderProfile(providerID, body.IsDefaultStreaming, body.IsDefaultDownloading); err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to update provider profile: %w", err))
+		return
+	}
+	provider, err := database.GetProviderProfile(providerID)
+	if err != nil {
+		helpers.ErrorResponse(c, fmt.Errorf("failed to get provider profile: %w", err))
+		return
+	}
+	helpers.SuccessResponse(c, provider, 200)
+}
+
 // @Router /api/v1/provider_profiles/{id} [delete]
 // @Summary Delete a provider profile
 // @Tags Provider Profiles

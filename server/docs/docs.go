@@ -1162,6 +1162,69 @@ const docTemplate = `{
             }
         },
         "/api/v1/provider_profiles/{id}": {
+            "put": {
+                "description": "Set the default provider profiles for streaming, downloading. Note that clients may choose to override their own defaults.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Provider Profiles"
+                ],
+                "summary": "Update a provider profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Provider ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Provider Profile Body",
+                        "name": "provider_profile",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateProviderProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.ProviderProfile"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "consumes": [
                     "application/json"
@@ -3963,6 +4026,14 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "is_default_downloading": {
+                    "description": "default profile for downloading",
+                    "type": "boolean"
+                },
+                "is_default_streaming": {
+                    "description": "default profile for streaming",
+                    "type": "boolean"
+                },
                 "manifest_url": {
                     "description": "url to manifest.json for stremio providers",
                     "type": "string"
@@ -4920,6 +4991,17 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "queued"
+                }
+            }
+        },
+        "v1.UpdateProviderProfileRequest": {
+            "type": "object",
+            "properties": {
+                "is_default_downloading": {
+                    "type": "boolean"
+                },
+                "is_default_streaming": {
+                    "type": "boolean"
                 }
             }
         },

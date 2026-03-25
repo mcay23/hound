@@ -263,6 +263,12 @@ definitions:
     properties:
       created_at:
         type: string
+      is_default_downloading:
+        description: default profile for downloading
+        type: boolean
+      is_default_streaming:
+        description: default profile for streaming
+        type: boolean
       manifest_url:
         description: url to manifest.json for stremio providers
         type: string
@@ -913,6 +919,13 @@ definitions:
       status:
         example: queued
         type: string
+    type: object
+  v1.UpdateProviderProfileRequest:
+    properties:
+      is_default_downloading:
+        type: boolean
+      is_default_streaming:
+        type: boolean
     type: object
   v1.V1ErrorResponse:
     properties:
@@ -2101,6 +2114,46 @@ paths:
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: Delete a provider profile
+      tags:
+      - Provider Profiles
+    put:
+      consumes:
+      - application/json
+      description: Set the default provider profiles for streaming, downloading. Note
+        that clients may choose to override their own defaults.
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Provider Profile Body
+        in: body
+        name: provider_profile
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateProviderProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.ProviderProfile'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Update a provider profile
       tags:
       - Provider Profiles
   /api/v1/search:
