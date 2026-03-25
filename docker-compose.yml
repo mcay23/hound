@@ -9,14 +9,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hound -d hound_db"]
+      test: [ "CMD-SHELL", "pg_isready -U hound -d hound_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
   hound-server:
     container_name: hound-server
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     depends_on:
@@ -32,7 +32,6 @@ services:
       - POSTGRES_PASSWORD=hound_password
       - POSTGRES_DB=hound_db
       - SERVER_PORT=2323 # try not to change
-      - TMDB_API_KEY=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMDZkMDdiOTk1ZmY2NjQxNjY0OWMzNjA4YzllMGE2NyIsIm5iZiI6MTYzMjc1Nzg2MS4zMDA5OTk5LCJzdWIiOiI2MTUxZTg2NTFjNjM1YjAwMmExMGNmNTciLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.xTmUqmj38ElN1n0UWfsaL-1IJ46SAhCd1WtBD_Of_2A
       - CACHE_GC_INTERVAL=600
     volumes:
       - ./docker/Hound Data:/app/Hound Data

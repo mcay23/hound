@@ -4,9 +4,5 @@ auth:
   jwt-access-token-expiration: 604800 # expressed in seconds
 external_library:
   enabled: true
-  movies_root_path: "Z:/Movies"
-  tv_root_path: "Z:/TV Shows"
-  # movies_root_path: "Hound Data/movies"
-
   scan_interval_minutes: 360
   max_workers: 3

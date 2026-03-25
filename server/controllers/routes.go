@@ -2,7 +2,10 @@ package controllers
 
 import (
 	v1 "hound/controllers/v1"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	_ "hound/docs"
 
@@ -19,21 +22,18 @@ func SetupRoutes() {
 	// Serve static files from the build directory in prod
 	if os.Getenv("APP_ENV") == "production" {
 		r.Static("/static", "./build/static")
-		r.StaticFile("/manifest.json", "./build/manifest.json")
-		r.StaticFile("/favicon.ico", "./build/favicon.ico")
-		r.StaticFile("/favicon-16x16.png", "./build/favicon-16x16.png")
-		r.StaticFile("/favicon-32x32.png", "./build/favicon-32x32.png")
-		r.StaticFile("/hound-logo.png", "./build/hound-logo.png")
-		r.StaticFile("/apple-touch-icon.png", "./build/apple-touch-icon.png")
-		r.StaticFile("/android-chrome-192x192.png", "./build/android-chrome-192x192.png")
-		r.StaticFile("/android-chrome-512x512.png", "./build/android-chrome-512x512.png")
-		r.StaticFile("/avatar-placeholder.png", "./build/avatar-placeholder.png")
-		r.StaticFile("/landscape-placeholder.jpg", "./build/landscape-placeholder.jpg")
-		r.StaticFile("/login-bg.jpg", "./build/login-bg.jpg")
-		// r.StaticFile("/asset-manifest.json", "./build/asset-manifest.json")
-		r.StaticFile("/robots.txt", "./build/robots.txt")
+
 		r.NoRoute(func(c *gin.Context) {
-			c.File("./build/index.html")
+			if strings.HasPrefix(c.Request.URL.Path, "/api") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "API route not found"})
+				return
+			}
+			path := filepath.Join("./build", c.Request.URL.Path)
+			if _, err := os.Stat(path); err == nil {
+				c.File(path)
+				return
+			}
+			c.File(filepath.Join("./build", "index.html"))
 		})
 	}
 
