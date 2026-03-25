@@ -23,6 +23,7 @@ func SetupRoutes() {
 		r.StaticFile("/favicon.ico", "./build/favicon.ico")
 		r.StaticFile("/favicon-16x16.png", "./build/favicon-16x16.png")
 		r.StaticFile("/favicon-32x32.png", "./build/favicon-32x32.png")
+		r.StaticFile("/hound-logo.png", "./build/hound-logo.png")
 		r.StaticFile("/apple-touch-icon.png", "./build/apple-touch-icon.png")
 		r.StaticFile("/android-chrome-192x192.png", "./build/android-chrome-192x192.png")
 		r.StaticFile("/android-chrome-512x512.png", "./build/android-chrome-512x512.png")
