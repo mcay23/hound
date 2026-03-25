@@ -91,7 +91,7 @@ func CreateIngestTaskDownload(streamDetails *providers.StreamObjectFull, prefs *
 				if os.IsNotExist(err) {
 					continue
 				}
-				return fmt.Errorf("file already downloaded: %s-%d: %w",
+				return fmt.Errorf("file already downloaded: %s-%s: %w",
 					childRecord.MediaSource, childRecord.SourceID, helpers.AlreadyExistsError)
 			}
 		}

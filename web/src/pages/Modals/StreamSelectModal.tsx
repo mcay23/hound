@@ -36,6 +36,7 @@ function SelectStreamModal(props: {
   setOpen: (open: boolean) => void;
   open: boolean;
   setMainStream: (stream: any) => void;
+  setProviderID?: (providerID: number) => void;
   setIsStreamModalOpen?: (open: boolean) => void;
 }) {
   const {
@@ -44,6 +45,7 @@ function SelectStreamModal(props: {
     setOpen,
     open,
     setMainStream,
+    setProviderID: setProviderIDSeasonDownloader,
     setIsStreamModalOpen,
   } = props;
 
@@ -110,6 +112,7 @@ function SelectStreamModal(props: {
 
   const handleProviderChange = (event: SelectChangeEvent<number>) => {
     setProviderID(Number(event.target.value));
+    setProviderIDSeasonDownloader?.(Number(event.target.value));
   };
 
   const theme = useTheme();

@@ -59,22 +59,21 @@ func AddToCollectionHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w", helpers.BadRequestError))
 		return
 	}
-	tempID := int64(collectionID)
 	switch body.MediaType {
 	case database.MediaTypeTVShow:
-		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, &tempID)
+		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, int64(collectionID))
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add tv show to collection: %w", err))
 			return
 		}
 	case database.MediaTypeMovie:
-		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, &tempID)
+		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, int64(collectionID))
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add movie to collection: %w", err))
 			return
 		}
 	case database.MediaTypeGame:
-		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, &tempID)
+		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, int64(collectionID))
 		if err != nil {
 			helpers.ErrorResponse(c, fmt.Errorf("failed to add game to collection: %w", err))
 			return

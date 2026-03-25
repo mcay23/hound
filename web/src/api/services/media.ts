@@ -94,6 +94,7 @@ type DownloadSeasonParams = {
   episodesToDownload?: number[];
   strictMatch: boolean;
   skipDownloadedEpisodes: boolean;
+  providerProfileID?: number;
   preferenceList?: DownloadPreference[];
 };
 
@@ -105,12 +106,14 @@ export const downloadSeason = async ({
   episodesToDownload,
   strictMatch,
   skipDownloadedEpisodes,
-  preferenceList: preferenceList,
+  providerProfileID,
+  preferenceList,
 }: DownloadSeasonParams) => {
   const payload = {
     episodes_to_download: episodesToDownload,
     strict_match: strictMatch,
     skip_downloaded_episodes: skipDownloadedEpisodes,
+    provider_profile_id: providerProfileID,
     preference_list: preferenceList
   }
   const { data } = await axios.post(

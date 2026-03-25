@@ -8,10 +8,10 @@ import (
 
 type ProviderProfile struct {
 	ProviderProfileID    int64     `xorm:"pk autoincr 'provider_profile_id'" json:"provider_profile_id"`
-	Name                 string    `xorm:"not null 'name'" json:"name"`                                   // profile name, eg. Performance, Quality, etc.
-	ManifestURL          string    `xorm:"text not null unique 'manifest_url'" json:"manifest_url"`       // url to manifest.json for stremio providers
-	IsDefaultStreaming   bool      `xorm:"unique 'is_default_streaming'" json:"is_default_streaming"`     // default profile for streaming
-	IsDefaultDownloading bool      `xorm:"unique 'is_default_downloading'" json:"is_default_downloading"` // default profile for downloading
+	Name                 string    `xorm:"not null 'name'" json:"name"`                             // profile name, eg. Performance, Quality, etc.
+	ManifestURL          string    `xorm:"text not null unique 'manifest_url'" json:"manifest_url"` // url to manifest.json for stremio providers
+	IsDefaultStreaming   bool      `xorm:"'is_default_streaming'" json:"is_default_streaming"`      // default profile for streaming
+	IsDefaultDownloading bool      `xorm:"'is_default_downloading'" json:"is_default_downloading"`  // default profile for downloading
 	CreatedAt            time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt            time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
@@ -94,7 +94,7 @@ func UpdateDefaultProviderProfile(defaultProviderID int, isDefaultStreaming bool
 	}
 	if isDefaultStreaming {
 		if _, err := sess.
-			Where("provider_id = ?", defaultProviderID).
+			Table(providerProfilesTable).
 			Cols("is_default_streaming").
 			Update(&ProviderProfile{IsDefaultStreaming: false}); err != nil {
 			sess.Rollback()
@@ -103,7 +103,7 @@ func UpdateDefaultProviderProfile(defaultProviderID int, isDefaultStreaming bool
 	}
 	if isDefaultDownloading {
 		if _, err := sess.
-			Where("provider_id = ?", defaultProviderID).
+			Table(providerProfilesTable).
 			Cols("is_default_downloading").
 			Update(&ProviderProfile{IsDefaultDownloading: false}); err != nil {
 			sess.Rollback()
@@ -122,7 +122,8 @@ func UpdateDefaultProviderProfile(defaultProviderID int, isDefaultStreaming bool
 	}
 	if len(cols) > 0 {
 		if _, err := sess.
-			Where("id = ?", defaultProviderID).
+			Table(providerProfilesTable).
+			Where("provider_profile_id = ?", defaultProviderID).
 			Cols(cols...).
 			Update(&update); err != nil {
 			sess.Rollback()

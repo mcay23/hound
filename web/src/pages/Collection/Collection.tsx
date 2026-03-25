@@ -25,7 +25,6 @@ function Collection(props: any) {
       collection_title: "",
       description: "",
       is_public: false,
-      is_primary: true,
       owner_username: "",
     },
     total_records: 0,
@@ -121,12 +120,11 @@ function Collection(props: any) {
                       {collectionData.collection.description}
                     </div>
                     <div className="collection-top-section-actions">
-                      {showDeleteButton &&
-                        !collectionData.collection.is_primary && (
-                          <IconButton onClick={handleDeleteClickOpen}>
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
+                      {showDeleteButton && (
+                        <IconButton onClick={handleDeleteClickOpen}>
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
                     </div>
                   </div>
                 </div>

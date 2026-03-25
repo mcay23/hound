@@ -116,40 +116,27 @@ func GetRecentCollectionRecords(userID int64, limit int) ([]MediaRecordGroup, er
 	return recordGroups, nil
 }
 
-func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64) error {
-	// if collectionID not supplied, add to user's primary collection
-	if collectionID == nil {
-		var collectionRecord CollectionRecord
-		has, err := databaseEngine.Table(collectionsTable).Where("owner_user_id = ?", userID).Where("is_primary = ?", true).Get(&collectionRecord)
-		if err != nil {
-			return fmt.Errorf("query %s for owner_user_id %d, is_primary true: %w", collectionsTable, userID, err)
-		}
-		if !has {
-			return fmt.Errorf("query %s owner_user_id %d, is_primary true: %w", collectionsTable, userID, helpers.NotFoundError)
-		}
-		collectionID = &collectionRecord.CollectionID
-	} else {
-		// check if collection exists in collections table
-		// TODO should ideally be covered by foreign key constraint, xorm does not handle sync with fk right now
-		var collectionRecord CollectionRecord
-		has, err := databaseEngine.Table(collectionsTable).ID(*collectionID).Get(&collectionRecord)
-		if err != nil {
-			return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, *collectionID, err)
-		}
-		if !has {
-			return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, *collectionID, helpers.NotFoundError)
-		}
-		// check if user is authorized to add to collection
-		if collectionRecord.OwnerUserID != userID {
-			return fmt.Errorf("insert %s for collection_id %d, owner_user_id %d: %w",
-				collectionsTable, *collectionID, userID, helpers.UnauthorizedError)
-		}
+func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) error {
+	// check if collection exists in collections table
+	// TODO should ideally be covered by foreign key constraint, xorm does not handle sync with fk right now
+	var collectionRecord CollectionRecord
+	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collectionRecord)
+	if err != nil {
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
+	}
+	if !has {
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, helpers.NotFoundError)
+	}
+	// check if user is authorized to add to collection
+	if collectionRecord.OwnerUserID != userID {
+		return fmt.Errorf("insert %s for collection_id %d, owner_user_id %d: %w",
+			collectionsTable, collectionID, userID, helpers.UnauthorizedError)
 	}
 	// insert record to db
-	_, err := databaseEngine.Table(collectionRelationsTable).Insert(CollectionRelation{
+	_, err = databaseEngine.Table(collectionRelationsTable).Insert(CollectionRelation{
 		UserID:       userID,
 		RecordID:     recordID,
-		CollectionID: *collectionID,
+		CollectionID: collectionID,
 	})
 	if err != nil {
 		var pqErr *pq.Error
@@ -157,7 +144,7 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID *int64)
 			// unique key failed
 			if pqErr.Code == "23505" {
 				return fmt.Errorf("insert %s for record_id %d, collection_id %d: %w",
-					collectionRelationsTable, recordID, *collectionID, helpers.AlreadyExistsError)
+					collectionRelationsTable, recordID, collectionID, helpers.AlreadyExistsError)
 			}
 		}
 	}
@@ -213,8 +200,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 		_ = session.Rollback()
 		return fmt.Errorf("delete %s for owner_user_id %d, collection_id %d: %w", collectionRelationsTable, userID, collectionID, err)
 	}
-	// primary collections can't be deleted
-	affected, err := session.Table(collectionsTable).Where("is_primary = ?", false).Delete(&CollectionRecord{
+	affected, err := session.Table(collectionsTable).Delete(&CollectionRecord{
 		CollectionID: collectionID,
 		OwnerUserID:  userID,
 	})

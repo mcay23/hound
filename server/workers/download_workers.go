@@ -605,6 +605,13 @@ func resolveSourceURI(task *database.IngestTask) error {
 		EpisodeNumber:   episodeNumber,
 		EpisodeSourceID: episodeSourceID,
 	}
+	// we assume provider id 0 is invalid, under normal postgres increment should start at 1
+	if task.DownloadPreferences != nil && task.DownloadPreferences.ProviderProfileID > 0 {
+		temp := int(task.DownloadPreferences.ProviderProfileID)
+		query.ProviderProfileID = &temp
+	} else {
+		query.RequestType = providers.ProviderRequestDownload
+	}
 	if record.RecordType == database.RecordTypeEpisode {
 		query.MediaType = database.MediaTypeTVShow
 	}
@@ -612,7 +619,6 @@ func resolveSourceURI(task *database.IngestTask) error {
 	if err != nil {
 		return err
 	}
-
 	var bestStream *providers.StreamObject
 
 	if task.DownloadPreferences != nil && len(task.DownloadPreferences.PreferenceList) > 0 {

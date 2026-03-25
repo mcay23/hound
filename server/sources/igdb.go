@@ -305,7 +305,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 	return &game, nil
 }
 
-func AddGameToCollectionIGDB(username string, source string, sourceID int, collectionID *int64) error {
+func AddGameToCollectionIGDB(username string, source string, sourceID int, collectionID int64) error {
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
 		return err

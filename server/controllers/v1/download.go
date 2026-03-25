@@ -150,7 +150,7 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 		}
 		var prefsPtr *database.IngestDownloadPreferences
 		// if prefs exist
-		if len(prefs.PreferenceList) > 0 {
+		if len(prefs.PreferenceList) > 0 || prefs.ProviderProfileID > 0 {
 			prefsPtr = &prefs
 		}
 		// if ignoreDownloaded is true, and file already exists, AlreadyExists error is returned

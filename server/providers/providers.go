@@ -21,6 +21,7 @@ type ProvidersQueryRequest struct {
 	EpisodeNumber     *int     `json:"episode_number,omitempty"`
 	EpisodeSourceID   *string  `json:"episode_source_id,omitempty"`
 	EpisodeGroupID    string   `json:"episode_group_id,omitempty"`
+	RequestType       string   `json:"request_type"`           // stream vs. downloaded, used to decide which provider profile to use if not supplied
 	Query             string   `json:"search_query,omitempty"` // not used for now
 	Params            []string `json:"params"`
 }
@@ -68,11 +69,20 @@ type ProviderResponseObject struct {
 	Providers []*ProviderObject `json:"providers"`
 }
 
+const (
+	ProviderRequestStream   = "request_stream"
+	ProviderRequestDownload = "request_download"
+)
+
 const providersCacheTTL = time.Hour * 2
 
 func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
 	// automatically select provider if none supplied
+	// using the given requestType based on provider defaults
 	if query.ProviderProfileID == nil {
+		if query.RequestType == "" {
+			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", helpers.BadRequestError)
+		}
 		providers, err := database.GetProviderProfiles()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
@@ -80,8 +90,21 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		if len(providers) == 0 {
 			return nil, fmt.Errorf("no providers profiles found: %w", helpers.NotFoundError)
 		}
-		temp := int(providers[0].ProviderProfileID)
-		query.ProviderProfileID = &temp
+		for _, p := range providers {
+			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
+				temp := int(p.ProviderProfileID)
+				query.ProviderProfileID = &temp
+				break
+			} else if p.IsDefaultStreaming && query.RequestType == ProviderRequestStream {
+				temp := int(p.ProviderProfileID)
+				query.ProviderProfileID = &temp
+				break
+			}
+		}
+		if query.ProviderProfileID == nil {
+			return nil, fmt.Errorf("no provider profile found for request type (should not happen, create issue on github): %s: %w",
+				query.RequestType, helpers.NotFoundError)
+		}
 	}
 	providersCacheKey := fmt.Sprintf("providers|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {

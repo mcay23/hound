@@ -104,8 +104,9 @@ This is mostly to help downloading seasons, so we can more consistently download
 episodes from the same torrent based on string matching or infohash matching
 */
 type IngestDownloadPreferences struct {
-	StrictMatch    bool                 `json:"strict_match"` // whether if no match is found, to fail the download
-	PreferenceList []DownloadPreference `json:"preference_list"`
+	StrictMatch       bool                 `json:"strict_match"` // whether if no match is found, to fail the download
+	PreferenceList    []DownloadPreference `json:"preference_list"`
+	ProviderProfileID int64                `json:"provider_profile_id"`
 }
 
 type DownloadPreference struct {

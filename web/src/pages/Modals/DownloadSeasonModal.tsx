@@ -31,6 +31,7 @@ import SelectStreamModal from "./StreamSelectModal";
 function DownloadSeasonModal(props: any) {
   const { onClose, open, mediaSource, sourceID, seasonData } = props;
   const [mainStream, setMainStream] = useState<any>(undefined);
+  const [providerID, setProviderID] = useState<number | undefined>(undefined);
   // form states
   const [strictMatch, setStrictMatch] = useState<boolean>(false);
   const [skipDownloaded, setSkipDownloaded] = useState<boolean>(true);
@@ -79,6 +80,7 @@ function DownloadSeasonModal(props: any) {
     setCaseSensitive(false);
     setSkipDownloaded(true);
     setStrictMatch(false);
+    setProviderID(undefined);
     if (seasonData.season_number >= 0) {
       if (seasonData.episodes.length <= 0) {
         toast.error("No episodes found for this season!");
@@ -105,6 +107,7 @@ function DownloadSeasonModal(props: any) {
         episodesToDownload: episodesToDownload,
         strictMatch: strictMatch,
         skipDownloadedEpisodes: skipDownloaded,
+        providerProfileID: providerID,
         preferenceList: preferenceList,
       }),
       {
@@ -245,6 +248,7 @@ function DownloadSeasonModal(props: any) {
         open={open && isSelectStreamModalOpen}
         setOpen={setIsSelectStreamModalOpen}
         setMainStream={setMainStream}
+        setProviderID={setProviderID}
         fetchParams={{
           mediaType: "tv",
           mediaSource: mediaSource,

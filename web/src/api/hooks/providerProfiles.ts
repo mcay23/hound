@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createProviderProfile, deleteProviderProfile, fetchProviderProfiles } from "../services/providerProfiles";
+import { createProviderProfile, deleteProviderProfile, fetchProviderProfiles, updateProviderProfile } from "../services/providerProfiles";
 
 export const useProviderProfiles = () => {
   return useQuery({
@@ -8,7 +8,7 @@ export const useProviderProfiles = () => {
   });
 };
 
-export const useCreateProviderProfile = () => {
+export const useCreateProviderProfileMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (profile: {name: string, manifestURL: string}) => createProviderProfile(profile.name, profile.manifestURL),
@@ -18,7 +18,18 @@ export const useCreateProviderProfile = () => {
   });
 };
 
-export const useDeleteProviderProfile = () => {
+export const useUpdateProviderProfileMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (profile: {id: number, isDefaultStreaming?: boolean, isDefaultDownloading?: boolean}) => 
+      updateProviderProfile(profile.id, profile.isDefaultStreaming, profile.isDefaultDownloading),
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
+    }
+  });
+};
+
+export const useDeleteProviderProfileMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deleteProviderProfile(id),

@@ -76,6 +76,11 @@ func SearchProvidersTVHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to get episode from tmdb: %w", err))
 		return
 	}
+	// slightly hacky, revise if we add more types
+	requestType := c.Query("request_type")
+	if requestType != providers.ProviderRequestDownload {
+		requestType = providers.ProviderRequestStream
+	}
 	sourceEpisodeIDstr := strconv.Itoa(int(episode.ID))
 	query := providers.ProvidersQueryRequest{
 		IMDbID:          imdbID,
@@ -86,6 +91,7 @@ func SearchProvidersTVHandler(c *gin.Context) {
 		EpisodeNumber:   &episodeNumber,
 		EpisodeSourceID: &sourceEpisodeIDstr,
 		EpisodeGroupID:  c.Query("episode_group_id"),
+		RequestType:     requestType,
 	}
 	// if not supplied, will use defaults
 	providerQuery := c.Query("provider_profile_id")
@@ -128,6 +134,11 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to get movie from tmdb: %w", err))
 		return
 	}
+	// slightly hacky, revise if we add more types
+	requestType := c.Query("request_type")
+	if requestType != providers.ProviderRequestDownload {
+		requestType = providers.ProviderRequestStream
+	}
 	query := providers.ProvidersQueryRequest{
 		IMDbID:          movie.IMDbID,
 		MediaType:       database.MediaTypeMovie,
@@ -137,6 +148,7 @@ func SearchProvidersMovieHandler(c *gin.Context) {
 		EpisodeNumber:   nil,
 		EpisodeSourceID: nil,
 		EpisodeGroupID:  "",
+		RequestType:     requestType,
 	}
 	// if not supplied, will use defaults
 	providerQuery := c.Query("provider_profile_id")

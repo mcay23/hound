@@ -241,7 +241,7 @@ func GetTVEpisodeGroupsDetailsTMDB(tmdbEpisodeGroupID string) (*tmdb.TVEpisodeGr
 	return episodeGroupDetails, err
 }
 
-func AddTVShowToCollectionTMDB(username string, source string, sourceID int, collectionID *int64) error {
+func AddTVShowToCollectionTMDB(username string, source string, sourceID int, collectionID int64) error {
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
 		return err
@@ -325,7 +325,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	return movie, nil
 }
 
-func AddMovieToCollectionTMDB(username string, source string, sourceID int, collectionID *int64) error {
+func AddMovieToCollectionTMDB(username string, source string, sourceID int, collectionID int64) error {
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
 		return err

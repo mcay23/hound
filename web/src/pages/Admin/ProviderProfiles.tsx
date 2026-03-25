@@ -1,12 +1,14 @@
 import "./ProviderProfiles.css";
 import {
-  useCreateProviderProfile,
+  useCreateProviderProfileMutation,
   useProviderProfiles,
+  useUpdateProviderProfileMutation,
 } from "../../api/hooks/providerProfiles";
 import {
   Button,
   Card,
   CardContent,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -15,17 +17,17 @@ import {
   Modal,
   TextField,
 } from "@mui/material";
-import { useDeleteProviderProfile } from "../../api/hooks/providerProfiles";
+import { useDeleteProviderProfileMutation } from "../../api/hooks/providerProfiles";
 import toast from "react-hot-toast";
 import { useState } from "react";
 
 export default function ProviderProfiles() {
   const { data: providerProfiles, isLoading: isProviderProfilesLoading } =
     useProviderProfiles();
+  const deleteProviderProfile = useDeleteProviderProfileMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false);
   const [selectedID, setSelectedID] = useState(-1);
-  const deleteProviderProfile = useDeleteProviderProfile();
   return (
     <>
       <div>
@@ -35,7 +37,11 @@ export default function ProviderProfiles() {
           Add a provider to start streaming and downloading. Multiple profiles
           are useful if you want different presets for streaming and downloading
           (eg. prioritize speed/compatibility for streaming, and quality for
-          downloads)
+          downloads).
+        </p>
+        <p className="provider-profile-text">
+          You can also set the global default profile for all users for
+          streaming/downloading.
         </p>
         <p className="provider-profile-text">
           For help setting up a provider, visit the docs.
@@ -118,6 +124,7 @@ function ProviderProfile({
   setSelectedID: (id: number) => void;
   setIsDeleteDialogOpen: (open: boolean) => void;
 }) {
+  const updateProviderProfile = useUpdateProviderProfileMutation();
   return (
     <Card
       variant="outlined"
@@ -127,17 +134,59 @@ function ProviderProfile({
       <CardContent className="provider-profile-card-content">
         <h5>{profile.name}</h5>
         <div className="text-muted">{profile.manifest_url}</div>
-        <Button
-          className="mt-2"
-          variant="outlined"
-          size="small"
-          onClick={() => {
-            setSelectedID(profile.provider_profile_id);
-            setIsDeleteDialogOpen(true);
-          }}
-        >
-          Delete
-        </Button>
+        <div className="d-flex flex-row">
+          <Button
+            className="mt-2"
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setSelectedID(profile.provider_profile_id);
+              setIsDeleteDialogOpen(true);
+            }}
+          >
+            Delete
+          </Button>
+          {!profile.is_default_streaming && (
+            <Button
+              className="ms-2 mt-2"
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                updateProviderProfile.mutate({
+                  id: profile.provider_profile_id,
+                  isDefaultStreaming: true,
+                });
+              }}
+            >
+              Set as Default for Streaming
+            </Button>
+          )}
+          {!profile.is_default_downloading && (
+            <Button
+              className="ms-2 mt-2"
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                updateProviderProfile.mutate({
+                  id: profile.provider_profile_id,
+                  isDefaultDownloading: true,
+                });
+              }}
+            >
+              Set as Default for Downloading
+            </Button>
+          )}
+        </div>
+        {(profile.is_default_streaming || profile.is_default_downloading) && (
+          <div className="d-flex flex-row mt-3">
+            {profile.is_default_streaming && (
+              <Chip className="me-2" label="Default for Streaming" />
+            )}
+            {profile.is_default_downloading && (
+              <Chip className="me-2" label="Default for Downloading" />
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -157,7 +206,7 @@ function AddProviderModal({
 }) {
   const [name, setName] = useState("");
   const [manifestURL, setManifestURL] = useState("");
-  const addProviderProfile = useCreateProviderProfile();
+  const addProviderProfile = useCreateProviderProfileMutation();
   const handleClose = () => {
     setName("");
     setManifestURL("");
