@@ -32,24 +32,24 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
+	clientID, clientPlatform, err := validateClientHeaders(c)
+	if err != nil {
+		helpers.ErrorResponse(c, err)
+		return
+	}
 	userPayload := model.RegistrationUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
 		err := fmt.Errorf("%w: Failed to bind registration body", helpers.BadRequestError)
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	err := model.RegisterNewUser(&userPayload, false)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	clientID, clientPlatform, err := validateClientHeaders(c)
+	newUser, err := model.RegisterNewUser(&userPayload, false)
 	if err != nil {
 		helpers.ErrorResponse(c, err)
 		return
 	}
 	tokenPayload := model.LoginUser{
-		Username: userPayload.Username,
+		Username: newUser.Username,
 		Password: userPayload.Password,
 	}
 	token, role, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)

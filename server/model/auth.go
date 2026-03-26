@@ -26,10 +26,9 @@ var SupportedClientPlatforms = []string{ClientPlatformIOSMobile, ClientPlatformT
 var SupportedClientIDs = []string{ClientIDWeb, ClientIDApp}
 
 type RegistrationUser struct {
-	Username  string `json:"username" binding:"required,gt=0"`
-	FirstName string `json:"first_name" binding:"required,gt=0"`
-	LastName  string `json:"last_name" binding:"required,gt=0"`
-	Password  string `json:"password" binding:"required,gte=8"`
+	Username    string `json:"username" binding:"required,gt=0"`
+	DisplayName string `json:"display_name" binding:"required,gt=0"`
+	Password    string `json:"password" binding:"required,gte=8"`
 }
 
 type LoginUser struct {
@@ -46,34 +45,38 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func RegisterNewUser(user *RegistrationUser, isAdmin bool) error {
+func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("%w: Bcrypt failed to hash password", helpers.InternalServerError)
+		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", helpers.InternalServerError)
 	}
 	insertUser := database.User{
 		Username:       user.Username,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
+		DisplayName:    user.DisplayName,
+		IsAdmin:        isAdmin,
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
 	}
-	userID, err := database.InsertUser(insertUser)
+	_, err = database.InsertUser(insertUser)
 	if err != nil {
-		return fmt.Errorf("%w: Failed to insert user to database", helpers.InternalServerError)
+		return nil, fmt.Errorf("%w: Failed to insert user to database", helpers.InternalServerError)
+	}
+	newUser, err := database.GetUser(user.Username)
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to get user from database", helpers.InternalServerError)
 	}
 	// create 'My Library' collection for user
-	userLibrary := database.CollectionRecord{
-		OwnerUserID:     *userID,
-		CollectionTitle: "My Library",
-		Description:     "Your main collection",
-		IsPublic:        false,
-	}
-	_, err = database.CreateCollection(userLibrary)
-	if err != nil {
-		return err
-	}
-	return nil
+	// userLibrary := database.CollectionRecord{
+	// 	OwnerUserID:     *userID,
+	// 	CollectionTitle: "My Library",
+	// 	Description:     "Your main collection",
+	// 	IsPublic:        false,
+	// }
+	// _, err = database.CreateCollection(userLibrary)
+	// if err != nil {
+	// 	return err
+	// }
+	return newUser, nil
 }
 
 // GenerateAccessToken JWT access token
