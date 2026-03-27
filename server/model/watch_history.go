@@ -2,13 +2,14 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/sources"
 )
 
 const scrobbleCacheTTL = 48 * time.Hour
@@ -30,19 +31,19 @@ type WatchHistoryMoviePayload struct {
 func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watchHistoryPayload WatchHistoryTVShowPayload) (*[]int, *[]int, error) {
 	actionType := strings.ToLower(watchHistoryPayload.ActionType)
 	if actionType != database.ActionWatch && actionType != database.ActionScrobble {
-		return nil, nil, fmt.Errorf("invalid action type %s: %w", actionType, helpers.BadRequestError)
+		return nil, nil, fmt.Errorf("invalid action type %s: %w", actionType, internal.BadRequestError)
 	}
 	watchTime := time.Now().UTC()
 	if watchHistoryPayload.WatchedAt != nil && *watchHistoryPayload.WatchedAt != "" {
 		parsed, err := time.Parse(time.RFC3339, *watchHistoryPayload.WatchedAt)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, helpers.BadRequestError)
+			return nil, nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, internal.BadRequestError)
 		}
 		watchTime = parsed.UTC()
 	}
 	if watchHistoryPayload.EpisodeIDs == nil || len(*watchHistoryPayload.EpisodeIDs) == 0 {
 		if watchHistoryPayload.SeasonNumber == nil || watchHistoryPayload.EpisodeNumber == nil {
-			return nil, nil, fmt.Errorf("invalid episode ids / season episode pair: %w", helpers.BadRequestError)
+			return nil, nil, fmt.Errorf("invalid episode ids / season episode pair: %w", internal.BadRequestError)
 		}
 	}
 	// 1. Upsert show
@@ -81,7 +82,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 		for _, item := range invalidIDs {
 			errorStr += strconv.Itoa(item) + ","
 		}
-		return nil, nil, fmt.Errorf("invalid episode ids found: %s: %w", errorStr, helpers.BadRequestError)
+		return nil, nil, fmt.Errorf("invalid episode ids found: %s: %w", errorStr, internal.BadRequestError)
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("error checking episode ids for tv show %s-%d: %w", mediaSource, showID, err)
@@ -102,7 +103,7 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 			}
 		}
 		if !found {
-			return nil, nil, fmt.Errorf("could not find rewatch id %d for user %d: %w", targetRewatchID, userID, helpers.BadRequestError)
+			return nil, nil, fmt.Errorf("could not find rewatch id %d for user %d: %w", targetRewatchID, userID, internal.BadRequestError)
 		}
 	}
 	// 4. Get most current rewatch or create new rewatch if rewatch payload is empty
@@ -197,13 +198,13 @@ func CreateTVShowWatchHistory(userID int64, mediaSource string, showID int, watc
 func CreateMovieWatchHistory(userID int64, mediaSource string, sourceID int, watchHistoryPayload WatchHistoryMoviePayload) (*int, error) {
 	actionType := strings.ToLower(watchHistoryPayload.ActionType)
 	if actionType != database.ActionWatch && actionType != database.ActionScrobble {
-		return nil, fmt.Errorf("invalid action type %s: %w", actionType, helpers.BadRequestError)
+		return nil, fmt.Errorf("invalid action type %s: %w", actionType, internal.BadRequestError)
 	}
 	watchTime := time.Now().UTC()
 	if watchHistoryPayload.WatchedAt != nil && *watchHistoryPayload.WatchedAt != "" {
 		parsed, err := time.Parse(time.RFC3339, *watchHistoryPayload.WatchedAt)
 		if err != nil {
-			return nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, helpers.BadRequestError)
+			return nil, fmt.Errorf("invalid watched_at timestamp %s, must be RFC3339: %w", *watchHistoryPayload.WatchedAt, internal.BadRequestError)
 		}
 		watchTime = parsed.UTC()
 	}
@@ -267,7 +268,7 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 		return nil, err
 	}
 	if !has {
-		return nil, fmt.Errorf("no media record found for %s %s-%s: %w", recordType, mediaSource, sourceID, helpers.BadRequestError)
+		return nil, fmt.Errorf("no media record found for %s %s-%s: %w", recordType, mediaSource, sourceID, internal.BadRequestError)
 	}
 	// get active rewatch
 	activeRewatch, err := database.GetActiveRewatchFromSourceID(recordType, mediaSource, sourceID, userID)
@@ -281,7 +282,7 @@ func InsertRewatchFromSourceID(recordType string, mediaSource string, sourceID s
 			return nil, err
 		}
 		if len(watchEvents) == 0 {
-			return nil, fmt.Errorf("current active rewatch is empty, can't create new rewatch: %w", helpers.BadRequestError)
+			return nil, fmt.Errorf("current active rewatch is empty, can't create new rewatch: %w", internal.BadRequestError)
 		}
 	}
 	rewatch := database.RewatchRecord{

@@ -2,8 +2,9 @@ package v1
 
 import (
 	"fmt"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,10 +20,10 @@ import (
 func GetTVGenresHandler(c *gin.Context) {
 	genres, err := database.GetGenresByType(database.MediaTypeTVShow)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv genres: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv genres: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, genres, 200)
+	internal.SuccessResponse(c, genres, 200)
 }
 
 // @Router /api/v1/movie/genres [get]
@@ -36,8 +37,8 @@ func GetTVGenresHandler(c *gin.Context) {
 func GetMovieGenresHandler(c *gin.Context) {
 	genres, err := database.GetGenresByType(database.MediaTypeMovie)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get movie genres: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get movie genres: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, genres, 200)
+	internal.SuccessResponse(c, genres, 200)
 }

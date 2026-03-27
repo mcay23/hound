@@ -2,11 +2,12 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 	"xorm.io/xorm"
@@ -184,7 +185,7 @@ func upsertGenresTrx(sess *xorm.Session, mediaSource string, mediaType string, g
 			if err != nil {
 				if !isUniqueViolation(err) {
 					return nil, fmt.Errorf("query %s for media_source %s, media_type %s, source_id %d: %w: %w",
-						genresTable, mediaSource, mediaType, genre.SourceID, helpers.AlreadyExistsError, err)
+						genresTable, mediaSource, mediaType, genre.SourceID, internal.AlreadyExistsError, err)
 				}
 				// concurrent upsert race, refetch
 				has, err = sess.Table(genresTable).

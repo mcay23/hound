@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
@@ -175,7 +176,7 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 		return nil, fmt.Errorf("failed to get tv season details from tmdb for source_id %d, season_number %d: %w", tmdbID, seasonNumber, err)
 	}
 	if season == nil {
-		return nil, fmt.Errorf("failed to get tv season details from tmdb: season is nil: %w", helpers.InternalServerError)
+		return nil, fmt.Errorf("failed to get tv season details from tmdb: season is nil: %w", internal.InternalServerError)
 	}
 	_, _ = database.SetCache(cacheKey, season, getCacheTTL)
 	return season, nil
@@ -410,7 +411,7 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 	case database.MediaTypeMovie:
 		src = tmdbMovieGenreInternalIDs
 	default:
-		return nil, nil, fmt.Errorf("invalid media type for genre mapping: %w", helpers.BadRequestError)
+		return nil, nil, fmt.Errorf("invalid media type for genre mapping: %w", internal.BadRequestError)
 	}
 	ret := make([]int64, 0, len(genres))
 	missing := make([]int64, 0)
@@ -519,7 +520,7 @@ func UpsertMediaRecordTMDB(mediaType string, sourceID int) (*database.MediaRecor
 	case database.MediaTypeTVShow:
 		return UpsertTVShowRecordTMDB(sourceID)
 	default:
-		return nil, fmt.Errorf("invalid media_type %s: %w", mediaType, helpers.BadRequestError)
+		return nil, fmt.Errorf("invalid media_type %s: %w", mediaType, internal.BadRequestError)
 	}
 }
 
@@ -591,7 +592,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	}
 	if !has || record == nil {
 		session.Rollback()
-		return nil, fmt.Errorf("failed to get movie media record after upsert: %w", helpers.InternalServerError)
+		return nil, fmt.Errorf("failed to get movie media record after upsert: %w", internal.InternalServerError)
 	}
 	if affected {
 		internalGenreIDs, missingGenreIDs, err := resolveTMDBGenreInternalIDs(database.MediaTypeMovie, genreArray)
@@ -698,7 +699,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	}
 	if !has {
 		session.Rollback()
-		return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeTVShow, MediaSourceTMDB, showSourceID, helpers.NotFoundError)
+		return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeTVShow, MediaSourceTMDB, showSourceID, internal.NotFoundError)
 	}
 	// hash same, no update/insert
 	if !affected {
@@ -789,11 +790,11 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 		}
 		if !has {
 			session.Rollback()
-			return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeSeason, MediaSourceTMDB, seasonData.ID, helpers.NotFoundError)
+			return nil, fmt.Errorf("no media record found for record_type %s, media_source %s, source_id %d: %w", database.RecordTypeSeason, MediaSourceTMDB, seasonData.ID, internal.NotFoundError)
 		}
 		if seasonRecord == nil || seasonRecord.ParentID == nil {
 			session.Rollback()
-			return nil, fmt.Errorf("season record is nil or has no parent id: %w", helpers.InternalServerError)
+			return nil, fmt.Errorf("season record is nil or has no parent id: %w", internal.InternalServerError)
 		}
 		// upsert all children
 		for _, episode := range seasonData.Episodes {

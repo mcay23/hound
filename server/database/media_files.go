@@ -2,8 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 )
 
 // Hound managed are files managed by hound, in the hound directory
@@ -110,7 +111,7 @@ func DeleteMediaFileRecord(fileID int) error {
 		return err
 	}
 	if affected == 0 {
-		return fmt.Errorf("media file with id %d not found: %w", fileID, helpers.NotFoundError)
+		return fmt.Errorf("media file with id %d not found: %w", fileID, internal.NotFoundError)
 	}
 	return nil
 }

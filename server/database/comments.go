@@ -2,8 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 )
 
 const (
@@ -41,7 +42,7 @@ func instantiateCommentTable() error {
 func AddComment(comment *CommentRecord) error {
 	if comment.CommentType != CommentTypeReview && comment.CommentType != CommentTypeComment &&
 		comment.CommentType != CommentTypeNote {
-		return fmt.Errorf("invalid comment type %s: %w", comment.CommentType, helpers.BadRequestError)
+		return fmt.Errorf("invalid comment type %s: %w", comment.CommentType, internal.BadRequestError)
 	}
 	_, err := databaseEngine.Table(commentsTable).Insert(comment)
 	return err
@@ -74,7 +75,7 @@ func DeleteComment(userID int64, commentID int64) error {
 		return fmt.Errorf("failed to delete commentid %d: %w", commentID, err)
 	}
 	if affected <= 0 {
-		return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, commentID, helpers.NotFoundError)
+		return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, commentID, internal.NotFoundError)
 	}
 	return nil
 }
@@ -91,7 +92,7 @@ func DeleteCommentBatch(userID int64, commentIDs []int64) error {
 		}
 		if affected <= 0 {
 			session.Rollback()
-			return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, item, helpers.NotFoundError)
+			return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, item, internal.NotFoundError)
 		}
 	}
 	err := session.Commit()

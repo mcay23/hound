@@ -2,13 +2,14 @@ package v1
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,56 +39,56 @@ type GetTVEpisodesResponse struct {
 func IngestFileHandler(c *gin.Context) {
 	var body IngestFileRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to bind json: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind json: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	if body.MediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid media source: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid media source: %w", internal.BadRequestError))
 		return
 	}
 	sourceID, err := strconv.Atoi(body.SourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to convert source id to int: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert source id to int: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	record, err := sources.UpsertMediaRecordTMDB(body.MediaType, sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to upsert media record: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to upsert media record: %w", err))
 		return
 	}
 	infoHash := "12345"
 	fileIdx := 1
 	mediaFile, err := model.IngestFile(record, body.SeasonNumber, body.EpisodeNumber, &infoHash, &fileIdx, nil, body.FilePath, model.IngestTransferMove, database.FileOriginHoundManaged)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, IngestFileResponse{MediaFile: mediaFile}, 200)
+	internal.SuccessResponse(c, IngestFileResponse{MediaFile: mediaFile}, 200)
 }
 
 func GetMetadataHandler(c *gin.Context) {
 	uri := c.Query("uri")
 	metadata, err := model.ProbeVideoFromURI(uri)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, GetMetadataResponse{Metadata: metadata}, 200)
+	internal.SuccessResponse(c, GetMetadataResponse{Metadata: metadata}, 200)
 }
 
 func GetTVEpisodesHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	sourceIDstr := strconv.Itoa(sourceID)
 	episodeRecords, err := database.GetEpisodeMediaRecords(mediaSource, sourceIDstr, nil, nil)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get episode media records: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get episode media records: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, GetTVEpisodesResponse{Episodes: episodeRecords}, 200)
+	internal.SuccessResponse(c, GetTVEpisodesResponse{Episodes: episodeRecords}, 200)
 }
 
 // @Router /api/v1/ingest [get]
@@ -117,12 +118,12 @@ func GetIngestTasksHandler(c *gin.Context) {
 	}
 	limitNum, offsetNum, err := getLimitOffset(limit, offset)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	totalRecords, tasks, err := database.FindIngestTasksForStatus(statusSlice, limitNum, offsetNum)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to find ingest tasks for status: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to find ingest tasks for status: %w", err))
 		return
 	}
 	response := view.IngestTaskResponse{
@@ -131,5 +132,5 @@ func GetIngestTasksHandler(c *gin.Context) {
 		Offset:       offsetNum,
 		Tasks:        tasks,
 	}
-	helpers.SuccessResponse(c, response, 200)
+	internal.SuccessResponse(c, response, 200)
 }

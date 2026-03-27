@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
+
+	"github.com/mcay23/hound/internal"
 
 	"github.com/spf13/viper"
 )
@@ -27,7 +28,7 @@ func InitializeConfig() {
 	viper.SetConfigName(configFileName)
 	err := viper.MergeInConfig()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to read .yaml config")
+		_ = internal.LogErrorWithMessage(err, "Failed to read .yaml config")
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 	// hot reload functionality

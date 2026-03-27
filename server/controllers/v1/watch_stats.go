@@ -2,9 +2,10 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +23,7 @@ import (
 func GetWatchStatsHandler(c *gin.Context) {
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w",
+		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w",
 			c.GetHeader("X-Username"), err))
 		return
 	}
@@ -30,8 +31,8 @@ func GetWatchStatsHandler(c *gin.Context) {
 	if c.Query("start_time") != "" {
 		t, err := time.Parse(time.RFC3339, c.Query("start_time"))
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("error parsing start_time %s (must be RFC3999): %w: %w",
-				c.Query("start_time"), helpers.BadRequestError, err))
+			internal.ErrorResponse(c, fmt.Errorf("error parsing start_time %s (must be RFC3999): %w: %w",
+				c.Query("start_time"), internal.BadRequestError, err))
 			return
 		}
 		startTime = &t
@@ -39,16 +40,16 @@ func GetWatchStatsHandler(c *gin.Context) {
 	if c.Query("end_time") != "" {
 		t, err := time.Parse(time.RFC3339, c.Query("end_time"))
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("error parsing end_time %s (must be RFC3999): %w: %w",
-				c.Query("end_time"), helpers.BadRequestError, err))
+			internal.ErrorResponse(c, fmt.Errorf("error parsing end_time %s (must be RFC3999): %w: %w",
+				c.Query("end_time"), internal.BadRequestError, err))
 			return
 		}
 		endTime = &t
 	}
 	stats, err := database.GetWatchStats(userID, startTime, endTime)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting watch stats: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("error getting watch stats: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, stats, 200)
+	internal.SuccessResponse(c, stats, 200)
 }

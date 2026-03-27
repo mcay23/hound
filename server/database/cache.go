@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"path/filepath"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	"github.com/dgraph-io/badger/v4"
 )
@@ -21,7 +22,7 @@ func InitializeCache() {
 	var err error
 	db, err = badger.Open(opts)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error initializing cache")
+		_ = internal.LogErrorWithMessage(err, "Error initializing cache")
 		panic(err)
 	}
 	// 10 minute GC cleanup
@@ -50,7 +51,7 @@ func ClearCache() {
 // returns whether the key exists in bool
 func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	if db == nil {
-		return false, fmt.Errorf("cache not initialized: %w", helpers.InternalServerError)
+		return false, fmt.Errorf("cache not initialized: %w", internal.InternalServerError)
 	}
 	data, err := json.Marshal(value)
 	if err != nil {

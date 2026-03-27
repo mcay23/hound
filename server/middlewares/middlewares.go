@@ -2,20 +2,21 @@ package middlewares
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
 	"strings"
+
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 
 	"github.com/gin-gonic/gin"
 )
 
 func extractBearerToken(header string) (string, error) {
 	if header == "" {
-		return "", fmt.Errorf("no auth token in header: %w", helpers.UnauthorizedError)
+		return "", fmt.Errorf("no auth token in header: %w", internal.UnauthorizedError)
 	}
 	jwtToken := strings.Split(header, " ")
 	if len(jwtToken) != 2 {
-		return "", fmt.Errorf("invalid header token: %w", helpers.UnauthorizedError)
+		return "", fmt.Errorf("invalid header token: %w", internal.UnauthorizedError)
 	}
 	return jwtToken[1], nil
 }
@@ -26,13 +27,13 @@ func JWTMiddleware(c *gin.Context) {
 		// _ = helpers.LogErrorWithMessage(err, "Cookie not found, checking auth header")
 		jwtToken, err = extractBearerToken(c.GetHeader("Authorization"))
 		if err != nil {
-			helpers.ErrorResponse(c, err)
+			internal.ErrorResponse(c, err)
 			return
 		}
 	}
 	claims, err := model.ParseAccessToken(jwtToken)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// set headers from auth token, overwrite current headers
@@ -51,7 +52,7 @@ func JWTMiddleware(c *gin.Context) {
 func AdminMiddleware(c *gin.Context) {
 	role := c.GetString("role")
 	if role != "admin" {
-		helpers.ErrorResponse(c, fmt.Errorf("admin role required: %w", helpers.UnauthorizedError))
+		internal.ErrorResponse(c, fmt.Errorf("admin role required: %w", internal.UnauthorizedError))
 		return
 	}
 	c.Next()

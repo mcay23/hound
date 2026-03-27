@@ -2,7 +2,8 @@ package providers
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
+
+	"github.com/mcay23/hound/internal"
 )
 
 // This maps tmdb source ids to tmdb episode groups that
@@ -35,7 +36,7 @@ func init() {
 
 func GetEpisodeGroupMapping(mediaSource string, sourceID string) (string, error) {
 	if episodeGroupMapping == nil {
-		return "", fmt.Errorf("episode group mapping not initialized: %w", helpers.InternalServerError)
+		return "", fmt.Errorf("episode group mapping not initialized: %w", internal.InternalServerError)
 	}
 	id := fmt.Sprintf("%s-%s", mediaSource, sourceID)
 	if entry, ok := episodeGroupMapping[id]; ok {

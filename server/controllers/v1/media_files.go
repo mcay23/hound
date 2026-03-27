@@ -2,13 +2,14 @@ package v1
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/providers"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,12 +27,12 @@ import (
 func GetMovieMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	streamObjects, err := providers.GetLocalStreamsForMovie(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
 	}
 	res := &providers.ProviderResponseObject{
@@ -47,7 +48,7 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 			},
 		},
 	}
-	helpers.SuccessResponse(c, res, 200)
+	internal.SuccessResponse(c, res, 200)
 }
 
 // @Router /api/v1/tv/{id}/media_files [get]
@@ -64,14 +65,14 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 func GetTVShowMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	var seasonNumber *int
 	if c.Query("season") != "" {
 		s, err := strconv.Atoi(c.Query("season"))
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("failed to get season param: %w: %w", helpers.BadRequestError, err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get season param: %w: %w", internal.BadRequestError, err))
 			return
 		}
 		seasonNumber = &s
@@ -80,14 +81,14 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 	if c.Query("episode") != "" {
 		e, err := strconv.Atoi(c.Query("episode"))
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("failed to get episode param: %w: %w", helpers.BadRequestError, err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get episode param: %w: %w", internal.BadRequestError, err))
 			return
 		}
 		episodeNumber = &e
 	}
 	streamObjects, err := providers.GetLocalStreamsForTVShow(sourceID, seasonNumber, episodeNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
 	}
 	// in regular flows, should be a cached call
@@ -115,7 +116,7 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 			},
 		},
 	}
-	helpers.SuccessResponse(c, res, 200)
+	internal.SuccessResponse(c, res, 200)
 }
 
 // @Router /api/v1/media_files [get]
@@ -139,12 +140,12 @@ func GetMediaFilesHandler(c *gin.Context) {
 	}
 	limitNum, offsetNum, err := getLimitOffset(limit, offset)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	totalRecords, files, err := database.GetMediaFiles(&limitNum, &offsetNum)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get media files: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get media files: %w", err))
 		return
 	}
 	res := &view.MediaFilesResponse{
@@ -153,7 +154,7 @@ func GetMediaFilesHandler(c *gin.Context) {
 		Limit:        limitNum,
 		Offset:       offsetNum,
 	}
-	helpers.SuccessResponse(c, res, 200)
+	internal.SuccessResponse(c, res, 200)
 }
 
 // @Router /api/v1/media_files/{id} [delete]
@@ -168,18 +169,18 @@ func GetMediaFilesHandler(c *gin.Context) {
 func DeleteMediaFileHandler(c *gin.Context) {
 	mediaFileID := c.Param("id")
 	if mediaFileID == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w", internal.BadRequestError))
 		return
 	}
 	fileID, err := strconv.Atoi(mediaFileID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	err = model.DeleteMediaFile(fileID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to delete media file: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to delete media file: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, nil, 200)
+	internal.SuccessResponse(c, nil, 200)
 }

@@ -1,14 +1,15 @@
 package workers
 
 import (
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 )
 
 func InitializeWorkers() {
@@ -37,7 +38,7 @@ func cleanUpDownloads() {
 			if folder.IsDir() {
 				infoHash := folder.Name()
 				// check if still being ingested
-				magnetURI := helpers.GetMagnetURI(infoHash, nil)
+				magnetURI := internal.GetMagnetURI(infoHash, nil)
 				task, err := database.GetIngestTask(database.IngestTask{SourceURI: &magnetURI})
 				if err != nil {
 					slog.Error("Failed to get ingest task", "infohash", infoHash, "error", err)

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	"github.com/lib/pq"
 	"xorm.io/xorm"
@@ -124,7 +125,7 @@ func UpsertMediaRecord(mediaRecord *MediaRecord) error {
 			}
 			if !has {
 				return fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (unexpected concurrent insert race - please raise issue in github): %w: %w",
-					mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err, helpers.NotFoundError)
+					mediaRecordsTable, mediaRecord.RecordType, mediaRecord.MediaSource, mediaRecord.SourceID, err, internal.NotFoundError)
 			}
 			recordID = existingRecord.RecordID
 			if existingRecord.ContentHash != mediaRecord.ContentHash {
@@ -170,7 +171,7 @@ func UpsertMediaRecordsTrx(sess *xorm.Session, record *MediaRecord) (bool, error
 			}
 			if !has {
 				return false, fmt.Errorf("query %s for record_type %s, media_source %s, source_id %s (unexpected concurrent insert race - please raise issue in github): %w: %w",
-					mediaRecordsTable, record.RecordType, record.MediaSource, record.SourceID, err, helpers.NotFoundError)
+					mediaRecordsTable, record.RecordType, record.MediaSource, record.SourceID, err, internal.NotFoundError)
 			}
 		} else {
 			return true, nil
@@ -400,7 +401,7 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 	}
 	if len(episodes) <= 0 {
 		return nil, nil, fmt.Errorf("query %s for media_source %s, ancestor_id %s (failed to find episodes): %w", mediaRecordsTable,
-			mediaSource, showSourceID, helpers.NotFoundError)
+			mediaSource, showSourceID, internal.NotFoundError)
 	}
 	// Build index of episode IDs
 	episodesMap := make(map[string]string, len(episodes))
@@ -420,7 +421,7 @@ func CheckShowEpisodesIDs(mediaSource string, showSourceID string, episodeIDs []
 			invalidIDStr += strconv.Itoa(int(item)) + ","
 		}
 		return nil, invalidIDs, fmt.Errorf("query %s for media_source %s, ancestor_id %s (invalid episode IDs found %s): %w", mediaRecordsTable,
-			mediaSource, showSourceID, invalidIDStr, helpers.BadRequestError)
+			mediaSource, showSourceID, invalidIDStr, internal.BadRequestError)
 	}
 	return episodesMap, nil, nil
 }
@@ -473,18 +474,18 @@ func GetEpisodeMediaRecords(mediaSource string, showSourceID string, seasonNumbe
 func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 	seasonNumber *int, episodeNumber *int) (*MediaRecord, error) {
 	if seasonNumber == nil || episodeNumber == nil {
-		return nil, fmt.Errorf("season number or episode number is nil: %w", helpers.BadRequestError)
+		return nil, fmt.Errorf("season number or episode number is nil: %w", internal.BadRequestError)
 	}
 	episodes, err := GetEpisodeMediaRecords(mediaSource, showSourceID, seasonNumber, episodeNumber)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get episode media records: %w: %w", helpers.InternalServerError, err)
+		return nil, fmt.Errorf("failed to get episode media records: %w: %w", internal.InternalServerError, err)
 	}
 	if len(episodes) > 0 {
 		return &episodes[0], nil
 	}
 	// fails without logging, since some optimizations grab this without knowing if it exists yet
 	return nil, fmt.Errorf("query %s for media_source %s, ancestor_id %s, season_number %d, episode_number %d: %w", mediaRecordsTable,
-		mediaSource, showSourceID, seasonNumber, episodeNumber, helpers.NotFoundError)
+		mediaSource, showSourceID, seasonNumber, episodeNumber, internal.NotFoundError)
 }
 
 // This returns the movie/show-level record, not the episodes

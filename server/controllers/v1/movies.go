@@ -2,13 +2,14 @@ package v1
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
-	"strings"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 	"github.com/gin-gonic/gin"
@@ -27,10 +28,10 @@ func SearchMoviesHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := model.SearchMovies(queryString)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to search for movies: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to search for movies: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	internal.SuccessResponse(c, results, 200)
 }
 
 // @Router /v1/movie/{id} [get]
@@ -45,18 +46,18 @@ func SearchMoviesHandler(c *gin.Context) {
 func GetMovieFromIDHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
 	logoURI := ""
 	if len(movieDetails.Images.Logos) > 0 {
-		logoURI = helpers.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = internal.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	movieObject := view.MediaRecordCatalog{
 		MediaType:        database.RecordTypeMovie,
@@ -73,8 +74,8 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		Status:           movieDetails.Status,
 		Genres:           genreArray,
 		OriginalLanguage: movieDetails.OriginalLanguage,
-		ThumbnailURI:     helpers.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
-		BackdropURI:      helpers.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
+		ThumbnailURI:     internal.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
+		BackdropURI:      internal.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
 		LogoURI:          logoURI,
 		OriginCountry:    movieDetails.OriginCountry,
 	}
@@ -87,7 +88,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 			Name:         cast.Name,
 			OriginalName: cast.OriginalName,
 			Character:    &cast.Character,
-			ThumbnailURI: helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			ThumbnailURI: internal.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
 		})
 	}
 	movieObject.Cast = &castArray
@@ -100,11 +101,11 @@ func GetMovieFromIDHandler(c *gin.Context) {
 				CreditID:     crew.CreditID,
 				Name:         crew.Name,
 				OriginalName: crew.OriginalName,
-				ThumbnailURI: helpers.GetTMDBImageURL(crew.ProfilePath, tmdb.W500),
+				ThumbnailURI: internal.GetTMDBImageURL(crew.ProfilePath, tmdb.W500),
 				Job:          "Director",
 			})
 		}
 	}
 	movieObject.Creators = &directorsArray
-	helpers.SuccessResponse(c, movieObject, 200)
+	internal.SuccessResponse(c, movieObject, 200)
 }

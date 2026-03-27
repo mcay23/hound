@@ -2,13 +2,14 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/sources"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,30 +38,30 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 	}
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("error parsing params %s: %w", c.Param("id"), err))
+		internal.ErrorResponse(c, fmt.Errorf("error parsing params %s: %w", c.Param("id"), err))
 		return
 	}
 	watchProgress := &model.WatchProgress{}
 	if err := c.ShouldBindJSON(&watchProgress); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error binding JSON for watch history: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("error binding JSON for watch history: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	if watchProgress.TotalDurationSeconds < 60 {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid param: total duration is < 60 seconds, likely invalid video: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid param: total duration is < 60 seconds, likely invalid video: %w", internal.BadRequestError))
 		return
 	}
 	if watchProgress.CurrentProgressSeconds < 120 {
-		helpers.ErrorResponse(c, fmt.Errorf("less than 2 minutes watched, skipping saving progress: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("less than 2 minutes watched, skipping saving progress: %w", internal.BadRequestError))
 		return
 	}
 	// if progress is > 85% of total duration or less than 5 minutes left, mark as watched
@@ -76,16 +77,16 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			}
 			_, err := model.CreateMovieWatchHistory(userID, mediaSource, sourceID, watchHistoryPayload)
 			if err != nil {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Error creating watch history"))
+				internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Error creating watch history"))
 				return
 			}
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil)
-			helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
+			internal.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
 			return
 		case database.MediaTypeTVShow:
 			if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
-				helpers.ErrorResponse(c, fmt.Errorf("invalid param: nil season_number or episode_number: %w", helpers.BadRequestError))
+				internal.ErrorResponse(c, fmt.Errorf("invalid param: nil season_number or episode_number: %w", internal.BadRequestError))
 				return
 			}
 			watchedAtString := time.Now().Format(time.RFC3339)
@@ -100,13 +101,13 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 			}
 			_, _, err = model.CreateTVShowWatchHistory(userID, mediaSource, sourceID, watchHistoryPayload)
 			if err != nil {
-				helpers.ErrorResponse(c, fmt.Errorf("error creating watch history: %w", err))
+				internal.ErrorResponse(c, fmt.Errorf("error creating watch history: %w", err))
 				return
 			}
 			// delete watch progress
 			_ = model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
 				watchProgress.SeasonNumber, watchProgress.EpisodeNumber, nil)
-			helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
+			internal.SuccessResponse(c, SetPlaybackProgressResponse{Watched: true}, 200)
 			return
 		}
 	}
@@ -115,10 +116,10 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 	// otherwise, continue to set watch progress
 	err = model.SetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), watchProgress)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error setting watch history: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("error setting watch history: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, SetPlaybackProgressResponse{Watched: false}, 200)
+	internal.SuccessResponse(c, SetPlaybackProgressResponse{Watched: false}, 200)
 }
 
 // @Router /v1/movie/{id}/playback [get]
@@ -141,44 +142,44 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 	}
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	if mediaType == database.MediaTypeMovie {
 		watchProgress, err := model.GetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil)
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("error getting watch history: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("error getting watch history: %w", err))
 			return
 		}
 		if len(watchProgress) == 0 {
-			helpers.SuccessResponse(c, nil, 200)
+			internal.SuccessResponse(c, nil, 200)
 			return
 		}
-		helpers.SuccessResponse(c, watchProgress[0], 200)
+		internal.SuccessResponse(c, watchProgress[0], 200)
 		return
 	}
 	// tv show case
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error parsing season number %s: %w", c.Param("seasonNumber"), err))
+		internal.ErrorResponse(c, fmt.Errorf("error parsing season number %s: %w", c.Param("seasonNumber"), err))
 		return
 	}
 	watchProgress, err := model.GetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), &seasonNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting watch history: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("error getting watch history: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, watchProgress, 200)
+	internal.SuccessResponse(c, watchProgress, 200)
 }
 
 type DeletePlaybackProgressPayload struct {
@@ -206,37 +207,37 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 	}
 	username := c.GetHeader("X-Username")
 	if username == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
 		return
 	}
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	if mediaType == database.MediaTypeMovie {
 		if err := model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), nil, nil, nil); err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("error deleting watch history: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("error deleting watch history: %w", err))
 			return
 		}
-		helpers.SuccessResponse(c, nil, 200)
+		internal.SuccessResponse(c, nil, 200)
 		return
 	}
 	// tv show case
 	var payload DeletePlaybackProgressPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error binding body for watch history: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("error binding body for watch history: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	if err := model.DeleteWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID),
 		payload.SeasonNumber, payload.EpisodeNumber, nil); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error deleting watch history: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("error deleting watch history: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, nil, 200)
+	internal.SuccessResponse(c, nil, 200)
 }

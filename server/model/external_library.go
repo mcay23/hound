@@ -2,10 +2,6 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/loggers"
-	"github.com/mcay23/hound/sources"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,6 +10,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/sources"
 )
 
 var (
@@ -49,7 +50,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		return nil, nil, err
 	}
 	if stat.IsDir() || !IsVideoFile(cleanPath) {
-		return nil, nil, fmt.Errorf("not a video file: %w", helpers.BadRequestError)
+		return nil, nil, fmt.Errorf("not a video file: %w", internal.BadRequestError)
 	}
 	parsed, err := parseExternalMediaPath(cleanRoot, cleanPath, mediaType)
 	if err != nil {
@@ -62,7 +63,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		if parsed.SourceID != "" {
 			sourceID, err = strconv.Atoi(parsed.SourceID)
 			if err != nil || sourceID <= 0 {
-				return nil, parsed, fmt.Errorf("invalid tmdb id in movie folder name tmdb-%s: %w", parsed.SourceID, helpers.BadRequestError)
+				return nil, parsed, fmt.Errorf("invalid tmdb id in movie folder name tmdb-%s: %w", parsed.SourceID, internal.BadRequestError)
 			}
 		} else {
 			sourceID, err = findBestMovieTMDBID(parsed.Title, parsed.Year)
@@ -97,7 +98,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 		if parsed.SourceID != "" {
 			sourceID, err = strconv.Atoi(parsed.SourceID)
 			if err != nil || sourceID <= 0 {
-				return nil, parsed, fmt.Errorf("invalid tmdb id in tv show folder name tmdb-%s: %w", parsed.SourceID, helpers.BadRequestError)
+				return nil, parsed, fmt.Errorf("invalid tmdb id in tv show folder name tmdb-%s: %w", parsed.SourceID, internal.BadRequestError)
 			}
 		} else {
 			sourceID, err = findBestTVTMDBID(parsed.Title, parsed.Year)
@@ -150,7 +151,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 			sourceID, "title", logTitle, "release_date", logReleaseDate, "season",
 			epRecord.SeasonNumber, "episode", epRecord.EpisodeNumber)
 	default:
-		return nil, parsed, fmt.Errorf("unsupported media type, only movie or tvshow is supported: %s: %w", parsed.MediaType, helpers.BadRequestError)
+		return nil, parsed, fmt.Errorf("unsupported media type, only movie or tvshow is supported: %s: %w", parsed.MediaType, internal.BadRequestError)
 	}
 	tasks, err := database.FindIngestTasks(database.IngestTask{
 		RecordID:         ingestRecordID,
@@ -162,7 +163,7 @@ func QueueExternalLibraryFile(rootPath string, filePath string, mediaType string
 	}
 	for _, task := range tasks {
 		if !slices.Contains(database.IngestTerminalStatuses, task.Status) {
-			return nil, parsed, fmt.Errorf("ingest task already queued: %w", helpers.AlreadyExistsError)
+			return nil, parsed, fmt.Errorf("ingest task already queued: %w", internal.AlreadyExistsError)
 		}
 	}
 
@@ -196,7 +197,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 	}
 	rel = filepath.Clean(rel)
 	if strings.HasPrefix(rel, "..") {
-		return nil, fmt.Errorf("file is outside external library root: %w", helpers.BadRequestError)
+		return nil, fmt.Errorf("file is outside external library root: %w", internal.BadRequestError)
 	}
 	parts := splitPath(rel)
 	filename := filepath.Base(filePath)
@@ -221,7 +222,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 		}, nil
 	case database.MediaTypeTVShow:
 		if len(parts) < 1 {
-			return nil, fmt.Errorf("unsupported tv show path structure: %s: %w", rel, helpers.BadRequestError)
+			return nil, fmt.Errorf("unsupported tv show path structure: %s: %w", rel, internal.BadRequestError)
 		}
 		showDir := parts[0]
 		sourceID := extractTMDBID(showDir)
@@ -234,10 +235,10 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 			season = extractSeasonFromParts(parts)
 		}
 		if season == nil {
-			return nil, fmt.Errorf("no season number found in path: %s: %w", rel, helpers.BadRequestError)
+			return nil, fmt.Errorf("no season number found in path: %s: %w", rel, internal.BadRequestError)
 		}
 		if episode == nil {
-			return nil, fmt.Errorf("no episode number found in filename: %s: %w", filename, helpers.BadRequestError)
+			return nil, fmt.Errorf("no episode number found in filename: %s: %w", filename, internal.BadRequestError)
 		}
 		return &ParsedExternalMedia{
 			MediaType:     database.MediaTypeTVShow,
@@ -248,7 +249,7 @@ func parseExternalMediaPath(rootPath string, filePath string, mediaType string) 
 			EpisodeNumber: episode,
 		}, nil
 	default:
-		return nil, fmt.Errorf("invalid media type hint, must be movie or tvshow: %s: %w", mediaType, helpers.BadRequestError)
+		return nil, fmt.Errorf("invalid media type hint, must be movie or tvshow: %s: %w", mediaType, internal.BadRequestError)
 	}
 }
 
@@ -382,7 +383,7 @@ func findBestTVTMDBID(title string, year int) (int, error) {
 		}
 	}
 	if bestID <= 0 {
-		return -1, fmt.Errorf("no good tmdb match for tv show: %s: %w", title, helpers.NotFoundError)
+		return -1, fmt.Errorf("no good tmdb match for tv show: %s: %w", title, internal.NotFoundError)
 	}
 	_, _ = database.SetCache(cacheKey, bestID, externalTMDBMatchCacheTTL)
 	return bestID, nil

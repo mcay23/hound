@@ -2,12 +2,13 @@ package workers
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/loggers"
-	"github.com/mcay23/hound/model"
 	"log/slog"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
 
 	"github.com/anacrolix/torrent/metainfo"
 )
@@ -52,7 +53,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	// Fetch mediaRecord
 	mediaRecord, err := database.GetMediaRecordByID(task.RecordID)
 	if err != nil || mediaRecord == nil {
-		err = helpers.LogErrorWithMessage(err, "failed to get media record or not found")
+		err = internal.LogErrorWithMessage(err, "failed to get media record or not found")
 		failTask(task, err)
 		return
 	}
@@ -117,7 +118,7 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 			item.LastIngestTaskID = &task.IngestTaskID
 			err = database.UpsertExternalLibraryItem(item)
 			if err != nil {
-				helpers.LogErrorWithMessage(err, "Failed to upsert external library item")
+				internal.LogErrorWithMessage(err, "Failed to upsert external library item")
 			}
 		}
 	}

@@ -2,12 +2,13 @@ package v1
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"time"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 	"github.com/gin-gonic/gin"
@@ -34,7 +35,7 @@ func GeneralSearchHandler(c *gin.Context) {
 	// search igdb
 	//gameResults, _ := sources.SearchGameIGDB(queryString)
 
-	helpers.SuccessResponse(c, view.GeneralSearchResponse{
+	internal.SuccessResponse(c, view.GeneralSearchResponse{
 		TVShowSearchResults: tvResults,
 		MovieSearchResults:  movieResults,
 		GameSearchResults:   nil,
@@ -54,17 +55,17 @@ func GetMediaBackdrops(c *gin.Context) {
 	var backdropCache string
 	cacheExists, _ := database.GetCache(backdropCacheKey, &backdropCache)
 	if cacheExists {
-		helpers.SuccessResponse(c, backdropCache, 200)
+		internal.SuccessResponse(c, backdropCache, 200)
 		return
 	}
 	shows, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get trending tv shows: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get trending tv shows: %w", err))
 		return
 	}
 	movies, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get trending movies: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get trending movies: %w", err))
 		return
 	}
 	candidateURL := ""
@@ -74,14 +75,14 @@ func GetMediaBackdrops(c *gin.Context) {
 		for _, item := range concat {
 			if item.Popularity > popularity {
 				popularity = item.Popularity
-				candidateURL = helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original)
+				candidateURL = internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original)
 			}
 		}
 	}
 	if candidateURL == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get backdrop: %w", helpers.InternalServerError))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get backdrop: %w", internal.InternalServerError))
 		return
 	}
 	_, _ = database.SetCache(backdropCacheKey, candidateURL, time.Hour*24)
-	helpers.SuccessResponse(c, candidateURL, 200)
+	internal.SuccessResponse(c, candidateURL, 200)
 }

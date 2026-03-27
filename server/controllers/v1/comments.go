@@ -3,12 +3,13 @@ package v1
 import (
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/sources"
-	"github.com/mcay23/hound/view"
 	"strconv"
 	"strings"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,7 +54,7 @@ func GetCommentsMovieHandler(c *gin.Context) {
 func handleGetComments(c *gin.Context, recordType string) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	var seasonNumber, episodeNumber int
@@ -66,39 +67,39 @@ func handleGetComments(c *gin.Context, recordType string) {
 	}
 	commentType := c.Query("type")
 	if commentType == "" {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid type param: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid type param: %w", internal.BadRequestError))
 		return
 	}
 	var record *database.MediaRecord
 	if recordType == database.RecordTypeEpisode {
 		record, err = database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, strconv.Itoa(sourceID), &seasonNumber, &episodeNumber)
 		if err != nil {
-			if errors.Is(err, helpers.NotFoundError) {
-				helpers.SuccessResponse(c, nil, 200)
+			if errors.Is(err, internal.NotFoundError) {
+				internal.SuccessResponse(c, nil, 200)
 				return
 			}
-			helpers.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
 			return
 		}
 	} else {
 		var has bool
 		has, record, err = database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(sourceID))
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
 			return
 		}
 		if !has {
-			helpers.SuccessResponse(c, nil, 200)
+			internal.SuccessResponse(c, nil, 200)
 			return
 		}
 	}
 	if record == nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", helpers.InternalServerError))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", internal.InternalServerError))
 		return
 	}
 	comments, err := database.GetComments(record.RecordID, &commentType)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("error retrieving comments: %w", helpers.InternalServerError))
+		internal.ErrorResponse(c, fmt.Errorf("error retrieving comments: %w", internal.InternalServerError))
 		return
 	}
 	var commentsView []view.CommentObject
@@ -121,7 +122,7 @@ func handleGetComments(c *gin.Context, recordType string) {
 		}
 		commentsView = append(commentsView, comment)
 	}
-	helpers.SuccessResponse(c, commentsView, 200)
+	internal.SuccessResponse(c, commentsView, 200)
 }
 
 // @Router /api/v1/tv/{id}/comments [post]
@@ -156,35 +157,35 @@ func handlePostComment(c *gin.Context, recordType string) {
 	var body CommentRequest
 	err := c.ShouldBindJSON(&body)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	if body.CommentType == database.CommentTypeReview && (body.Score > 100 || body.Score < 0) {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid score %d not (0<=score<=100): %w", body.Score, helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid score %d not (0<=score<=100): %w", body.Score, internal.BadRequestError))
 		return
 	}
 	// get userID
 	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// upsert top level record
 	record, err := sources.UpsertMediaRecordTMDB(recordType, sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to upsert media record: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to upsert media record: %w", err))
 		return
 	}
 	// if season and episode is specified, use episode record
 	if recordType == database.RecordTypeTVShow && body.SeasonNumber != nil && body.EpisodeNumber != nil {
 		record, err = database.GetEpisodeMediaRecord(mediaSource, strconv.Itoa(sourceID), body.SeasonNumber, body.EpisodeNumber)
 		if err != nil {
-			helpers.ErrorResponse(c, fmt.Errorf("failed to get episode media record: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get episode media record: %w", err))
 			return
 		}
 	}
@@ -203,10 +204,10 @@ func handlePostComment(c *gin.Context, recordType string) {
 	}
 	err = database.AddComment(&comment)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to add comment: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to add comment: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
+	internal.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
 }
 
 // @Router /api/v1/comments/{id} [delete]
@@ -222,7 +223,7 @@ func DeleteCommentHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid user"))
+		internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Invalid user"))
 		return
 	}
 	// for batch deletion, split query params /comment?ids=1,2,3
@@ -232,31 +233,31 @@ func DeleteCommentHandler(c *gin.Context) {
 		for _, item := range idSplit {
 			tempID, err := strconv.Atoi(item)
 			if err != nil {
-				helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Batch deletion: Invalid comment id in url query"))
+				internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Batch deletion: Invalid comment id in url query"))
 				return
 			}
 			batchIDs = append(batchIDs, int64(tempID))
 		}
 		err = database.DeleteCommentBatch(userID, batchIDs)
 		if err != nil {
-			helpers.ErrorResponse(c, err)
+			internal.ErrorResponse(c, err)
 			return
 		}
 	} else if c.Param("id") != "" {
 		// single delete case
 		commentID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param"))
+			internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Invalid comment id in url param"))
 			return
 		}
 		err = database.DeleteComment(userID, int64(commentID))
 		if err != nil {
-			helpers.ErrorResponse(c, err)
+			internal.ErrorResponse(c, err)
 			return
 		}
 	} else {
-		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Invalid comment id in url param/query"))
+		internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Invalid comment id in url param/query"))
 		return
 	}
-	helpers.SuccessResponse(c, nil, 200)
+	internal.SuccessResponse(c, nil, 200)
 }

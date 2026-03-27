@@ -2,11 +2,12 @@ package model
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
@@ -18,7 +19,7 @@ func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog,
 	case "trending-movies":
 		return getTrendingMovies(*page)
 	default:
-		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, helpers.BadRequestError)
+		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
 	}
 }
 
@@ -40,8 +41,8 @@ func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
 			Popularity:       item.Popularity,
-			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			ReleaseDate:      item.FirstAirDate,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
@@ -71,8 +72,8 @@ func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
 			Popularity:       item.Popularity,
-			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			ReleaseDate:      item.ReleaseDate,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,

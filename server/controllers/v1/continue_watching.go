@@ -2,12 +2,13 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/sources"
 	"strconv"
 	"strings"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,7 +33,7 @@ func GetNextWatchActionHandler(c *gin.Context) {
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	username := c.GetHeader("X-Username")
@@ -40,11 +41,11 @@ func GetNextWatchActionHandler(c *gin.Context) {
 	// if no watch action, we don't want to return error
 	// but ideally need to check if no watch action vs. internal error
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	watchAction, _ := model.GetNextWatchAction(userID, mediaType, mediaSource, strconv.Itoa(sourceID))
-	helpers.SuccessResponse(c, watchAction, 200)
+	internal.SuccessResponse(c, watchAction, 200)
 }
 
 // @Router /api/v1/continue_watching [get]
@@ -59,13 +60,13 @@ func GetContinueWatchingHandler(c *gin.Context) {
 	username := c.GetHeader("X-Username")
 	userID, err := database.GetUserIDFromUsername(username)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	watchActions, err := model.GetContinueWatching(userID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get continue watching: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get continue watching: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, watchActions, 200)
+	internal.SuccessResponse(c, watchActions, 200)
 }

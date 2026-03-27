@@ -2,12 +2,13 @@ package v1
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 	"github.com/gin-gonic/gin"
@@ -26,10 +27,10 @@ func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
 	results, err := model.SearchTVShows(queryString)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to search tv show for query %s: %w", queryString, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to search tv show for query %s: %w", queryString, err))
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	internal.SuccessResponse(c, results, 200)
 }
 
 // @Router /v1/tv/{id} [get]
@@ -44,12 +45,12 @@ func SearchTVShowHandler(c *gin.Context) {
 func GetTVShowFromIDHandler(c *gin.Context) {
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %d: %w", showID, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %d: %w", showID, err))
 		return
 	}
 	// create top level show
@@ -60,7 +61,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeTVShow, showDetails.Genres)
 	logoURI := ""
 	if len(showDetails.Images.Logos) > 0 {
-		logoURI = helpers.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
+		logoURI = internal.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
 	showObject := view.TVShowCatalogObject{
 		MediaRecordCatalog: view.MediaRecordCatalog{
@@ -72,7 +73,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			VoteCount:        showDetails.VoteCount,
 			VoteAverage:      showDetails.VoteAverage,
 			Popularity:       showDetails.Popularity,
-			ThumbnailURI:     helpers.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+			ThumbnailURI:     internal.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
 			SeasonCount:      &showDetails.NumberOfSeasons,
 			EpisodeCount:     &showDetails.NumberOfEpisodes,
 			LastAirDate:      showDetails.LastAirDate,
@@ -82,7 +83,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			Status:           showDetails.Status,
 			Genres:           genreArray,
 			OriginalLanguage: showDetails.OriginalLanguage,
-			BackdropURI:      helpers.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
+			BackdropURI:      internal.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
 			LogoURI:          logoURI,
 			Overview:         showDetails.Overview,
 			OriginCountry:    showDetails.OriginCountry,
@@ -98,7 +99,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			Name:         cast.Name,
 			OriginalName: cast.OriginalName,
 			Character:    &cast.Character,
-			ThumbnailURI: helpers.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			ThumbnailURI: internal.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
 			Job:          "Cast",
 		})
 		if idx == 20 {
@@ -114,7 +115,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			CreditID:     creator.CreditID,
 			Name:         creator.Name,
 			OriginalName: creator.Name,
-			ThumbnailURI: helpers.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
+			ThumbnailURI: internal.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
 			Job:          "Creator",
 		})
 	}
@@ -130,12 +131,12 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 			MediaTitle:   season.Name,
 			SeasonNumber: &season.SeasonNumber,
 			EpisodeCount: &season.EpisodeCount,
-			ThumbnailURI: helpers.GetTMDBImageURL(season.PosterPath, tmdb.W500),
+			ThumbnailURI: internal.GetTMDBImageURL(season.PosterPath, tmdb.W500),
 			ReleaseDate:  season.AirDate,
 		})
 	}
 	showObject.Seasons = seasonArray
-	helpers.SuccessResponse(c, showObject, 200)
+	internal.SuccessResponse(c, showObject, 200)
 }
 
 // @Router /v1/tv/{id}/season/{seasonNumber} [get]
@@ -151,17 +152,17 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 func GetTVSeasonHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	seasonDetails, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	seasonObject := view.TVSeasonCatalogObject{
@@ -173,7 +174,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 			ReleaseDate:  seasonDetails.AirDate,
 			MediaTitle:   seasonDetails.Name,
 			Overview:     seasonDetails.Overview,
-			ThumbnailURI: helpers.GetTMDBImageURL(seasonDetails.PosterPath, tmdb.W500),
+			ThumbnailURI: internal.GetTMDBImageURL(seasonDetails.PosterPath, tmdb.W500),
 		},
 	}
 	episodesArray := []view.MediaRecordCatalog{}
@@ -188,7 +189,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 			Overview:      item.Overview,
 			Duration:      item.Runtime,
 			ReleaseDate:   item.AirDate,
-			ThumbnailURI:  helpers.GetTMDBImageURL(item.StillPath, tmdb.W500),
+			ThumbnailURI:  internal.GetTMDBImageURL(item.StillPath, tmdb.W500),
 		}
 		guestStarsArr := []view.Credit{}
 		for idx, item := range item.GuestStars {
@@ -198,7 +199,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 				CreditID:     item.CreditID,
 				Name:         item.Name,
 				Character:    &item.Character,
-				ThumbnailURI: helpers.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
+				ThumbnailURI: internal.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
 			})
 			if idx == 20 {
 				break
@@ -208,7 +209,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 		episodesArray = append(episodesArray, epRecord)
 	}
 	seasonObject.Episodes = episodesArray
-	helpers.SuccessResponse(c, seasonObject, 200)
+	internal.SuccessResponse(c, seasonObject, 200)
 }
 
 // @Router /v1/tv/{id}/episode_groups [get]
@@ -223,13 +224,13 @@ func GetTVSeasonHandler(c *gin.Context) {
 func GetTVEpisodeGroupsHandler(c *gin.Context) {
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	episodeGroups, err := sources.GetTVEpisodeGroupsTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %d: %w", sourceID, err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %d: %w", sourceID, err))
 		return
 	}
-	helpers.SuccessResponse(c, episodeGroups.Results, 200)
+	internal.SuccessResponse(c, episodeGroups.Results, 200)
 }

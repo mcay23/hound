@@ -2,11 +2,12 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/providers"
 	"strconv"
 	"strings"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/providers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,10 +28,10 @@ type CreateProviderRequest struct {
 func GetProviderProfilesHandler(c *gin.Context) {
 	providerProfiles, err := database.GetProviderProfiles()
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get provider profiles: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get provider profiles: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, providerProfiles, 200)
+	internal.SuccessResponse(c, providerProfiles, 200)
 }
 
 // @Router /api/v1/provider_profiles [post]
@@ -45,26 +46,26 @@ func GetProviderProfilesHandler(c *gin.Context) {
 func CreateProviderProfileHandler(c *gin.Context) {
 	var body CreateProviderRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
 		return
 	}
 	if !strings.Contains(body.ManifestURL, "http://") && !strings.Contains(body.ManifestURL, "https://") {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid provider manifest url, prepend http:// or https:// : %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid provider manifest url, prepend http:// or https:// : %w", internal.BadRequestError))
 		return
 	}
 	err := providers.PingProviderManifest(body.ManifestURL)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to ping provider manifest: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to ping provider manifest: %w", err))
 		return
 	}
 	// store url without manifest.json
 	provider, err := database.InsertProviderProfile(body.Name,
 		strings.TrimSuffix(body.ManifestURL, "/manifest.json"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to create provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to create provider profile: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, provider, 200)
+	internal.SuccessResponse(c, provider, 200)
 }
 
 type UpdateProviderProfileRequest struct {
@@ -86,24 +87,24 @@ type UpdateProviderProfileRequest struct {
 func UpdateProviderProfileHandler(c *gin.Context) {
 	providerID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	var body UpdateProviderProfileRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind provider profile: %w", err))
 		return
 	}
 	if err := database.UpdateDefaultProviderProfile(providerID, body.IsDefaultStreaming, body.IsDefaultDownloading); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to update provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to update provider profile: %w", err))
 		return
 	}
 	provider, err := database.GetProviderProfile(providerID)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get provider profile: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, provider, 200)
+	internal.SuccessResponse(c, provider, 200)
 }
 
 // @Router /api/v1/provider_profiles/{id} [delete]
@@ -118,12 +119,12 @@ func UpdateProviderProfileHandler(c *gin.Context) {
 func DeleteProviderProfileHandler(c *gin.Context) {
 	providerID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid provider id: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	if err := database.DeleteProviderProfile(providerID); err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to delete provider profile: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to delete provider profile: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, nil, 200)
+	internal.SuccessResponse(c, nil, 200)
 }

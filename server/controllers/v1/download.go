@@ -3,14 +3,15 @@ package v1
 import (
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/providers"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"slices"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/providers"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,23 +38,23 @@ type DownloadResponse struct {
 func DownloadHandler(c *gin.Context) {
 	streamDetails, err := providers.DecodeJsonStreamAES(c.Param("encodedString"))
 	if err != nil || streamDetails == nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to parse encoded string for %s: %w", c.Param("encodedString"), err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to parse encoded string for %s: %w", c.Param("encodedString"), err))
 		return
 	}
 	if streamDetails.StreamProtocol == database.ProtocolFileHTTP {
-		helpers.ErrorResponse(c, fmt.Errorf("this file should already be downloaded: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("this file should already be downloaded: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	if streamDetails.MediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid media source for %s: %w: %w", streamDetails.MediaSource, helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid media source for %s: %w: %w", streamDetails.MediaSource, internal.BadRequestError, err))
 		return
 	}
 	err = model.CreateIngestTaskDownload(streamDetails, nil, false)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to download torrent: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to download torrent: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, DownloadResponse{Status: "started"}, 200)
+	internal.SuccessResponse(c, DownloadResponse{Status: "started"}, 200)
 }
 
 /*
@@ -88,17 +89,17 @@ type TVSeasonDownloadResponse struct {
 func DownloadTVSeasonHandler(c *gin.Context) {
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil || mediaSource != sources.MediaSourceTMDB {
-		helpers.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	var request TVSeasonDownloadRequest
 	if err := c.ShouldBindJSON(&request); err != nil && err.Error() != "EOF" {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid preferences body: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid preferences body: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	skipDownloaded := true
@@ -109,18 +110,18 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 	if len(prefs.PreferenceList) > 0 {
 		for _, pref := range prefs.PreferenceList {
 			if pref.InfoHashPreference == nil && pref.StringMatchPreference == nil {
-				helpers.ErrorResponse(c, fmt.Errorf("invalid preference list in request body: %w: %w", helpers.BadRequestError, err))
+				internal.ErrorResponse(c, fmt.Errorf("invalid preference list in request body: %w: %w", internal.BadRequestError, err))
 				return
 			}
 		}
 	}
 	seasonDetails, err := sources.GetTVSeasonTMDB(showID, seasonNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get tv season details: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv season details: %w", err))
 		return
 	}
 	if request.EpisodesToDownload != nil && len(*request.EpisodesToDownload) == 0 {
-		helpers.ErrorResponse(c, fmt.Errorf("empty episodes_to_download passed, either fill this or omit this field to download all episodes: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("empty episodes_to_download passed, either fill this or omit this field to download all episodes: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	queuedEpisodes := []int{}
@@ -162,7 +163,7 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 				Error:         &errMsg,
 			}
 			skippedEpisodes = append(skippedEpisodes, ep)
-			if errors.Is(err, helpers.AlreadyExistsError) {
+			if errors.Is(err, internal.AlreadyExistsError) {
 				slog.Debug("Failed to queue episode: episode already exists " + strconv.Itoa(ep.EpisodeNumber))
 				continue
 			}
@@ -178,7 +179,7 @@ func DownloadTVSeasonHandler(c *gin.Context) {
 		QueuedEpisodes: queuedEpisodes,
 	}
 	res.SkippedEpisodes = skippedEpisodes
-	helpers.SuccessResponse(c, res, 200)
+	internal.SuccessResponse(c, res, 200)
 }
 
 type CancelIngestTaskResponse struct {
@@ -199,17 +200,17 @@ func CancelIngestTaskHandler(c *gin.Context) {
 	taskIDStr := c.Param("taskID")
 	taskID, err := strconv.Atoi(taskIDStr)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid task_id: %w: %w", helpers.BadRequestError, err))
+		internal.ErrorResponse(c, fmt.Errorf("invalid task_id: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	task, err := database.GetIngestTask(database.IngestTask{IngestTaskID: int64(taskID)})
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get task: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get task: %w", err))
 		return
 	}
 	if task.Status != database.IngestStatusDownloading &&
 		task.Status != database.IngestStatusPendingDownload {
-		helpers.ErrorResponse(c, fmt.Errorf("only tasks that are downloading or pending_download can be canceled: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("only tasks that are downloading or pending_download can be canceled: %w", internal.BadRequestError))
 		return
 	}
 	updatedTask := database.IngestTask{
@@ -218,8 +219,8 @@ func CancelIngestTaskHandler(c *gin.Context) {
 	}
 	_, err = database.UpdateIngestTask(&updatedTask)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to update task: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to update task: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, CancelIngestTaskResponse{IngestTaskID: taskID, Status: "pending_cancel"}, 200)
+	internal.SuccessResponse(c, CancelIngestTaskResponse{IngestTaskID: taskID, Status: "pending_cancel"}, 200)
 }

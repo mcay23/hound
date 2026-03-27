@@ -2,9 +2,10 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,10 +21,10 @@ import (
 func GetUsersHandler(c *gin.Context) {
 	users, err := database.GetUsers()
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, users, 200)
+	internal.SuccessResponse(c, users, 200)
 }
 
 // @Router /api/v1/users/{id} [delete]
@@ -39,20 +40,20 @@ func GetUsersHandler(c *gin.Context) {
 func DeleteUserHandler(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("invalid user id: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid user id: %w", internal.BadRequestError))
 		return
 	}
 	// prevent self-deletion, for now only one admin can exist
 	currentUsername := c.GetHeader("X-Username")
 	currentUserID, err := database.GetUserIDFromUsername(currentUsername)
 	if err == nil && currentUserID == userID {
-		helpers.ErrorResponse(c, fmt.Errorf("cannot delete admin user: %w", helpers.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("cannot delete admin user: %w", internal.BadRequestError))
 		return
 	}
 	err = database.DeleteUser(userID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, "user deleted", 200)
+	internal.SuccessResponse(c, "user deleted", 200)
 }

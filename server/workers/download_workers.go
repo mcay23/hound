@@ -3,12 +3,6 @@ package workers
 import (
 	"context"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/loggers"
-	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/providers"
-	"github.com/mcay23/hound/sources"
 	"io"
 	"log/slog"
 	"mime"
@@ -21,6 +15,13 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/providers"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
@@ -396,7 +397,7 @@ func getHTTPFilename(resp *http.Response, rawURL string) (string, error) {
 		return path.Base(u.Path), nil
 	}
 	// at this point, no clue what the file extension is
-	return "", fmt.Errorf("failed to get filename/extension from http url: %s: %w", rawURL, helpers.BadRequestError)
+	return "", fmt.Errorf("failed to get filename/extension from http url: %s: %w", rawURL, internal.BadRequestError)
 }
 
 func startP2PDownload(workerID int, task *database.IngestTask) {
@@ -572,11 +573,11 @@ func resolveSourceURI(task *database.IngestTask) error {
 	switch record.RecordType {
 	case database.RecordTypeEpisode:
 		if record.AncestorID == nil {
-			return fmt.Errorf("episode record missing ancestorID: %w", helpers.InternalServerError)
+			return fmt.Errorf("episode record missing ancestorID: %w", internal.InternalServerError)
 		}
 		showRecord, err := database.GetMediaRecordByID(*record.AncestorID)
 		if err != nil || showRecord == nil {
-			return fmt.Errorf("episode record missing ancestorID: %w", helpers.InternalServerError)
+			return fmt.Errorf("episode record missing ancestorID: %w", internal.InternalServerError)
 		}
 		showSourceID = showRecord.SourceID
 		sID, _ := strconv.Atoi(showSourceID)
@@ -594,7 +595,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 			imdbID = movie.IMDbID
 		}
 	default:
-		return fmt.Errorf("invalid recordType: %s: %w", record.RecordType, helpers.InternalServerError)
+		return fmt.Errorf("invalid recordType: %s: %w", record.RecordType, internal.InternalServerError)
 	}
 	query := providers.ProvidersQueryRequest{
 		IMDbID:          imdbID,
@@ -675,7 +676,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 StreamFound:
 	if bestStream == nil {
 		if task.DownloadPreferences != nil && task.DownloadPreferences.StrictMatch {
-			return fmt.Errorf("no stream found using strict matching: %w", helpers.NotFoundError)
+			return fmt.Errorf("no stream found using strict matching: %w", internal.NotFoundError)
 		}
 		for _, provider := range response.Providers {
 			if len(provider.Streams) > 0 {
@@ -685,7 +686,7 @@ StreamFound:
 		}
 	}
 	if bestStream == nil {
-		return fmt.Errorf("no stream found (no strict matching): %w", helpers.NotFoundError)
+		return fmt.Errorf("no stream found (no strict matching): %w", internal.NotFoundError)
 	}
 	task.SourceURI = &bestStream.URI
 	task.FileIdx = bestStream.FileIdx

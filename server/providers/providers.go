@@ -2,13 +2,14 @@ package providers
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/sources"
 )
 
 type ProvidersQueryRequest struct {
@@ -81,14 +82,14 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 	// using the given requestType based on provider defaults
 	if query.ProviderProfileID == nil {
 		if query.RequestType == "" {
-			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", helpers.BadRequestError)
+			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", internal.BadRequestError)
 		}
 		providers, err := database.GetProviderProfiles()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
 		}
 		if len(providers) == 0 {
-			return nil, fmt.Errorf("no providers profiles found: %w", helpers.NotFoundError)
+			return nil, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
 		}
 		for _, p := range providers {
 			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
@@ -103,7 +104,7 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		}
 		if query.ProviderProfileID == nil {
 			return nil, fmt.Errorf("no provider profile found for request type (should not happen, create issue on github): %s: %w",
-				query.RequestType, helpers.NotFoundError)
+				query.RequestType, internal.NotFoundError)
 		}
 	}
 	providersCacheKey := fmt.Sprintf("providers|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)

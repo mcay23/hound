@@ -2,8 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 )
 
 type ProviderProfile struct {
@@ -54,7 +55,7 @@ func GetProviderProfile(providerID int) (ProviderProfile, error) {
 		return ProviderProfile{}, fmt.Errorf("query provider %d: %w", providerID, err)
 	}
 	if !has {
-		return ProviderProfile{}, fmt.Errorf("query provider for provider_id %d not found: %w", providerID, helpers.NotFoundError)
+		return ProviderProfile{}, fmt.Errorf("query provider for provider_id %d not found: %w", providerID, internal.NotFoundError)
 	}
 	SetCache(cacheKey, provider, 12*time.Hour)
 	return provider, nil

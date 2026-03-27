@@ -2,15 +2,16 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/providers"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/providers"
+	"github.com/mcay23/hound/sources"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
@@ -118,20 +119,20 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	sourceID string, watchProgress *WatchProgress) error {
 
 	if watchProgress == nil {
-		return fmt.Errorf("invalid param: watchProgress is nil: %w", helpers.BadRequestError)
+		return fmt.Errorf("invalid param: watchProgress is nil: %w", internal.BadRequestError)
 	}
 	if watchProgress.CurrentProgressSeconds > watchProgress.TotalDurationSeconds {
-		return fmt.Errorf("invalid param: current progress is greater than total video duration: %w", helpers.BadRequestError)
+		return fmt.Errorf("invalid param: current progress is greater than total video duration: %w", internal.BadRequestError)
 	}
 	watchProgress.ClientPlatform = strings.ToLower(watchProgress.ClientPlatform)
 	if watchProgress.ClientPlatform != "" && !slices.Contains(SupportedClientPlatforms, watchProgress.ClientPlatform) {
-		return fmt.Errorf("invalid param: X-Client-Platform is invalid: %s: %w", watchProgress.ClientPlatform, helpers.BadRequestError)
+		return fmt.Errorf("invalid param: X-Client-Platform is invalid: %s: %w", watchProgress.ClientPlatform, internal.BadRequestError)
 	}
 	// validate player settings correct
 	if watchProgress.PlayerSettings != nil {
 		watchProgress.PlayerSettings.Player = strings.ToLower(watchProgress.PlayerSettings.Player)
 		if watchProgress.PlayerSettings.Player != "" && !slices.Contains(SupportedPlayers, watchProgress.PlayerSettings.Player) {
-			return fmt.Errorf("invalid param: player %s is not supported: %w", watchProgress.PlayerSettings.Player, helpers.BadRequestError)
+			return fmt.Errorf("invalid param: player %s is not supported: %w", watchProgress.PlayerSettings.Player, internal.BadRequestError)
 		}
 	}
 	if watchProgress.EncodedData != "" {
@@ -141,16 +142,16 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 		}
 		// sanity checks to see if tmdb ids passed in are the same as encoded data's id
 		if data.SourceID != sourceID {
-			return fmt.Errorf("invalid param: source id mismatch between request and encodedData: %w", helpers.BadRequestError)
+			return fmt.Errorf("invalid param: source id mismatch between request and encodedData: %w", internal.BadRequestError)
 		}
 		if data.MediaType == database.MediaTypeTVShow &&
 			data.SeasonNumber != nil && data.EpisodeNumber != nil &&
 			watchProgress.SeasonNumber != nil && watchProgress.EpisodeNumber != nil {
 			if *data.SeasonNumber != *watchProgress.SeasonNumber {
-				return fmt.Errorf("invalid param: season number mismatch between request and encodedData: %w", helpers.BadRequestError)
+				return fmt.Errorf("invalid param: season number mismatch between request and encodedData: %w", internal.BadRequestError)
 			}
 			if *data.EpisodeNumber != *watchProgress.EpisodeNumber {
-				return fmt.Errorf("invalid param: episode number mismatch between request and encodedData: %w", helpers.BadRequestError)
+				return fmt.Errorf("invalid param: episode number mismatch between request and encodedData: %w", internal.BadRequestError)
 			}
 		}
 	}
@@ -161,7 +162,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	// dyamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {
 		if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
-			return fmt.Errorf("invalid param: season/episode number is nil: %w", helpers.BadRequestError)
+			return fmt.Errorf("invalid param: season/episode number is nil: %w", internal.BadRequestError)
 		}
 		showID, err := strconv.Atoi(sourceID)
 		if err != nil {

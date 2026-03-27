@@ -1,11 +1,12 @@
 package model
 
 import (
+	"strconv"
+
 	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
-	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
@@ -27,12 +28,12 @@ func SearchMovies(queryString string) (*[]view.MediaRecordCatalog, error) {
 			MediaTitle:       item.Title,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			ReleaseDate:      item.ReleaseDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
-			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			Overview:         item.Overview,
 		}
 		convertedResults = append(convertedResults, resultObject)
@@ -57,12 +58,12 @@ func SearchTVShows(queryString string) (*[]view.MediaRecordCatalog, error) {
 			OriginalTitle:    item.OriginalName,
 			VoteCount:        item.VoteCount,
 			VoteAverage:      item.VoteAverage,
-			ThumbnailURI:     helpers.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			ReleaseDate:      item.FirstAirDate,
 			Popularity:       item.Popularity,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
-			BackdropURI:      helpers.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			Overview:         item.Overview,
 			OriginCountry:    item.OriginCountry,
 		}

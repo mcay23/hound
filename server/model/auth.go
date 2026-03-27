@@ -2,10 +2,11 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"os"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/viper"
@@ -48,7 +49,7 @@ type JWTClaims struct {
 func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", helpers.InternalServerError)
+		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", internal.InternalServerError)
 	}
 	insertUser := database.User{
 		Username:       user.Username,
@@ -59,11 +60,11 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 	}
 	_, err = database.InsertUser(insertUser)
 	if err != nil {
-		return nil, fmt.Errorf("%w: Failed to insert user to database", helpers.InternalServerError)
+		return nil, fmt.Errorf("%w: Failed to insert user to database", internal.InternalServerError)
 	}
 	newUser, err := database.GetUser(user.Username)
 	if err != nil {
-		return nil, fmt.Errorf("%w: Failed to get user from database", helpers.InternalServerError)
+		return nil, fmt.Errorf("%w: Failed to get user from database", internal.InternalServerError)
 	}
 	// create 'My Library' collection for user
 	// userLibrary := database.CollectionRecord{
@@ -88,7 +89,7 @@ func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string)
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(user.Password))
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", helpers.UnauthorizedError)
+		return "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", internal.UnauthorizedError)
 	}
 	// expiration time in seconds
 	expirationTime := time.Now().
@@ -113,7 +114,7 @@ func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string)
 	// Create the JWT string
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		return "", "", fmt.Errorf("Error signing JWT token: %w", helpers.InternalServerError)
+		return "", "", fmt.Errorf("Error signing JWT token: %w", internal.InternalServerError)
 	}
 	return tokenString, role, nil
 }
@@ -125,10 +126,10 @@ func ParseAccessToken(token string) (*JWTClaims, error) {
 		return jwtKey, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error decoding access token: %w: %w", err, helpers.InternalServerError)
+		return nil, fmt.Errorf("Error decoding access token: %w: %w", err, internal.InternalServerError)
 	}
 	if !tkn.Valid {
-		return nil, fmt.Errorf("Access token invalid or expired: %w: %w", err, helpers.UnauthorizedError)
+		return nil, fmt.Errorf("Access token invalid or expired: %w: %w", err, internal.UnauthorizedError)
 	}
 	return &claims, nil
 }

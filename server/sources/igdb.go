@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 )
 
 const (
@@ -274,7 +275,7 @@ func GetGameFromIDIGDB(igdbID int) (*IGDBGameObject, error) {
 		return nil, err
 	}
 	if len(response) == 0 {
-		return nil, helpers.LogErrorWithMessage(helpers.BadRequestError, "No game found with this igdbID")
+		return nil, internal.LogErrorWithMessage(internal.BadRequestError, "No game found with this igdbID")
 	}
 	game := response[0]
 	// get image urls

@@ -2,13 +2,14 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"mime"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	"github.com/anacrolix/log"
 	"github.com/anacrolix/torrent"
@@ -65,11 +66,11 @@ func InitializeP2P() {
 func AddActiveTorrentStream(infoHash string, fileIdx int) error {
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
-		return fmt.Errorf("error getting torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return fmt.Errorf("error getting torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	session, ok := v.(*TorrentSession)
 	if !ok {
-		return fmt.Errorf("error parsing torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return fmt.Errorf("error parsing torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	session.Mu.Lock()
 	defer session.Mu.Unlock()
@@ -86,18 +87,18 @@ func AddActiveTorrentStream(infoHash string, fileIdx int) error {
 func RemoveActiveTorrentStream(infoHash string, fileIdx int) error {
 	v, ok := activeSessions.Load(infoHash)
 	if !ok {
-		return fmt.Errorf("error getting torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return fmt.Errorf("error getting torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	session, ok := v.(*TorrentSession)
 	if !ok {
-		return fmt.Errorf("error parsing torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return fmt.Errorf("error parsing torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	session.Mu.Lock()
 	defer session.Mu.Unlock()
 	// update last used so it's not removed immediately
 	session.LastUsed = time.Now().Unix()
 	if _, ok := session.ActiveStreams[fileIdx]; !ok || session.ActiveStreams[fileIdx] <= 0 {
-		return fmt.Errorf("trying to remove non-existent p2p stream for %s-%d: %w", infoHash, fileIdx, helpers.BadRequestError)
+		return fmt.Errorf("trying to remove non-existent p2p stream for %s-%d: %w", infoHash, fileIdx, internal.BadRequestError)
 	}
 	session.ActiveStreams[fileIdx]--
 	slog.Info("Active stream closed", "infoHash", infoHash, "fileIdx", fileIdx, "activeStreams", session.ActiveStreams)
@@ -113,7 +114,7 @@ func AddTorrent(infoHashStr string, sources *[]string) error {
 	}
 	var hashCheck metainfo.Hash
 	if err := hashCheck.FromHexString(infoHashStr); err != nil {
-		return fmt.Errorf("invalid infoHash %s: %w", infoHashStr, helpers.BadRequestError)
+		return fmt.Errorf("invalid infoHash %s: %w", infoHashStr, internal.BadRequestError)
 	}
 	// don't return error if already exists
 	if v, exists := activeSessions.Load(infoHashStr); exists {
@@ -127,7 +128,7 @@ func AddTorrent(infoHashStr string, sources *[]string) error {
 		session.Mu.Unlock()
 		return nil
 	}
-	magnetURI := helpers.GetMagnetURI(infoHashStr, sources)
+	magnetURI := internal.GetMagnetURI(infoHashStr, sources)
 	slog.Info("Retrieving Magnet...", "magnet", magnetURI)
 	t, err := torrentClient.AddMagnet(magnetURI)
 	if err != nil {
@@ -137,7 +138,7 @@ func AddTorrent(infoHashStr string, sources *[]string) error {
 	case <-t.GotInfo():
 		slog.Info("Success Retrieving Magnet Info: " + t.InfoHash().HexString())
 	case <-time.After(120 * time.Second):
-		return fmt.Errorf("timeout retrieving magnet %s: %w", magnetURI, helpers.MagnetInfoTimeoutError)
+		return fmt.Errorf("timeout retrieving magnet %s: %w", magnetURI, internal.MagnetInfoTimeoutError)
 	}
 	activeSessions.Store(infoHashStr, &TorrentSession{
 		Torrent:       t,
@@ -152,11 +153,11 @@ func GetTorrentSession(infoHash string) (*TorrentSession, error) {
 	v, ok := activeSessions.Load(infoHash)
 	// expected to fail sometimes
 	if !ok {
-		return nil, fmt.Errorf("error getting torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return nil, fmt.Errorf("error getting torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	session, ok := v.(*TorrentSession)
 	if !ok {
-		return nil, fmt.Errorf("error parsing torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return nil, fmt.Errorf("error parsing torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	return session, nil
 }
@@ -177,12 +178,12 @@ func GetTorrentFile(infoHash string, fileIdx *int, sources *[]string) (*torrent.
 		}
 		v, ok = activeSessions.Load(infoHash)
 		if !ok {
-			return nil, -1, nil, fmt.Errorf("error getting torrent session for %s: %w", infoHash, helpers.BadRequestError)
+			return nil, -1, nil, fmt.Errorf("error getting torrent session for %s: %w", infoHash, internal.BadRequestError)
 		}
 	}
 	session, ok := v.(*TorrentSession)
 	if !ok {
-		return nil, -1, nil, fmt.Errorf("error parsing torrent session for %s: %w", infoHash, helpers.BadRequestError)
+		return nil, -1, nil, fmt.Errorf("error parsing torrent session for %s: %w", infoHash, internal.BadRequestError)
 	}
 	// update last used
 	session.Mu.Lock()
@@ -202,12 +203,12 @@ func GetTorrentFile(infoHash string, fileIdx *int, sources *[]string) (*torrent.
 			}
 		}
 		if largestIdx == -1 {
-			return nil, -1, nil, fmt.Errorf("could not find video file for %s: %w", infoHash, helpers.BadRequestError)
+			return nil, -1, nil, fmt.Errorf("could not find video file for %s: %w", infoHash, internal.BadRequestError)
 		}
 		fileIdx = &largestIdx
 	}
 	if *fileIdx >= len(t.Files()) {
-		return nil, -1, nil, fmt.Errorf("invalid file_idx %d for %s: %w", *fileIdx, infoHash, helpers.BadRequestError)
+		return nil, -1, nil, fmt.Errorf("invalid file_idx %d for %s: %w", *fileIdx, infoHash, internal.BadRequestError)
 	}
 	slog.Info("grabbing p2p file", "file", t.Files()[*fileIdx].DisplayPath())
 	return t.Files()[*fileIdx], *fileIdx, session, nil

@@ -2,21 +2,22 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/sources"
 	"strconv"
 	"strings"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/sources"
 )
 
 func validateMediaParams(mediaType string, mediaSource string) error {
 	validType := mediaType == database.MediaTypeTVShow || mediaType == database.MediaTypeMovie || mediaType == database.MediaTypeGame
 	if !validType {
-		return fmt.Errorf("invalid media type: %w", helpers.BadRequestError)
+		return fmt.Errorf("invalid media type: %w", internal.BadRequestError)
 	}
 	validSource := mediaSource == sources.MediaSourceTMDB || mediaSource == sources.SourceIGDB
 	if !validSource {
-		return fmt.Errorf("invalid media source: %w", helpers.BadRequestError)
+		return fmt.Errorf("invalid media source: %w", internal.BadRequestError)
 	}
 	return nil
 }
@@ -24,12 +25,12 @@ func validateMediaParams(mediaType string, mediaSource string) error {
 func getSourceIDFromParams(tmdbParam string) (string, int, error) {
 	split := strings.Split(tmdbParam, "-")
 	if len(split) != 2 {
-		return "", -1, fmt.Errorf("invalid source id parameters: %w", helpers.BadRequestError)
+		return "", -1, fmt.Errorf("invalid source id parameters: %w", internal.BadRequestError)
 	}
 	id, err := strconv.ParseInt(split[1], 10, 64)
 	// only accept tmdb ids for now
 	if err != nil || split[0] != sources.MediaSourceTMDB && split[0] != sources.SourceIGDB {
-		return "", -1, fmt.Errorf("invalid source id parameters: %w", helpers.BadRequestError)
+		return "", -1, fmt.Errorf("invalid source id parameters: %w", internal.BadRequestError)
 	}
 	return split[0], int(id), nil
 }
@@ -42,14 +43,14 @@ func getLimitOffset(limitQuery, offsetQuery string) (int, int, error) {
 		var err error
 		limit, err = strconv.Atoi(limitQuery)
 		if err != nil {
-			return -1, -1, fmt.Errorf("invalid limit query param: %w", helpers.BadRequestError)
+			return -1, -1, fmt.Errorf("invalid limit query param: %w", internal.BadRequestError)
 		}
 	}
 	if offsetQuery != "" {
 		var err error
 		offset, err = strconv.Atoi(offsetQuery)
 		if err != nil {
-			return -1, -1, fmt.Errorf("invalid offset query param: %w", helpers.BadRequestError)
+			return -1, -1, fmt.Errorf("invalid offset query param: %w", internal.BadRequestError)
 		}
 	}
 	return limit, offset, nil
@@ -57,15 +58,15 @@ func getLimitOffset(limitQuery, offsetQuery string) (int, int, error) {
 
 func getSeasonEpisode(seasonQuery, episodeQuery string) (int, int, error) {
 	if seasonQuery == "" || episodeQuery == "" {
-		return -1, -1, fmt.Errorf("invalid season query param: %w", helpers.BadRequestError)
+		return -1, -1, fmt.Errorf("invalid season query param: %w", internal.BadRequestError)
 	}
 	seasonNumber, err := strconv.Atoi(seasonQuery)
 	if err != nil {
-		return -1, -1, fmt.Errorf("invalid season query param: %w", helpers.BadRequestError)
+		return -1, -1, fmt.Errorf("invalid season query param: %w", internal.BadRequestError)
 	}
 	episodeNumber, err := strconv.Atoi(episodeQuery)
 	if err != nil {
-		return -1, -1, fmt.Errorf("invalid episode query param: %w", helpers.BadRequestError)
+		return -1, -1, fmt.Errorf("invalid episode query param: %w", internal.BadRequestError)
 	}
 	return seasonNumber, episodeNumber, nil
 }

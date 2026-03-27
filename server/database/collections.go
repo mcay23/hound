@@ -3,8 +3,9 @@ package database
 import (
 	"errors"
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	"github.com/lib/pq"
 )
@@ -62,15 +63,15 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	found, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collection)
 	if err != nil {
 		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d: %w: %w", collectionsTable,
-			collectionID, helpers.InternalServerError, err)
+			collectionID, internal.InternalServerError, err)
 	}
 	if !found {
 		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d: %w", collectionsTable,
-			collectionID, helpers.NotFoundError)
+			collectionID, internal.NotFoundError)
 	}
 	if !collection.IsPublic && collection.OwnerUserID != userID {
 		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d, owner_user_id %d does not have access: %w",
-			collectionsTable, collectionID, userID, helpers.ForbiddenError)
+			collectionsTable, collectionID, userID, internal.ForbiddenError)
 	}
 	sess := databaseEngine.Table(mediaRecordsTable)
 	if limit > 0 && offset >= 0 {
@@ -125,12 +126,12 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) 
 		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
 	}
 	if !has {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, helpers.NotFoundError)
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, internal.NotFoundError)
 	}
 	// check if user is authorized to add to collection
 	if collectionRecord.OwnerUserID != userID {
 		return fmt.Errorf("insert %s for collection_id %d, owner_user_id %d: %w",
-			collectionsTable, collectionID, userID, helpers.ForbiddenError)
+			collectionsTable, collectionID, userID, internal.ForbiddenError)
 	}
 	// insert record to db
 	_, err = databaseEngine.Table(collectionRelationsTable).Insert(CollectionRelation{
@@ -144,7 +145,7 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) 
 			// unique key failed
 			if pqErr.Code == "23505" {
 				return fmt.Errorf("insert %s for record_id %d, collection_id %d: %w",
-					collectionRelationsTable, recordID, collectionID, helpers.AlreadyExistsError)
+					collectionRelationsTable, recordID, collectionID, internal.AlreadyExistsError)
 			}
 		}
 	}
@@ -158,12 +159,12 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
 	}
 	if !has {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, helpers.NotFoundError)
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, internal.NotFoundError)
 	}
 	// check if user is owner of this collection
 	if collectionRecord.OwnerUserID != userID {
 		return fmt.Errorf("delete %s for collection_id %d, record_id %d, user_id %d: %w",
-			collectionRelationsTable, collectionID, recordID, userID, helpers.ForbiddenError)
+			collectionRelationsTable, collectionID, recordID, userID, internal.ForbiddenError)
 	}
 	// if user authenticated, remove
 	affected, _ := databaseEngine.Table(collectionRelationsTable).Delete(&CollectionRelation{
@@ -173,14 +174,14 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	})
 	if affected == 0 {
 		return fmt.Errorf("delete %s for userID %d, record_id %d, collection_id %d: %w",
-			collectionRelationsTable, userID, recordID, collectionID, helpers.NotFoundError)
+			collectionRelationsTable, userID, recordID, collectionID, internal.NotFoundError)
 	}
 	return nil
 }
 
 func CreateCollection(record CollectionRecord) (*int64, error) {
 	if record.OwnerUserID <= 0 {
-		return nil, fmt.Errorf("insert %s for owner_user_id %d invalid owner_user_id: %w", collectionsTable, record.OwnerUserID, helpers.BadRequestError)
+		return nil, fmt.Errorf("insert %s for owner_user_id %d invalid owner_user_id: %w", collectionsTable, record.OwnerUserID, internal.BadRequestError)
 	}
 	_, err := databaseEngine.Table(collectionsTable).Insert(&record)
 	if err != nil {
@@ -210,7 +211,7 @@ func DeleteCollection(userID int64, collectionID int64) error {
 	}
 	if affected <= 0 {
 		_ = session.Rollback()
-		return fmt.Errorf("query %s for owner_user_id %d, collection_id %d: %w", collectionsTable, userID, collectionID, helpers.NotFoundError)
+		return fmt.Errorf("query %s for owner_user_id %d, collection_id %d: %w", collectionsTable, userID, collectionID, internal.NotFoundError)
 	}
 	err = session.Commit()
 	return err

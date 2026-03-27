@@ -2,14 +2,15 @@ package model
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/services"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/services"
 )
 
 const (
@@ -36,27 +37,27 @@ func InitializeMedia() {
 	// create media directories
 	err := os.MkdirAll(HoundMoviesPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create media directory")
+		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
 	err = os.MkdirAll(HoundTVShowsPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create media directory")
+		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
 	err = os.MkdirAll(HoundP2PDownloadsPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create p2p downloads directory")
+		_ = internal.LogErrorWithMessage(err, "Failed to create p2p downloads directory")
 		panic(fmt.Errorf("fatal error creating p2p downloads directory %w", err))
 	}
 	err = os.MkdirAll(HoundHttpDownloadsPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create http downloads directory")
+		_ = internal.LogErrorWithMessage(err, "Failed to create http downloads directory")
 		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
 	}
 	err = os.MkdirAll(ExternalLibraryPath, 0755)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to create external library directory")
+		_ = internal.LogErrorWithMessage(err, "Failed to create external library directory")
 		panic(fmt.Errorf("fatal error creating external library directory %w", err))
 	}
 }
@@ -78,7 +79,7 @@ func DeleteMediaFile(fileID int) error {
 	}
 	err = database.DeleteMediaFileRecord(fileID)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to delete media_file db record")
+		return internal.LogErrorWithMessage(err, "Failed to delete media_file db record")
 	}
 	slog.Info("Deleted media_file record", "file_id", fileID, "filepath", file.Filepath)
 	return nil

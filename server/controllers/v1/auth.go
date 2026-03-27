@@ -2,11 +2,12 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/model"
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -29,13 +30,13 @@ func RegistrationHandler(c *gin.Context) {
 	// }
 	userPayload := model.RegistrationUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
-		err := fmt.Errorf("%w: Failed to bind registration body", helpers.BadRequestError)
-		helpers.ErrorResponse(c, err)
+		err := fmt.Errorf("%w: Failed to bind registration body", internal.BadRequestError)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	newUser, err := model.RegisterNewUser(&userPayload, false)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// tokenPayload := model.LoginUser{
@@ -48,7 +49,7 @@ func RegistrationHandler(c *gin.Context) {
 	// 	return
 	// }
 	// c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
-	helpers.SuccessResponse(c, newUser, 200)
+	internal.SuccessResponse(c, newUser, 200)
 }
 
 type LoginResponse struct {
@@ -69,17 +70,17 @@ type LoginResponse struct {
 func LoginHandler(c *gin.Context) {
 	userPayload := model.LoginUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	clientID, clientPlatform, err := validateClientHeaders(c)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	token, role, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
 	if err != nil {
-		helpers.ErrorResponse(c, helpers.UnauthorizedError)
+		internal.ErrorResponse(c, internal.UnauthorizedError)
 		return
 	}
 	cookie := &http.Cookie{
@@ -92,17 +93,17 @@ func LoginHandler(c *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(c.Writer, cookie)
-	helpers.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token, Role: role}, 200)
+	internal.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token, Role: role}, 200)
 }
 
 func validateClientHeaders(c *gin.Context) (string, string, error) {
 	clientID := strings.ToLower(c.GetHeader("X-Client-Id"))
 	if !slices.Contains(model.SupportedClientIDs, clientID) {
-		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Id header", helpers.BadRequestError)
+		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Id header", internal.BadRequestError)
 	}
 	clientPlatform := strings.ToLower(c.GetHeader("X-Client-Platform"))
 	if !slices.Contains(model.SupportedClientPlatforms, clientPlatform) {
-		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Platform header", helpers.BadRequestError)
+		return "", "", fmt.Errorf("%w: Invalid or missing X-Client-Platform header", internal.BadRequestError)
 	}
 	return clientID, clientPlatform, nil
 }

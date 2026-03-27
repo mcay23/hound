@@ -2,17 +2,18 @@ package workers
 
 import (
 	"errors"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/loggers"
-	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -275,7 +276,7 @@ func processExternalPath(item externalLibraryQueueItem) {
 	if err != nil {
 		status := database.ExternalLibraryItemStatusFailed
 		lastError := err.Error()
-		if errors.Is(err, helpers.AlreadyExistsError) {
+		if errors.Is(err, internal.AlreadyExistsError) {
 			status = database.ExternalLibraryItemStatusDone
 			lastError = ""
 		}

@@ -2,8 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 )
 
 const usersTable = "users"
@@ -45,7 +46,7 @@ func GetUser(username string) (*User, error) {
 		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
 	}
 	if !found {
-		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, helpers.NotFoundError)
+		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, internal.NotFoundError)
 	}
 	return &user, nil
 }
@@ -69,7 +70,7 @@ func GetUsernameFromID(userID int64) (string, error) {
 	var user User
 	found, err := databaseEngine.Table(usersTable).ID(userID).Get(&user)
 	if !found {
-		return "", fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, helpers.NotFoundError)
+		return "", fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, internal.NotFoundError)
 	}
 	if err != nil {
 		return "", fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, err)

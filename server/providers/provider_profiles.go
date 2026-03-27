@@ -2,15 +2,16 @@ package providers
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"net/http"
 	"strings"
+
+	"github.com/mcay23/hound/internal"
 )
 
 // check if provider is online/valid
 func PingProviderManifest(manifestURL string) error {
 	if manifestURL == "" {
-		return fmt.Errorf("manifest url is empty: %w", helpers.BadRequestError)
+		return fmt.Errorf("manifest url is empty: %w", internal.BadRequestError)
 	}
 	if !strings.Contains(manifestURL, "manifest.json") {
 		if !strings.HasSuffix(manifestURL, "/") {

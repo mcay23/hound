@@ -2,10 +2,11 @@ package database
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"os"
 	"time"
+
+	"github.com/mcay23/hound/internal"
 
 	"xorm.io/xorm"
 )
@@ -33,7 +34,7 @@ func InstantiateDB() {
 	slog.Info("Attempting DB connection", "uri", connectionString)
 	databaseEngine, err = xorm.NewEngine(DriverPostgres, connectionString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate DB connection")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate DB connection")
 		panic(err)
 	}
 	slog.Info("DB Connection successful")
@@ -45,58 +46,58 @@ func InstantiateDB() {
 
 	err = instantiateUsersTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate users table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate users table")
 		panic(err)
 	}
 	err = instantiateCollectionTables()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate collection tables")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate collection tables")
 		panic(err)
 	}
 	err = instantiateMediaTables()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media tables")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate media tables")
 		panic(err)
 	}
 	err = instantiateGenresTables()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate genre tables")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate genre tables")
 		panic(err)
 	}
 	err = instantiateCommentTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate comment table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate comment table")
 		panic(err)
 	}
 	err = instantiateWatchTables()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate watch tables")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate watch tables")
 		panic(err)
 	}
 	err = instantiateMediaFilesTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate media files table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate media files table")
 		panic(err)
 	}
 	err = instantiateIngestTasksTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate ingest tasks table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate ingest tasks table")
 		panic(err)
 	}
 	err = instantiateExternalLibraryItemsTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate external library items table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate external library items table")
 		panic(err)
 	}
 	err = instantiateProviderProfilesTable()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to instantiate provider profiles table")
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate provider profiles table")
 		panic(err)
 	}
 	slog.Info("DB tables initialized")
 	err = runMigrations()
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to migrate databases!")
+		_ = internal.LogErrorWithMessage(err, "Failed to migrate databases!")
 		panic(err)
 	}
 	slog.Info("DB migrations complete")

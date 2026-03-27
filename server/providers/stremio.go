@@ -3,11 +3,12 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 )
 
 const MANIFEST_PATH = "/manifest.json"
@@ -68,7 +69,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("query %s-%s non-200 response received from stremio plugin status %s: %w",
-			query.MediaSource, query.SourceID, resp.Status, helpers.GatewayTimeoutError)
+			query.MediaSource, query.SourceID, resp.Status, internal.GatewayTimeoutError)
 	}
 	var stremioResp StremioStreamResponse
 	if err := json.NewDecoder(resp.Body).Decode(&stremioResp); err != nil {
@@ -97,7 +98,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDetails,
 	providerName string) (*StreamObject, error) {
 	if stremioStream == nil {
-		return nil, fmt.Errorf("nil stremio stream: %w", helpers.BadRequestError)
+		return nil, fmt.Errorf("nil stremio stream: %w", internal.BadRequestError)
 	}
 	uri := ""
 	infoHash := ""
@@ -106,7 +107,7 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	if stremioStream.URL != nil {
 		streamProtocol = database.ProtocolProxyHTTP
 		uri = *stremioStream.URL
-		tempInfoHash, ok := helpers.ExtractInfoHashFromURL(*stremioStream.URL)
+		tempInfoHash, ok := internal.ExtractInfoHashFromURL(*stremioStream.URL)
 		if ok {
 			infoHash = tempInfoHash
 		}
@@ -114,15 +115,15 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 		// p2p case
 		if stremioStream.InfoHash == nil {
 			slog.Debug("Bad stream found", "stream", stremioStream)
-			return nil, fmt.Errorf("invalid stremio stream, infohash is nil for type p2p: %w", helpers.BadRequestError)
+			return nil, fmt.Errorf("invalid stremio stream, infohash is nil for type p2p: %w", internal.BadRequestError)
 		}
 		streamProtocol = database.ProtocolP2P
 		infoHash = *stremioStream.InfoHash
-		uri = helpers.GetMagnetURI(infoHash, stremioStream.Sources)
+		uri = internal.GetMagnetURI(infoHash, stremioStream.Sources)
 	}
 	// last sanity check
 	if uri == "" {
-		return nil, fmt.Errorf("invalid stremio stream, uri is empty: %w", helpers.BadRequestError)
+		return nil, fmt.Errorf("invalid stremio stream, uri is empty: %w", internal.BadRequestError)
 	}
 	// stremio description is either the title (deprecated soon) or description
 	// for our object, the title is not the stremio 'title' field but the name

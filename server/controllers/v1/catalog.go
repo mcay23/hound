@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 
 	"github.com/gin-gonic/gin"
@@ -23,8 +23,8 @@ func GetCatalogHandler(c *gin.Context) {
 	page := 1
 	viewArray, err := model.GetInternalCatalog(catalogID, &page)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	helpers.SuccessResponse(c, viewArray, 200)
+	internal.SuccessResponse(c, viewArray, 200)
 }

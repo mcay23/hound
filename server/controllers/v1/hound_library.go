@@ -2,10 +2,11 @@ package v1
 
 import (
 	"fmt"
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/helpers"
-	"github.com/mcay23/hound/view"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +29,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 	offsetQuery := c.Query("offset")
 	limit, offset, err := getLimitOffset(limitQuery, offsetQuery)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaType := ""
@@ -40,7 +41,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 		case database.MediaTypeTVShow:
 			mediaType = database.MediaTypeTVShow
 		default:
-			helpers.ErrorResponse(c, fmt.Errorf("invalid media type %s: %w", mediaTypeQuery, helpers.BadRequestError))
+			internal.ErrorResponse(c, fmt.Errorf("invalid media type %s: %w", mediaTypeQuery, internal.BadRequestError))
 			return
 		}
 	}
@@ -56,10 +57,10 @@ func GetHoundLibraryHandler(c *gin.Context) {
 	}
 	collectionView, err := getHoundDownloadedRecords(limit, offset, mediaType, genreIDs)
 	if err != nil {
-		helpers.ErrorResponse(c, fmt.Errorf("failed to get hound downloaded records: %w", err))
+		internal.ErrorResponse(c, fmt.Errorf("failed to get hound downloaded records: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, collectionView, 200)
+	internal.SuccessResponse(c, collectionView, 200)
 }
 
 func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs []int64) (view.CollectionView, error) {
