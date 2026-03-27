@@ -14,14 +14,14 @@ type UserMeta struct {
 }
 
 type User struct {
-	UserID         int64     `xorm:"pk autoincr 'user_id'"`
-	Username       string    `xorm:"not null unique"`
-	IsAdmin        bool      `xorm:"not null default false 'is_admin'"`
-	DisplayName    string    `xorm:"'display_name'"`
-	HashedPassword string    `xorm:"text 'hashed_password'"`
-	UserMeta       UserMeta  `xorm:"json 'user_meta'"`
-	CreatedAt      time.Time `xorm:"timestampz created"`
-	UpdatedAt      time.Time `xorm:"timestampz updated"`
+	UserID         int64     `xorm:"pk autoincr 'user_id'" json:"user_id"`
+	Username       string    `xorm:"not null unique" json:"username"`
+	IsAdmin        bool      `xorm:"not null default false 'is_admin'" json:"is_admin"`
+	DisplayName    string    `xorm:"'display_name'" json:"display_name"`
+	HashedPassword string    `xorm:"text 'hashed_password'" json:"-"`
+	UserMeta       UserMeta  `xorm:"json 'user_meta'" json:"user_meta"`
+	CreatedAt      time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt      time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 func instantiateUsersTable() error {
@@ -79,9 +79,22 @@ func GetUsernameFromID(userID int64) (string, error) {
 
 func GetUsers() ([]User, error) {
 	var users []User
-	err := databaseEngine.Table(usersTable).Find(&users)
+	err := databaseEngine.Table(usersTable).OrderBy("user_id asc").Find(&users)
 	if err != nil {
 		return nil, fmt.Errorf("query %s: %w", usersTable, err)
 	}
 	return users, nil
+}
+
+func DeleteUser(userID int64) error {
+	username, err := GetUsernameFromID(userID)
+	if err == nil {
+		cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
+		_ = DeleteCache(cacheKey)
+	}
+	_, err = databaseEngine.Table(usersTable).Where("user_id = ?", userID).Delete()
+	if err != nil {
+		return fmt.Errorf("delete %s for user_id %d: %w", usersTable, userID, err)
+	}
+	return nil
 }

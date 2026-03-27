@@ -52,7 +52,6 @@ function AddToCollectionModal(props: any) {
         }
       });
   }, [props.open]);
-
   return (
     <>
       <Dialog
@@ -94,6 +93,13 @@ function AddToCollectionModal(props: any) {
                 </ListItemButton>
               </ListItem> */}
             </List>
+          ) : (
+            ""
+          )}
+          {data?.length === 0 ? (
+            <div className="d-flex justify-content-center px-4 w-full mt-2 mb-2">
+              You don't have any collections.
+            </div>
           ) : (
             ""
           )}

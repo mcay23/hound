@@ -10,9 +10,8 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	r.Use(middlewares.CORSMiddleware)
 
-	// public routes, registration and login
+	// public routes and login
 	publicRoutes := r.Group("/api/v1")
-	publicRoutes.POST("/auth/register", RegistrationHandler)
 	publicRoutes.POST("/auth/login", LoginHandler)
 
 	// private routes, auth required, everything else
@@ -23,6 +22,13 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes := r.Group("/api/v1")
 	adminRoutes.Use(middlewares.JWTMiddleware)
 	adminRoutes.Use(middlewares.AdminMiddleware)
+
+	/*
+		Users Routes
+	*/
+	adminRoutes.GET("/users", GetUsersHandler)
+	adminRoutes.DELETE("/users/:id", DeleteUserHandler)
+	adminRoutes.POST("/users", RegistrationHandler)
 
 	/*
 		General Routes
@@ -112,7 +118,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Provider Profiles
 	*/
-	adminRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
+	privateRoutes.GET("/provider_profiles", GetProviderProfilesHandler)
 	adminRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
 	adminRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
 	adminRoutes.PUT("/provider_profiles/:id", UpdateProviderProfileHandler)

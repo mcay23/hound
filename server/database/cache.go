@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"hound/helpers"
 	"log/slog"
-	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -27,15 +25,8 @@ func InitializeCache() {
 		panic(err)
 	}
 	// 10 minute GC cleanup
-	gcIntervalSec := 600
-	if val := os.Getenv("CACHE_GC_INTERVAL"); val != "" {
-		if parsed, err := strconv.Atoi(val); err == nil {
-			gcIntervalSec = parsed
-		}
-	}
-
 	go func() {
-		ticker := time.NewTicker(time.Duration(gcIntervalSec) * time.Second)
+		ticker := time.NewTicker(time.Duration(600) * time.Second)
 		defer ticker.Stop()
 
 		for range ticker.C {

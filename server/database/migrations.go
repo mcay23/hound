@@ -9,7 +9,7 @@ import (
 // IDs Should follow YYYYMMDD_id_description
 var addForeignKeys = &migrate.Migration{
 	// xorm doesn't support foreign keys automatically
-	ID: "20250101_02_add_foreign_keys",
+	ID: "20250101_03_add_foreign_keys",
 	Migrate: func(tx *xorm.Engine) error {
 		// drop first if exists, safer
 		query :=
@@ -23,6 +23,7 @@ var addForeignKeys = &migrate.Migration{
 			ALTER TABLE media_files DROP CONSTRAINT IF EXISTS fk_media_files_record_id;
 			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_record_id;
 			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_genre_id;
+			ALTER TABLE rewatches DROP CONSTRAINT IF EXISTS fk_rewatches_user_id;
 
 			ALTER TABLE collections
 			ADD CONSTRAINT fk_collections_user_id
@@ -60,21 +61,27 @@ var addForeignKeys = &migrate.Migration{
 			ADD CONSTRAINT fk_media_record_genres_genre_id
 				FOREIGN KEY (genre_id) REFERENCES genres (genre_id)
 				ON UPDATE CASCADE ON DELETE CASCADE;
+
+			ALTER TABLE rewatches
+			ADD CONSTRAINT fk_rewatches_user_id
+				FOREIGN KEY (user_id) REFERENCES users (user_id)
+				ON UPDATE CASCADE ON DELETE CASCADE;
 			`
 		_, err := tx.Exec(query)
 		return err
 	},
 	Rollback: func(tx *xorm.Engine) error {
 		sql := `
-		ALTER TABLE collections DROP CONSTRAINT IF EXISTS fk_collections_user_id;
-		ALTER TABLE comments DROP CONSTRAINT IF EXISTS fk_comments_user_id;
-		ALTER TABLE comments DROP CONSTRAINT IF EXISTS fk_comments_record_id;
-		ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_user_id;
-		ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_record_id;
-		ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_collection_id;
-		ALTER TABLE media_files DROP CONSTRAINT IF EXISTS fk_media_files_record_id;
-		ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_record_id;
-		ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_genre_id;
+			ALTER TABLE collections DROP CONSTRAINT IF EXISTS fk_collections_user_id;
+			ALTER TABLE comments DROP CONSTRAINT IF EXISTS fk_comments_user_id;
+			ALTER TABLE comments DROP CONSTRAINT IF EXISTS fk_comments_record_id;
+			ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_user_id;
+			ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_record_id;
+			ALTER TABLE collection_relations DROP CONSTRAINT IF EXISTS fk_collection_relations_collection_id;
+			ALTER TABLE media_files DROP CONSTRAINT IF EXISTS fk_media_files_record_id;
+			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_record_id;
+			ALTER TABLE media_record_genres DROP CONSTRAINT IF EXISTS fk_media_record_genres_genre_id;
+			ALTER TABLE rewatches DROP CONSTRAINT IF EXISTS fk_rewatches_user_id;
 		`
 		_, err := tx.Exec(sql)
 		return err

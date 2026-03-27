@@ -54,7 +54,8 @@ export default function ProviderProfiles() {
         <Button
           className="mt-3"
           onClick={() => setIsAddProviderDialogOpen(true)}
-          variant="outlined"
+          variant="contained"
+          size="small"
         >
           Add Provider
         </Button>
@@ -84,7 +85,7 @@ export default function ProviderProfiles() {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          {"Delete this review?"}
+          {"Delete this profile?"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
@@ -94,6 +95,7 @@ export default function ProviderProfiles() {
         <DialogActions>
           <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
           <Button
+            color="error"
             onClick={() => {
               deleteProviderProfile.mutate(selectedID, {
                 onSuccess: () => {

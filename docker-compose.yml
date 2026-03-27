@@ -32,7 +32,6 @@ services:
       - POSTGRES_PASSWORD=hound_password
       - POSTGRES_DB=hound_db
       - SERVER_PORT=2323 # try not to change
-      - CACHE_GC_INTERVAL=600
     volumes:
       - ./docker/Hound Data:/app/Hound Data
       - ./docker/config:/app/config

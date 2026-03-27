@@ -10,6 +10,7 @@ import (
 var InternalServerError = errors.New("internalServerError")
 var BadRequestError = errors.New("badRequest")
 var UnauthorizedError = errors.New("unauthorized")
+var ForbiddenError = errors.New("forbidden")
 var VideoDurationTooShortError = errors.New("videoDurationTooShort")
 var AlreadyExistsError = errors.New("alreadyExists")
 var NotFoundError = errors.New("notFound")
@@ -45,6 +46,9 @@ func GetErrorStatusCode(err error) int {
 	}
 	if errors.Is(err, UnauthorizedError) {
 		return http.StatusUnauthorized
+	}
+	if errors.Is(err, ForbiddenError) {
+		return http.StatusForbidden
 	}
 	if errors.Is(err, NotFoundError) {
 		return http.StatusNotFound

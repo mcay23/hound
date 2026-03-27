@@ -12,31 +12,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-type RegistrationResponse struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
-}
-
-// @Router /api/v1/auth/register [post]
+// @Router /api/v1/users [post]
 // @Summary Register a new user
 // @Tags Auth
 // @Accept json
 // @Produce json
 // @Param request body model.RegistrationUser true "Registration Details"
-// @Success 200 {object} V1SuccessResponse{data=RegistrationResponse}
+// @Success 200 {object} V1SuccessResponse{data=database.User}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func RegistrationHandler(c *gin.Context) {
-	if !viper.GetBool("auth.allow-registration") {
-		err := fmt.Errorf("%w: Registration is currently disabled. Please contact your system admin.", helpers.BadRequestError)
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	clientID, clientPlatform, err := validateClientHeaders(c)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
+	// clientID, clientPlatform, err := validateClientHeaders(c)
+	// if err != nil {
+	// 	helpers.ErrorResponse(c, err)
+	// 	return
+	// }
 	userPayload := model.RegistrationUser{}
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
 		err := fmt.Errorf("%w: Failed to bind registration body", helpers.BadRequestError)
@@ -48,17 +38,17 @@ func RegistrationHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, err)
 		return
 	}
-	tokenPayload := model.LoginUser{
-		Username: newUser.Username,
-		Password: userPayload.Password,
-	}
-	token, role, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)
-	if err != nil {
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
-	helpers.SuccessResponse(c, RegistrationResponse{Username: userPayload.Username, Role: role}, 200)
+	// tokenPayload := model.LoginUser{
+	// 	Username: newUser.Username,
+	// 	Password: userPayload.Password,
+	// }
+	// token, role, err := model.GenerateAccessToken(tokenPayload, clientID, clientPlatform)
+	// if err != nil {
+	// 	helpers.ErrorResponse(c, err)
+	// 	return
+	// }
+	// c.SetCookie("token", token, viper.GetInt("auth.jwt-access-token-expiration"), "/", "", true, true)
+	helpers.SuccessResponse(c, newUser, 200)
 }
 
 type LoginResponse struct {

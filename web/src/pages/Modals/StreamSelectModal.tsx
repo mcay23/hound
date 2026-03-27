@@ -12,7 +12,7 @@ import {
 import "./StreamSelectModal.css";
 import "video.js/dist/video-js.css";
 import { slotPropsGlass, paperPropsGlass } from "./modalStyles";
-import { Button } from "react-bootstrap";
+import { Button, Spinner } from "react-bootstrap";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
@@ -170,9 +170,20 @@ function SelectStreamModal(props: {
               </div>
             )}
             {streamData === null ? (
-              <div className="px-4 w-full mt-5 mb-5">Loading streams...</div>
+              <div className="d-flex justify-content-center mt-5 mb-5">
+                <Spinner
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  id="stream-select-button-loading"
+                >
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              </div>
             ) : streamData.length === 0 ? (
-              <div className="px-4 w-full mt-5 mb-5">No streams found.</div>
+              <div className="d-flex justify-content-center px-4 w-full mt-5 mb-5">
+                No streams found.
+              </div>
             ) : (
               streamData.map((stream: any) => {
                 return (

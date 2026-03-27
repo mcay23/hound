@@ -9,6 +9,7 @@ import "./Admin.css";
 import Downloads from "./Downloads";
 import { useState } from "react";
 import ProviderProfiles from "./ProviderProfiles";
+import UserList from "./Users";
 
 export default function Admin(props: any) {
   const [activeTab, setActiveTab] = useState(0);
@@ -51,7 +52,7 @@ export default function Admin(props: any) {
           </Drawer>
           <div className="d-flex admin-content">
             {activeTab === 0 && <Downloads />}
-            {activeTab === 1 && <></>}
+            {activeTab === 1 && <UserList />}
             {activeTab === 2 && <ProviderProfiles />}
           </div>
         </div>

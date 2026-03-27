@@ -70,7 +70,7 @@ func GetCollectionRecords(userID int64, collectionID int64, limit int, offset in
 	}
 	if !collection.IsPublic && collection.OwnerUserID != userID {
 		return nil, nil, -1, fmt.Errorf("query %s for collection_id %d, owner_user_id %d does not have access: %w",
-			collectionsTable, collectionID, userID, helpers.UnauthorizedError)
+			collectionsTable, collectionID, userID, helpers.ForbiddenError)
 	}
 	sess := databaseEngine.Table(mediaRecordsTable)
 	if limit > 0 && offset >= 0 {
@@ -130,7 +130,7 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	// check if user is authorized to add to collection
 	if collectionRecord.OwnerUserID != userID {
 		return fmt.Errorf("insert %s for collection_id %d, owner_user_id %d: %w",
-			collectionsTable, collectionID, userID, helpers.UnauthorizedError)
+			collectionsTable, collectionID, userID, helpers.ForbiddenError)
 	}
 	// insert record to db
 	_, err = databaseEngine.Table(collectionRelationsTable).Insert(CollectionRelation{
@@ -160,10 +160,10 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	if !has {
 		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, helpers.NotFoundError)
 	}
-	// check if user is authorized to this collection
+	// check if user is owner of this collection
 	if collectionRecord.OwnerUserID != userID {
 		return fmt.Errorf("delete %s for collection_id %d, record_id %d, user_id %d: %w",
-			collectionRelationsTable, collectionID, recordID, userID, helpers.UnauthorizedError)
+			collectionRelationsTable, collectionID, recordID, userID, helpers.ForbiddenError)
 	}
 	// if user authenticated, remove
 	affected, _ := databaseEngine.Table(collectionRelationsTable).Delete(&CollectionRelation{

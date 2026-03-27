@@ -289,7 +289,7 @@ func BatchDeleteWatchEvents(watchEventIDs []int64, userID int64, recordID int) e
 	if count != int64(len(watchEventIDs)) {
 		_ = sess.Rollback()
 		return fmt.Errorf("count %s, %s, %s for user_id %d, record_id %d (not all watch events belong to this user): %w",
-			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, recordID, helpers.UnauthorizedError)
+			watchEventsTable, rewatchesTable, mediaRecordsTable, userID, recordID, helpers.ForbiddenError)
 	}
 	// count correct, delete
 	_, err = sess.Table(watchEventsTable).In("watch_event_id", watchEventIDs).Delete(&WatchEventsRecord{})

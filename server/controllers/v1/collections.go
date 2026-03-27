@@ -151,7 +151,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", helpers.InternalServerError, err))
 		return
 	}
-	var collectionResponse []view.CollectionObject
+	var collectionResponse = []view.CollectionObject{}
 	for _, record := range records {
 		temp := view.CollectionObject{
 			CollectionID:    record.CollectionID,
@@ -238,7 +238,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		helpers.ErrorResponse(c, fmt.Errorf("failed to get collection records: %w", err))
 		return
 	}
-	var viewArray []view.MediaRecordCatalog
+	var viewArray = []view.MediaRecordCatalog{}
 	for _, item := range records {
 		viewObject := createMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)

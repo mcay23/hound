@@ -10,11 +10,6 @@ function Footer(props: any) {
           alt="tmdb-logo"
           id="tmdb-logo"
         />
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg"
-          alt="igdb-logo"
-          id="igdb-logo"
-        />
       </div>
     </div>
   );

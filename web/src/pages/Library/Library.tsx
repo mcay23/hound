@@ -85,7 +85,7 @@ function Library(props: any) {
               itemOnClick={undefined}
             />
             {!(recentItems?.length > 0) && (
-              <div className="horizontal-section-header pb-5">
+              <div className="horizontal-section-header pt-5 pb-5">
                 Your collections are empty. Try adding some items!
               </div>
             )}
@@ -104,7 +104,7 @@ function Library(props: any) {
                   Add New collection
                 </div>
               </div>
-              {collections.map((item: any) => (
+              {collections?.map((item: any) => (
                 <CollectionCard
                   data={item}
                   key={item["collection_id"]}
