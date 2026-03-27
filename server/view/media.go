@@ -1,8 +1,8 @@
 package view
 
 import (
-	"hound/database"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/sources"
 	"time"
 )
 

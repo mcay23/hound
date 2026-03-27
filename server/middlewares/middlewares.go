@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"fmt"
-	"hound/helpers"
-	"hound/model"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/model"
 	"strings"
 
 	"github.com/gin-gonic/gin"

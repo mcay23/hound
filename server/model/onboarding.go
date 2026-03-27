@@ -1,7 +1,7 @@
 package model
 
 import (
-	"hound/database"
+	"github.com/mcay23/hound/database"
 )
 
 func InitializeOnboarding() {

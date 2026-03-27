@@ -2,10 +2,10 @@ package model
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/loggers"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/sources"
 	"os"
 	"path/filepath"
 	"regexp"

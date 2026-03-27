@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/services"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/services"
 	"log/slog"
 	"os"
 	"path/filepath"

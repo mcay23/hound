@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hound/helpers"
+	"github.com/mcay23/hound/helpers"
 	"reflect"
 	"strconv"
 	"strings"

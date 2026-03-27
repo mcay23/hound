@@ -2,7 +2,7 @@ package providers
 
 import (
 	"fmt"
-	"hound/helpers"
+	"github.com/mcay23/hound/helpers"
 	"net/http"
 	"strings"
 )

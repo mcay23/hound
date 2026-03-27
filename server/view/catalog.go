@@ -1,7 +1,7 @@
 package view
 
 import (
-	"hound/database"
+	"github.com/mcay23/hound/database"
 )
 
 type MediaRecordCatalog struct {

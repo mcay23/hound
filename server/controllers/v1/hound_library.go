@@ -2,9 +2,9 @@ package v1
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/view"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/view"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

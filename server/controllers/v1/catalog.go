@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"hound/helpers"
-	"hound/model"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/model"
 
 	"github.com/gin-gonic/gin"
 )

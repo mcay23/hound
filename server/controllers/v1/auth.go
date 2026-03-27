@@ -2,8 +2,8 @@ package v1
 
 import (
 	"fmt"
-	"hound/helpers"
-	"hound/model"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/model"
 	"net/http"
 	"slices"
 	"strings"

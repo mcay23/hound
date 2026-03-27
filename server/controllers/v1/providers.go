@@ -2,10 +2,10 @@ package v1
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/providers"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/providers"
+	"github.com/mcay23/hound/sources"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

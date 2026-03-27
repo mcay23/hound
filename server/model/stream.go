@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"hound/helpers"
+	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"mime"
 	"path/filepath"

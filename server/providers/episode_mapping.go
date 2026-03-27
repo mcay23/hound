@@ -2,7 +2,7 @@ package providers
 
 import (
 	"fmt"
-	"hound/helpers"
+	"github.com/mcay23/hound/helpers"
 )
 
 // This maps tmdb source ids to tmdb episode groups that

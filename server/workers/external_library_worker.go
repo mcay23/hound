@@ -2,11 +2,11 @@ package workers
 
 import (
 	"errors"
-	"hound/database"
-	"hound/helpers"
-	"hound/loggers"
-	"hound/model"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"path/filepath"

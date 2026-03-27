@@ -1,8 +1,8 @@
 package providers
 
 import (
-	"hound/database"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"strconv"

@@ -2,10 +2,10 @@ package workers
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/loggers"
-	"hound/model"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
 	"log/slog"
 	"time"
 

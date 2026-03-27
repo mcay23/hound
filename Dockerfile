@@ -8,12 +8,18 @@ RUN npm run build
 
 # Stage 2: Build Server
 FROM golang:1.26.1-alpine as server-builder
+ARG VERSION=dev
 RUN apk add --no-cache git
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 COPY server/ .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux \
+    go build -a -installsuffix cgo \
+    -ldflags "-X main.Version=$VERSION" \
+    -X main.Commit=$(git rev-parse --short HEAD) \
+    -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    -o main .
 
 # Stage 3: Combined
 FROM alpine:latest

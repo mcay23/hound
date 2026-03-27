@@ -3,8 +3,8 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
-	"hound/database"
-	"hound/helpers"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
 	"log/slog"
 	"net/http"
 	"time"

@@ -1,10 +1,10 @@
 package model
 
 import (
-	"hound/database"
-	"hound/helpers"
-	"hound/sources"
-	"hound/view"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
 	"strconv"
 
 	tmdb "github.com/cyruzin/golang-tmdb"

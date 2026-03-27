@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"hound/database"
-	"hound/helpers"
-	"hound/model"
-	"hound/sources"
-	"hound/view"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
 )

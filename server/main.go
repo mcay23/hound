@@ -1,13 +1,13 @@
 package main
 
 import (
-	"hound/controllers"
-	"hound/database"
-	"hound/loggers"
-	"hound/model"
-	"hound/services"
-	"hound/sources"
-	"hound/workers"
+	"github.com/mcay23/hound/controllers"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/loggers"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/services"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/workers"
 	"log/slog"
 	"os"
 	"strings"

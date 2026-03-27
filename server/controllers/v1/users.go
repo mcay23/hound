@@ -2,8 +2,8 @@ package v1
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

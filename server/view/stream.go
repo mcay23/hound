@@ -1,6 +1,6 @@
 package view
 
-//import "hound/providers"
+//import "github.com/mcay23/hound/providers"
 //
 //type ProvidersResponseObject struct {
 //	providers.MediaDetails

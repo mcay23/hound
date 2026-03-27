@@ -1,6 +1,6 @@
 package view
 
-import "hound/sources"
+import "github.com/mcay23/hound/sources"
 
 type GameFullObject struct {
 	*sources.IGDBGameObject

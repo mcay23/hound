@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	v1 "hound/controllers/v1"
+	v1 "github.com/mcay23/hound/controllers/v1"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	_ "hound/docs"
+	_ "github.com/mcay23/hound/docs"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"

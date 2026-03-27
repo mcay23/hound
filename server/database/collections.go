@@ -3,7 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
-	"hound/helpers"
+	"github.com/mcay23/hound/helpers"
 	"time"
 
 	"github.com/lib/pq"

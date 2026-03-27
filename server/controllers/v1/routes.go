@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"hound/middlewares"
+	"github.com/mcay23/hound/middlewares"
 	"os"
 
 	"github.com/gin-gonic/gin"

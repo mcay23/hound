@@ -2,9 +2,9 @@ package providers
 
 import (
 	"fmt"
-	"hound/database"
-	"hound/helpers"
-	"hound/sources"
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/helpers"
+	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"strconv"
 	"strings"

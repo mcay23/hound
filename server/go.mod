@@ -1,4 +1,4 @@
-module hound
+module github.com/mcay23/hound
 
 go 1.25.0
 

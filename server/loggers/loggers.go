@@ -1,6 +1,6 @@
 package loggers
 
-import "hound/helpers"
+import "github.com/mcay23/hound/helpers"
 
 func InitializeLoggers() {
 	err := initializeIngestLogger()
