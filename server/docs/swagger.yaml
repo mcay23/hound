@@ -57,6 +57,8 @@ definitions:
         items:
           $ref: '#/definitions/database.DownloadPreference'
         type: array
+      provider_profile_id:
+        type: integer
       strict_match:
         description: whether if no match is found, to fail the download
         type: boolean
@@ -336,6 +338,30 @@ definitions:
       tagName:
         type: string
     type: object
+  database.User:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      is_admin:
+        type: boolean
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      user_meta:
+        $ref: '#/definitions/database.UserMeta'
+      username:
+        type: string
+    type: object
+  database.UserMeta:
+    properties:
+      test1:
+        type: string
+      test2:
+        type: string
+    type: object
   database.VideoMetadata:
     properties:
       bit_rate:
@@ -524,9 +550,7 @@ definitions:
     type: object
   model.RegistrationUser:
     properties:
-      first_name:
-        type: string
-      last_name:
+      display_name:
         type: string
       password:
         minLength: 8
@@ -534,8 +558,7 @@ definitions:
       username:
         type: string
     required:
-    - first_name
-    - last_name
+    - display_name
     - password
     - username
     type: object
@@ -875,13 +898,6 @@ definitions:
       username:
         type: string
     type: object
-  v1.RegistrationResponse:
-    properties:
-      role:
-        type: string
-      username:
-        type: string
-    type: object
   v1.SetPlaybackProgressResponse:
     properties:
       watched:
@@ -898,6 +914,8 @@ definitions:
         items:
           $ref: '#/definitions/database.DownloadPreference'
         type: array
+      provider_profile_id:
+        type: integer
       skip_downloaded_episodes:
         type: boolean
       strict_match:
@@ -1423,40 +1441,6 @@ paths:
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: User login
-      tags:
-      - Auth
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Registration Details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.RegistrationUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/v1.V1SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/v1.RegistrationResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/v1.V1ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Register a new user
       tags:
       - Auth
   /api/v1/backdrops:
@@ -2538,6 +2522,105 @@ paths:
       tags:
       - TV Shows
       - Genres
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegistrationUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a user
+      tags:
+      - Users
   /api/v1/watch_stats:
     get:
       consumes:
