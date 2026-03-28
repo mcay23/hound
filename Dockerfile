@@ -9,6 +9,8 @@ RUN npm run build
 # Stage 2: Build Server
 FROM golang:1.26.1-alpine as server-builder
 ARG VERSION=dev
+ARG COMMIT
+ARG BUILD_TIME
 RUN apk add --no-cache git
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
@@ -16,10 +18,15 @@ RUN go mod download
 COPY server/ .
 RUN CGO_ENABLED=0 GOOS=linux \
     go build -a -installsuffix cgo \
-    -ldflags "-X main.Version=$VERSION" \
-    -X main.Commit=$(git rev-parse --short HEAD) \
-    -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    -ldflags "-X github.com/mcay23/hound/internal.Version=$VERSION -X github.com/mcay23/hound/internal.Commit=$COMMIT -X github.com/mcay23/hound/internal.BuildTime=$BUILD_TIME" \
     -o main .
+
+# build command
+# docker build \
+#   --build-arg VERSION=v1.0.0 \
+#   --build-arg COMMIT=$(git rev-parse --short HEAD) \
+#   --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+#   -t hound:v1.0.0 .
 
 # Stage 3: Combined
 FROM alpine:latest

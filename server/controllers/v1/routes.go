@@ -1,8 +1,9 @@
 package v1
 
 import (
-	"github.com/mcay23/hound/middlewares"
 	"os"
+
+	"github.com/mcay23/hound/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,6 +38,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
+	privateRoutes.GET("/build_info", GetBuildInfoHandler)
 
 	/*
 		Catalog Routes

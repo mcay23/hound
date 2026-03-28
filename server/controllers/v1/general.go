@@ -44,7 +44,7 @@ func GeneralSearchHandler(c *gin.Context) {
 
 // @Router /api/v1/backdrops [get]
 // @Summary Get Media Backdrops
-// @Tags Media
+// @Tags General
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=string} "URL to backdrop"
@@ -85,4 +85,16 @@ func GetMediaBackdrops(c *gin.Context) {
 	}
 	_, _ = database.SetCache(backdropCacheKey, candidateURL, time.Hour*24)
 	internal.SuccessResponse(c, candidateURL, 200)
+}
+
+// @Router /api/v1/build_info [get]
+// @Summary Get Build Info
+// @Tags General
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=internal.BuildInfo}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetBuildInfoHandler(c *gin.Context) {
+	internal.SuccessResponse(c, internal.GetBuildInfo(), 200)
 }
