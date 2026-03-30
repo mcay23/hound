@@ -15,6 +15,151 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/api_keys": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API Keys"
+                ],
+                "summary": "Get User API Keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/database.APIKey"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API Keys"
+                ],
+                "summary": "Create API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key Name",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.APIKey"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/api_keys/{id}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API Keys"
+                ],
+                "summary": "Revoke API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "consumes": [
@@ -3798,6 +3943,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "database.APIKey": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "key_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "database.DownloadPreference": {
             "type": "object",
             "properties": {
@@ -4298,6 +4466,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "display_name": {
+                    "type": "string"
+                },
+                "hashed_password": {
                     "type": "string"
                 },
                 "is_admin": {
@@ -4902,80 +5073,6 @@ const docTemplate = `{
                 }
             }
         },
-        "sources.IGDBSearchObject": {
-            "type": "object",
-            "properties": {
-                "cover": {
-                    "type": "object",
-                    "properties": {
-                        "id": {
-                            "type": "integer"
-                        },
-                        "image_id": {
-                            "type": "string"
-                        },
-                        "image_url": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "first_release_date": {
-                    "type": "integer"
-                },
-                "genres": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": "integer"
-                            },
-                            "name": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "media_source": {
-                    "type": "string"
-                },
-                "media_title": {
-                    "type": "string"
-                },
-                "media_type": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "platforms": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": "integer"
-                            },
-                            "name": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "release_date": {
-                    "type": "string"
-                },
-                "source_id": {
-                    "type": "integer"
-                },
-                "thumbnail_uri": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.AddToCollectionRequest": {
             "type": "object",
             "required": [
@@ -5262,6 +5359,9 @@ const docTemplate = `{
                 "is_public": {
                     "type": "boolean"
                 },
+                "owner_display_name": {
+                    "type": "string"
+                },
                 "owner_username": {
                     "type": "string"
                 },
@@ -5377,12 +5477,6 @@ const docTemplate = `{
         "view.GeneralSearchResponse": {
             "type": "object",
             "properties": {
-                "game_results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/sources.IGDBSearchObject"
-                    }
-                },
                 "movie_results": {
                     "type": "array",
                     "items": {

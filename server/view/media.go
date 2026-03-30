@@ -1,9 +1,9 @@
 package view
 
 import (
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/sources"
 	"time"
+
+	"github.com/mcay23/hound/database"
 )
 
 type CollectionView struct {
@@ -22,21 +22,21 @@ type WatchActivityResponse struct {
 }
 
 type GeneralSearchResponse struct {
-	TVShowSearchResults *[]MediaRecordCatalog           `json:"tv_results"`
-	MovieSearchResults  *[]MediaRecordCatalog           `json:"movie_results"`
-	GameSearchResults   *sources.IGDBSearchResultObject `json:"game_results"`
+	TVShowSearchResults *[]MediaRecordCatalog `json:"tv_results"`
+	MovieSearchResults  *[]MediaRecordCatalog `json:"movie_results"`
 }
 
 type CollectionObject struct {
-	CollectionID    int64                 `json:"collection_id"`
-	CollectionTitle string                `json:"collection_title"` // my collection, etc.
-	Description     string                `json:"description"`
-	OwnerUsername   string                `json:"owner_username"`
-	IsPublic        bool                  `json:"is_public"`
-	Tags            *[]database.TagObject `json:"tags"`
-	ThumbnailURI    string                `json:"thumbnail_uri,omitempty"` // url for media thumbnails
-	CreatedAt       time.Time             `json:"created_at"`
-	UpdatedAt       time.Time             `json:"updated_at"`
+	CollectionID     int64                 `json:"collection_id"`
+	CollectionTitle  string                `json:"collection_title"` // my collection, etc.
+	Description      string                `json:"description"`
+	OwnerUsername    string                `json:"owner_username"`
+	OwnerDisplayName string                `json:"owner_display_name"`
+	IsPublic         bool                  `json:"is_public"`
+	Tags             *[]database.TagObject `json:"tags"`
+	ThumbnailURI     string                `json:"thumbnail_uri,omitempty"` // url for media thumbnails
+	CreatedAt        time.Time             `json:"created_at"`
+	UpdatedAt        time.Time             `json:"updated_at"`
 }
 
 type CommentObject struct {

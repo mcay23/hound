@@ -21,10 +21,9 @@ import (
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetWatchStatsHandler(c *gin.Context) {
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w",
-			c.GetHeader("X-Username"), err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	var startTime, endTime *time.Time

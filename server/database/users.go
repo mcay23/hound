@@ -19,7 +19,7 @@ type User struct {
 	Username       string    `xorm:"not null unique" json:"username"`
 	IsAdmin        bool      `xorm:"not null default false 'is_admin'" json:"is_admin"`
 	DisplayName    string    `xorm:"'display_name'" json:"display_name"`
-	HashedPassword string    `xorm:"text 'hashed_password'" json:"-"`
+	HashedPassword string    `xorm:"text 'hashed_password'" json:"hashed_password,omitempty"`
 	UserMeta       UserMeta  `xorm:"json 'user_meta'" json:"user_meta"`
 	CreatedAt      time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt      time.Time `xorm:"timestampz updated" json:"updated_at"`
@@ -39,30 +39,34 @@ func InsertUser(user User) (*int64, error) {
 	return &user.UserID, nil
 }
 
-func GetUser(username string) (*User, error) {
+func GetUser(userID int64) (*User, error) {
+	cacheKey := fmt.Sprintf("user:%d", userID)
 	var user User
-	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&user)
+	cacheExists, _ := GetCache(cacheKey, &user)
+	if cacheExists {
+		return &user, nil
+	}
+	found, err := databaseEngine.Table(usersTable).Where("user_id = ?", userID).Get(&user)
 	if err != nil {
-		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
+		return nil, fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, err)
 	}
 	if !found {
-		return nil, fmt.Errorf("query %s for username %s: %w", usersTable, username, internal.NotFoundError)
+		return nil, fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, internal.NotFoundError)
 	}
+	SetCache(cacheKey, user, 48*time.Hour)
 	return &user, nil
 }
 
+// should be used sparingly, userID is preferred internally
 func GetUserIDFromUsername(username string) (int64, error) {
-	cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
-	var userID int64
-	cacheExists, _ := GetCache(cacheKey, &userID)
-	if cacheExists {
-		return userID, nil
+	var user User
+	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&user)
+	if !found {
+		return 0, fmt.Errorf("query %s for username %s: %w", usersTable, username, internal.NotFoundError)
 	}
-	user, err := GetUser(username)
 	if err != nil {
-		return -1, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
+		return 0, fmt.Errorf("query %s for username %s: %w", usersTable, username, err)
 	}
-	SetCache(cacheKey, user.UserID, 48*time.Hour)
 	return user.UserID, nil
 }
 
@@ -88,12 +92,7 @@ func GetUsers() ([]User, error) {
 }
 
 func DeleteUser(userID int64) error {
-	username, err := GetUsernameFromID(userID)
-	if err == nil {
-		cacheKey := fmt.Sprintf("user_id_mapping:%s", username)
-		_ = DeleteCache(cacheKey)
-	}
-	_, err = databaseEngine.Table(usersTable).Where("user_id = ?", userID).Delete()
+	_, err := databaseEngine.Table(usersTable).Where("user_id = ?", userID).Delete()
 	if err != nil {
 		return fmt.Errorf("delete %s for user_id %d: %w", usersTable, userID, err)
 	}

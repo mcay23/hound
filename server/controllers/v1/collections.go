@@ -36,7 +36,11 @@ type CreateCollectionRequest struct {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func AddToCollectionHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
 	body := AddToCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w : %w", internal.BadRequestError, err))
@@ -62,23 +66,20 @@ func AddToCollectionHandler(c *gin.Context) {
 	}
 	switch body.MediaType {
 	case database.MediaTypeTVShow:
-		err = sources.AddTVShowToCollectionTMDB(username, body.MediaSource, sourceID, int64(collectionID))
+		err = sources.AddTVShowToCollectionTMDB(userID, body.MediaSource, sourceID, int64(collectionID))
 		if err != nil {
 			internal.ErrorResponse(c, fmt.Errorf("failed to add tv show to collection: %w", err))
 			return
 		}
 	case database.MediaTypeMovie:
-		err = sources.AddMovieToCollectionTMDB(username, body.MediaSource, sourceID, int64(collectionID))
+		err = sources.AddMovieToCollectionTMDB(userID, body.MediaSource, sourceID, int64(collectionID))
 		if err != nil {
 			internal.ErrorResponse(c, fmt.Errorf("failed to add movie to collection: %w", err))
 			return
 		}
-	case database.MediaTypeGame:
-		err = sources.AddGameToCollectionIGDB(username, body.MediaSource, sourceID, int64(collectionID))
-		if err != nil {
-			internal.ErrorResponse(c, fmt.Errorf("failed to add game to collection: %w", err))
-			return
-		}
+	default:
+		internal.ErrorResponse(c, fmt.Errorf("unsupported media type: %s", body.MediaType))
+		return
 	}
 	internal.SuccessResponse(c, nil, 200)
 }
@@ -94,9 +95,9 @@ func AddToCollectionHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func DeleteFromCollectionHandler(c *gin.Context) {
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	body := AddToCollectionRequest{}
@@ -142,9 +143,9 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetUserCollectionsHandler(c *gin.Context) {
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, -1)
@@ -152,17 +153,23 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
 		return
 	}
+	user, err := database.GetUser(userID)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", err))
+		return
+	}
 	var collectionResponse = []view.CollectionObject{}
 	for _, record := range records {
 		temp := view.CollectionObject{
-			CollectionID:    record.CollectionID,
-			CollectionTitle: record.CollectionTitle,
-			Description:     string(record.Description),
-			OwnerUsername:   c.GetHeader("X-Username"),
-			IsPublic:        record.IsPublic,
-			ThumbnailURI:    record.ThumbnailURI,
-			CreatedAt:       record.CreatedAt,
-			UpdatedAt:       record.UpdatedAt,
+			CollectionID:     record.CollectionID,
+			CollectionTitle:  record.CollectionTitle,
+			Description:      string(record.Description),
+			OwnerUsername:    user.Username,
+			OwnerDisplayName: user.DisplayName,
+			IsPublic:         record.IsPublic,
+			ThumbnailURI:     record.ThumbnailURI,
+			CreatedAt:        record.CreatedAt,
+			UpdatedAt:        record.UpdatedAt,
 		}
 		collectionResponse = append(collectionResponse, temp)
 	}
@@ -178,14 +185,14 @@ func GetUserCollectionsHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func CreateCollectionHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
 	body := CreateCollectionRequest{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", internal.BadRequestError, err))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
-	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
 		return
 	}
 	record := database.CollectionRecord{
@@ -229,9 +236,9 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	records, collection, totalRecords, err := database.GetCollectionRecords(userID, int64(collectionID), limit, offset)
@@ -245,7 +252,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		viewArray = append(viewArray, viewObject)
 	}
 	// note collection owner can be different from calling user (public collections)
-	collectionOwner, err := database.GetUsernameFromID(collection.OwnerUserID)
+	collectionOwner, err := database.GetUser(collection.OwnerUserID)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w", err))
 		return
@@ -253,14 +260,15 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	res := view.CollectionView{
 		Records: viewArray,
 		Collection: &view.CollectionObject{
-			CollectionID:    collection.CollectionID,
-			CollectionTitle: collection.CollectionTitle,
-			Description:     string(collection.Description),
-			OwnerUsername:   collectionOwner,
-			IsPublic:        collection.IsPublic,
-			ThumbnailURI:    collection.ThumbnailURI,
-			CreatedAt:       collection.CreatedAt,
-			UpdatedAt:       collection.UpdatedAt,
+			CollectionID:     collection.CollectionID,
+			CollectionTitle:  collection.CollectionTitle,
+			Description:      string(collection.Description),
+			OwnerUsername:    collectionOwner.Username,
+			OwnerDisplayName: collectionOwner.DisplayName,
+			IsPublic:         collection.IsPublic,
+			ThumbnailURI:     collection.ThumbnailURI,
+			CreatedAt:        collection.CreatedAt,
+			UpdatedAt:        collection.UpdatedAt,
 		},
 		TotalRecords: totalRecords,
 		Limit:        limit,
@@ -279,9 +287,9 @@ func GetCollectionContentsHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetRecentCollectionContentsHandler(c *gin.Context) {
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// return 20 most recent
@@ -314,9 +322,9 @@ func DeleteCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	err = database.DeleteCollection(userID, collectionID)

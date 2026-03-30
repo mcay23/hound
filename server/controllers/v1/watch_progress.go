@@ -36,14 +36,9 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 	} else if !strings.Contains(c.FullPath(), "/api/v1/movie/") {
 		panic("Fatal error, invalid path for watch history")
 	}
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
@@ -112,7 +107,7 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 		}
 	}
 	// set client platform
-	watchProgress.ClientPlatform = c.GetHeader("X-Client-Platform")
+	watchProgress.ClientPlatform = c.GetString("clientPlatform")
 	// otherwise, continue to set watch progress
 	err = model.SetWatchProgress(userID, mediaType, mediaSource, strconv.Itoa(sourceID), watchProgress)
 	if err != nil {
@@ -140,14 +135,9 @@ func GetPlaybackProgressHandler(c *gin.Context) {
 	} else if !strings.Contains(c.FullPath(), "/api/v1/movie/") {
 		panic("Fatal error, invalid path for watch history")
 	}
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
@@ -205,14 +195,9 @@ func DeletePlaybackProgressHandler(c *gin.Context) {
 	} else if !strings.Contains(c.FullPath(), "/api/v1/movie/") {
 		panic("Fatal error, invalid path for watch history")
 	}
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))

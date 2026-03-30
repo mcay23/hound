@@ -104,14 +104,14 @@ func handleGetComments(c *gin.Context, recordType string) {
 	}
 	var commentsView []view.CommentObject
 	for _, item := range *comments {
-		commenter, _ := database.GetUsernameFromID(item.UserID)
-		if !item.IsPublic && c.GetHeader("X-Username") != commenter {
+		commenter, _ := database.GetUser(item.UserID)
+		if !item.IsPublic && c.GetString("username") != commenter.Username {
 			continue
 		}
 		comment := view.CommentObject{
 			CommentID:    item.CommentID,
 			CommentType:  item.CommentType,
-			UserID:       commenter,
+			UserID:       commenter.Username,
 			RecordID:     item.RecordID,
 			IsPublic:     item.IsPublic,
 			CommentTitle: item.CommentTitle,
@@ -170,7 +170,7 @@ func handlePostComment(c *gin.Context, recordType string) {
 		return
 	}
 	// get userID
-	userID, err := database.GetUserIDFromUsername(c.GetHeader("X-Username"))
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -220,10 +220,9 @@ func handlePostComment(c *gin.Context, recordType string) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func DeleteCommentHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, internal.LogErrorWithMessage(err, "Invalid user"))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// for batch deletion, split query params /comment?ids=1,2,3

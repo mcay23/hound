@@ -36,14 +36,13 @@ func GetNextWatchActionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	username := c.GetHeader("X-Username")
-	userID, err := database.GetUserIDFromUsername(username)
-	// if no watch action, we don't want to return error
-	// but ideally need to check if no watch action vs. internal error
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
+	// if no watch action, we don't want to return error
+	// but ideally need to check if no watch action vs. internal error
 	watchAction, _ := model.GetNextWatchAction(userID, mediaType, mediaSource, strconv.Itoa(sourceID))
 	internal.SuccessResponse(c, watchAction, 200)
 }
@@ -57,10 +56,9 @@ func GetNextWatchActionHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetContinueWatchingHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("invalid user: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	watchActions, err := model.GetContinueWatching(userID)

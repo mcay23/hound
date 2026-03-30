@@ -28,10 +28,9 @@ import (
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetWatchActivityHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	limitQuery := c.DefaultQuery("limit", "500")
@@ -103,14 +102,9 @@ func GetWatchHistoryMovieHandler(c *gin.Context) {
 }
 
 func handleGetWatchHistory(c *gin.Context, recordType string) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, parentSourceID, err := getSourceIDFromParams(c.Param("id"))
@@ -179,14 +173,9 @@ type AddWatchHistoryTVResponse struct {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func AddWatchHistoryTVHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
@@ -249,14 +238,9 @@ type DeleteWatchHistoryPayload struct {
 }
 
 func handleDeleteWatchHistory(c *gin.Context, recordType string) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// Only episode ids that belong to the same show should be inserted at the same time
@@ -294,14 +278,9 @@ func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func AddTVShowRewatchHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
@@ -356,14 +335,9 @@ type AddWatchHistoryMovieResponse struct {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func AddWatchHistoryMovieHandler(c *gin.Context) {
-	username := c.GetHeader("X-Username")
-	if username == "" {
-		internal.ErrorResponse(c, fmt.Errorf("X-Username not found in header: %w", internal.BadRequestError))
-		return
-	}
-	userID, err := database.GetUserIDFromUsername(username)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error getting user id for username %s: %w", username, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))

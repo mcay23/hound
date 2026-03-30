@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 
@@ -21,31 +22,49 @@ func extractBearerToken(header string) (string, error) {
 	return jwtToken[1], nil
 }
 
-func JWTMiddleware(c *gin.Context) {
-	jwtToken, err := c.Cookie("token")
-	if err != nil {
-		// _ = helpers.LogErrorWithMessage(err, "Cookie not found, checking auth header")
-		jwtToken, err = extractBearerToken(c.GetHeader("Authorization"))
+func AuthMiddleware(c *gin.Context) {
+	apiKey := c.GetHeader("X-Api-Key")
+	// API Key case
+	if apiKey != "" {
+		key, err := model.ValidateAPIKey(apiKey)
 		if err != nil {
 			internal.ErrorResponse(c, err)
 			return
 		}
+		user, err := database.GetUser(key.UserID)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", err))
+			return
+		}
+		role := "user"
+		if user.IsAdmin {
+			role = "admin"
+		}
+		c.Set("userID", user.UserID)
+		c.Set("clientID", "api")
+		c.Set("clientPlatform", "api")
+		c.Set("role", role)
+	} else {
+		// Access Token case
+		jwtToken, err := c.Cookie("token")
+		if err != nil {
+			jwtToken, err = extractBearerToken(c.GetHeader("Authorization"))
+			if err != nil {
+				// no auth provided
+				internal.ErrorResponse(c, err)
+				return
+			}
+		}
+		claims, err := model.ParseAccessToken(jwtToken)
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		c.Set("userID", claims.UserID)
+		c.Set("clientID", claims.ClientID)
+		c.Set("clientPlatform", claims.ClientPlatform)
+		c.Set("role", claims.Role)
 	}
-	claims, err := model.ParseAccessToken(jwtToken)
-	if err != nil {
-		internal.ErrorResponse(c, err)
-		return
-	}
-	// set headers from auth token, overwrite current headers
-	c.Request.Header.Del("X-Username")
-	c.Request.Header.Del("X-Client-Id")
-	c.Request.Header.Del("X-Client-Platform")
-	c.Request.Header.Del("X-Role")
-
-	c.Request.Header.Add("X-Username", claims.Username)
-	c.Request.Header.Add("X-Client-Id", claims.ClientID)
-	c.Request.Header.Add("X-Client-Platform", claims.ClientPlatform)
-	c.Set("role", claims.Role)
 	c.Next()
 }
 

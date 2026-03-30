@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  database.APIKey:
+    properties:
+      api_key:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      key_id:
+        type: integer
+      name:
+        type: string
+      user_id:
+        type: integer
+    type: object
   database.DownloadPreference:
     properties:
       info_hash_preference:
@@ -343,6 +358,8 @@ definitions:
       created_at:
         type: string
       display_name:
+        type: string
+      hashed_password:
         type: string
       is_admin:
         type: boolean
@@ -757,54 +774,6 @@ definitions:
       video_metadata:
         $ref: '#/definitions/database.VideoMetadata'
     type: object
-  sources.IGDBSearchObject:
-    properties:
-      cover:
-        properties:
-          id:
-            type: integer
-          image_id:
-            type: string
-          image_url:
-            type: string
-        type: object
-      first_release_date:
-        type: integer
-      genres:
-        items:
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
-          type: object
-        type: array
-      id:
-        type: integer
-      media_source:
-        type: string
-      media_title:
-        type: string
-      media_type:
-        type: string
-      name:
-        type: string
-      platforms:
-        items:
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
-          type: object
-        type: array
-      release_date:
-        type: string
-      source_id:
-        type: integer
-      thumbnail_uri:
-        type: string
-    type: object
   v1.AddToCollectionRequest:
     properties:
       media_source:
@@ -996,6 +965,8 @@ definitions:
         type: string
       is_public:
         type: boolean
+      owner_display_name:
+        type: string
       owner_username:
         type: string
       tags:
@@ -1073,10 +1044,6 @@ definitions:
     type: object
   view.GeneralSearchResponse:
     properties:
-      game_results:
-        items:
-          $ref: '#/definitions/sources.IGDBSearchObject'
-        type: array
       movie_results:
         items:
           $ref: '#/definitions/view.MediaRecordCatalog'
@@ -1418,6 +1385,95 @@ info:
   title: Hound API Documentation V1
   version: beta-0.1.0
 paths:
+  /api/v1/api_keys:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.APIKey'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get User API Keys
+      tags:
+      - API Keys
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: API Key Name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create API Key
+      tags:
+      - API Keys
+  /api/v1/api_keys/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Revoke API Key
+      tags:
+      - API Keys
   /api/v1/auth/login:
     post:
       consumes:

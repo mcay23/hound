@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/sources"
@@ -15,11 +16,27 @@ func validateMediaParams(mediaType string, mediaSource string) error {
 	if !validType {
 		return fmt.Errorf("invalid media type: %w", internal.BadRequestError)
 	}
-	validSource := mediaSource == sources.MediaSourceTMDB || mediaSource == sources.SourceIGDB
+	validSource := mediaSource == sources.MediaSourceTMDB
 	if !validSource {
 		return fmt.Errorf("invalid media source: %w", internal.BadRequestError)
 	}
 	return nil
+}
+
+func getUserIDFromContext(c *gin.Context) (int64, error) {
+	temp, exists := c.Get("userID")
+	if !exists || temp == nil {
+		return -1, fmt.Errorf("invalid user: %w", internal.BadRequestError)
+	}
+	userID, ok := temp.(int64)
+	if !ok {
+		return -1, fmt.Errorf("invalid user: %w", internal.BadRequestError)
+	}
+	// since id is autoincremented from 1 in postgres, treat 0 as invalid
+	if userID == 0 {
+		return -1, fmt.Errorf("invalid user id 0 parsed: %w", internal.BadRequestError)
+	}
+	return userID, nil
 }
 
 func getSourceIDFromParams(tmdbParam string) (string, int, error) {
@@ -29,7 +46,7 @@ func getSourceIDFromParams(tmdbParam string) (string, int, error) {
 	}
 	id, err := strconv.ParseInt(split[1], 10, 64)
 	// only accept tmdb ids for now
-	if err != nil || split[0] != sources.MediaSourceTMDB && split[0] != sources.SourceIGDB {
+	if err != nil || split[0] != sources.MediaSourceTMDB {
 		return "", -1, fmt.Errorf("invalid source id parameters: %w", internal.BadRequestError)
 	}
 	return split[0], int(id), nil

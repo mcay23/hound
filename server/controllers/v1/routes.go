@@ -17,11 +17,11 @@ func SetupRoutes(r *gin.Engine) {
 
 	// private routes, auth required, everything else
 	privateRoutes := r.Group("/api/v1")
-	privateRoutes.Use(middlewares.JWTMiddleware)
+	privateRoutes.Use(middlewares.AuthMiddleware)
 
 	// admin routes, admin only apis
 	adminRoutes := r.Group("/api/v1")
-	adminRoutes.Use(middlewares.JWTMiddleware)
+	adminRoutes.Use(middlewares.AuthMiddleware)
 	adminRoutes.Use(middlewares.AdminMiddleware)
 
 	/*
@@ -30,6 +30,13 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.GET("/users", GetUsersHandler)
 	adminRoutes.DELETE("/users/:id", DeleteUserHandler)
 	adminRoutes.POST("/users", RegistrationHandler)
+
+	/*
+		API Keys
+	*/
+	privateRoutes.GET("/api_keys", GetUserAPIKeysHandler)
+	privateRoutes.POST("/api_keys", CreateAPIKeyHandler)
+	privateRoutes.DELETE("/api_keys/:id", RevokeAPIKeyHandler)
 
 	/*
 		General Routes

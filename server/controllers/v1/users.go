@@ -44,9 +44,12 @@ func DeleteUserHandler(c *gin.Context) {
 		return
 	}
 	// prevent self-deletion, for now only one admin can exist
-	currentUsername := c.GetHeader("X-Username")
-	currentUserID, err := database.GetUserIDFromUsername(currentUsername)
-	if err == nil && currentUserID == userID {
+	currentUserID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	if currentUserID == userID {
 		internal.ErrorResponse(c, fmt.Errorf("cannot delete admin user: %w", internal.BadRequestError))
 		return
 	}

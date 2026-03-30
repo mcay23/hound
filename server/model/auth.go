@@ -39,7 +39,7 @@ type LoginUser struct {
 }
 
 type JWTClaims struct {
-	Username       string `json:"username"`
+	UserID         int64  `json:"user_id"`
 	ClientID       string `json:"client_id"`
 	ClientPlatform string `json:"client_platform"`
 	Role           string `json:"role"`
@@ -58,11 +58,11 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
 	}
-	_, err = database.InsertUser(insertUser)
-	if err != nil {
+	newID, err := database.InsertUser(insertUser)
+	if err != nil || newID == nil {
 		return nil, fmt.Errorf("%w: Failed to insert user to database", internal.InternalServerError)
 	}
-	newUser, err := database.GetUser(user.Username)
+	newUser, err := database.GetUser(*newID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to get user from database", internal.InternalServerError)
 	}
@@ -77,17 +77,18 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 	// if err != nil {
 	// 	return err
 	// }
+	newUser.HashedPassword = ""
 	return newUser, nil
 }
 
 // GenerateAccessToken JWT access token
-func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string) (string, string, error) {
+func GenerateAccessToken(userID int64, password string, clientID string, clientPlatform string) (string, string, error) {
 	jwtKey := []byte(os.Getenv("HOUND_SECRET"))
-	dbUser, err := database.GetUser(user.Username)
+	dbUser, err := database.GetUser(userID)
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to fetch user from database: %w", err)
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(password))
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", internal.UnauthorizedError)
 	}
@@ -102,7 +103,7 @@ func GenerateAccessToken(user LoginUser, clientID string, clientPlatform string)
 		role = "user"
 	}
 	claims := &JWTClaims{
-		Username:       user.Username,
+		UserID:         dbUser.UserID,
 		ClientID:       clientID,
 		ClientPlatform: clientPlatform,
 		RegisteredClaims: jwt.RegisteredClaims{

@@ -242,11 +242,7 @@ func GetTVEpisodeGroupsDetailsTMDB(tmdbEpisodeGroupID string) (*tmdb.TVEpisodeGr
 	return episodeGroupDetails, err
 }
 
-func AddTVShowToCollectionTMDB(username string, source string, sourceID int, collectionID int64) error {
-	userID, err := database.GetUserIDFromUsername(username)
-	if err != nil {
-		return err
-	}
+func AddTVShowToCollectionTMDB(userID int64, source string, sourceID int, collectionID int64) error {
 	if source != MediaSourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}
@@ -326,11 +322,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	return movie, nil
 }
 
-func AddMovieToCollectionTMDB(username string, source string, sourceID int, collectionID int64) error {
-	userID, err := database.GetUserIDFromUsername(username)
-	if err != nil {
-		return err
-	}
+func AddMovieToCollectionTMDB(userID int64, source string, sourceID int, collectionID int64) error {
 	if source != MediaSourceTMDB {
 		panic("Only tmdb source is allowed for now")
 	}

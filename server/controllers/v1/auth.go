@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 
@@ -78,9 +79,14 @@ func LoginHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	token, role, err := model.GenerateAccessToken(userPayload, clientID, clientPlatform)
+	userID, err := database.GetUserIDFromUsername(userPayload.Username)
 	if err != nil {
-		internal.ErrorResponse(c, internal.UnauthorizedError)
+		internal.ErrorResponse(c, err)
+		return
+	}
+	token, role, err := model.GenerateAccessToken(userID, userPayload.Password, clientID, clientPlatform)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("Failed to generate access token: %w", err))
 		return
 	}
 	cookie := &http.Cookie{

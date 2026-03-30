@@ -1,8 +1,0 @@
----
-auth:
-  jwt-access-token-expiration: 604800 # expressed in seconds
-external_library:
-  enabled: false
-  movies_root_path: ""
-  tv_root_path: ""
-  scan_interval_minutes: 360

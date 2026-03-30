@@ -49,6 +49,11 @@ func InstantiateDB() {
 		_ = internal.LogErrorWithMessage(err, "Failed to instantiate users table")
 		panic(err)
 	}
+	err = instantiateAPIKeysTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate API keys table")
+		panic(err)
+	}
 	err = instantiateCollectionTables()
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to instantiate collection tables")

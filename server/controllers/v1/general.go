@@ -38,7 +38,6 @@ func GeneralSearchHandler(c *gin.Context) {
 	internal.SuccessResponse(c, view.GeneralSearchResponse{
 		TVShowSearchResults: tvResults,
 		MovieSearchResults:  movieResults,
-		GameSearchResults:   nil,
 	}, 200)
 }
 
