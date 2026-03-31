@@ -33,6 +33,8 @@ axios.defaults.headers.common["X-Client-Id"] =
   AXIOS_CONFIG.headers["X-Client-Id"];
 axios.defaults.headers.common["X-Client-Platform"] =
   AXIOS_CONFIG.headers["X-Client-Platform"];
+axios.defaults.headers.common["X-Device-Id"] =
+  AXIOS_CONFIG.headers["X-Device-Id"];
 
 axios.interceptors.request.use(
   function (config) {
@@ -57,8 +59,9 @@ axios.interceptors.response.use(
     console.log(error);
     const statusCode = error.response.status;
     if (statusCode === 401) {
-      const win: Window = window;
-      win.location = "/logout";
+      if (window.location.pathname !== "/logout") {
+        window.location.href = "/logout";
+      }
     }
     return Promise.reject(error);
   },
@@ -102,10 +105,7 @@ function App() {
               />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
-              <Route
-                path="logout"
-                element={<ProtectedRoute component={<Logout />} />}
-              />
+              <Route path="logout" element={<Logout />} />
               {localStorage.getItem("role") === "admin" && (
                 <Route
                   path="admin"

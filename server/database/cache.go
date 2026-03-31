@@ -71,9 +71,9 @@ func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	return true, nil
 }
 
-// Retrieves a key and unmarshals JSON into the provided interface
-// returns whether the key exists in bool
-// handles the error logging, since we don't usually want failed cache to end in error response
+// Retrieves a key and unmarshals JSON into the provided interface.
+// Returns whether the key exists in bool
+// Handles the error logging, since we don't usually want failed cache to end in error response
 func GetCache(key string, out interface{}) (bool, error) {
 	if db == nil {
 		panic("Error: GetCache() called while cache not initialized")

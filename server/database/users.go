@@ -53,7 +53,7 @@ func GetUser(userID int64) (*User, error) {
 	if !found {
 		return nil, fmt.Errorf("query %s for user_id %d: %w", usersTable, userID, internal.NotFoundError)
 	}
-	SetCache(cacheKey, user, 48*time.Hour)
+	SetCache(cacheKey, user, 24*time.Hour)
 	return &user, nil
 }
 

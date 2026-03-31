@@ -11,59 +11,60 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func extractBearerToken(header string) (string, error) {
-	if header == "" {
-		return "", fmt.Errorf("no auth token in header: %w", internal.UnauthorizedError)
-	}
-	jwtToken := strings.Split(header, " ")
-	if len(jwtToken) != 2 {
-		return "", fmt.Errorf("invalid header token: %w", internal.UnauthorizedError)
-	}
-	return jwtToken[1], nil
-}
-
 func AuthMiddleware(c *gin.Context) {
 	apiKey := c.GetHeader("X-Api-Key")
+	// user call is cached, speed is vital
+	var user *database.User
 	// API Key case
 	if apiKey != "" {
 		key, err := model.ValidateAPIKey(apiKey)
 		if err != nil {
-			internal.ErrorResponse(c, err)
+			internal.ErrorResponse(c, fmt.Errorf("failed to validate API Key: %w", internal.UnauthorizedError))
 			return
 		}
-		user, err := database.GetUser(key.UserID)
+		user, err = database.GetUser(key.UserID)
 		if err != nil {
-			internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", internal.UnauthorizedError))
 			return
 		}
-		role := "user"
-		if user.IsAdmin {
-			role = "admin"
-		}
-		c.Set("userID", user.UserID)
+		c.Set("userID", key.UserID)
 		c.Set("clientID", "api")
 		c.Set("clientPlatform", "api")
-		c.Set("role", role)
+		c.Set("deviceID", "")
 	} else {
 		// Access Token case
-		jwtToken, err := c.Cookie("token")
+		sessionID, err := c.Cookie("token")
 		if err != nil {
-			jwtToken, err = extractBearerToken(c.GetHeader("Authorization"))
+			sessionID, err = ExtractBearerToken(c.GetHeader("Authorization"))
 			if err != nil {
 				// no auth provided
-				internal.ErrorResponse(c, err)
+				internal.ErrorResponse(c, fmt.Errorf("failed to get auth token: %w", internal.UnauthorizedError))
 				return
 			}
 		}
-		claims, err := model.ParseAccessToken(jwtToken)
+		sess, err := model.ParseAuthSession(sessionID)
 		if err != nil {
-			internal.ErrorResponse(c, err)
+			internal.ErrorResponse(c, fmt.Errorf("failed to parse auth session: %w", internal.UnauthorizedError))
 			return
 		}
-		c.Set("userID", claims.UserID)
-		c.Set("clientID", claims.ClientID)
-		c.Set("clientPlatform", claims.ClientPlatform)
-		c.Set("role", claims.Role)
+		user, err = database.GetUser(sess.UserID)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", internal.UnauthorizedError))
+			return
+		}
+		c.Set("userID", sess.UserID)
+		c.Set("clientID", sess.ClientID)
+		c.Set("clientPlatform", sess.ClientPlatform)
+		c.Set("deviceID", sess.DeviceID)
+	}
+	if user == nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", internal.UnauthorizedError))
+		return
+	}
+	if user.IsAdmin {
+		c.Set("role", "admin")
+	} else {
+		c.Set("role", "user")
 	}
 	c.Next()
 }
@@ -85,7 +86,7 @@ func CORSMiddleware(c *gin.Context) {
 	// }
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "User-Agent, Content-Type, Content-Length, Accept-Ranges, Content-Range, Range, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Client-Id, X-Client-Platform")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "User-Agent, Content-Type, Content-Length, Accept-Ranges, Content-Range, Range, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Client-Id, X-Client-Platform, X-Device-Id")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, HEAD")
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
 
@@ -94,4 +95,15 @@ func CORSMiddleware(c *gin.Context) {
 		return
 	}
 	c.Next()
+}
+
+func ExtractBearerToken(header string) (string, error) {
+	if header == "" {
+		return "", fmt.Errorf("no auth token in header: %w", internal.UnauthorizedError)
+	}
+	token := strings.Split(header, " ")
+	if len(token) != 2 {
+		return "", fmt.Errorf("invalid header token: %w", internal.UnauthorizedError)
+	}
+	return token[1], nil
 }

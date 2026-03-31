@@ -13,7 +13,6 @@ func SetupRoutes(r *gin.Engine) {
 
 	// public routes and login
 	publicRoutes := r.Group("/api/v1")
-	publicRoutes.POST("/auth/login", LoginHandler)
 
 	// private routes, auth required, everything else
 	privateRoutes := r.Group("/api/v1")
@@ -30,6 +29,12 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.GET("/users", GetUsersHandler)
 	adminRoutes.DELETE("/users/:id", DeleteUserHandler)
 	adminRoutes.POST("/users", RegistrationHandler)
+
+	/*
+		Auth Routes
+	*/
+	publicRoutes.POST("/auth/login", LoginHandler)    // public
+	privateRoutes.POST("/auth/logout", LogoutHandler) // private (revokes own token)
 
 	/*
 		API Keys
