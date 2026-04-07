@@ -16,9 +16,7 @@ services:
 
   hound-server:
     container_name: hound-server
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: houndmediaserver/hound:latest
     depends_on:
       hound-postgres:
         condition: service_healthy

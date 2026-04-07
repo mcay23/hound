@@ -1,5 +1,5 @@
 # Stage 1: Build Web
-FROM node:22-alpine as web-builder
+FROM node:22-alpine AS web-builder
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm install --legacy-peer-deps
@@ -7,7 +7,7 @@ COPY web/ .
 RUN npm run build
 
 # Stage 2: Build Server
-FROM golang:1.26.1-alpine as server-builder
+FROM golang:1.26.1-alpine AS server-builder
 ARG VERSION=dev
 ARG COMMIT
 ARG BUILD_TIME
