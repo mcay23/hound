@@ -39,9 +39,10 @@ func RegistrationHandler(c *gin.Context) {
 }
 
 type LoginResponse struct {
-	Username string `json:"username"`
-	Token    string `json:"token"`
-	Role     string `json:"role"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	Token       string `json:"token"`
+	Role        string `json:"role"`
 }
 
 // @Router /api/v1/auth/login [post]
@@ -69,8 +70,7 @@ func LoginHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	token, role, err := model.
-		AuthenticateUser(userID, userPayload.Password, clientID, clientPlatform, deviceID)
+	token, displayName, role, err := model.AuthenticateUser(userID, userPayload.Password, clientID, clientPlatform, deviceID)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("Failed to generate access token: %w", err))
 		return
@@ -85,7 +85,13 @@ func LoginHandler(c *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(c.Writer, cookie)
-	internal.SuccessResponse(c, LoginResponse{Username: userPayload.Username, Token: token, Role: role}, 200)
+	internal.SuccessResponse(c,
+		LoginResponse{
+			Username:    userPayload.Username,
+			DisplayName: displayName,
+			Token:       token,
+			Role:        role,
+		}, 200)
 }
 
 // @Router /api/v1/auth/logout [post]

@@ -19,8 +19,8 @@ const (
 	ClientPlatformWeb           = "web"
 )
 
-var SupportedClientPlatforms = []string{ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
-var SupportedClientIDs = []string{ClientIDWeb, ClientIDApp}
+var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientIDs = []string{"", ClientIDWeb, ClientIDApp}
 
 type RegistrationUser struct {
 	Username    string `json:"username" binding:"required,gt=0"`
@@ -70,14 +70,14 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 }
 
 func AuthenticateUser(userID int64, password string, clientID string,
-	clientPlatform string, deviceID string) (string, string, error) {
+	clientPlatform string, deviceID string) (string, string, string, error) {
 	dbUser, err := database.GetUser(userID)
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to fetch user from database: %w", err)
+		return "", "", "", fmt.Errorf("Failed to fetch user from database: %w", err)
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(password))
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", internal.UnauthorizedError)
+		return "", "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", internal.UnauthorizedError)
 	}
 	var role string
 	// should change to a scope-based system in the future
@@ -88,9 +88,9 @@ func AuthenticateUser(userID int64, password string, clientID string,
 	}
 	sessionID, err := database.GenerateAuthSession(userID, clientID, clientPlatform, deviceID)
 	if err != nil {
-		return "", "", fmt.Errorf("Error generating auth session: %w", internal.InternalServerError)
+		return "", "", "", fmt.Errorf("Error generating auth session: %w", internal.InternalServerError)
 	}
-	return sessionID, role, nil
+	return sessionID, dbUser.DisplayName, role, nil
 }
 
 func ParseAuthSession(sessionID string) (*database.AuthSession, error) {

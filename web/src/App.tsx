@@ -17,7 +17,7 @@ import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
 import { Toaster } from "react-hot-toast";
-import Topnav from "./pages/Topnav";
+import Topnav from "./pages/Topnav/Topnav";
 import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
 

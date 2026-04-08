@@ -24,6 +24,7 @@ function Login() {
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("role", res.data.role);
+        localStorage.setItem("displayName", res.data.display_name);
         window.location.reload();
         setAlertVisible(false);
       })

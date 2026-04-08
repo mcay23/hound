@@ -1,5 +1,6 @@
 import { Container, Nav, Navbar } from "react-bootstrap";
 import "./Topnav.css";
+import ProfileButton from "./ProfileButton";
 
 function Topnav() {
   return (
@@ -28,15 +29,7 @@ function Topnav() {
               Activity
             </Nav.Link>
           </Nav>
-          {/* <SearchBar type={"nav"} /> */}
-          {localStorage.getItem("role") === "admin" && (
-            <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/admin">
-              Admin
-            </Nav.Link>
-          )}
-          <Nav.Link className="top-navbar-item me-3 mt-2 mb-2" href="/logout">
-            Logout
-          </Nav.Link>
+          <ProfileButton />
         </Navbar.Collapse>
       </Container>
     </Navbar>

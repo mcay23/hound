@@ -34,6 +34,10 @@
     margin-right: 0.2em;
 }
 
+.top-navbar-button {
+    margin-bottom: 0;
+}
+
 .top-navbar-item:hover {
     color: gold;
 }
