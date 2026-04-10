@@ -1,7 +1,0 @@
----
-auth:
-  allow-registration: true
-external_library:
-  enabled: true
-  scan_interval_minutes: 360
-  max_workers: 3
