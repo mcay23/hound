@@ -5,13 +5,12 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import "./Admin.css";
-import Downloads from "./Downloads";
+import "./Settings.css";
 import { useState } from "react";
-import ProviderProfiles from "./ProviderProfiles";
-import UserList from "./Users";
+import ApiKeys from "./ApiKeys";
+import GeneralSettings from "./GeneralSettings";
 
-export default function Admin(props: any) {
+export default function Settings(props: any) {
   const [activeTab, setActiveTab] = useState(0);
   return (
     <>
@@ -33,27 +32,24 @@ export default function Admin(props: any) {
             }}
           >
             <div>
-              <h2>Admin Panel</h2>
+              <h2>User Settings</h2>
             </div>
             <List>
-              {["Downloads", "Users", "Provider Profiles"].map(
-                (text, index) => (
-                  <ListItem key={text} disablePadding>
-                    <ListItemButton onClick={() => setActiveTab(index)}>
-                      {/* <ListItemIcon>
+              {["General Settings", "API Keys"].map((text, index) => (
+                <ListItem key={text} disablePadding>
+                  <ListItemButton onClick={() => setActiveTab(index)}>
+                    {/* <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                 </ListItemIcon> */}
-                      <ListItemText primary={text} />
-                    </ListItemButton>
-                  </ListItem>
-                ),
-              )}
+                    <ListItemText primary={text} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
             </List>
           </Drawer>
-          <div className="d-flex admin-content">
-            {activeTab === 0 && <Downloads />}
-            {activeTab === 1 && <UserList />}
-            {activeTab === 2 && <ProviderProfiles />}
+          <div className="d-flex settings-content">
+            {activeTab === 0 && <GeneralSettings />}
+            {activeTab === 1 && <ApiKeys />}
           </div>
         </div>
       </div>

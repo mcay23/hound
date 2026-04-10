@@ -31,7 +31,9 @@ export default function ProfileButton() {
         open={open}
         onClose={handleClose}
       >
-        <MenuItem onClick={handleClose}>My Account</MenuItem>
+        <MenuItem onClick={() => (window.location.href = "/settings")}>
+          My Account
+        </MenuItem>
         {localStorage.getItem("role") === "admin" && (
           <MenuItem onClick={() => (window.location.href = "/admin")}>
             Admin Panel

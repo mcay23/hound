@@ -31,7 +31,7 @@ func InsertAPIKey(apiKey *APIKey) error {
 
 func GetUserAPIKeys(userID int64) ([]APIKey, error) {
 	var records []APIKey
-	err := databaseEngine.Table(apiKeysTable).Where("user_id = ?", userID).Find(&records)
+	err := databaseEngine.Table(apiKeysTable).Where("user_id = ?", userID).Where("revoked_at IS NULL").Find(&records)
 	if err != nil {
 		return nil, fmt.Errorf("query api keys: %w", err)
 	}

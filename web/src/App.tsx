@@ -20,6 +20,7 @@ import { Toaster } from "react-hot-toast";
 import Topnav from "./pages/Topnav/Topnav";
 import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
+import Settings from "./pages/Settings/Settings";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,10 @@ function App() {
                   element={<ProtectedRoute component={<Admin />} />}
                 />
               )}
+              <Route
+                path="settings"
+                element={<ProtectedRoute component={<Settings />} />}
+              />
               <Route
                 path="activity"
                 element={<ProtectedRoute component={<Activity />} />}
