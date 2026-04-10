@@ -69,7 +69,7 @@ Note that this will cause mismatches, especially for tv shows if the season/epis
 ordering of the source directory is not identical to tmdb's ordering
 */
 func InitializeExternalLibraryWorkers() {
-	if !model.ExternalLibraryEnabled {
+	if !model.ExternalLibraryWorkersEnabled {
 		return
 	}
 	roots := getExternalLibraryRoots()
@@ -84,7 +84,7 @@ func InitializeExternalLibraryWorkers() {
 	}
 	for _, root := range roots {
 		go initialExternalLibraryScan(root)
-		go periodicExternalLibraryRescan(root, model.ExternalScanInterval)
+		go periodicExternalLibraryRescan(root, model.ExternalLibraryScanInterval)
 		go watchExternalLibrary(root)
 		slog.Info("External library root started", "root", root.RootPath, "mediaType", root.MediaType)
 	}
@@ -92,15 +92,15 @@ func InitializeExternalLibraryWorkers() {
 
 func getExternalLibraryRoots() []externalLibraryRoot {
 	roots := make([]externalLibraryRoot, 0, 2)
-	if strings.TrimSpace(model.ExternalLibraryMovies) != "" {
+	if strings.TrimSpace(model.ExternalLibraryMoviesPath) != "" {
 		roots = append(roots, externalLibraryRoot{
-			RootPath:  filepath.Clean(model.ExternalLibraryMovies),
+			RootPath:  filepath.Clean(model.ExternalLibraryMoviesPath),
 			MediaType: database.MediaTypeMovie,
 		})
 	}
-	if strings.TrimSpace(model.ExternalLibraryTV) != "" {
+	if strings.TrimSpace(model.ExternalLibraryTVPath) != "" {
 		roots = append(roots, externalLibraryRoot{
-			RootPath:  filepath.Clean(model.ExternalLibraryTV),
+			RootPath:  filepath.Clean(model.ExternalLibraryTVPath),
 			MediaType: database.MediaTypeTVShow,
 		})
 	}

@@ -32,7 +32,6 @@ services:
       - SERVER_PORT=2323 # try not to change
     volumes:
       - ./docker/Hound Data:/app/Hound Data
-      - ./docker/config:/app/config
 
 volumes:
   postgres_data:
