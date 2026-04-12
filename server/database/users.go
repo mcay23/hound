@@ -98,3 +98,13 @@ func DeleteUser(userID int64) error {
 	}
 	return nil
 }
+
+func UpdateUserPassword(userID int64, hashedPassword string) error {
+	_, err := databaseEngine.Table(usersTable).Where("user_id = ?", userID).Update(&User{HashedPassword: hashedPassword})
+	if err != nil {
+		return fmt.Errorf("update password for user_id %d: %w", userID, err)
+	}
+	cacheKey := fmt.Sprintf("user:%d", userID)
+	DeleteCache(cacheKey)
+	return nil
+}

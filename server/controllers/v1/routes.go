@@ -29,12 +29,14 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.GET("/users", GetUsersHandler)
 	adminRoutes.DELETE("/users/:id", DeleteUserHandler)
 	adminRoutes.POST("/users", RegistrationHandler)
+	adminRoutes.POST("/users/:id/password", AdminResetPasswordHandler) // reset self/someone else's password
 
 	/*
 		Auth Routes
 	*/
 	publicRoutes.POST("/auth/login", LoginHandler)    // public
 	privateRoutes.POST("/auth/logout", LogoutHandler) // private (revokes own token)
+	privateRoutes.POST("/auth/password", ChangePasswordHandler)
 
 	/*
 		API Keys

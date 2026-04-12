@@ -129,6 +129,41 @@ func LogoutHandler(c *gin.Context) {
 	internal.SuccessResponse(c, nil, 200)
 }
 
+type ChangePasswordPayload struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,gte=8"`
+}
+
+// @Router /api/v1/auth/password [post]
+// @Summary Change user password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body ChangePasswordPayload true "Password Change Details"
+// @Success 200 {object} V1SuccessResponse
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 401 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func ChangePasswordHandler(c *gin.Context) {
+	var payload ChangePasswordPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("invalid payload: %w", internal.BadRequestError))
+		return
+	}
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	err = model.ChangePassword(userID, payload.OldPassword, payload.NewPassword)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	c.SetCookie("token", "", -1, "/", "", true, true)
+	internal.SuccessResponse(c, nil, 200)
+}
+
 func validateClientHeaders(c *gin.Context) (string, string, string, error) {
 	clientID := strings.ToLower(c.GetHeader("X-Client-Id"))
 	if !slices.Contains(model.SupportedClientIDs, clientID) {

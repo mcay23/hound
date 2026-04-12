@@ -103,3 +103,35 @@ func ParseAuthSession(sessionID string) (*database.AuthSession, error) {
 	}
 	return session, nil
 }
+
+func ChangePassword(userID int64, oldPassword, newPassword string) error {
+	dbUser, err := database.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(oldPassword))
+	if err != nil {
+		return fmt.Errorf("incorrect old password: %w", internal.UnauthorizedError)
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("%w: bcrypt failed to hash password", internal.InternalServerError)
+	}
+	err = database.UpdateUserPassword(userID, string(hashedPassword))
+	if err != nil {
+		return err
+	}
+	return database.DeleteUserAuthSessions(userID)
+}
+
+func ResetPassword(userID int64, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("%w: bcrypt failed to hash password", internal.InternalServerError)
+	}
+	err = database.UpdateUserPassword(userID, string(hashedPassword))
+	if err != nil {
+		return err
+	}
+	return database.DeleteUserAuthSessions(userID)
+}
