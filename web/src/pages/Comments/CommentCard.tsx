@@ -11,7 +11,6 @@ import ClearIcon from "@mui/icons-material/Clear";
 import toast from "react-hot-toast";
 import "./CommentCard.css";
 import { useState } from "react";
-import axios from "axios";
 import { useDeleteComment } from "../../api/hooks/comments";
 
 function CommentCard(props: any) {
@@ -47,7 +46,7 @@ function CommentCard(props: any) {
           </div>
           <div className="comment-card-author">
             {"by " +
-              props.item.user_id +
+              props.item.owner_display_name +
               "     ⸱     " +
               new Date(props.item.updated_at).toLocaleDateString("en-US")}
           </div>
@@ -57,7 +56,7 @@ function CommentCard(props: any) {
           <div className="comment-card-content">{props.item.comment}</div>
         </div>
         <div className="comment-card-actions-container">
-          {props.item.user_id === localStorage.getItem("username") ? (
+          {props.item.owner_username === localStorage.getItem("username") ? (
             <IconButton onClick={handleDeleteClickOpen}>
               <ClearIcon />
             </IconButton>

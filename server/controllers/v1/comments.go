@@ -57,6 +57,11 @@ func handleGetComments(c *gin.Context, recordType string) {
 		internal.ErrorResponse(c, err)
 		return
 	}
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
 	var seasonNumber, episodeNumber int
 	if recordType == database.RecordTypeTVShow {
 		var err error
@@ -105,20 +110,21 @@ func handleGetComments(c *gin.Context, recordType string) {
 	var commentsView []view.CommentObject
 	for _, item := range *comments {
 		commenter, _ := database.GetUser(item.UserID)
-		if !item.IsPublic && c.GetString("username") != commenter.Username {
+		if !item.IsPublic && userID != commenter.UserID {
 			continue
 		}
 		comment := view.CommentObject{
-			CommentID:    item.CommentID,
-			CommentType:  item.CommentType,
-			UserID:       commenter.Username,
-			RecordID:     item.RecordID,
-			IsPublic:     item.IsPublic,
-			CommentTitle: item.CommentTitle,
-			Comment:      string(item.Comment),
-			Score:        item.Score,
-			CreatedAt:    item.CreatedAt,
-			UpdatedAt:    item.UpdatedAt,
+			CommentID:        item.CommentID,
+			CommentType:      item.CommentType,
+			OwnerUsername:    commenter.Username,
+			OwnerDisplayName: commenter.DisplayName,
+			RecordID:         item.RecordID,
+			IsPublic:         item.IsPublic,
+			CommentTitle:     item.CommentTitle,
+			Comment:          string(item.Comment),
+			Score:            item.Score,
+			CreatedAt:        item.CreatedAt,
+			UpdatedAt:        item.UpdatedAt,
 		}
 		commentsView = append(commentsView, comment)
 	}
@@ -190,7 +196,7 @@ func handlePostComment(c *gin.Context, recordType string) {
 		}
 	}
 	isPublic := false
-	if body.CommentType == database.CommentTypeNote {
+	if body.CommentType != database.CommentTypeNote {
 		isPublic = true
 	}
 	comment := database.CommentRecord{

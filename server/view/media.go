@@ -40,16 +40,17 @@ type CollectionObject struct {
 }
 
 type CommentObject struct {
-	CommentID    int64     `json:"comment_id"`
-	CommentType  string    `json:"comment_type"`
-	UserID       string    `json:"user_id"`
-	RecordID     int64     `json:"record_id"`
-	IsPublic     bool      `json:"is_public"`
-	CommentTitle string    `json:"title"`
-	Comment      string    `json:"comment"` // actual content of comment, review
-	Score        int       `json:"score"`
-	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
-	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
+	CommentID        int64     `json:"comment_id"`
+	CommentType      string    `json:"comment_type"`
+	OwnerUsername    string    `json:"owner_username"`
+	OwnerDisplayName string    `json:"owner_display_name"`
+	RecordID         int64     `json:"record_id"`
+	IsPublic         bool      `json:"is_public"`
+	CommentTitle     string    `json:"title"`
+	Comment          string    `json:"comment"` // actual content of comment, review
+	Score            int       `json:"score"`
+	CreatedAt        time.Time `xorm:"timestampz created" json:"created_at"`
+	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
 
 type MediaFilesResponse struct {

@@ -26,6 +26,7 @@ function Collection(props: any) {
       description: "",
       is_public: false,
       owner_username: "",
+      owner_display_name: "",
     },
     total_records: 0,
   });
@@ -113,7 +114,7 @@ function Collection(props: any) {
                       {collectionData.collection.collection_title}
                     </div>
                     <div className="collection-cover-date">
-                      {`by ${collectionData.collection.owner_username}`}
+                      {`by ${collectionData.collection.owner_display_name}`}
                     </div>
                     <hr />
                     <div className="collection-cover-main-description">
