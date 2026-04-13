@@ -18,6 +18,7 @@ import {
   useRecentCollectionItems,
   useCreateCollection,
 } from "../../api/hooks/collections";
+import { useNavigate } from "react-router-dom";
 
 function Library(props: any) {
   const { data: collections = [], isLoading: isCollectionsLoading } =
@@ -32,6 +33,11 @@ function Library(props: any) {
     description: "",
     is_public: true,
   });
+  const { data: libraryData = [] } = useCollectionContents(
+    collections[0]?.collection_id,
+    20,
+    0,
+  );
 
   const handleCollectionDialogClose = () => {
     setCreateCollectionData({
@@ -72,6 +78,7 @@ function Library(props: any) {
 
   document.title = "My Collections - Hound";
   const isLoaded = !isCollectionsLoading && !isRecentLoading;
+  const navigate = useNavigate();
 
   return (
     <>
@@ -85,8 +92,22 @@ function Library(props: any) {
               itemOnClick={undefined}
             />
             {!(recentItems?.length > 0) && (
-              <div className="horizontal-section-header pt-5 pb-5">
+              <div className="horizontal-section-header ps-5 pt-5 pb-5">
                 Your collections are empty. Try adding some items!
+              </div>
+            )}
+          </div>
+          <div className="library-top-section-container">
+            <HorizontalSection
+              items={libraryData?.records}
+              header="In Your Library"
+              headerHref="/collection/hound-library"
+              itemType="poster"
+              itemOnClick={undefined}
+            />
+            {!(libraryData?.records?.length > 0) && (
+              <div className="horizontal-section-header ps-5 pt-5 pb-5">
+                Your Library is empty. Try downloading some media!
               </div>
             )}
           </div>
@@ -102,6 +123,17 @@ function Library(props: any) {
               >
                 <div className={"collection-card-cover-inner"}>
                   Add New collection
+                </div>
+              </div>
+              <div
+                className={"rounded collection-card-cover"}
+                id="library-collection-create-cover"
+                onClick={() => {
+                  navigate("/collection/hound-library");
+                }}
+              >
+                <div className={"collection-card-cover-inner"}>
+                  Hound Library
                 </div>
               </div>
               {collections?.map((item: any) => (

@@ -13,10 +13,10 @@ export const useCollections = () => {
   });
 };
 
-export const useCollectionContents = (id: number | string | undefined, enabled = true) => {
+export const useCollectionContents = (id: number | string | undefined, limit?: number, offset?: number, enabled = true) => {
   return useQuery({
     queryKey: ["collections", id, "contents"],
-    queryFn: () => fetchCollectionContents(id!),
+    queryFn: () => fetchCollectionContents(id!, limit, offset),
     enabled: !!id && enabled,
   });
 };

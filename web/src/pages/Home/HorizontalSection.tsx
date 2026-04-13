@@ -3,10 +3,12 @@ import "react-horizontal-scrolling-menu/dist/styles.css";
 import "./HorizontalSection.css";
 import { LeftArrow, RightArrow } from "./arrows";
 import ItemCard from "./ItemCard";
+import { useNavigate } from "react-router-dom";
 
 function HorizontalSection(props: {
   items: any;
   header: string;
+  headerHref?: string;
   itemType:
     | "poster"
     | "cast"
@@ -21,10 +23,19 @@ function HorizontalSection(props: {
   if (!props.items || props.items.length === 0) {
     return <></>;
   }
+  const navigate = useNavigate();
   return (
     <>
       <div className="horizontal-section horizontal-section-menu">
-        <div className="horizontal-section-header">
+        <div
+          className="horizontal-section-header cursor-pointer"
+          onClick={() => {
+            if (props.headerHref) {
+              navigate(props.headerHref);
+            }
+          }}
+          role={props.headerHref ? "button" : undefined}
+        >
           {props.header}
           <span className="horizontal-section-header-separator">|</span>
         </div>
