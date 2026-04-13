@@ -23,7 +23,7 @@ function Topnav() {
               Home
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/library">
-              Collections
+              Library
             </Nav.Link>
             <Nav.Link className="top-navbar-item" href="/activity">
               Activity
