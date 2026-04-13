@@ -79,12 +79,11 @@ func AdminMiddleware(c *gin.Context) {
 }
 
 func CORSMiddleware(c *gin.Context) {
-	// origin := c.Request.Header.Get("Origin")
-	// if origin != "" {
-	// 	c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-	// 	c.Writer.Header().Set("Vary", "Origin")
-	// }
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	origin := c.Request.Header.Get("Origin")
+	if origin != "" {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		c.Writer.Header().Set("Vary", "Origin")
+	}
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "User-Agent, Content-Type, Content-Length, Accept-Ranges, Content-Range, Range, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Client-Id, X-Client-Platform, X-Device-Id")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, HEAD")

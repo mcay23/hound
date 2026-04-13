@@ -20,3 +20,10 @@ export const deleteUser = async (id: number) => {
   const { data } = await axios.delete<any>(`/api/v1/users/${id}`);
   return data;
 };
+
+export const resetUserPassword = async (userID: number, newPassword: string) => {
+  const { data } = await axios.post<any>(`/api/v1/users/${userID}/password`, {
+    "new_password": newPassword,
+  });
+  return data;
+};

@@ -14,3 +14,11 @@ export async function logout() {
       console.log(err);
     });
 }
+
+export const changePassword = async (oldPassword: string, newPassword: string) => {
+  const { data } = await axios.post<any>(`/api/v1/auth/password`, {
+    "old_password": oldPassword,
+    "new_password": newPassword,
+  });
+  return data;
+};

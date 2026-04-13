@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createUser, deleteUser, fetchUsers } from "../services/users";
+import { createUser, deleteUser, fetchUsers, resetUserPassword } from "../services/users";
 
 export const useUsers = () => {
   return useQuery({
@@ -34,5 +34,12 @@ export const useDeleteUserMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
+  });
+};
+
+export const useResetUserPassword = () => {
+  return useMutation({
+    mutationFn: ({ userID, newPassword }: { userID: number; newPassword: string }) =>
+      resetUserPassword(userID, newPassword),
   });
 };

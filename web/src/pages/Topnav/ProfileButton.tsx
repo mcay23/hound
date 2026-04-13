@@ -27,6 +27,7 @@ export default function ProfileButton() {
       </div>
       <Menu
         id="basic-menu"
+        disableAutoFocusItem
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}

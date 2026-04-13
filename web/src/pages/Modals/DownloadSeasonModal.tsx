@@ -13,6 +13,7 @@ import {
   ListItemText,
   Checkbox,
   FormControlLabel,
+  Alert,
 } from "@mui/material";
 
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
@@ -123,11 +124,15 @@ function DownloadSeasonModal(props: any) {
     <Dialog onClose={onClose} open={open} disableScrollLock={false}>
       <div className="download-season-modal-container">
         <h4>Download Season Wizard (EXPERIMENTAL)</h4>
-        <p className="pe-5">
+        <Alert severity="warning">
           This wizard is experimental, downloading episodes manually is still
-          the official method. If you don't set a season pack or string match,
-          Hound will download the top result.
-        </p>
+          the official method. Incorrect episodes may be downloaded depending on
+          quality of the provider's results.
+          <br />
+          <br />
+          If you don't set a season pack or string match, Hound will download
+          the top result.
+        </Alert>
         <Divider className="mt-3 mb-3" sx={{ borderColor: "black" }} />
         <div className="download-season-main-content">
           <div>

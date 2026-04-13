@@ -60,7 +60,10 @@ axios.interceptors.response.use(
     console.log(error);
     const statusCode = error.response.status;
     if (statusCode === 401) {
-      if (window.location.pathname !== "/logout") {
+      if (
+        window.location.pathname !== "/logout" &&
+        window.location.pathname !== "/login"
+      ) {
         window.location.href = "/logout";
       }
     }

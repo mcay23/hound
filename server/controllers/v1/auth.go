@@ -150,6 +150,9 @@ func ChangePasswordHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("invalid payload: %w", internal.BadRequestError))
 		return
 	}
+	if payload.OldPassword == payload.NewPassword {
+		internal.ErrorResponse(c, fmt.Errorf("invalid password, old and new the same: %w", internal.BadRequestError))
+	}
 	userID, err := getUserIDFromContext(c)
 	if err != nil {
 		internal.ErrorResponse(c, err)

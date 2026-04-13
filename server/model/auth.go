@@ -111,7 +111,10 @@ func ChangePassword(userID int64, oldPassword, newPassword string) error {
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(oldPassword))
 	if err != nil {
-		return fmt.Errorf("incorrect old password: %w", internal.UnauthorizedError)
+		return fmt.Errorf("incorrect old password: %w", internal.BadRequestError)
+	}
+	if oldPassword == newPassword {
+		return fmt.Errorf("old and new password is the same: %w", internal.BadRequestError)
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -128,6 +131,11 @@ func ResetPassword(userID int64, newPassword string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("%w: bcrypt failed to hash password", internal.InternalServerError)
+	}
+	user, err := database.GetUser(userID)
+	// resetting admin user is disabled through this api, we want another way to do this with the console instead.
+	if user.IsAdmin {
+		return fmt.Errorf("cannot reset admin password: %w", internal.UnauthorizedError)
 	}
 	err = database.UpdateUserPassword(userID, string(hashedPassword))
 	if err != nil {
