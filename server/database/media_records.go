@@ -535,7 +535,7 @@ func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID
 	var totalRecords int64
 	_, err := databaseEngine.SQL(countQuery, args...).Get(&totalRecords)
 	if err != nil {
-		return nil, 0, fmt.Errorf("count %s for media_type %s, genre_ids %s: %w", mediaRecordsTable,
+		return nil, 0, fmt.Errorf("count %s for media_type %s, genre_ids %v: %w", mediaRecordsTable,
 			mediaType, genreIDs, err)
 	}
 	if limit > 0 && offset >= 0 {
@@ -543,7 +543,7 @@ func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID
 	}
 	err = databaseEngine.SQL(query, args...).Find(&recordGroups)
 	if err != nil {
-		return nil, 0, fmt.Errorf("query %s for media_type %s, genre_ids %s: %w", mediaRecordsTable,
+		return nil, 0, fmt.Errorf("query %s for media_type %s, genre_ids %v: %w", mediaRecordsTable,
 			mediaType, genreIDs, err)
 	}
 	return recordGroups, totalRecords, nil

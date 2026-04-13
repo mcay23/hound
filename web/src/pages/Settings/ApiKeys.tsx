@@ -6,6 +6,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   TextField,
   Typography,
 } from "@mui/material";
@@ -16,6 +18,7 @@ import {
 } from "../../api/hooks/api_keys";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { ContentCopy, Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function ApiKeys() {
   const { data, isLoading, error } = useApiKeys();
@@ -82,6 +85,7 @@ function ApiKeyCard({ apiKey }: { apiKey: any }) {
         <Typography variant="body2" color="text.secondary">
           Created At: {new Date(apiKey.created_at).toLocaleString()}
         </Typography>
+        <ApiKeyField apiKey={apiKey.api_key} />
         <div className="d-flex flex-row mt-2">
           <Button
             variant="outlined"
@@ -100,6 +104,41 @@ function ApiKeyCard({ apiKey }: { apiKey: any }) {
         />
       </CardContent>
     </Card>
+  );
+}
+
+function ApiKeyField({ apiKey }: { apiKey: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <TextField
+      label="API Key"
+      value={show ? apiKey : "••••••••••••••"}
+      size="small"
+      className="mt-3 mb-3"
+      InputProps={{
+        readOnly: true,
+        endAdornment: (
+          <InputAdornment position="end">
+            <IconButton
+              onClick={() => setShow((s) => !s)}
+              onMouseDown={(e) => e.preventDefault()}
+              edge="end"
+            >
+              {show ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+            <IconButton
+              className="ms-2"
+              onClick={() => {
+                navigator.clipboard.writeText(apiKey);
+                toast.success("Copied to clipboard");
+              }}
+            >
+              <ContentCopy />
+            </IconButton>
+          </InputAdornment>
+        ),
+      }}
+    />
   );
 }
 

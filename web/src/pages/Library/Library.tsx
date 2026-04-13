@@ -34,7 +34,7 @@ function Library(props: any) {
     is_public: true,
   });
   const { data: libraryData = [] } = useCollectionContents(
-    collections[0]?.collection_id,
+    "hound-library",
     20,
     0,
   );
