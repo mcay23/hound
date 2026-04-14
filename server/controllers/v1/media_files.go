@@ -14,8 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Router /api/v1/movie/{id}/media_files [get]
 // @Summary Get Movie Media Files by ID
-// @Description Get
+// @ID get-movie-media-files
 // @Tags Media Files
 // @Accept json
 // @Produce json
@@ -23,7 +24,6 @@ import (
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-// @Router /api/v1/movie/{id}/media_files [get]
 func GetMovieMediaFilesHandler(c *gin.Context) {
 	_, sourceID, err := getSourceIDFromParams(c.Param("id"))
 	if err != nil {
@@ -52,7 +52,8 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 }
 
 // @Router /api/v1/tv/{id}/media_files [get]
-// @Summary Search TV Show Media Files by ID
+// @Summary Get TV Show Media Files by ID
+// @ID get-tvshow-media-files
 // @Tags Media Files
 // @Accept json
 // @Produce json
@@ -121,6 +122,7 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 
 // @Router /api/v1/media_files [get]
 // @Summary Get all media file records
+// @ID get-media-files
 // @Tags Media Files
 // @Accept json
 // @Produce json
@@ -159,6 +161,7 @@ func GetMediaFilesHandler(c *gin.Context) {
 
 // @Router /api/v1/media_files/{id} [delete]
 // @Summary Delete a media file
+// @ID delete-media-file
 // @Tags Media Files
 // @Accept json
 // @Produce json

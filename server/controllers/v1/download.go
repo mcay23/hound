@@ -28,6 +28,7 @@ type DownloadResponse struct {
 
 // @Router /api/v1/download/{encodedString} [post]
 // @Summary Download media file to server
+// @ID download-media
 // @Tags Download
 // @Accept json
 // @Produce json
@@ -77,6 +78,7 @@ type TVSeasonDownloadResponse struct {
 
 // @Router /api/v1/tv/{id}/season/{seasonNumber}/download [post]
 // @Summary Download TV Season
+// @ID download-tv-season
 // @Tags Download
 // @Accept json
 // @Produce json
@@ -189,6 +191,7 @@ type CancelIngestTaskResponse struct {
 
 // @Router /api/v1/ingest/{taskID}/cancel [post]
 // @Summary Cancel an ingest/download task
+// @ID cancel-download-task
 // @Tags Download
 // @Accept json
 // @Produce json

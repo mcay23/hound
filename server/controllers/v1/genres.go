@@ -11,6 +11,7 @@ import (
 
 // @Router /api/v1/tv/genres [get]
 // @Summary Get TV Show Genres
+// @ID get-tvshow-genres
 // @Tags TV Shows, Genres
 // @Accept json
 // @Produce json
@@ -28,6 +29,7 @@ func GetTVGenresHandler(c *gin.Context) {
 
 // @Router /api/v1/movie/genres [get]
 // @Summary Get Movie Genres
+// @ID get-movie-genres
 // @Tags TV Shows, Genres
 // @Accept json
 // @Produce json

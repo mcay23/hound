@@ -16,6 +16,7 @@ import (
 
 // @Router /api/v1/users [post]
 // @Summary Register a new user
+// @ID user-register
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -47,6 +48,7 @@ type LoginResponse struct {
 
 // @Router /api/v1/auth/login [post]
 // @Summary User login
+// @ID user-login
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -96,6 +98,7 @@ func LoginHandler(c *gin.Context) {
 
 // @Router /api/v1/auth/logout [post]
 // @Summary User logout
+// @ID user-logout
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -136,6 +139,7 @@ type ChangePasswordPayload struct {
 
 // @Router /api/v1/auth/password [post]
 // @Summary Change user password
+// @ID user-change-password
 // @Tags Auth
 // @Accept json
 // @Produce json

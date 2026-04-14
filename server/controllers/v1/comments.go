@@ -24,7 +24,8 @@ type CommentRequest struct {
 }
 
 // @Router /api/v1/tv/{id}/comments [get]
-// @Summary Get comments for a TV show
+// @Summary Get Comments for a TV Show
+// @ID get-tvshow-comments
 // @Tags Comments
 // @Accept json
 // @Produce json
@@ -38,7 +39,8 @@ func GetCommentsTVHandler(c *gin.Context) {
 }
 
 // @Router /api/v1/movie/{id}/comments [get]
-// @Summary Get comments for a movie
+// @Summary Get Comments for a Movie
+// @ID get-movie-comments
 // @Tags Comments
 // @Accept json
 // @Produce json
@@ -132,7 +134,8 @@ func handleGetComments(c *gin.Context, recordType string) {
 }
 
 // @Router /api/v1/tv/{id}/comments [post]
-// @Summary Post a comment for a TV show
+// @Summary Post Comment for a TV Show
+// @ID post-tvshow-comment
 // @Tags Comments
 // @Accept json
 // @Produce json
@@ -146,7 +149,8 @@ func PostCommentTVHandler(c *gin.Context) {
 }
 
 // @Router /api/v1/movie/{id}/comments [post]
-// @Summary Post a comment for a movie
+// @Summary Post Comment for a Movie
+// @ID post-movie-comment
 // @Tags Comments
 // @Accept json
 // @Produce json
@@ -217,7 +221,8 @@ func handlePostComment(c *gin.Context, recordType string) {
 }
 
 // @Router /api/v1/comments/{id} [delete]
-// @Summary Delete a comment
+// @Summary Delete a Comment
+// @ID delete-comment
 // @Tags Comments
 // @Accept json
 // @Produce json

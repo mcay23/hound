@@ -93,6 +93,7 @@ func GetTVEpisodesHandler(c *gin.Context) {
 
 // @Router /api/v1/ingest [get]
 // @Summary Get Ingest Tasks
+// @ID get-ingest-tasks
 // @Tags Media
 // @Accept json
 // @Produce json

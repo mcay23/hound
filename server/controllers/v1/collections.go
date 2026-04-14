@@ -27,6 +27,7 @@ type CreateCollectionRequest struct {
 
 // @Router /v1/collection/{id} [post]
 // @Summary Add Media to Collection
+// @ID collections-add-media
 // @Tags Collection
 // @Accept json
 // @Produce json
@@ -86,6 +87,7 @@ func AddToCollectionHandler(c *gin.Context) {
 
 // @Router /v1/collection/{id} [delete]
 // @Summary Delete A Media from Collection
+// @ID colllections-delete-media
 // @Tags Collection
 // @Accept json
 // @Produce json
@@ -136,6 +138,7 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 
 // @Router /v1/collection/all [get]
 // @Summary Get a User's Collections
+// @ID get-user-collections
 // @Tags Collection
 // @Accept json
 // @Produce json
@@ -178,6 +181,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 
 // @Router /v1/collection/new [post]
 // @Summary Create New Collection
+// @ID create-collection
 // @Tags Collection
 // @Accept json
 // @Produce json
@@ -212,6 +216,7 @@ func CreateCollectionHandler(c *gin.Context) {
 
 // @Router /v1/collection/{id} [get]
 // @Summary Get Collection Contents
+// @ID get-collection-contents
 // @Tags Collection
 // @Accept json
 // @Produce json
@@ -279,6 +284,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 
 // @Router /v1/collection/recent [get]
 // @Summary Get User's Recent Collection Records
+// @ID get-user-recent-collections
 // @Description Gets 20 most recent records added to any collection
 // @Tags Collection
 // @Accept json
@@ -308,6 +314,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 
 // @Router /v1/collection/{id}/delete [delete]
 // @Summary Delete Collection
+// @ID delete-collection
 // @Tags Collection
 // @Accept json
 // @Produce json

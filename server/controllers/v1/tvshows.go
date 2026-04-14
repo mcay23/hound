@@ -16,6 +16,7 @@ import (
 
 // @Router /v1/tv/search [get]
 // @Summary Search TV Shows
+// @ID search-tvshows
 // @Tags TV Show, Search
 // @Accept json
 // @Produce json
@@ -35,6 +36,7 @@ func SearchTVShowHandler(c *gin.Context) {
 
 // @Router /v1/tv/{id} [get]
 // @Summary Get TV Show Details
+// @ID get-tvshow-details
 // @Tags TV Show
 // @Accept json
 // @Produce json
@@ -141,6 +143,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 
 // @Router /v1/tv/{id}/season/{seasonNumber} [get]
 // @Summary Get TV Season Details
+// @ID get-tvseason-details
 // @Tags TV Show
 // @Accept json
 // @Produce json
@@ -214,6 +217,7 @@ func GetTVSeasonHandler(c *gin.Context) {
 
 // @Router /v1/tv/{id}/episode_groups [get]
 // @Summary Get TV Episode Groups
+// @ID get-tvshow-episode-groups
 // @Tags TV Show
 // @Accept json
 // @Produce json

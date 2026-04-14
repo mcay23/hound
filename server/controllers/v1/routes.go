@@ -73,9 +73,9 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Watch History Routes
 	*/
-	privateRoutes.GET("/tv/:id/history", GetWatchHistoryTVHandler)
+	privateRoutes.GET("/tv/:id/history", GetTVShowWatchHistoryHandler)
 	privateRoutes.POST("/tv/:id/history", AddWatchHistoryTVHandler)
-	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetWatchHistoryTVHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber/history", GetTVSeasonWatchHistoryHandler)
 	privateRoutes.POST("/tv/:id/history/rewatch", AddTVShowRewatchHandler)    // we only want multiple rewatches for tv shows
 	privateRoutes.POST("/tv/:id/history/delete", DeleteWatchHistoryTVHandler) // batch deletion, we send a body so use POST which is more defined
 
@@ -87,12 +87,12 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Playback Progress Routes
 	*/
-	privateRoutes.GET("/movie/:id/playback", GetPlaybackProgressHandler)
-	privateRoutes.POST("/movie/:id/playback", SetPlaybackProgressHandler)
-	privateRoutes.POST("/movie/:id/playback/delete", DeletePlaybackProgressHandler)
-	privateRoutes.GET("/tv/:id/season/:seasonNumber/playback", GetPlaybackProgressHandler)
-	privateRoutes.POST("/tv/:id/playback", SetPlaybackProgressHandler)
-	privateRoutes.POST("/tv/:id/playback/delete", DeletePlaybackProgressHandler)
+	privateRoutes.GET("/movie/:id/playback", GetMoviePlaybackProgressHandler)
+	privateRoutes.POST("/movie/:id/playback", SetMoviePlaybackProgressHandler)
+	privateRoutes.POST("/movie/:id/playback/delete", DeleteMoviePlaybackProgressHandler)
+	privateRoutes.GET("/tv/:id/season/:seasonNumber/playback", GetTVSeasonPlaybackProgressHandler)
+	privateRoutes.POST("/tv/:id/playback", SetTVPlaybackProgressHandler)
+	privateRoutes.POST("/tv/:id/playback/delete", DeleteTVPlaybackProgressHandler)
 
 	/*
 		TV Show Routes
@@ -101,7 +101,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id", GetTVShowFromIDHandler)
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
-	privateRoutes.GET("/tv/:id/continue_watching", GetNextWatchActionHandler)
+	privateRoutes.GET("/tv/:id/continue_watching", GetTVNextWatchActionHandler)
 
 	/*
 		Movies Routes
@@ -109,7 +109,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 
-	privateRoutes.GET("/movie/:id/continue_watching", GetNextWatchActionHandler)
+	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
 
 	/*
 		Comments

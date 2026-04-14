@@ -17,6 +17,7 @@ import (
 
 // @Router /v1/watch_activity [get]
 // @Summary Get Watch Activity for User
+// @ID get-user-watch-activity
 // @Tags Watch Activity
 // @Accept json
 // @Produce json
@@ -74,22 +75,37 @@ func GetWatchActivityHandler(c *gin.Context) {
 }
 
 // @Router /v1/tv/{id}/history [get]
-// @Router /v1/tv/{id}/season/{seasonNumber}/history [get]
 // @Summary Get TV Show Watch History
+// @ID get-tvshow-watch-history
 // @Tags Watch History
 // @Accept json
 // @Produce json
 // @Param id path int true "Media ID" example(tmdb-1234)
-// @Param seasonNumber query int false "Season number"
 // @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func GetWatchHistoryTVHandler(c *gin.Context) {
+func GetTVShowWatchHistoryHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /v1/tv/{id}/season/{seasonNumber}/history [get]
+// @Summary Get TV Season Watch History
+// @ID get-tvseason-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int true "Season number"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVSeasonWatchHistoryHandler(c *gin.Context) {
 	handleGetWatchHistory(c, database.RecordTypeTVShow)
 }
 
 // @Router /v1/movie/{id}/history [get]
 // @Summary Get Movie Watch History
+// @ID get-movie-watch-history
 // @Tags Watch History
 // @Accept json
 // @Produce json
@@ -159,6 +175,7 @@ type AddWatchHistoryTVResponse struct {
 
 // @Router /v1/tv/{id}/history [post]
 // @Summary Add TV Show Watch History
+// @ID add-tvshow-watch-history
 // @Description Only one of season_number and episode_number, or []episode_ids should be defined.
 // @Description By default, if []episode_ids are used, this won't clear existing playback progress for
 // @Description those episodes, however, this behavior might change in the future. For the season_number,
@@ -207,6 +224,7 @@ func AddWatchHistoryTVHandler(c *gin.Context) {
 
 // @Router /tv/{id}/history/delete [post]
 // @Summary Delete TV Show Watch History
+// @ID delete-tvshow-watch-history
 // @Tags Watch History
 // @Accept json
 // @Produce json
@@ -221,6 +239,7 @@ func DeleteWatchHistoryTVHandler(c *gin.Context) {
 
 // @Router /movie/{id}/history/delete [post]
 // @Summary Delete Movie Watch History
+// @ID delete-movie-watch-history
 // @Tags Watch History
 // @Accept json
 // @Produce json
@@ -269,6 +288,7 @@ func handleDeleteWatchHistory(c *gin.Context, recordType string) {
 
 // @Router /v1/tv/{id}/history/rewatch [post]
 // @Summary Create TV Show Rewatch
+// @ID create-tvshow-rewatch
 // @Description Create new rewatch for tv show. This archives the previous watches, so user's can start fresh.
 // @Tags Watch History
 // @Accept json
@@ -326,6 +346,7 @@ type AddWatchHistoryMovieResponse struct {
 
 // @Router /v1/movie/{id}/history [post]
 // @Summary Add Movie Watch History
+// @ID add-movie-watch-history
 // @Tags Watch History
 // @Accept json
 // @Produce json

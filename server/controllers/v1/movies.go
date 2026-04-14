@@ -17,6 +17,7 @@ import (
 
 // @Router /v1/movie/search [get]
 // @Summary Search Movies
+// @ID search-movies
 // @Tags Movie, Search
 // @Accept json
 // @Produce json
@@ -36,6 +37,7 @@ func SearchMoviesHandler(c *gin.Context) {
 
 // @Router /v1/movie/{id} [get]
 // @Summary Get Movie Details
+// @ID get-movie-details
 // @Tags Movie
 // @Accept json
 // @Produce json

@@ -29,6 +29,7 @@ func ClearCacheHandler(c *gin.Context) {
 
 // @Router /api/v1/tv/{id}/providers [get]
 // @Summary Search Stream Providers for TV Shows by ID
+// @ID search-providers-tvshow
 // @Tags Providers
 // @Accept json
 // @Produce json
@@ -116,6 +117,7 @@ func SearchProvidersTVHandler(c *gin.Context) {
 
 // @Router /api/v1/movie/{id}/providers [get]
 // @Summary Search Stream Providers for Movies
+// @ID search-providers-movie
 // @Tags Providers
 // @Accept json
 // @Produce json

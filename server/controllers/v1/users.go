@@ -13,6 +13,7 @@ import (
 
 // @Router /api/v1/users [get]
 // @Summary Get all users
+// @ID get-users
 // @Tags Users
 // @Accept json
 // @Produce json
@@ -30,6 +31,7 @@ func GetUsersHandler(c *gin.Context) {
 
 // @Router /api/v1/users/{id} [delete]
 // @Summary Delete a user
+// @ID delete-user
 // @Tags Users
 // @Accept json
 // @Produce json
@@ -68,6 +70,7 @@ type AdminResetPasswordPayload struct {
 
 // @Router /api/v1/users/{id}/password [post]
 // @Summary Admin reset user password
+// @ID admin-reset-password
 // @Tags Users
 // @Accept json
 // @Produce json

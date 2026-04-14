@@ -27,6 +27,7 @@ const docTemplate = `{
                     "API Keys"
                 ],
                 "summary": "Get User API Keys",
+                "operationId": "get-user-api-keys",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -74,6 +75,7 @@ const docTemplate = `{
                     "API Keys"
                 ],
                 "summary": "Create API Key",
+                "operationId": "create-api-key",
                 "parameters": [
                     {
                         "type": "string",
@@ -129,6 +131,7 @@ const docTemplate = `{
                     "API Keys"
                 ],
                 "summary": "Revoke API Key",
+                "operationId": "revoke-api-key",
                 "parameters": [
                     {
                         "type": "string",
@@ -172,6 +175,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "User login",
+                "operationId": "user-login",
                 "parameters": [
                     {
                         "description": "Login Details",
@@ -229,6 +233,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "User logout",
+                "operationId": "user-logout",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -263,6 +268,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Change user password",
+                "operationId": "user-change-password",
                 "parameters": [
                     {
                         "description": "Password Change Details",
@@ -314,6 +320,7 @@ const docTemplate = `{
                     "General"
                 ],
                 "summary": "Get Media Backdrops",
+                "operationId": "get-media-backdrops",
                 "responses": {
                     "200": {
                         "description": "URL to backdrop",
@@ -360,6 +367,7 @@ const docTemplate = `{
                     "General"
                 ],
                 "summary": "Get Build Info",
+                "operationId": "get-build-info",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -406,6 +414,7 @@ const docTemplate = `{
                     "Catalog"
                 ],
                 "summary": "Get Catalog",
+                "operationId": "get-catalog",
                 "parameters": [
                     {
                         "type": "string",
@@ -465,6 +474,7 @@ const docTemplate = `{
                     "Collections"
                 ],
                 "summary": "Get Hound Library",
+                "operationId": "get-hound-library",
                 "parameters": [
                     {
                         "type": "integer",
@@ -540,7 +550,8 @@ const docTemplate = `{
                 "tags": [
                     "Comments"
                 ],
-                "summary": "Delete a comment",
+                "summary": "Delete a Comment",
+                "operationId": "delete-comment",
                 "parameters": [
                     {
                         "type": "string",
@@ -595,7 +606,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Activity"
                 ],
-                "summary": "Get continue watching list",
+                "summary": "Get Continue Watching",
+                "operationId": "get-continue-watching",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -645,6 +657,7 @@ const docTemplate = `{
                     "Download"
                 ],
                 "summary": "Download media file to server",
+                "operationId": "download-media",
                 "parameters": [
                     {
                         "type": "string",
@@ -700,6 +713,7 @@ const docTemplate = `{
                     "Media"
                 ],
                 "summary": "Get Ingest Tasks",
+                "operationId": "get-ingest-tasks",
                 "parameters": [
                     {
                         "type": "string",
@@ -766,6 +780,7 @@ const docTemplate = `{
                     "Download"
                 ],
                 "summary": "Cancel an ingest/download task",
+                "operationId": "cancel-download-task",
                 "parameters": [
                     {
                         "type": "integer",
@@ -821,6 +836,7 @@ const docTemplate = `{
                     "Media Files"
                 ],
                 "summary": "Get all media file records",
+                "operationId": "get-media-files",
                 "parameters": [
                     {
                         "type": "integer",
@@ -881,6 +897,7 @@ const docTemplate = `{
                     "Media Files"
                 ],
                 "summary": "Delete a media file",
+                "operationId": "delete-media-file",
                 "parameters": [
                     {
                         "type": "integer",
@@ -937,6 +954,7 @@ const docTemplate = `{
                     "Genres"
                 ],
                 "summary": "Get Movie Genres",
+                "operationId": "get-movie-genres",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -985,7 +1003,8 @@ const docTemplate = `{
                 "tags": [
                     "Comments"
                 ],
-                "summary": "Get comments for a movie",
+                "summary": "Get Comments for a Movie",
+                "operationId": "get-movie-comments",
                 "parameters": [
                     {
                         "type": "string",
@@ -1049,7 +1068,8 @@ const docTemplate = `{
                 "tags": [
                     "Comments"
                 ],
-                "summary": "Post a comment for a movie",
+                "summary": "Post Comment for a Movie",
+                "operationId": "post-movie-comment",
                 "parameters": [
                     {
                         "type": "string",
@@ -1114,7 +1134,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Activity"
                 ],
-                "summary": "Get next watch action for a media",
+                "summary": "Get Movie Next Watch Action",
+                "operationId": "get-movie-next-watch-action",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1160,7 +1181,6 @@ const docTemplate = `{
         },
         "/api/v1/movie/{id}/media_files": {
             "get": {
-                "description": "Get",
                 "consumes": [
                     "application/json"
                 ],
@@ -1171,6 +1191,7 @@ const docTemplate = `{
                     "Media Files"
                 ],
                 "summary": "Get Movie Media Files by ID",
+                "operationId": "get-movie-media-files",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1226,6 +1247,7 @@ const docTemplate = `{
                     "Providers"
                 ],
                 "summary": "Search Stream Providers for Movies",
+                "operationId": "search-providers-movie",
                 "parameters": [
                     {
                         "type": "string",
@@ -1288,6 +1310,7 @@ const docTemplate = `{
                     "Provider Profiles"
                 ],
                 "summary": "Get all provider profiles",
+                "operationId": "get-provider-profiles",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1335,6 +1358,7 @@ const docTemplate = `{
                     "Provider Profiles"
                 ],
                 "summary": "Create a provider profile",
+                "operationId": "create-provider-profile",
                 "parameters": [
                     {
                         "description": "Provider Profile",
@@ -1393,6 +1417,7 @@ const docTemplate = `{
                     "Provider Profiles"
                 ],
                 "summary": "Update a provider profile",
+                "operationId": "update-provider-profile",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1455,6 +1480,7 @@ const docTemplate = `{
                     "Provider Profiles"
                 ],
                 "summary": "Delete a provider profile",
+                "operationId": "delete-provider-profile",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1510,6 +1536,7 @@ const docTemplate = `{
                     "Search"
                 ],
                 "summary": "General Media Search",
+                "operationId": "search-media",
                 "parameters": [
                     {
                         "type": "string",
@@ -1566,6 +1593,7 @@ const docTemplate = `{
                     "Stream"
                 ],
                 "summary": "Stream Video",
+                "operationId": "stream-video",
                 "parameters": [
                     {
                         "type": "string",
@@ -1622,6 +1650,7 @@ const docTemplate = `{
                     "Stream"
                 ],
                 "summary": "Add Torrent",
+                "operationId": "add-torrent",
                 "parameters": [
                     {
                         "type": "string",
@@ -1678,6 +1707,7 @@ const docTemplate = `{
                     "Genres"
                 ],
                 "summary": "Get TV Show Genres",
+                "operationId": "get-tvshow-genres",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1726,7 +1756,8 @@ const docTemplate = `{
                 "tags": [
                     "Comments"
                 ],
-                "summary": "Get comments for a TV show",
+                "summary": "Get Comments for a TV Show",
+                "operationId": "get-tvshow-comments",
                 "parameters": [
                     {
                         "type": "string",
@@ -1790,7 +1821,8 @@ const docTemplate = `{
                 "tags": [
                     "Comments"
                 ],
-                "summary": "Post a comment for a TV show",
+                "summary": "Post Comment for a TV Show",
+                "operationId": "post-tvshow-comment",
                 "parameters": [
                     {
                         "type": "string",
@@ -1855,7 +1887,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Activity"
                 ],
-                "summary": "Get next watch action for a media",
+                "summary": "Get TV Show Next Watch Action",
+                "operationId": "get-tvshow-next-watch-action",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1910,7 +1943,8 @@ const docTemplate = `{
                 "tags": [
                     "Media Files"
                 ],
-                "summary": "Search TV Show Media Files by ID",
+                "summary": "Get TV Show Media Files by ID",
+                "operationId": "get-tvshow-media-files",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1978,6 +2012,7 @@ const docTemplate = `{
                     "Providers"
                 ],
                 "summary": "Search Stream Providers for TV Shows by ID",
+                "operationId": "search-providers-tvshow",
                 "parameters": [
                     {
                         "type": "string",
@@ -2060,6 +2095,7 @@ const docTemplate = `{
                     "Download"
                 ],
                 "summary": "Download TV Season",
+                "operationId": "download-tv-season",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2130,6 +2166,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Get all users",
+                "operationId": "get-users",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2177,6 +2214,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Register a new user",
+                "operationId": "user-register",
                 "parameters": [
                     {
                         "description": "Registration Details",
@@ -2234,6 +2272,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Delete a user",
+                "operationId": "delete-user",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2295,6 +2334,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Admin reset user password",
+                "operationId": "admin-reset-password",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2353,6 +2393,7 @@ const docTemplate = `{
                     "Watch Activity"
                 ],
                 "summary": "Get Watch Stats",
+                "operationId": "get-user-watch-stats",
                 "parameters": [
                     {
                         "type": "string",
@@ -2413,6 +2454,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Delete Movie Watch History",
+                "operationId": "delete-movie-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2477,6 +2519,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Delete TV Show Watch History",
+                "operationId": "delete-tvshow-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2541,6 +2584,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Get a User's Collections",
+                "operationId": "get-user-collections",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2590,6 +2634,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Create New Collection",
+                "operationId": "create-collection",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2637,6 +2682,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Get User's Recent Collection Records",
+                "operationId": "get-user-recent-collections",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2686,6 +2732,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Get Collection Contents",
+                "operationId": "get-collection-contents",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2751,6 +2798,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Add Media to Collection",
+                "operationId": "collections-add-media",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2813,6 +2861,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Delete A Media from Collection",
+                "operationId": "colllections-delete-media",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2877,6 +2926,7 @@ const docTemplate = `{
                     "Collection"
                 ],
                 "summary": "Delete Collection",
+                "operationId": "delete-collection",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2933,6 +2983,7 @@ const docTemplate = `{
                     "Search"
                 ],
                 "summary": "Search Movies",
+                "operationId": "search-movies",
                 "parameters": [
                     {
                         "type": "string",
@@ -2991,6 +3042,7 @@ const docTemplate = `{
                     "Movie"
                 ],
                 "summary": "Get Movie Details",
+                "operationId": "get-movie-details",
                 "parameters": [
                     {
                         "type": "string",
@@ -3047,6 +3099,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Get Movie Watch History",
+                "operationId": "get-movie-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3103,6 +3156,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Add Movie Watch History",
+                "operationId": "add-movie-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3166,7 +3220,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Get Playback Progress",
+                "summary": "Get Movie Playback Progress",
+                "operationId": "get-movie-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3188,10 +3243,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/model.WatchProgress"
-                                            }
+                                            "$ref": "#/definitions/model.WatchProgress"
                                         }
                                     }
                                 }
@@ -3222,7 +3274,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Set Playback Progress",
+                "summary": "Set Movie Playback Progress",
+                "operationId": "set-movie-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3286,7 +3339,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Delete Playback Progress",
+                "summary": "Delete Movie Playback Progress",
+                "operationId": "delete-movie-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3294,14 +3348,6 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Delete Payload (only for TV)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/v1.DeletePlaybackProgressPayload"
-                        }
                     }
                 ],
                 "responses": {
@@ -3351,6 +3397,7 @@ const docTemplate = `{
                     "Search"
                 ],
                 "summary": "Search TV Shows",
+                "operationId": "search-tvshows",
                 "parameters": [
                     {
                         "type": "string",
@@ -3409,6 +3456,7 @@ const docTemplate = `{
                     "TV Show"
                 ],
                 "summary": "Get TV Show Details",
+                "operationId": "get-tvshow-details",
                 "parameters": [
                     {
                         "type": "string",
@@ -3465,6 +3513,7 @@ const docTemplate = `{
                     "TV Show"
                 ],
                 "summary": "Get TV Episode Groups",
+                "operationId": "get-tvshow-episode-groups",
                 "parameters": [
                     {
                         "type": "string",
@@ -3521,6 +3570,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Get TV Show Watch History",
+                "operationId": "get-tvshow-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3528,12 +3578,6 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Season number",
-                        "name": "seasonNumber",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3584,6 +3628,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Add TV Show Watch History",
+                "operationId": "add-tvshow-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3649,6 +3694,7 @@ const docTemplate = `{
                     "Watch History"
                 ],
                 "summary": "Create TV Show Rewatch",
+                "operationId": "create-tvshow-rewatch",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3703,7 +3749,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Set Playback Progress",
+                "summary": "Set TV Playback Progress",
+                "operationId": "set-tvshow-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3767,7 +3814,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Delete Playback Progress",
+                "summary": "Delete TV Playback Progress",
+                "operationId": "delete-tv-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3831,6 +3879,7 @@ const docTemplate = `{
                     "TV Show"
                 ],
                 "summary": "Get TV Season Details",
+                "operationId": "get-tvseason-details",
                 "parameters": [
                     {
                         "type": "string",
@@ -3893,7 +3942,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch History"
                 ],
-                "summary": "Get TV Show Watch History",
+                "summary": "Get TV Season Watch History",
+                "operationId": "get-tvseason-watch-history",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3906,7 +3956,8 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Season number",
                         "name": "seasonNumber",
-                        "in": "query"
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3957,7 +4008,8 @@ const docTemplate = `{
                 "tags": [
                     "Watch Progress"
                 ],
-                "summary": "Get Playback Progress",
+                "summary": "Get TV Season Playback Progress",
+                "operationId": "get-tvseason-playback-progress",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3970,7 +4022,8 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Season Number",
                         "name": "seasonNumber",
-                        "in": "path"
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4022,6 +4075,7 @@ const docTemplate = `{
                     "Watch Activity"
                 ],
                 "summary": "Get Watch Activity for User",
+                "operationId": "get-user-watch-activity",
                 "parameters": [
                     {
                         "type": "integer",
@@ -6147,7 +6201,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "beta-0.1.0",
+	Version:          "beta-0.1.1",
 	Host:             "localhost:2323",
 	BasePath:         "/",
 	Schemes:          []string{},

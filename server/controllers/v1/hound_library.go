@@ -13,6 +13,7 @@ import (
 
 // @Router /api/v1/collection/hound-library [get]
 // @Summary Get Hound Library
+// @ID get-hound-library
 // @Description Get content downloaded to Hound
 // @Tags Collections
 // @Accept json

@@ -18,6 +18,7 @@ type CreateAPIKeyRequest struct {
 
 // @Router /api/v1/api_keys [get]
 // @Summary Get User API Keys
+// @ID get-user-api-keys
 // @Tags API Keys
 // @Accept json
 // @Produce json
@@ -40,6 +41,7 @@ func GetUserAPIKeysHandler(c *gin.Context) {
 
 // @Router /api/v1/api_keys [post]
 // @Summary Create API Key
+// @ID create-api-key
 // @Tags API Keys
 // @Accept json
 // @Produce json
@@ -80,6 +82,7 @@ func CreateAPIKeyHandler(c *gin.Context) {
 
 // @Router /api/v1/api_keys/{id} [delete]
 // @Summary Revoke API Key
+// @ID revoke-api-key
 // @Tags API Keys
 // @Accept json
 // @Produce json

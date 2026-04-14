@@ -20,6 +20,7 @@ var (
 
 // @Router /api/v1/search [get]
 // @Summary General Media Search
+// @ID search-media
 // @Tags Search
 // @Accept json
 // @Produce json
@@ -43,6 +44,7 @@ func GeneralSearchHandler(c *gin.Context) {
 
 // @Router /api/v1/backdrops [get]
 // @Summary Get Media Backdrops
+// @ID get-media-backdrops
 // @Tags General
 // @Accept json
 // @Produce json
@@ -88,6 +90,7 @@ func GetMediaBackdrops(c *gin.Context) {
 
 // @Router /api/v1/build_info [get]
 // @Summary Get Build Info
+// @ID get-build-info
 // @Tags General
 // @Accept json
 // @Produce json

@@ -1414,6 +1414,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-user-api-keys
       produces:
       - application/json
       responses:
@@ -1442,6 +1443,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: create-api-key
       parameters:
       - description: API Key Name
         in: query
@@ -1475,6 +1477,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: revoke-api-key
       parameters:
       - description: API Key ID
         in: path
@@ -1503,6 +1506,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: user-login
       parameters:
       - description: Login Details
         in: body
@@ -1537,6 +1541,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: user-logout
       produces:
       - application/json
       responses:
@@ -1559,6 +1564,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: user-change-password
       parameters:
       - description: Password Change Details
         in: body
@@ -1592,6 +1598,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-media-backdrops
       produces:
       - application/json
       responses:
@@ -1619,6 +1626,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-build-info
       produces:
       - application/json
       responses:
@@ -1646,6 +1654,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-catalog
       parameters:
       - description: Catalog ID
         in: path
@@ -1682,6 +1691,7 @@ paths:
       consumes:
       - application/json
       description: Get content downloaded to Hound
+      operationId: get-hound-library
       parameters:
       - description: Limit
         in: query
@@ -1729,6 +1739,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: delete-comment
       parameters:
       - description: Comment ID
         in: path
@@ -1755,13 +1766,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Delete a comment
+      summary: Delete a Comment
       tags:
       - Comments
   /api/v1/continue_watching:
     get:
       consumes:
       - application/json
+      operationId: get-continue-watching
       produces:
       - application/json
       responses:
@@ -1784,13 +1796,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get continue watching list
+      summary: Get Continue Watching
       tags:
       - Watch Activity
   /api/v1/download/{encodedString}:
     post:
       consumes:
       - application/json
+      operationId: download-media
       parameters:
       - description: Encoded Stream String - get from Query providers
         in: path
@@ -1824,6 +1837,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-ingest-tasks
       parameters:
       - description: Comma separated status
         in: query
@@ -1864,6 +1878,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: cancel-download-task
       parameters:
       - description: Task ID
         in: path
@@ -1897,6 +1912,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-media-files
       parameters:
       - description: Limit
         in: query
@@ -1933,6 +1949,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: delete-media-file
       parameters:
       - description: Media File ID
         in: path
@@ -1966,6 +1983,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-movie-comments
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2000,12 +2018,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get comments for a movie
+      summary: Get Comments for a Movie
       tags:
       - Comments
     post:
       consumes:
       - application/json
+      operationId: post-movie-comment
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2039,13 +2058,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Post a comment for a movie
+      summary: Post Comment for a Movie
       tags:
       - Comments
   /api/v1/movie/{id}/continue_watching:
     get:
       consumes:
       - application/json
+      operationId: get-movie-next-watch-action
       parameters:
       - description: Media ID
         in: path
@@ -2072,14 +2092,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get next watch action for a media
+      summary: Get Movie Next Watch Action
       tags:
       - Watch Activity
   /api/v1/movie/{id}/media_files:
     get:
       consumes:
       - application/json
-      description: Get
+      operationId: get-movie-media-files
       parameters:
       - description: Movie ID
         in: path
@@ -2113,6 +2133,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: search-providers-movie
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2151,6 +2172,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-movie-genres
       produces:
       - application/json
       responses:
@@ -2181,6 +2203,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-provider-profiles
       produces:
       - application/json
       responses:
@@ -2209,6 +2232,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: create-provider-profile
       parameters:
       - description: Provider Profile
         in: body
@@ -2243,6 +2267,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: delete-provider-profile
       parameters:
       - description: Provider ID
         in: path
@@ -2277,6 +2302,7 @@ paths:
       - application/json
       description: Set the default provider profiles for streaming, downloading. Note
         that clients may choose to override their own defaults.
+      operationId: update-provider-profile
       parameters:
       - description: Provider ID
         in: path
@@ -2316,6 +2342,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: search-media
       parameters:
       - description: Search Query
         in: query
@@ -2350,6 +2377,7 @@ paths:
       consumes:
       - application/json
       description: A streamable link for a video defined by the encodedString
+      operationId: stream-video
       parameters:
       - description: Encoded Stream Details
         in: path
@@ -2386,6 +2414,7 @@ paths:
       description: |-
         Adds a p2p torrent to the server for streaming/download.
         Not strictly necessary, as calling stream directly invokes this. May be deprecated in the future.
+      operationId: add-torrent
       parameters:
       - description: Encoded Stream Details
         in: path
@@ -2419,6 +2448,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-comments
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2453,12 +2483,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get comments for a TV show
+      summary: Get Comments for a TV Show
       tags:
       - Comments
     post:
       consumes:
       - application/json
+      operationId: post-tvshow-comment
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2492,13 +2523,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Post a comment for a TV show
+      summary: Post Comment for a TV Show
       tags:
       - Comments
   /api/v1/tv/{id}/continue_watching:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-next-watch-action
       parameters:
       - description: Media ID
         in: path
@@ -2525,13 +2557,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get next watch action for a media
+      summary: Get TV Show Next Watch Action
       tags:
       - Watch Activity
   /api/v1/tv/{id}/media_files:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-media-files
       parameters:
       - description: TV Show ID
         in: path
@@ -2566,13 +2599,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Search TV Show Media Files by ID
+      summary: Get TV Show Media Files by ID
       tags:
       - Media Files
   /api/v1/tv/{id}/providers:
     get:
       consumes:
       - application/json
+      operationId: search-providers-tvshow
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -2625,6 +2659,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: download-tv-season
       parameters:
       - description: Media ID
         in: path
@@ -2668,6 +2703,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-genres
       produces:
       - application/json
       responses:
@@ -2698,6 +2734,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-users
       produces:
       - application/json
       responses:
@@ -2726,6 +2763,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: user-register
       parameters:
       - description: Registration Details
         in: body
@@ -2760,6 +2798,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: delete-user
       parameters:
       - description: User ID
         in: path
@@ -2797,6 +2836,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: admin-reset-password
       parameters:
       - description: User ID
         in: path
@@ -2835,6 +2875,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-user-watch-stats
       parameters:
       - description: Start Time RFC3339
         in: query
@@ -2871,6 +2912,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: delete-movie-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -2910,6 +2952,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: delete-tvshow-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -2949,6 +2992,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: colllections-delete-media
       parameters:
       - description: Collection ID
         in: path
@@ -2987,6 +3031,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-collection-contents
       parameters:
       - description: Collection ID
         in: path
@@ -3027,6 +3072,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: collections-add-media
       parameters:
       - description: Collection ID
         in: path
@@ -3066,6 +3112,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: delete-collection
       parameters:
       - description: Collection ID
         in: path
@@ -3099,6 +3146,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-user-collections
       produces:
       - application/json
       responses:
@@ -3128,6 +3176,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: create-collection
       produces:
       - application/json
       responses:
@@ -3156,6 +3205,7 @@ paths:
       consumes:
       - application/json
       description: Gets 20 most recent records added to any collection
+      operationId: get-user-recent-collections
       produces:
       - application/json
       responses:
@@ -3185,6 +3235,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-movie-details
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -3219,6 +3270,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-movie-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -3253,6 +3305,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: add-movie-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -3292,6 +3345,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-movie-playback-progress
       parameters:
       - description: Media ID
         in: path
@@ -3308,9 +3362,7 @@ paths:
             - $ref: '#/definitions/v1.V1SuccessResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/model.WatchProgress'
-                  type: array
+                  $ref: '#/definitions/model.WatchProgress'
               type: object
         "400":
           description: Bad Request
@@ -3320,12 +3372,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get Playback Progress
+      summary: Get Movie Playback Progress
       tags:
       - Watch Progress
     post:
       consumes:
       - application/json
+      operationId: set-movie-playback-progress
       parameters:
       - description: Media ID
         in: path
@@ -3358,24 +3411,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Set Playback Progress
+      summary: Set Movie Playback Progress
       tags:
       - Watch Progress
   /v1/movie/{id}/playback/delete:
     post:
       consumes:
       - application/json
+      operationId: delete-movie-playback-progress
       parameters:
       - description: Media ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Delete Payload (only for TV)
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/v1.DeletePlaybackProgressPayload'
       produces:
       - application/json
       responses:
@@ -3396,13 +3445,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Delete Playback Progress
+      summary: Delete Movie Playback Progress
       tags:
       - Watch Progress
   /v1/movie/search:
     get:
       consumes:
       - application/json
+      operationId: search-movies
       parameters:
       - description: Search Query
         in: query
@@ -3439,6 +3489,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-details
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -3473,6 +3524,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-episode-groups
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -3507,15 +3559,12 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvshow-watch-history
       parameters:
       - description: Media ID
         in: path
         name: id
         required: true
-        type: integer
-      - description: Season number
-        in: query
-        name: seasonNumber
         type: integer
       produces:
       - application/json
@@ -3551,6 +3600,7 @@ paths:
         those episodes, however, this behavior might change in the future. For the season_number,
         episode_number case, the current playback progress will be cleared if the watched_at is newer
         than the existing playback progress.
+      operationId: add-tvshow-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -3592,6 +3642,7 @@ paths:
       - application/json
       description: Create new rewatch for tv show. This archives the previous watches,
         so user's can start fresh.
+      operationId: create-tvshow-rewatch
       parameters:
       - description: Media ID
         in: path
@@ -3625,6 +3676,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: set-tvshow-playback-progress
       parameters:
       - description: Media ID
         in: path
@@ -3657,13 +3709,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Set Playback Progress
+      summary: Set TV Playback Progress
       tags:
       - Watch Progress
   /v1/tv/{id}/playback/delete:
     post:
       consumes:
       - application/json
+      operationId: delete-tv-playback-progress
       parameters:
       - description: Media ID
         in: path
@@ -3695,13 +3748,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Delete Playback Progress
+      summary: Delete TV Playback Progress
       tags:
       - Watch Progress
   /v1/tv/{id}/season/{seasonNumber}:
     get:
       consumes:
       - application/json
+      operationId: get-tvseason-details
       parameters:
       - description: Media ID
         example: tmdb-1234
@@ -3741,6 +3795,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-tvseason-watch-history
       parameters:
       - description: Media ID
         in: path
@@ -3748,8 +3803,9 @@ paths:
         required: true
         type: integer
       - description: Season number
-        in: query
+        in: path
         name: seasonNumber
+        required: true
         type: integer
       produces:
       - application/json
@@ -3773,13 +3829,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get TV Show Watch History
+      summary: Get TV Season Watch History
       tags:
       - Watch History
   /v1/tv/{id}/season/{seasonNumber}/playback:
     get:
       consumes:
       - application/json
+      operationId: get-tvseason-playback-progress
       parameters:
       - description: Media ID
         in: path
@@ -3789,6 +3846,7 @@ paths:
       - description: Season Number
         in: path
         name: seasonNumber
+        required: true
         type: integer
       produces:
       - application/json
@@ -3812,13 +3870,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get Playback Progress
+      summary: Get TV Season Playback Progress
       tags:
       - Watch Progress
   /v1/tv/search:
     get:
       consumes:
       - application/json
+      operationId: search-tvshows
       parameters:
       - description: Search Query
         in: query
@@ -3855,6 +3914,7 @@ paths:
     get:
       consumes:
       - application/json
+      operationId: get-user-watch-activity
       parameters:
       - description: Limit - Defaults at 500
         in: query

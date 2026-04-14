@@ -12,6 +12,7 @@ import (
 
 // @Router /api/v1/watch_stats [get]
 // @Summary Get Watch Stats
+// @ID get-user-watch-stats
 // @Tags Watch Activity
 // @Accept json
 // @Produce json

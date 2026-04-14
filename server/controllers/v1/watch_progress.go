@@ -19,8 +19,8 @@ type SetPlaybackProgressResponse struct {
 }
 
 // @Router /v1/movie/{id}/playback [post]
-// @Router /v1/tv/{id}/playback [post]
-// @Summary Set Playback Progress
+// @Summary Set Movie Playback Progress
+// @ID set-movie-playback-progress
 // @Tags Watch Progress
 // @Accept json
 // @Produce json
@@ -29,7 +29,26 @@ type SetPlaybackProgressResponse struct {
 // @Success 200 {object} V1SuccessResponse{data=SetPlaybackProgressResponse}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func SetPlaybackProgressHandler(c *gin.Context) {
+func SetMoviePlaybackProgressHandler(c *gin.Context) {
+	handleSetPlaybackProgress(c)
+}
+
+// @Router /v1/tv/{id}/playback [post]
+// @Summary Set TV Playback Progress
+// @ID set-tvshow-playback-progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchProgress true "Watch Progress Payload"
+// @Success 200 {object} V1SuccessResponse{data=SetPlaybackProgressResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func SetTVPlaybackProgressHandler(c *gin.Context) {
+	handleSetPlaybackProgress(c)
+}
+
+func handleSetPlaybackProgress(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
 		mediaType = database.MediaTypeTVShow
@@ -118,17 +137,35 @@ func SetPlaybackProgressHandler(c *gin.Context) {
 }
 
 // @Router /v1/movie/{id}/playback [get]
-// @Router /v1/tv/{id}/season/{seasonNumber}/playback [get]
-// @Summary Get Playback Progress
+// @Summary Get Movie Playback Progress
+// @ID get-movie-playback-progress
 // @Tags Watch Progress
 // @Accept json
 // @Produce json
 // @Param id path int true "Media ID" example(tmdb-1234)
-// @Param seasonNumber path int false "Season Number"
+// @Success 200 {object} V1SuccessResponse{data=model.WatchProgress}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetMoviePlaybackProgressHandler(c *gin.Context) {
+	handleGetPlaybackProgress(c)
+}
+
+// @Router /v1/tv/{id}/season/{seasonNumber}/playback [get]
+// @Summary Get TV Season Playback Progress
+// @ID get-tvseason-playback-progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int true "Season Number"
 // @Success 200 {object} V1SuccessResponse{data=[]model.WatchProgress}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func GetPlaybackProgressHandler(c *gin.Context) {
+func GetTVSeasonPlaybackProgressHandler(c *gin.Context) {
+	handleGetPlaybackProgress(c)
+}
+
+func handleGetPlaybackProgress(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
 		mediaType = database.MediaTypeTVShow
@@ -178,8 +215,22 @@ type DeletePlaybackProgressPayload struct {
 }
 
 // @Router /v1/movie/{id}/playback/delete [post]
+// @Summary Delete Movie Playback Progress
+// @ID delete-movie-playback-progress
+// @Tags Watch Progress
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteMoviePlaybackProgressHandler(c *gin.Context) {
+	handleDeletePlaybackProgress(c)
+}
+
 // @Router /v1/tv/{id}/playback/delete [post]
-// @Summary Delete Playback Progress
+// @Summary Delete TV Playback Progress
+// @ID delete-tv-playback-progress
 // @Tags Watch Progress
 // @Accept json
 // @Produce json
@@ -188,7 +239,11 @@ type DeletePlaybackProgressPayload struct {
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func DeletePlaybackProgressHandler(c *gin.Context) {
+func DeleteTVPlaybackProgressHandler(c *gin.Context) {
+	handleDeletePlaybackProgress(c)
+}
+
+func handleDeletePlaybackProgress(c *gin.Context) {
 	mediaType := database.MediaTypeMovie
 	if strings.Contains(c.FullPath(), "/api/v1/tv/") {
 		mediaType = database.MediaTypeTVShow

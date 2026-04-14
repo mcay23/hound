@@ -22,6 +22,7 @@ Proxies links through the server
 */
 // @Router /api/v1/stream/{encodedString} [get]
 // @Summary Stream Video
+// @ID stream-video
 // @Description A streamable link for a video defined by the encodedString
 // @Tags Stream
 // @Accept json
@@ -188,6 +189,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 
 // @Router /api/v1/torrent/{encodedString} [post]
 // @Summary Add Torrent
+// @ID add-torrent
 // @Description Adds a p2p torrent to the server for streaming/download.
 // @Description Not strictly necessary, as calling stream directly invokes this. May be deprecated in the future.
 // @Tags Stream

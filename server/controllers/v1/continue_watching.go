@@ -13,9 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Router /api/v1/tv/{id}/continue_watching [get]
 // @Router /api/v1/movie/{id}/continue_watching [get]
-// @Summary Get next watch action for a media
+// @Summary Get Movie Next Watch Action
+// @ID get-movie-next-watch-action
 // @Tags Watch Activity
 // @Accept json
 // @Produce json
@@ -23,7 +23,25 @@ import (
 // @Success 200 {object} V1SuccessResponse{data=model.WatchAction}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func GetNextWatchActionHandler(c *gin.Context) {
+func GetMovieNextWatchActionHandler(c *gin.Context) {
+	handleGetNextWatchAction(c)
+}
+
+// @Router /api/v1/tv/{id}/continue_watching [get]
+// @Summary Get TV Show Next Watch Action
+// @ID get-tvshow-next-watch-action
+// @Tags Watch Activity
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID"
+// @Success 200 {object} V1SuccessResponse{data=model.WatchAction}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVNextWatchActionHandler(c *gin.Context) {
+	handleGetNextWatchAction(c)
+}
+
+func handleGetNextWatchAction(c *gin.Context) {
 	mediaType := ""
 	path := c.FullPath()
 	if strings.HasPrefix(path, "/api/v1/tv") {
@@ -48,7 +66,8 @@ func GetNextWatchActionHandler(c *gin.Context) {
 }
 
 // @Router /api/v1/continue_watching [get]
-// @Summary Get continue watching list
+// @Summary Get Continue Watching
+// @ID get-continue-watching
 // @Tags Watch Activity
 // @Accept json
 // @Produce json

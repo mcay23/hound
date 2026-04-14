@@ -9,6 +9,7 @@ import (
 
 // @Router /api/v1/catalog/{id} [get]
 // @Summary Get Catalog
+// @ID get-catalog
 // @Tags Catalog
 // @Accept json
 // @Produce json

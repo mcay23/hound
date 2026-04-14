@@ -19,6 +19,7 @@ type CreateProviderRequest struct {
 
 // @Router /api/v1/provider_profiles [get]
 // @Summary Get all provider profiles
+// @ID get-provider-profiles
 // @Tags Provider Profiles
 // @Accept json
 // @Produce json
@@ -36,6 +37,7 @@ func GetProviderProfilesHandler(c *gin.Context) {
 
 // @Router /api/v1/provider_profiles [post]
 // @Summary Create a provider profile
+// @ID create-provider-profile
 // @Tags Provider Profiles
 // @Accept json
 // @Produce json
@@ -75,6 +77,7 @@ type UpdateProviderProfileRequest struct {
 
 // @Router /api/v1/provider_profiles/{id} [put]
 // @Summary Update a provider profile
+// @ID update-provider-profile
 // @Description Set the default provider profiles for streaming, downloading. Note that clients may choose to override their own defaults.
 // @Tags Provider Profiles
 // @Accept json
@@ -109,6 +112,7 @@ func UpdateProviderProfileHandler(c *gin.Context) {
 
 // @Router /api/v1/provider_profiles/{id} [delete]
 // @Summary Delete a provider profile
+// @ID delete-provider-profile
 // @Tags Provider Profiles
 // @Accept json
 // @Produce json
