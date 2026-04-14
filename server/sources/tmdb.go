@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 
@@ -49,7 +49,7 @@ type TMDBEpisode struct {
 
 func InitializeTMDB() {
 	var err error
-	apiKey := os.Getenv("TMDB_API_KEY")
+	apiKey := config.TMDBAPIKey
 	// if user doesn't use their own api key, use the default one
 	// as I understand, this is allowed by the devs
 	// jellyfin, etc. uses a single api key for all their users

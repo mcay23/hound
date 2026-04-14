@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/loggers"
@@ -14,8 +15,8 @@ import (
 )
 
 func InitializeIngestWorkers() {
-	slog.Debug("Starting ingest workers", "count", model.MaxConcurrentIngests)
-	for i := range model.MaxConcurrentIngests {
+	slog.Debug("Starting ingest workers", "count", config.MaxConcurrentIngests)
+	for i := range config.MaxConcurrentIngests {
 		go ingestWorker(i)
 	}
 }

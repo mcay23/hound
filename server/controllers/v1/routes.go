@@ -1,8 +1,7 @@
 package v1
 
 import (
-	"os"
-
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -162,7 +161,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Testing purposes only
 	*/
-	if os.Getenv("APP_ENV") != "production" {
+	if config.AppEnvironment != "production" {
 		privateRoutes.GET("/decode", DecodeTestHandler)
 		privateRoutes.GET("/clearcache", ClearCacheHandler)
 		privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)

@@ -1,6 +1,12 @@
 package main
 
 import (
+	"log/slog"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/controllers"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/loggers"
@@ -8,12 +14,6 @@ import (
 	"github.com/mcay23/hound/services"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/workers"
-	"log/slog"
-	"os"
-	"strings"
-	"time"
-
-	"github.com/joho/godotenv"
 )
 
 // @title Hound API Documentation V1
@@ -26,10 +26,7 @@ func main() {
 	// initialize logging
 	time.Local, _ = time.LoadLocation("UTC")
 
-	// load env file to os for dev
-	if os.Getenv("APP_ENV") != "production" {
-		_ = godotenv.Load("dev.env")
-	}
+	config.InitializeConfig()
 	logLevel := slog.LevelInfo
 	if strings.ToLower(os.Getenv("DEBUG_LOGGING")) == "true" {
 		logLevel = slog.LevelDebug
@@ -37,7 +34,6 @@ func main() {
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	slog.SetDefault(slog.New(handler))
 
-	model.InitializeConfig()
 	loggers.InitializeLoggers()
 	database.InitializeCache()
 	database.InstantiateDB()
@@ -49,4 +45,5 @@ func main() {
 	// workers should run after db, since some row cleanups are done during startup
 	workers.InitializeWorkers()
 	controllers.SetupRoutes()
+
 }

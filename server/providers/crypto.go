@@ -9,11 +9,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
+
+	"github.com/mcay23/hound/config"
 )
 
 func getAESKey(salt []byte) (*[]byte, error) {
-	key, err := pbkdf2.Key(sha256.New, os.Getenv("HOUND_SECRET"), salt, 4096, 16)
+	key, err := pbkdf2.Key(sha256.New, config.HoundSecret, salt, 4096, 16)
 	return &key, err
 }
 

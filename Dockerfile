@@ -8,7 +8,7 @@ RUN npm run build
 
 # Stage 2: Build Server
 FROM golang:1.26.1-alpine AS server-builder
-ARG VERSION=dev
+ARG VERSION=production
 ARG COMMIT
 ARG BUILD_TIME
 RUN apk add --no-cache git
@@ -40,6 +40,7 @@ COPY --from=web-builder /app/web/build ./build
 
 # Environment variables
 ENV SERVER_PORT=2323
+ENV APP_ENV=production
 EXPOSE 2323
 
 # Data and Config volumes should be mapped in docker-compose

@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/loggers"
@@ -49,8 +50,8 @@ func InitializeDownloadWorkers() {
 	for _, task := range tasks {
 		failTask(&task.IngestTask, fmt.Errorf("invalid download task - process crashed during download"))
 	}
-	slog.Debug("Starting download workers", "count", model.MaxConcurrentDownloads)
-	for i := range model.MaxConcurrentDownloads {
+	slog.Debug("Starting download workers", "count", config.MaxConcurrentDownloads)
+	for i := range config.MaxConcurrentDownloads {
 		go downloadWorker(i)
 	}
 }

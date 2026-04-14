@@ -1,11 +1,13 @@
 package controllers
 
 import (
-	v1 "github.com/mcay23/hound/controllers/v1"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mcay23/hound/config"
+	v1 "github.com/mcay23/hound/controllers/v1"
 
 	_ "github.com/mcay23/hound/docs"
 
@@ -20,7 +22,7 @@ func SetupRoutes() {
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Serve static files from the build directory in prod
-	if os.Getenv("APP_ENV") == "production" {
+	if config.AppEnvironment == "production" {
 		r.Static("/static", "./build/static")
 
 		r.NoRoute(func(c *gin.Context) {

@@ -3,9 +3,9 @@ package database
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/internal"
 
 	"xorm.io/xorm"
@@ -24,11 +24,11 @@ func InstantiateDB() {
 	var err error
 	slog.Info("DB loaded", "driver", DriverPostgres)
 	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
+		config.PostgresHost,
+		config.PostgresPort,
+		config.PostgresUser,
+		config.PostgresPassword,
+		config.PostgresDBName,
 	)
 
 	slog.Info("Attempting DB connection", "uri", connectionString)

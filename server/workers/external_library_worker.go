@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/loggers"
@@ -69,7 +70,7 @@ Note that this will cause mismatches, especially for tv shows if the season/epis
 ordering of the source directory is not identical to tmdb's ordering
 */
 func InitializeExternalLibraryWorkers() {
-	if !model.ExternalLibraryWorkersEnabled {
+	if !config.ExternalLibraryWorkersEnabled {
 		return
 	}
 	roots := getExternalLibraryRoots()
@@ -78,13 +79,13 @@ func InitializeExternalLibraryWorkers() {
 		return
 	}
 	externalLibraryQueue = make(chan externalLibraryQueueItem, externalQueueBuffer)
-	consumerCount := model.MaxExternalLibraryWorkers
+	consumerCount := config.MaxExternalLibraryWorkers
 	for i := 0; i < consumerCount; i++ {
 		go externalLibraryQueueWorker()
 	}
 	for _, root := range roots {
 		go initialExternalLibraryScan(root)
-		go periodicExternalLibraryRescan(root, model.ExternalLibraryScanInterval)
+		go periodicExternalLibraryRescan(root, config.ExternalLibraryScanInterval)
 		go watchExternalLibrary(root)
 		slog.Info("External library root started", "root", root.RootPath, "mediaType", root.MediaType)
 	}
@@ -92,15 +93,15 @@ func InitializeExternalLibraryWorkers() {
 
 func getExternalLibraryRoots() []externalLibraryRoot {
 	roots := make([]externalLibraryRoot, 0, 2)
-	if strings.TrimSpace(model.ExternalLibraryMoviesPath) != "" {
+	if strings.TrimSpace(config.ExternalLibraryMoviesPath) != "" {
 		roots = append(roots, externalLibraryRoot{
-			RootPath:  filepath.Clean(model.ExternalLibraryMoviesPath),
+			RootPath:  filepath.Clean(config.ExternalLibraryMoviesPath),
 			MediaType: database.MediaTypeMovie,
 		})
 	}
-	if strings.TrimSpace(model.ExternalLibraryTVPath) != "" {
+	if strings.TrimSpace(config.ExternalLibraryTVPath) != "" {
 		roots = append(roots, externalLibraryRoot{
-			RootPath:  filepath.Clean(model.ExternalLibraryTVPath),
+			RootPath:  filepath.Clean(config.ExternalLibraryTVPath),
 			MediaType: database.MediaTypeTVShow,
 		})
 	}
