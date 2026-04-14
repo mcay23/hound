@@ -1622,34 +1622,6 @@ paths:
       summary: Get Media Backdrops
       tags:
       - General
-  /api/v1/build_info:
-    get:
-      consumes:
-      - application/json
-      operationId: get-build-info
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/v1.V1SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/internal.BuildInfo'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/v1.V1ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Get Build Info
-      tags:
-      - General
   /api/v1/catalog/{id}:
     get:
       consumes:
@@ -2372,6 +2344,34 @@ paths:
       summary: General Media Search
       tags:
       - Search
+  /api/v1/server_info:
+    get:
+      consumes:
+      - application/json
+      operationId: get-server-info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal.BuildInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Server Info
+      tags:
+      - General
   /api/v1/stream/{encodedString}:
     get:
       consumes:

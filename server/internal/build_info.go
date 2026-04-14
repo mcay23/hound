@@ -1,7 +1,7 @@
 package internal
 
 var (
-	Version   = "dev"
+	Version   = "development"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )

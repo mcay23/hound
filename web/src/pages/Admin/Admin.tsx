@@ -1,4 +1,6 @@
 import {
+  Card,
+  CardContent,
   Drawer,
   List,
   ListItem,
@@ -10,9 +12,11 @@ import Downloads from "./Downloads";
 import { useState } from "react";
 import ProviderProfiles from "./ProviderProfiles";
 import UserList from "./Users";
+import { useServerInfo } from "../../api/hooks/general";
 
 export default function Admin(props: any) {
   const [activeTab, setActiveTab] = useState(0);
+  const { data: serverInfo, isLoading: isServerInfoLoading } = useServerInfo();
   return (
     <>
       <div className="admin-main-container">
@@ -49,6 +53,14 @@ export default function Admin(props: any) {
                 ),
               )}
             </List>
+            <div className="p-2">
+              <Card variant="outlined">
+                <div className="p-2">
+                  <p>Version: {serverInfo?.version}</p>
+                  <p>Server ID: {serverInfo?.server_id}</p>
+                </div>
+              </Card>
+            </div>
           </Drawer>
           <div className="d-flex admin-content">
             {activeTab === 0 && <Downloads />}

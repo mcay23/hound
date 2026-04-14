@@ -349,53 +349,6 @@
                 }
             }
         },
-        "/api/v1/build_info": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "General"
-                ],
-                "summary": "Get Build Info",
-                "operationId": "get-build-info",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/v1.V1SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/internal.BuildInfo"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/catalog/{id}": {
             "get": {
                 "consumes": [
@@ -1553,6 +1506,53 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/view.GeneralSearchResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/server_info": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "General"
+                ],
+                "summary": "Get Server Info",
+                "operationId": "get-server-info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal.BuildInfo"
                                         }
                                     }
                                 }

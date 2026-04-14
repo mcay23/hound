@@ -355,53 +355,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/build_info": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "General"
-                ],
-                "summary": "Get Build Info",
-                "operationId": "get-build-info",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/v1.V1SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/internal.BuildInfo"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/catalog/{id}": {
             "get": {
                 "consumes": [
@@ -1559,6 +1512,53 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/view.GeneralSearchResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/server_info": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "General"
+                ],
+                "summary": "Get Server Info",
+                "operationId": "get-server-info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal.BuildInfo"
                                         }
                                     }
                                 }
@@ -6201,7 +6201,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "beta-0.1.1",
+	Version:          "beta-0.1.0",
 	Host:             "localhost:2323",
 	BasePath:         "/",
 	Schemes:          []string{},

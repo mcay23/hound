@@ -88,15 +88,29 @@ func GetMediaBackdrops(c *gin.Context) {
 	internal.SuccessResponse(c, candidateURL, 200)
 }
 
-// @Router /api/v1/build_info [get]
-// @Summary Get Build Info
-// @ID get-build-info
+type ServerInfoResponse struct {
+	ServerID string `json:"server_id"`
+	internal.BuildInfo
+}
+
+// @Router /api/v1/server_info [get]
+// @Summary Get Server Info
+// @ID get-server-info
 // @Tags General
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=internal.BuildInfo}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
-func GetBuildInfoHandler(c *gin.Context) {
-	internal.SuccessResponse(c, internal.GetBuildInfo(), 200)
+func GetServerInfoHandler(c *gin.Context) {
+	serverID, err := database.GetServerID()
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get server ID: %w", err))
+		return
+	}
+	response := ServerInfoResponse{
+		ServerID:  serverID,
+		BuildInfo: internal.GetBuildInfo(),
+	}
+	internal.SuccessResponse(c, response, 200)
 }
