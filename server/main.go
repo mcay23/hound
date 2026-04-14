@@ -3,7 +3,6 @@ package main
 import (
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/mcay23/hound/config"
@@ -28,7 +27,7 @@ func main() {
 
 	config.InitializeConfig()
 	logLevel := slog.LevelInfo
-	if strings.ToLower(os.Getenv("DEBUG_LOGGING")) == "true" {
+	if config.DebugLogging {
 		logLevel = slog.LevelDebug
 	}
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})

@@ -10,6 +10,8 @@ import (
 
 /*
 In dev, these values will be overwritten with dev.env values
+The below defaults are meant to work out of the box with
+the provided docker-compose.yml
 */
 var (
 	AppEnvironment                string = "development"

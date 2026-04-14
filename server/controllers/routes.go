@@ -17,6 +17,9 @@ import (
 )
 
 func SetupRoutes() {
+	if !config.DebugLogging {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.Default()
 	v1.SetupRoutes(r)
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
