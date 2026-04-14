@@ -811,6 +811,14 @@ definitions:
           type: integer
         type: array
     type: object
+  v1.AdminResetPasswordPayload:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    type: object
   v1.CancelIngestTaskResponse:
     properties:
       ingest_task_id:
@@ -818,6 +826,17 @@ definitions:
       status:
         example: pending_cancel
         type: string
+    type: object
+  v1.ChangePasswordPayload:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
     type: object
   v1.CommentRequest:
     properties:
@@ -871,6 +890,8 @@ definitions:
     type: object
   v1.LoginResponse:
     properties:
+      display_name:
+        type: string
       role:
         type: string
       token:
@@ -1009,6 +1030,10 @@ definitions:
         type: string
       is_public:
         type: boolean
+      owner_display_name:
+        type: string
+      owner_username:
+        type: string
       record_id:
         type: integer
       score:
@@ -1016,8 +1041,6 @@ definitions:
       title:
         type: string
       updated_at:
-        type: string
-      user_id:
         type: string
     type: object
   view.Credit:
@@ -1530,6 +1553,39 @@ paths:
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: User logout
+      tags:
+      - Auth
+  /api/v1/auth/password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Password Change Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ChangePasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Change user password
       tags:
       - Auth
   /api/v1/backdrops:
@@ -2735,6 +2791,44 @@ paths:
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: Delete a user
+      tags:
+      - Users
+  /api/v1/users/{id}/password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New Password Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AdminResetPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Admin reset user password
       tags:
       - Users
   /api/v1/watch_stats:
