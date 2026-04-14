@@ -32,7 +32,7 @@ func InstantiateDB() {
 	)
 
 	slog.Info("Attempting DB connection", "uri", connectionString)
-	databaseEngine, err = xorm.NewEngine(DriverPostgres, connectionString)
+	databaseEngine, err = NewEngineWithRetry(DriverPostgres, connectionString)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to instantiate DB connection")
 		panic(err)
@@ -110,4 +110,28 @@ func InstantiateDB() {
 
 func NewSession() *xorm.Session {
 	return databaseEngine.NewSession()
+}
+
+func NewEngineWithRetry(driver, connectionString string) (*xorm.Engine, error) {
+	var (
+		engine *xorm.Engine
+		err    error
+	)
+	maxRetries := 20
+	for i := 0; i < maxRetries; i++ {
+		engine, err = xorm.NewEngine(driver, connectionString)
+		if err == nil {
+			if pingErr := engine.Ping(); pingErr == nil {
+				return engine, nil
+			} else {
+				err = pingErr
+			}
+		}
+		_ = internal.LogErrorWithMessage(err, "Failed to connect to DB (attempt "+fmt.Sprint(i+1)+")")
+		if i == maxRetries-1 {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return nil, err
 }
