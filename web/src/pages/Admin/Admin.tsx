@@ -55,7 +55,7 @@ export default function Admin(props: any) {
             </List>
             <div className="p-2">
               <Card variant="outlined">
-                <div className="p-2">
+                <div className="p-3">
                   <p>Version: {serverInfo?.version}</p>
                   <p>Server ID: {serverInfo?.server_id}</p>
                 </div>
