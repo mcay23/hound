@@ -1,152 +1,113 @@
 package v1
 
 import (
-	"errors"
-	tmdb "github.com/cyruzin/golang-tmdb"
-	"github.com/gin-gonic/gin"
-	"hound/helpers"
-	"hound/model/database"
-	"hound/model/sources"
-	"hound/view"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
+	"github.com/gin-gonic/gin"
 )
 
+// @Router /v1/movie/search [get]
+// @Summary Search Movies
+// @ID search-movies
+// @Tags Movie, Search
+// @Accept json
+// @Produce json
+// @Param query query string true "Search Query"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SearchMoviesHandler(c *gin.Context) {
 	queryString := c.Query("query")
-	results, err := SearchMoviesCore(queryString)
+	results, err := model.SearchMovies(queryString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, fmt.Errorf("failed to search for movies: %w", err))
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	internal.SuccessResponse(c, results, 200)
 }
 
-func GetTrendingMoviesHandler(c *gin.Context) {
-	// pagination locked for now
-	results, err := sources.GetTrendingMoviesTMDB("1")
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
-		helpers.ErrorResponse(c, err)
-		return
-	}
-	// convert url results
-	var viewArray []view.LibraryObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
-		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryObject{
-			MediaType:    database.MediaTypeMovie,
-			MediaSource:  sources.SourceTMDB,
-			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.OriginalTitle,
-			ReleaseDate:  item.ReleaseDate,
-			Description:  item.Overview,
-			ThumbnailURL: &thumbnailURL,
-			Tags:         genreArray,
-			UserTags:     nil,
-		}
-		viewArray = append(viewArray, viewObject)
-	}
-	helpers.SuccessResponse(c, viewArray, 200)
-}
-
+// @Router /v1/movie/{id} [get]
+// @Summary Get Movie Details
+// @ID get-movie-details
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetMovieFromIDHandler(c *gin.Context) {
-	param := c.Param("id")
-	split := strings.Split(param, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get source id from params: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	id, err := strconv.ParseInt(split[1], 10, 64)
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations",
-	}
-	movieDetails, err := sources.GetMovieFromIDTMDB(int(id), options)
+	movieDetails, err := sources.GetMovieFromIDTMDB(sourceID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	// get profile, video urls
-	for num, item := range movieDetails.Credits.MovieCredits.Cast {
-		movieDetails.Credits.MovieCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
+	logoURI := ""
+	if len(movieDetails.Images.Logos) > 0 {
+		logoURI = internal.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
-	for num, item := range movieDetails.Credits.MovieCredits.Crew {
-		movieDetails.Credits.MovieCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+	movieObject := view.MediaRecordCatalog{
+		MediaType:        database.RecordTypeMovie,
+		MediaSource:      sources.MediaSourceTMDB,
+		SourceID:         strconv.Itoa(int(sourceID)),
+		MediaTitle:       movieDetails.Title,
+		OriginalTitle:    movieDetails.OriginalTitle,
+		Overview:         movieDetails.Overview,
+		VoteCount:        movieDetails.VoteCount,
+		VoteAverage:      movieDetails.VoteAverage,
+		Popularity:       movieDetails.Popularity,
+		ReleaseDate:      movieDetails.ReleaseDate,
+		Duration:         movieDetails.Runtime,
+		Status:           movieDetails.Status,
+		Genres:           genreArray,
+		OriginalLanguage: movieDetails.OriginalLanguage,
+		ThumbnailURI:     internal.GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
+		BackdropURI:      internal.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
+		LogoURI:          logoURI,
+		OriginCountry:    movieDetails.OriginCountry,
 	}
-	returnObject := view.MovieFullObject{
-		MediaSource:         sources.SourceTMDB,
-		MediaType:           database.MediaTypeMovie,
-		SourceID:            movieDetails.ID,
-		MediaTitle:          movieDetails.Title,
-		BackdropURL:         GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
-		PosterURL:           GetTMDBImageURL(movieDetails.PosterPath, tmdb.W500),
-		Budget:              movieDetails.Budget,
-		Genres:              movieDetails.Genres,
-		Homepage:            movieDetails.Homepage,
-		IMDbID:              movieDetails.IMDbID,
-		OriginalLanguage:    movieDetails.OriginalLanguage,
-		OriginalTitle:       movieDetails.OriginalTitle,
-		Overview:            movieDetails.Overview,
-		Popularity:          movieDetails.Popularity,
-		ProductionCompanies: movieDetails.ProductionCompanies,
-		ReleaseDate:         movieDetails.ReleaseDate,
-		Revenue:             movieDetails.Revenue,
-		Runtime:             movieDetails.Runtime,
-		Status:              movieDetails.Status,
-		Tagline:             movieDetails.Tagline,
-		VoteAverage:         movieDetails.VoteAverage,
-		VoteCount:           movieDetails.VoteCount,
-		MovieCredits:        movieDetails.Credits.MovieCredits,
-		Videos:              movieDetails.Videos.MovieVideos,
-		Recommendations:     movieDetails.Recommendations,
-		WatchProviders:      movieDetails.WatchProviders,
+	castArray := []view.Credit{}
+	for _, cast := range movieDetails.Credits.MovieCredits.Cast {
+		castArray = append(castArray, view.Credit{
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(cast.ID)),
+			CreditID:     cast.CreditID,
+			Name:         cast.Name,
+			OriginalName: cast.OriginalName,
+			Character:    &cast.Character,
+			ThumbnailURI: internal.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+		})
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeMovie, sources.SourceTMDB, strconv.Itoa(int(movieDetails.ID)))
-	if err == nil {
-		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
-			return
+	movieObject.Cast = &castArray
+	directorsArray := []view.Credit{}
+	for _, crew := range movieDetails.Credits.MovieCredits.Crew {
+		if strings.ToLower(crew.Job) == "director" {
+			directorsArray = append(directorsArray, view.Credit{
+				MediaSource:  sources.MediaSourceTMDB,
+				SourceID:     strconv.Itoa(int(crew.ID)),
+				CreditID:     crew.CreditID,
+				Name:         crew.Name,
+				OriginalName: crew.OriginalName,
+				ThumbnailURI: internal.GetTMDBImageURL(crew.ProfilePath, tmdb.W500),
+				Job:          "Director",
+			})
 		}
-		returnObject.Comments = comments
 	}
-	helpers.SuccessResponse(c, returnObject, 200)
-}
-
-func SearchMoviesCore(queryString string) (*[]view.TMDBSearchResultObject, error) {
-	results, err := sources.SearchMoviesTMDB(queryString)
-	if err != nil {
-		return nil, err
-	}
-	// convert url results
-	var convertedResults []view.TMDBSearchResultObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		resultObject := view.TMDBSearchResultObject{
-			MediaType:        database.MediaTypeMovie,
-			MediaSource:      sources.SourceTMDB,
-			OriginalName:     item.OriginalTitle,
-			SourceID:         item.ID,
-			MediaTitle:       item.Title,
-			VoteCount:        item.VoteCount,
-			VoteAverage:      item.VoteAverage,
-			PosterURL:        GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			ReleaseDate:      item.ReleaseDate,
-			Popularity:       item.Popularity,
-			Genres:           genreArray,
-			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      GetTMDBImageURL(item.BackdropPath, tmdb.Original),
-			Overview:         item.Overview,
-		}
-		convertedResults = append(convertedResults, resultObject)
-	}
-	return &convertedResults, nil
+	movieObject.Creators = &directorsArray
+	internal.SuccessResponse(c, movieObject, 200)
 }

@@ -1,0 +1,21 @@
+.watch-stats-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.watch-stats-title {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.watch-stats-card {
+    display: flex;
+    text-align: left;
+    padding: 10px;
+    min-width: 150px;
+    height: 100px;
+    font-size: 16px;
+    flex-direction: column;
+    background-color: rgba(246, 247, 248, 0.75);
+}

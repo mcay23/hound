@@ -1,5 +1,5 @@
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import ItemCard from "../Home/ItemCard";
 import "./Reviews.css";
 import {
@@ -10,15 +10,25 @@ import {
   TextField,
 } from "@mui/material";
 import { useState } from "react";
-import axios from "axios";
-function Reviews(props: any) {
+import { useComments, useCreateComment } from "../../api/hooks/comments";
+function Reviews(props: {
+  mediaType: string;
+  mediaSource: string;
+  sourceId: string;
+}) {
+  const { data: comments } = useComments(
+    "review",
+    props.mediaType,
+    props.mediaSource,
+    props.sourceId,
+  );
   const [createReviewData, setCreateReviewData] = useState({
     title: "",
     comment: "",
     score: 100,
-    is_private: false,
     comment_type: "review",
   });
+  const createCommentMutation = useCreateComment();
   const [isReviewDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const handleReviewDialogOpenClick = () => {
     setIsDeleteDialogOpen(true);
@@ -28,7 +38,6 @@ function Reviews(props: any) {
       title: "",
       comment: "",
       score: 100,
-      is_private: false,
       comment_type: "review",
     });
     setIsDeleteDialogOpen(false);
@@ -46,22 +55,32 @@ function Reviews(props: any) {
       toast.error("Score has to be between 1-100");
       return;
     }
-    axios
-      .post(`/api/v1${window.location.pathname}/comments`, createReviewData)
-      .then(() => {
-        handleReviewDialogClose();
-        window.scrollTo(0, 0);
-        window.location.reload();
-      })
-      .catch((err) => {
-        console.log(err);
-        toast.error("Error posting review");
-      });
+    createCommentMutation.mutate(
+      {
+        mediaType: props.mediaType,
+        mediaSource: props.mediaSource,
+        sourceId: props.sourceId,
+        commentType: "review",
+        comment: createReviewData.comment,
+        score: createReviewData.score,
+        title: createReviewData.title,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Review posted");
+          handleReviewDialogClose();
+        },
+        onError: (err) => {
+          console.log(err);
+          toast.error("Error posting review");
+        },
+      },
+    );
   };
   var your_reviews: any[] = [];
   var other_reviews: any[] = [];
-  if (props.data) {
-    props.data.map((item: any) => {
+  if (comments) {
+    comments.map((item: any) => {
       // get reviews, sort user's reviews first
       if (item.comment_type === "review") {
         if (item.user_id === localStorage.getItem("username")) {
@@ -163,11 +182,6 @@ function Reviews(props: any) {
           <Button onClick={handlePostReview}>Post</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

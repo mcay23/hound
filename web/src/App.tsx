@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./pages/Home/Home";
 import Logout from "./pages/Logout";
-import houndConfig from "./config.json";
 import axios from "axios";
 import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
 import SearchPage from "./pages/Search/SearchPage";
@@ -13,44 +12,68 @@ import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Register from "./pages/Login/Register";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SERVER_URL, AXIOS_CONFIG } from "./config/axios_config";
+import { Toaster } from "react-hot-toast";
+import Topnav from "./pages/Topnav/Topnav";
+import Admin from "./pages/Admin/Admin";
+import Activity from "./pages/Activity/Activity";
+import Settings from "./pages/Settings/Settings";
+
+const queryClient = new QueryClient();
+
+// axios defaults
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = SERVER_URL;
+// TODO REVISE LATER
+axios.defaults.headers.common["Content-Type"] =
+  AXIOS_CONFIG.headers["Content-Type"];
+axios.defaults.headers.common["X-Client-Id"] =
+  AXIOS_CONFIG.headers["X-Client-Id"];
+axios.defaults.headers.common["X-Client-Platform"] =
+  AXIOS_CONFIG.headers["X-Client-Platform"];
+axios.defaults.headers.common["X-Device-Id"] =
+  AXIOS_CONFIG.headers["X-Device-Id"];
+
+axios.interceptors.request.use(
+  function (config) {
+    return config;
+  },
+  function (error) {
+    return Promise.reject(error);
+  },
+);
+axios.interceptors.response.use(
+  function (response) {
+    if (
+      response.data &&
+      response.data.status === "success" &&
+      response.data.data !== undefined
+    ) {
+      return { ...response, data: response.data.data };
+    }
+    return response;
+  },
+  function (error) {
+    console.log(error);
+    const statusCode = error.response.status;
+    if (statusCode === 401) {
+      if (
+        window.location.pathname !== "/logout" &&
+        window.location.pathname !== "/login"
+      ) {
+        window.location.href = "/logout";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 function App() {
   var isAuthenticated = localStorage.getItem("isAuthenticated");
-  // axios defaults
-  axios.defaults.withCredentials = true;
-  axios.defaults.baseURL = houndConfig.server_host;
-  // TODO REVISE LATER
-  axios.defaults.headers.common["Content-Type"] =
-    houndConfig.axios_config.headers["Content-Type"];
-  axios.defaults.headers.common["X-Client"] =
-    houndConfig.axios_config.headers["X-Client"];
-  // Add a request interceptor
-  axios.interceptors.request.use(
-    function (config) {
-      return config;
-    },
-    function (error) {
-      return Promise.reject(error);
-    }
-  );
-
-  // Add a response interceptor
-  axios.interceptors.response.use(
-    function (response) {
-      return response;
-    },
-    function (error) {
-      console.log(error);
-      const statusCode = error.response.status;
-      if (statusCode === 401) {
-        console.log("logging out");
-        const win: Window = window;
-        win.location = "/logout";
-      }
-      return Promise.reject(error);
-    }
-  );
-
   type ProtectedRouteProps = {
     component: JSX.Element;
   };
@@ -61,44 +84,75 @@ function App() {
       return <Navigate to={{ pathname: "/login" }} />;
     }
   }
+  const theme = createTheme({
+    typography: {
+      fontFamily: '"Cabin", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
+  });
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ProtectedRoute component={<Home />} />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          <Route
-            path="logout"
-            element={<ProtectedRoute component={<Logout />} />}
-          />
-          <Route
-            path="library"
-            element={<ProtectedRoute component={<Library />} />}
-          />
-          <Route
-            path="/tv/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/movie/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/game/:id"
-            element={<ProtectedRoute component={<MediaPageLanding />} />}
-          />
-          <Route
-            path="/search"
-            element={<ProtectedRoute component={<SearchPage />} />}
-          />
-          <Route
-            path="/collection/:id"
-            element={<ProtectedRoute component={<Collection />} />}
-          />
-        </Routes>
-      </BrowserRouter>
-    </LocalizationProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Toaster
+        toastOptions={{
+          duration: 5000,
+        }}
+      />
+      {!!isAuthenticated && <Topnav />}
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <Routes>
+              <Route
+                path="/"
+                element={<ProtectedRoute component={<Home />} />}
+              />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route path="logout" element={<Logout />} />
+              {localStorage.getItem("role") === "admin" && (
+                <Route
+                  path="admin"
+                  element={<ProtectedRoute component={<Admin />} />}
+                />
+              )}
+              <Route
+                path="settings"
+                element={<ProtectedRoute component={<Settings />} />}
+              />
+              <Route
+                path="activity"
+                element={<ProtectedRoute component={<Activity />} />}
+              />
+              <Route
+                path="library"
+                element={<ProtectedRoute component={<Library />} />}
+              />
+              <Route
+                path="/tv/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/movie/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/game/:id"
+                element={<ProtectedRoute component={<MediaPageLanding />} />}
+              />
+              <Route
+                path="/search"
+                element={<ProtectedRoute component={<SearchPage />} />}
+              />
+              <Route
+                path="/collection/:id"
+                element={<ProtectedRoute component={<Collection />} />}
+              />
+            </Routes>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 

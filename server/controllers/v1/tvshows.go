@@ -1,297 +1,240 @@
 package v1
 
 import (
-	"errors"
+	"fmt"
+	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
+
 	tmdb "github.com/cyruzin/golang-tmdb"
 	"github.com/gin-gonic/gin"
-	"hound/helpers"
-	"hound/model/database"
-	"hound/model/sources"
-	"hound/view"
-	"strconv"
-	"strings"
 )
 
-type AddLibraryRequest struct {
-	MediaSource string `json:"media_source" binding:"required,gt=0"`
-	SourceID    string `json:"source_id" binding:"required,gt=0"`
-}
-
+// @Router /v1/tv/search [get]
+// @Summary Search TV Shows
+// @ID search-tvshows
+// @Tags TV Show, Search
+// @Accept json
+// @Produce json
+// @Param query query string true "Search Query"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func SearchTVShowHandler(c *gin.Context) {
 	queryString := c.Query("query")
-	results, err := SearchTVShowCore(queryString)
+	results, err := model.SearchTVShows(queryString)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Failed to search for tv show")
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, fmt.Errorf("failed to search tv show for query %s: %w", queryString, err))
 		return
 	}
-	helpers.SuccessResponse(c, results, 200)
+	internal.SuccessResponse(c, results, 200)
 }
 
+// @Router /v1/tv/{id} [get]
+// @Summary Get TV Show Details
+// @ID get-tvshow-details
+// @Tags TV Show
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=view.TVShowCatalogObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetTVShowFromIDHandler(c *gin.Context) {
-	param := c.Param("id")
-	split := strings.Split(param, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	id, err := strconv.ParseInt(split[1], 10, 64)
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	options := map[string]string{
-		"append_to_response": "videos,watch/providers,credits,recommendations",
-	}
-	showDetails, err := sources.GetTVShowFromIDTMDB(int(id), options)
+	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv show from id %d: %w", showID, err))
 		return
 	}
-	// get profile, video urls
-	for num, _ := range showDetails.Seasons {
-		// this doesn't work, pointer stuff
-		// item.PosterPath = tmdb.GetImageURL(item.PosterPath, tmdb.W500)
-		showDetails.Seasons[num].PosterPath = GetTMDBImageURL(showDetails.Seasons[num].PosterPath, tmdb.W500)
+	// create top level show
+	duration := 0
+	if len(showDetails.EpisodeRunTime) > 0 {
+		duration = showDetails.EpisodeRunTime[0]
 	}
-	for num, item := range showDetails.Credits.TVCredits.Cast {
-		showDetails.Credits.TVCredits.Cast[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeTVShow, showDetails.Genres)
+	logoURI := ""
+	if len(showDetails.Images.Logos) > 0 {
+		logoURI = internal.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
 	}
-	for num, item := range showDetails.Credits.TVCredits.Crew {
-		showDetails.Credits.TVCredits.Crew[num].ProfilePath = GetTMDBImageURL(item.ProfilePath, tmdb.W500)
+	showObject := view.TVShowCatalogObject{
+		MediaRecordCatalog: view.MediaRecordCatalog{
+			MediaSource:      sources.MediaSourceTMDB,
+			MediaType:        database.RecordTypeTVShow,
+			SourceID:         strconv.Itoa(int(showID)),
+			MediaTitle:       showDetails.Name,
+			OriginalTitle:    showDetails.OriginalName,
+			VoteCount:        showDetails.VoteCount,
+			VoteAverage:      showDetails.VoteAverage,
+			Popularity:       showDetails.Popularity,
+			ThumbnailURI:     internal.GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
+			SeasonCount:      &showDetails.NumberOfSeasons,
+			EpisodeCount:     &showDetails.NumberOfEpisodes,
+			LastAirDate:      showDetails.LastAirDate,
+			NextAirDate:      showDetails.NextEpisodeToAir.AirDate,
+			ReleaseDate:      showDetails.FirstAirDate,
+			Duration:         duration,
+			Status:           showDetails.Status,
+			Genres:           genreArray,
+			OriginalLanguage: showDetails.OriginalLanguage,
+			BackdropURI:      internal.GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
+			LogoURI:          logoURI,
+			Overview:         showDetails.Overview,
+			OriginCountry:    showDetails.OriginCountry,
+		},
 	}
-
-	var viewSeasons []view.SeasonObjectPartial
-	for _, item := range showDetails.Seasons {
-		viewSeasons = append(viewSeasons, view.SeasonObjectPartial{
-			AirDate:      item.AirDate,
-			EpisodeCount: item.EpisodeCount,
-			ID:           item.ID,
-			Name:         item.Name,
-			Overview:     item.Overview,
-			PosterURL:    GetTMDBImageURL(item.PosterPath, tmdb.W500),
-			SeasonNumber: item.SeasonNumber,
+	// append top 20 cast members
+	castArray := []view.Credit{}
+	for idx, cast := range showDetails.Credits.TVCredits.Cast {
+		castArray = append(castArray, view.Credit{
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(cast.ID)),
+			CreditID:     cast.CreditID,
+			Name:         cast.Name,
+			OriginalName: cast.OriginalName,
+			Character:    &cast.Character,
+			ThumbnailURI: internal.GetTMDBImageURL(cast.ProfilePath, tmdb.W500),
+			Job:          "Cast",
+		})
+		if idx == 20 {
+			break
+		}
+	}
+	showObject.Cast = &castArray
+	creatorsArray := []view.Credit{}
+	for _, creator := range showDetails.CreatedBy {
+		creatorsArray = append(creatorsArray, view.Credit{
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(creator.ID)),
+			CreditID:     creator.CreditID,
+			Name:         creator.Name,
+			OriginalName: creator.Name,
+			ThumbnailURI: internal.GetTMDBImageURL(creator.ProfilePath, tmdb.W500),
+			Job:          "Creator",
 		})
 	}
-	returnObject := view.TVShowFullObject{
-		MediaSource:      sources.SourceTMDB,
-		MediaType:        database.MediaTypeTVShow,
-		OriginalName:     showDetails.OriginalName,
-		SourceID:         showDetails.ID,
-		MediaTitle:       showDetails.Name,
-		VoteCount:        showDetails.VoteCount,
-		VoteAverage:      showDetails.VoteAverage,
-		PosterURL:        GetTMDBImageURL(showDetails.PosterPath, tmdb.W500),
-		NumberOfEpisodes: showDetails.NumberOfEpisodes,
-		NumberOfSeasons:  showDetails.NumberOfSeasons,
-		Seasons:          viewSeasons,
-		NextEpisodeToAir: showDetails.NextEpisodeToAir,
-		Networks:         showDetails.Networks,
-		EpisodeRunTime:   showDetails.EpisodeRunTime,
-		CreatedBy:        showDetails.CreatedBy,
-		Status:           showDetails.Status,
-		FirstAirDate:     showDetails.FirstAirDate,
-		Popularity:       showDetails.Popularity,
-		Genres:           showDetails.Genres,
-		OriginalLanguage: showDetails.OriginalLanguage,
-		BackdropURL:      GetTMDBImageURL(showDetails.BackdropPath, tmdb.Original),
-		Overview:         showDetails.Overview,
-		OriginCountry:    showDetails.OriginCountry,
-		Videos:           showDetails.Videos.TVVideos,
-		WatchProviders:   showDetails.WatchProviders,
-		TVCredits:        showDetails.Credits.TVCredits,
-		Recommendations:  showDetails.Recommendations,
+	showObject.Creators = &creatorsArray
+	// continue to append seasons
+	seasonArray := []view.MediaRecordCatalog{}
+	for _, season := range showDetails.Seasons {
+		seasonArray = append(seasonArray, view.MediaRecordCatalog{
+			MediaSource:  sources.MediaSourceTMDB,
+			MediaType:    database.RecordTypeSeason,
+			SourceID:     strconv.Itoa(int(season.ID)),
+			Overview:     season.Overview,
+			MediaTitle:   season.Name,
+			SeasonNumber: &season.SeasonNumber,
+			EpisodeCount: &season.EpisodeCount,
+			ThumbnailURI: internal.GetTMDBImageURL(season.PosterPath, tmdb.W500),
+			ReleaseDate:  season.AirDate,
+		})
 	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(int(showDetails.ID)))
-	if err == nil {
-		commentType := c.Query("type")
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
-		if err != nil {
-			helpers.ErrorResponse(c, helpers.LogErrorWithMessage(errors.New(helpers.InternalServerError), "Error retrieving comments"))
-			return
-		}
-		returnObject.Comments = comments
-	}
-	helpers.SuccessResponse(c, returnObject, 200)
+	showObject.Seasons = seasonArray
+	internal.SuccessResponse(c, showObject, 200)
 }
 
-func GetTrendingTVShowsHandler(c *gin.Context) {
-	// pagination locked for now
-	results, err := sources.GetTrendingTVShowsTMDB("1")
-	//results2, err := sources.GetTrendingTVShowsTMDB("2")
-	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error getting popular tv shows")
-		helpers.ErrorResponse(c, err)
+// @Router /v1/tv/{id}/season/{seasonNumber} [get]
+// @Summary Get TV Season Details
+// @ID get-tvseason-details
+// @Tags TV Show
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int true "Season Number"
+// @Success 200 {object} V1SuccessResponse{data=view.TVSeasonCatalogObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVSeasonHandler(c *gin.Context) {
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	//results.Results = append(results.Results, results2.Results...)
-	// convert url results
-	var viewArray []view.LibraryObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		thumbnailURL := GetTMDBImageURL(item.PosterPath, tmdb.W300)
-		viewObject := view.LibraryObject{
-			MediaType:    database.MediaTypeTVShow,
-			MediaSource:  sources.SourceTMDB,
-			SourceID:     strconv.Itoa(int(item.ID)),
-			MediaTitle:   item.OriginalName,
-			ReleaseDate:  item.FirstAirDate,
-			Description:  item.Overview,
-			ThumbnailURL: &thumbnailURL,
-			Tags:         genreArray,
-			UserTags:     nil,
-		}
-		viewArray = append(viewArray, viewObject)
-	}
-	helpers.SuccessResponse(c, viewArray, 200)
-}
-
-//func GetUserTVShowLibraryHandler(c *gin.Context) {
-//	username := c.GetHeader("X-Username")
-//	limitQuery := c.Query("limit")
-//	offsetQuery := c.Query("offset")
-//	limit := 0
-//	offset := 0
-//	if limitQuery != "" && offsetQuery != "" {
-//		var err error
-//		limit, err = strconv.Atoi(limitQuery)
-//		if err != nil {
-//			_ = helpers.LogErrorWithMessage(err, "Invalid limit query param")
-//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//			return
-//		}
-//		offset, err = strconv.Atoi(offsetQuery)
-//		if err != nil {
-//			_ = helpers.LogErrorWithMessage(err, "Invalid offset query param")
-//			helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//			return
-//		}
-//	}
-//	if username == "" {
-//		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-//		return
-//	}
-//	userID, err := database.GetUserIDFromUsername(username)
-//	if err != nil {
-//		helpers.ErrorResponse(c, err)
-//		return
-//	}
-//	records, totalRecords, err := database.GetCollectionRecords(userID, 3, limit, offset)
-//	if err != nil {
-//		_ = helpers.LogErrorWithMessage(err, "Error retrieving user library")
-//		helpers.ErrorResponse(c, err)
-//		return
-//	}
-//	var viewArray []view.LibraryObject
-//	for _, item := range records {
-//		viewObject := view.LibraryObject{
-//			MediaType:    item.MediaType,
-//			MediaSource:  item.MediaSource,
-//			SourceID:     item.SourceID,
-//			MediaTitle:   item.MediaTitle,
-//			ReleaseDate:  item.ReleaseDate,
-//			Description:  string(item.Description),
-//			ThumbnailURL: item.ThumbnailURL,
-//			Tags:         item.Tags,
-//			UserTags:     item.UserTags,
-//		}
-//		viewArray = append(viewArray, viewObject)
-//	}
-//	returnObject := view.CollectionContentsView{Results: &viewArray, TotalRecords: totalRecords, Limit: limit, Offset: offset}
-//	helpers.SuccessResponse(c, returnObject, 200)
-//}
-
-func GetTVSeasonHandler(c *gin.Context) {
 	seasonNumber, err := strconv.Atoi(c.Param("seasonNumber"))
 	if err != nil {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
+		internal.ErrorResponse(c, fmt.Errorf("invalid season number: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	idParam := c.Param("id")
-	// idParam is in format tmdb-1234, grab id number
-	split := strings.Split(idParam, "-")
-	if len(split) != 2 {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	sourceID, err := strconv.Atoi(split[1])
-	// only accept tmdb ids for now
-	if err != nil || split[0] != "tmdb" {
-		helpers.ErrorResponse(c, errors.New(helpers.BadRequest))
-		return
-	}
-	tvSeason, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber, nil)
+	seasonDetails, err := sources.GetTVSeasonTMDB(sourceID, seasonNumber)
 	if err != nil {
-		helpers.ErrorResponse(c, err)
+		internal.ErrorResponse(c, err)
 		return
 	}
-	// overwrite paths
-	for num, item := range tvSeason.Episodes {
-		tvSeason.Episodes[num].StillPath = GetTMDBImageURL(item.StillPath, tmdb.W500)
+	seasonObject := view.TVSeasonCatalogObject{
+		MediaRecordCatalog: view.MediaRecordCatalog{
+			MediaType:    database.RecordTypeSeason,
+			MediaSource:  sources.MediaSourceTMDB,
+			SourceID:     strconv.Itoa(int(seasonDetails.ID)),
+			SeasonNumber: &seasonDetails.SeasonNumber,
+			ReleaseDate:  seasonDetails.AirDate,
+			MediaTitle:   seasonDetails.Name,
+			Overview:     seasonDetails.Overview,
+			ThumbnailURI: internal.GetTMDBImageURL(seasonDetails.PosterPath, tmdb.W500),
+		},
 	}
-	tvSeason.PosterPath = GetTMDBImageURL(tvSeason.PosterPath, tmdb.W500)
-
-	response := view.TVSeasonResponseObject{
-		MediaSource: sources.SourceTMDB,
-		SourceID:    int64(sourceID),
-		SeasonData:  tvSeason,
-	}
-	libraryID, err := database.GetInternalLibraryID(database.MediaTypeTVShow, sources.SourceTMDB, strconv.Itoa(sourceID))
-	// if library id exists, retrieve watch history
-	if err == nil {
-		commentType := "history"
-		comments, err := GetCommentsCore(c.GetHeader("X-Username"), *libraryID, &commentType)
-		if err != nil {
-			helpers.ErrorResponse(c, err)
-			return
+	episodesArray := []view.MediaRecordCatalog{}
+	for _, item := range seasonDetails.Episodes {
+		epRecord := view.MediaRecordCatalog{
+			MediaSource:   sources.MediaSourceTMDB,
+			MediaType:     database.RecordTypeEpisode,
+			SourceID:      strconv.Itoa(int(item.ID)),
+			SeasonNumber:  &item.SeasonNumber,
+			EpisodeNumber: &item.EpisodeNumber,
+			MediaTitle:    item.Name,
+			Overview:      item.Overview,
+			Duration:      item.Runtime,
+			ReleaseDate:   item.AirDate,
+			ThumbnailURI:  internal.GetTMDBImageURL(item.StillPath, tmdb.W500),
 		}
-		var filteredComments []view.CommentObject
-		for _, item := range *comments {
-			if strings.HasPrefix(item.TagData, "S" + strconv.Itoa(seasonNumber)) {
-				filteredComments = append(filteredComments, item)
+		guestStarsArr := []view.Credit{}
+		for idx, item := range item.GuestStars {
+			guestStarsArr = append(guestStarsArr, view.Credit{
+				MediaSource:  sources.MediaSourceTMDB,
+				SourceID:     strconv.Itoa(int(item.ID)),
+				CreditID:     item.CreditID,
+				Name:         item.Name,
+				Character:    &item.Character,
+				ThumbnailURI: internal.GetTMDBImageURL(item.ProfilePath, tmdb.W500),
+			})
+			if idx == 20 {
+				break
 			}
 		}
-		response.SeasonWatchInfo = &filteredComments
+		epRecord.GuestStars = &guestStarsArr
+		episodesArray = append(episodesArray, epRecord)
 	}
-	helpers.SuccessResponse(c, response, 200)
+	seasonObject.Episodes = episodesArray
+	internal.SuccessResponse(c, seasonObject, 200)
 }
 
-func GetTMDBImageURL(path string, size string) string {
-	if path == "" {
-		return ""
+// @Router /v1/tv/{id}/episode_groups [get]
+// @Summary Get TV Episode Groups
+// @ID get-tvshow-episode-groups
+// @Tags TV Show
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVEpisodeGroupsHandler(c *gin.Context) {
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("request id param invalid: %w: %w", internal.BadRequestError, err))
+		return
 	}
-	return tmdb.GetImageURL(path, size)
-}
-
-func SearchTVShowCore(queryString string) (*[]view.TMDBSearchResultObject, error) {
-	results, err := sources.SearchTVShowTMDB(queryString)
+	episodeGroups, err := sources.GetTVEpisodeGroupsTMDB(sourceID)
 	if err != nil {
-		_ = helpers.LogErrorWithMessage(err, "Error searching for tv show")
-		return nil, err
+		internal.ErrorResponse(c, fmt.Errorf("failed to get tv episode groups for id %d: %w", sourceID, err))
+		return
 	}
-	// convert url results
-	var convertedResults []view.TMDBSearchResultObject
-	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
-		resultObject := view.TMDBSearchResultObject{
-			MediaSource:      sources.SourceTMDB,
-			MediaType:        database.MediaTypeTVShow,
-			OriginalName:     item.OriginalName,
-			SourceID:         item.ID,
-			MediaTitle:       item.Name,
-			VoteCount:        item.VoteCount,
-			VoteAverage:      item.VoteAverage,
-			PosterURL:        GetTMDBImageURL(item.PosterPath, tmdb.W300),
-			FirstAirDate:     item.FirstAirDate,
-			Popularity:       item.Popularity,
-			Genres:           genreArray,
-			OriginalLanguage: item.OriginalLanguage,
-			BackdropURL:      GetTMDBImageURL(item.BackdropPath, tmdb.Original),
-			Overview:         item.Overview,
-			OriginCountry:    item.OriginCountry,
-		}
-		convertedResults = append(convertedResults, resultObject)
-	}
-	return &convertedResults, nil
+	internal.SuccessResponse(c, episodeGroups.Results, 200)
 }

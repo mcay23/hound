@@ -1,21 +1,31 @@
 package model
 
 import (
-	"errors"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/spf13/viper"
+	"fmt"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+
 	"golang.org/x/crypto/bcrypt"
-	"hound/helpers"
-	"hound/model/database"
-	"os"
-	"time"
 )
 
+const (
+	ClientIDWeb                 = "hound-web"
+	ClientIDApp                 = "hound-app"
+	ClientPlatformIOSMobile     = "ios-mobile"
+	ClientPlatformTVOS          = "ios-tv"
+	ClientPlatformAndroidMobile = "android-mobile"
+	ClientPlatformAndroidTV     = "android-tv"
+	ClientPlatformWeb           = "web"
+)
+
+var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientIDs = []string{"", ClientIDWeb, ClientIDApp}
+
 type RegistrationUser struct {
-	Username  string `json:"username" binding:"required,gt=0"`
-	FirstName string `json:"first_name" binding:"required,gt=0"`
-	LastName  string `json:"last_name" binding:"required,gt=0"`
-	Password  string `json:"password" binding:"required,gte=8"`
+	Username    string `json:"username" binding:"required,gt=0"`
+	DisplayName string `json:"display_name" binding:"required,gt=0"`
+	Password    string `json:"password" binding:"required,gte=8"`
 }
 
 type LoginUser struct {
@@ -24,83 +34,112 @@ type LoginUser struct {
 	//Audience string `json:"audience" binding:"required,gt=0"`
 }
 
-type JWTClaims struct {
-	Username string `json:"username"`
-	Client   string `json:"client"`
-	jwt.RegisteredClaims
-}
-
-func RegisterNewUser(user *RegistrationUser) error {
+func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Bcrypt failed to hash password")
+		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", internal.InternalServerError)
 	}
 	insertUser := database.User{
 		Username:       user.Username,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
+		DisplayName:    user.DisplayName,
+		IsAdmin:        isAdmin,
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
 	}
-	userID, err := database.InsertUser(insertUser)
+	newID, err := database.InsertUser(insertUser)
+	if err != nil || newID == nil {
+		return nil, fmt.Errorf("%w: Failed to insert user to database", internal.InternalServerError)
+	}
+	newUser, err := database.GetUser(*newID)
 	if err != nil {
-		return helpers.LogErrorWithMessage(err, "Failed to insert user to database")
+		return nil, fmt.Errorf("%w: Failed to get user from database", internal.InternalServerError)
 	}
-	// create primary collection for user
-	primaryCollection := database.CreateCollectionRequest{
-		OwnerID:         *userID,
-		CollectionTitle: "My Library",
-		Description:     "Your main collection",
-		IsPrimary:       true,
-		IsPublic:        false,
+	// create 'My Library' collection for user
+	// userLibrary := database.CollectionRecord{
+	// 	OwnerUserID:     *userID,
+	// 	CollectionTitle: "My Library",
+	// 	Description:     "Your main collection",
+	// 	IsPublic:        false,
+	// }
+	// _, err = database.CreateCollection(userLibrary)
+	// if err != nil {
+	// 	return err
+	// }
+	newUser.HashedPassword = ""
+	return newUser, nil
+}
+
+func AuthenticateUser(userID int64, password string, clientID string,
+	clientPlatform string, deviceID string) (string, string, string, error) {
+	dbUser, err := database.GetUser(userID)
+	if err != nil {
+		return "", "", "", fmt.Errorf("Failed to fetch user from database: %w", err)
 	}
-	_, err = database.CreateCollection(primaryCollection)
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(password))
+	if err != nil {
+		return "", "", "", fmt.Errorf("Failed to verify password (incorrect?): %w", internal.UnauthorizedError)
+	}
+	var role string
+	// should change to a scope-based system in the future
+	if dbUser.IsAdmin {
+		role = "admin"
+	} else {
+		role = "user"
+	}
+	sessionID, err := database.GenerateAuthSession(userID, clientID, clientPlatform, deviceID)
+	if err != nil {
+		return "", "", "", fmt.Errorf("Error generating auth session: %w", internal.InternalServerError)
+	}
+	return sessionID, dbUser.DisplayName, role, nil
+}
+
+func ParseAuthSession(sessionID string) (*database.AuthSession, error) {
+	session, err := database.ValidateAuthSession(sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("auth session validation failed: %w", internal.UnauthorizedError)
+	}
+	if session == nil {
+		return nil, fmt.Errorf("Access token invalid or expired: %w: %w", err, internal.UnauthorizedError)
+	}
+	return session, nil
+}
+
+func ChangePassword(userID int64, oldPassword, newPassword string) error {
+	dbUser, err := database.GetUser(userID)
 	if err != nil {
 		return err
 	}
-	return nil
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(oldPassword))
+	if err != nil {
+		return fmt.Errorf("incorrect old password: %w", internal.BadRequestError)
+	}
+	if oldPassword == newPassword {
+		return fmt.Errorf("old and new password is the same: %w", internal.BadRequestError)
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("%w: bcrypt failed to hash password", internal.InternalServerError)
+	}
+	err = database.UpdateUserPassword(userID, string(hashedPassword))
+	if err != nil {
+		return err
+	}
+	return database.DeleteUserAuthSessions(userID)
 }
 
-// GenerateAccessToken JWT access token
-func GenerateAccessToken(user LoginUser, client string) (string, error) {
-	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-	dbUser, err := database.GetUser(user.Username)
+func ResetPassword(userID int64, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return "", helpers.LogErrorWithMessage(err, "Failed to fetch user from database")
+		return fmt.Errorf("%w: bcrypt failed to hash password", internal.InternalServerError)
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(dbUser.HashedPassword), []byte(user.Password))
+	user, err := database.GetUser(userID)
+	// resetting admin user is disabled through this api, we want another way to do this with the console instead.
+	if user.IsAdmin {
+		return fmt.Errorf("cannot reset admin password: %w", internal.UnauthorizedError)
+	}
+	err = database.UpdateUserPassword(userID, string(hashedPassword))
 	if err != nil {
-		return "", helpers.LogErrorWithMessage(err, "Failed to verify password (incorrect?)")
+		return err
 	}
-	// expiration time in seconds
-	expirationTime := time.Now().Add(time.Duration(viper.GetInt("auth.jwt-access-token-expiration")) * time.Second)
-	claims := &JWTClaims{
-		Username: user.Username,
-		Client:   client,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// Create the JWT string
-	tokenString, err := token.SignedString(jwtKey)
-	if err != nil {
-		return "", helpers.LogErrorWithMessage(err, "Error signing JWT token")
-	}
-	return tokenString, nil
-}
-
-func ParseAccessToken(token string) (*JWTClaims, error) {
-	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-	claims := JWTClaims{}
-	tkn, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if err != nil {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), "Error decoding access token "+err.Error())
-	}
-	if !tkn.Valid {
-		return nil, helpers.LogErrorWithMessage(errors.New(helpers.Unauthorized), err.Error()+"Access token expired "+err.Error())
-	}
-	return &claims, nil
+	return database.DeleteUserAuthSessions(userID)
 }

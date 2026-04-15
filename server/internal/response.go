@@ -1,0 +1,22 @@
+package internal
+
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func SuccessResponse(c *gin.Context, payload interface{}, statusCode int) {
+	c.JSON(statusCode, gin.H{"status": "success", "data": payload})
+}
+
+func ErrorResponse(c *gin.Context, err error) {
+	LogErrorWithMessage(err, "API Error")
+	c.AbortWithStatusJSON(GetErrorStatusCode(err), gin.H{"status": "error", "error": err.Error()})
+}
+
+// data can be strings, or others
+func ErrorResponseWithMessage(c *gin.Context, err error, data interface{}) {
+	LogErrorWithMessage(err, fmt.Sprint(data))
+	c.AbortWithStatusJSON(GetErrorStatusCode(err), gin.H{"status": "error", "error": data})
+}

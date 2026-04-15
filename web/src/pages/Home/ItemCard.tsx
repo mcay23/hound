@@ -1,8 +1,10 @@
-import { ImageListItem, Typography } from "@mui/material";
+import { ImageListItem, Skeleton, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./ItemCard.css";
 import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
 import CommentCard from "../Comments/CommentCard";
+import WatchTile from "../ContinueWatching/WatchTile";
+import { useState } from "react";
 
 const maxTitleLength = 30;
 
@@ -16,48 +18,84 @@ function ItemCard(props: {
     | "seasons"
     | "search"
     | "image"
-    | "comment";
-  showTitle: any;
-  itemOnClick: any;
+    | "comment"
+    | "watch_tile";
+  showTitle?: any;
+  itemOnClick?: any;
 }) {
+  const [loaded, setLoaded] = useState(false);
   function itemTypePoster() {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
-    if (!props.item.thumbnail_url) {
+    if (!props.item.thumbnail_uri) {
       return (
-        <a href={mediaPagePath}>
-          <div className={"rounded itemcard-img-poster item-card-no-thumbnail"}>
+        <a href={mediaPagePath} className="itemcard-img-poster-container">
+          <div
+            className={
+              "rounded w-100 h-100 itemcard-img-poster item-card-no-thumbnail border border-primary"
+            }
+          >
             {props.item.media_title + releaseYearText}
           </div>
         </a>
       );
     }
     return (
-      <a href={mediaPagePath}>
+      <a href={mediaPagePath} className="itemcard-img-poster-container">
+        {!loaded && (
+          <Skeleton
+            variant="rounded"
+            className="rounded w-100 h-100"
+            animation="wave"
+          />
+        )}
         <img
-          className={"rounded itemcard-img-poster"}
-          src={props.item.thumbnail_url}
+          className="rounded itemcard-img-poster"
+          src={props.item.thumbnail_uri}
           alt={props.item.media_title}
           loading="lazy"
+          onLoad={() => setLoaded(true)}
+          style={{
+            opacity: loaded ? 1 : 0,
+            transition: "opacity 0.5s ease",
+          }}
         />
       </a>
     );
   }
   function itemTypeCast() {
-    var primaryCaption = props.item.credits.name;
-    var secondaryCaption = props.item.credits.character;
+    var primaryCaption = props.item.name;
+    var secondaryCaption = props.item.character;
     return (
       <figure>
-        {props.item.thumbnail_url ? (
-          <img
-            className={"rounded itemcard-img-cast"}
-            src={props.item.thumbnail_url}
-            alt={props.item.media_title}
-            loading="lazy"
-          />
+        {props.item.thumbnail_uri ? (
+          <>
+            <div className="itemcard-img-cast-container">
+              {!loaded && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded w-100 h-100"
+                  animation="wave"
+                />
+              )}
+              <img
+                className="rounded itemcard-img-cast"
+                src={props.item.thumbnail_uri}
+                alt={props.item.name}
+                loading="lazy"
+                onLoad={() => setLoaded(true)}
+                style={{
+                  opacity: loaded ? 1 : 0,
+                  transition: "opacity 0.5s ease",
+                }}
+              />
+            </div>
+          </>
         ) : (
-          <div className={"rounded itemcard-img-cast"} />
+          <div className="itemcard-img-cast-container">
+            <div className="rounded itemcard-img-cast" />
+          </div>
         )}
-        <figcaption className="itemcard-item-caption">
+        <figcaption className="itemcard-cast-item-caption">
           <div className="itemcard-item-caption-primary">{primaryCaption}</div>
           <div className="itemcard-item-caption-secondary">
             {secondaryCaption}
@@ -67,32 +105,52 @@ function ItemCard(props: {
     );
   }
   function itemTypeSeason() {
-    let primaryCaption = props.item.name;
+    let primaryCaption = props.item.media_title;
     let secondaryCaption = props.item.episode_count
       ? props.item.episode_count + " episodes"
       : "";
     return (
       <figure>
-        {props.item.poster_url ? (
-          <img
-            className={"rounded itemcard-img-poster"}
-            src={props.item.poster_url}
-            alt={props.item.media_title}
-            onClick={() => {
-              props.itemOnClick(props.item.season_number);
-            }}
-            loading="lazy"
-          />
-        ) : (
-          <div
-            className={"rounded itemcard-img-poster item-card-no-thumbnail"}
-            onClick={() => {
-              props.itemOnClick(props.item.season_number);
-            }}
-          >
-            {props.item.name}
-          </div>
-        )}
+        <div className="itemcard-img-poster-container">
+          {props.item.thumbnail_uri ? (
+            <>
+              {!loaded && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded w-100 h-100"
+                  animation="wave"
+                />
+              )}
+              <img
+                className={"rounded itemcard-img-poster"}
+                src={props.item.thumbnail_uri}
+                alt={props.item.media_title}
+                onClick={() => {
+                  props.itemOnClick(props.item.season_number);
+                }}
+                onLoad={() => setLoaded(true)}
+                style={{
+                  opacity: loaded ? 1 : 0,
+                  transition: "opacity 0.5s ease",
+                }}
+                loading="lazy"
+              />
+            </>
+          ) : (
+            <div
+              className={"rounded itemcard-img-poster item-card-no-thumbnail"}
+              onClick={() => {
+                props.itemOnClick(props.item.season_number);
+              }}
+            >
+              {props.item.name
+                ? props.item.name
+                : props.item.season_number === 0
+                  ? "Specials"
+                  : "Season " + props.item.season_number}
+            </div>
+          )}
+        </div>
         {primaryCaption || secondaryCaption ? (
           <figcaption className="itemcard-item-caption">
             <div className="itemcard-item-caption-primary text-center">
@@ -112,11 +170,11 @@ function ItemCard(props: {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
     return (
       <>
-        {props.item.thumbnail_url ? (
+        {props.item.thumbnail_uri ? (
           <ImageListItem key={props.item.source_id}>
             <img
               className="rounded itemcard-img-poster"
-              src={props.item.thumbnail_url}
+              src={props.item.thumbnail_uri}
               alt={props.item.media_title}
               onClick={() => navigate(mediaPagePath)}
               loading="lazy"
@@ -152,21 +210,37 @@ function ItemCard(props: {
       mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
       <a href={mediaPagePath}>
-        {props.item.poster_url ? (
-          <img
-            className={"rounded itemcard-img-poster " + gameAspectRatioClass}
-            src={props.item.poster_url}
-            alt={props.item.media_title}
-            loading="lazy"
-          />
+        {props.item.thumbnail_uri ? (
+          <div className="itemcard-img-poster-container">
+            {!loaded && (
+              <Skeleton
+                variant="rounded"
+                className="rounded w-100 h-100"
+                animation="wave"
+              />
+            )}
+            <img
+              className={"rounded itemcard-img-poster"}
+              src={props.item.thumbnail_uri}
+              alt={props.item.media_title}
+              loading="lazy"
+              onLoad={() => setLoaded(true)}
+              style={{
+                opacity: loaded ? 1 : 0,
+                transition: "opacity 0.5s ease",
+              }}
+            />
+          </div>
         ) : (
-          <div
-            className={
-              "rounded itemcard-img-poster item-card-no-thumbnail " +
-              gameAspectRatioClass
-            }
-          >
-            {props.item.media_title + releaseYearText}
+          <div className="itemcard-img-poster-container">
+            <div
+              className={
+                "rounded itemcard-img-poster item-card-no-thumbnail " +
+                gameAspectRatioClass
+              }
+            >
+              {props.item.media_title + releaseYearText}
+            </div>
           </div>
         )}
       </a>
@@ -200,25 +274,25 @@ function ItemCard(props: {
         style={{
           backgroundImage: `url('${props.item.image_url}')`,
         }}
-      ></div>
+      />
     );
   }
   function itemTypeComment() {
     return <CommentCard item={props.item} />;
   }
-  // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
+  function itemTypeWatchTile() {
+    return (
+      <WatchTile item={props.item} loaded={loaded} setLoaded={setLoaded} />
+    );
+  }
   var mediaType = props.item.media_type;
-  var releaseYearText = "";
   if (mediaType === "tvshow") {
     mediaType = "tv";
-    if (props.item.first_air_date) {
-      releaseYearText = ` (${props.item.first_air_date.slice(0, 4)})`;
-    }
-  } else if (mediaType === "movie" || mediaType === "game") {
-    if (props.item.release_date) {
-      releaseYearText = ` (${props.item.release_date.slice(0, 4)})`;
-    }
   }
+  // get release years for use if thumbnail is not available - eg. Attack on Titan (2013)
+  var releaseYearText = props.item.release_date
+    ? ` (${props.item.release_date.slice(0, 4)})`
+    : "";
   const navigate = useNavigate();
   switch (props.itemType) {
     case "poster":
@@ -237,6 +311,8 @@ function ItemCard(props: {
       return itemTypeImage();
     case "comment":
       return itemTypeComment();
+    case "watch_tile":
+      return itemTypeWatchTile();
   }
 }
 

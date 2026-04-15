@@ -1,87 +1,53 @@
-import axios from "axios";
-import { useEffect, useState } from "react";
-import Topnav from "../Topnav";
+import { useEffect, useState, useMemo } from "react";
 import HorizontalSection from "./HorizontalSection";
 import SearchBar from "./SearchBar";
 import "./Home.css";
 import Footer from "../Footer";
+import {
+  useBackdrops,
+  useContinueWatching,
+  useTrendingMovies,
+  useTrendingTVShows,
+} from "../../api/hooks/home";
 
 function Home() {
-  const [trendingTVShows, setTrendingTVShows] = useState<any[]>([]);
-  const [isTrendingTVShowsLoaded, setIsTrendingTVShowsLoaded] = useState(false);
-  const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
-  const [isTrendingMoviesLoaded, setIsTrendingMoviesLoaded] = useState(false);
-  const [backdropURL, setBackdropURL] = useState("");
+  const { data: trendingTVShows = [], isLoading: isTrendingTVShowsLoading } =
+    useTrendingTVShows();
+  const { data: trendingMovies = [], isLoading: isTrendingMoviesLoading } =
+    useTrendingMovies();
+  const { data: backdropsData } = useBackdrops();
+  const { data: continueWatchingData, isLoading: isContinueWatchingLoading } =
+    useContinueWatching();
 
-  var styles = {
-    withBackdrop: {
-      // backgroundColor: "blue",
-      backgroundImage: "url(" + backdropURL + ")",
-      backgroundSize: "cover",
-      animation: "backgroundScroll 150s linear infinite",
-    },
-  };
+  const [backdropURI, setBackdropURI] = useState("");
 
-  useEffect(() => {
-    if (!isTrendingTVShowsLoaded) {
-      axios
-        .get("/api/v1/tv/trending")
-        .then((res) => {
-          setTrendingTVShows(res.data);
-          setIsTrendingTVShowsLoaded(true);
-        })
-        .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
-          }
-        });
-    }
-    if (backdropURL === "") {
-      axios
-        .get("/api/v1/backdrops")
-        .then((res) => {
-          var randomBackdrop =
-            res.data.backdrop_urls[
-              Math.floor(Math.random() * res.data.backdrop_urls.length)
-            ];
-          console.log(randomBackdrop);
-          setBackdropURL(randomBackdrop);
-        })
-        .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
-          }
-        });
-    }
-  });
+  const styles = useMemo(
+    () => ({
+      withBackdrop: {
+        backgroundImage: "url(" + backdropURI + ")",
+        backgroundSize: "cover",
+        animation: "backgroundScroll 150s linear infinite",
+      },
+    }),
+    [backdropURI],
+  );
 
   useEffect(() => {
-    if (!isTrendingMoviesLoaded) {
-      axios
-        .get("/api/v1/movie/trending")
-        .then((res) => {
-          setTrendingMovies(res.data);
-          setIsTrendingMoviesLoaded(true);
-        })
-        .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
-          }
-        });
+    if (backdropsData && !backdropURI) {
+      setBackdropURI(backdropsData);
     }
-  });
+  }, [backdropsData, backdropURI]);
 
   return (
     <>
-      <Topnav />
       <div
         className="home-page-search-section"
-        style={backdropURL ? styles.withBackdrop : {}}
+        style={backdropURI ? styles.withBackdrop : {}}
       >
         <SearchBar />
       </div>
       <div className="home-page-main-section">
-        {isTrendingTVShowsLoaded ? (
+        {!isTrendingTVShowsLoading ? (
           <div className="home-page-primary-section">
             <HorizontalSection
               items={trendingTVShows}
@@ -91,17 +57,27 @@ function Home() {
             />
           </div>
         ) : (
-          ""
+          <div className="home-page-placeholder"></div>
         )}
-        {isTrendingMoviesLoaded ? (
+        {!isTrendingMoviesLoading && (
           <HorizontalSection
             items={trendingMovies}
             header="Trending Movies"
             itemType="poster"
             itemOnClick={undefined}
           />
+        )}
+        {!isContinueWatchingLoading ? (
+          <div className="mt-3">
+            <HorizontalSection
+              items={continueWatchingData}
+              header="Continue Watching"
+              itemType="watch_tile"
+              itemOnClick={undefined}
+            />
+          </div>
         ) : (
-          ""
+          <div className="home-page-placeholder"></div>
         )}
       </div>
       <Footer />

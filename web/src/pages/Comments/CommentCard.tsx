@@ -8,13 +8,14 @@ import {
   IconButton,
 } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import "./CommentCard.css";
 import { useState } from "react";
-import axios from "axios";
+import { useDeleteComment } from "../../api/hooks/comments";
 
 function CommentCard(props: any) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const deleteComment = useDeleteComment();
   const handleDeleteClickOpen = () => {
     setIsDeleteDialogOpen(true);
   };
@@ -23,18 +24,16 @@ function CommentCard(props: any) {
   };
   const handleDeleteItem = () => {
     if (props.item) {
-      axios
-        .delete(`/api/v1/comments/${props.item.comment_id}`)
-        .then((res) => {
+      deleteComment.mutate(props.item.comment_id, {
+        onSuccess: () => {
+          toast.success("Review deleted");
           setIsDeleteDialogOpen(false);
-          window.scrollTo(0, 0);
-          window.location.reload();
-        })
-        .catch((err) => {
-          console.log(err);
+        },
+        onError: () => {
           toast.error("Failed to remove review");
           setIsDeleteDialogOpen(false);
-        });
+        },
+      });
     }
   };
   return (
@@ -47,7 +46,7 @@ function CommentCard(props: any) {
           </div>
           <div className="comment-card-author">
             {"by " +
-              props.item.user_id +
+              props.item.owner_display_name +
               "     ⸱     " +
               new Date(props.item.updated_at).toLocaleDateString("en-US")}
           </div>
@@ -57,7 +56,7 @@ function CommentCard(props: any) {
           <div className="comment-card-content">{props.item.comment}</div>
         </div>
         <div className="comment-card-actions-container">
-          {props.item.user_id === localStorage.getItem("username") ? (
+          {props.item.owner_username === localStorage.getItem("username") ? (
             <IconButton onClick={handleDeleteClickOpen}>
               <ClearIcon />
             </IconButton>
@@ -85,11 +84,6 @@ function CommentCard(props: any) {
           <Button onClick={handleDeleteItem}>Delete</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

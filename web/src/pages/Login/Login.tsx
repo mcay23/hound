@@ -3,14 +3,13 @@ import { Card, Button, FormGroup, FormControl } from "react-bootstrap";
 import "./Login.css";
 import axios from "axios";
 import { Navigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 function Login() {
   const [data, setData] = useState({
     username: "",
     password: "",
   });
-
-  const [alertVisible, setAlertVisible] = useState(false);
 
   if (!!localStorage.getItem("isAuthenticated")) {
     return <Navigate to="/" />;
@@ -21,15 +20,15 @@ function Login() {
     axios
       .post("/api/v1/auth/login", data)
       .then((res) => {
-        console.log("RESPONSE RECEIVED: ", res.data);
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("role", res.data.role);
+        localStorage.setItem("displayName", res.data.display_name);
         window.location.reload();
-        setAlertVisible(false);
       })
       .catch((err) => {
-        if (err.response.status === 400) {
-          setAlertVisible(true);
+        if (err.response?.status === 401 || err.response?.status === 404) {
+          toast.error("Incorrect username/password");
         }
         console.log("AXIOS ERROR: ", err);
       });
@@ -66,28 +65,12 @@ function Login() {
                 />
               </FormGroup>
               <br />
-              {alertVisible ? (
-                <div className="d-flex mx-auto">
-                  <p className="mx-auto mt-1 alert-incorrect-password">
-                    Incorrect username or password
-                  </p>
-                </div>
-              ) : null}
               <div className="d-flex flex-row-reverse">
                 <Button type="submit" onClick={submitHandler}>
                   Login
                 </Button>
               </div>
             </form>
-            <div className="d-flex mx-auto mt-4">
-              <a
-                href="../register"
-                className="mx-auto"
-                style={{ textDecoration: "underline" }}
-              >
-                Don't have an account? Sign up here!
-              </a>
-            </div>
           </div>
         </Card>
       </div>

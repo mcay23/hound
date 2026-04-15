@@ -1,12 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import Topnav from "../Topnav";
 import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
-import MediaPageGame from "./MediaPageGame";
-import Footer from "../Footer";
+import MediaPageGame from "./MediaPageGame.backup";
+import toast from "react-hot-toast";
 
 function MediaPageLanding() {
   const [data, setData] = useState<any[]>([]);
@@ -23,12 +22,15 @@ function MediaPageLanding() {
           setIsDataLoaded(true);
         })
         .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
+          console.error(err);
+          if (err.response && err.response.status === 500) {
+            toast.error("Server Error (500)");
+          } else {
+            toast.error("Failed to load content");
           }
         });
     }
-  });
+  }, [location.pathname, isDataLoaded]);
   var pathData = location.pathname.split("/");
   const mediaType = pathData[1];
   var mediaComponent;
@@ -45,13 +47,11 @@ function MediaPageLanding() {
   }
   return (
     <>
-      <Topnav />
       {isDataLoaded ? (
         <>{mediaComponent}</>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Footer />
     </>
   );
 }

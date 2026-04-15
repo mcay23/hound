@@ -1,0 +1,10 @@
+.activity-main-container {
+  padding-top: 50px;
+  width: 90%;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.activity-calendar-container {
+  height: 800px;
+}

@@ -1,0 +1,9 @@
+# .dockerignore
+.git
+.github
+node_modules
+web/node_modules
+web/build
+server/main
+docker/
+.env

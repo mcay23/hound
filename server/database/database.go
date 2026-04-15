@@ -1,0 +1,137 @@
+package database
+
+import (
+	"fmt"
+	"log/slog"
+	"time"
+
+	"github.com/mcay23/hound/config"
+	"github.com/mcay23/hound/internal"
+
+	"xorm.io/xorm"
+)
+
+const (
+	MediaTypeTVShow = "tvshow"
+	MediaTypeMovie  = "movie"
+	MediaTypeGame   = "game"
+	DriverPostgres  = "postgres"
+)
+
+var databaseEngine *xorm.Engine
+
+func InstantiateDB() {
+	var err error
+	slog.Info("DB loaded", "driver", DriverPostgres)
+	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.PostgresHost,
+		config.PostgresPort,
+		config.PostgresUser,
+		config.PostgresPassword,
+		config.PostgresDBName,
+	)
+
+	slog.Info("Attempting DB connection", "uri", connectionString)
+	databaseEngine, err = NewEngineWithRetry(DriverPostgres, connectionString)
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate DB connection")
+		panic(err)
+	}
+	slog.Info("DB Connection successful")
+
+	// always use UTC for timestamps
+	tz, _ := time.LoadLocation("UTC")
+	databaseEngine.SetTZDatabase(tz)
+	databaseEngine.SetTZLocation(tz)
+
+	err = instantiateUsersTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate users table")
+		panic(err)
+	}
+	err = instantiateAPIKeysTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate API keys table")
+		panic(err)
+	}
+	err = instantiateCollectionTables()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate collection tables")
+		panic(err)
+	}
+	err = instantiateMediaTables()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate media tables")
+		panic(err)
+	}
+	err = instantiateGenresTables()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate genre tables")
+		panic(err)
+	}
+	err = instantiateCommentTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate comment table")
+		panic(err)
+	}
+	err = instantiateWatchTables()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate watch tables")
+		panic(err)
+	}
+	err = instantiateMediaFilesTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate media files table")
+		panic(err)
+	}
+	err = instantiateIngestTasksTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate ingest tasks table")
+		panic(err)
+	}
+	err = instantiateExternalLibraryItemsTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate external library items table")
+		panic(err)
+	}
+	err = instantiateProviderProfilesTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate provider profiles table")
+		panic(err)
+	}
+	slog.Info("DB tables initialized")
+	err = runMigrations()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to migrate databases!")
+		panic(err)
+	}
+	slog.Info("DB migrations complete")
+}
+
+func NewSession() *xorm.Session {
+	return databaseEngine.NewSession()
+}
+
+func NewEngineWithRetry(driver, connectionString string) (*xorm.Engine, error) {
+	var (
+		engine *xorm.Engine
+		err    error
+	)
+	maxRetries := 20
+	for i := 0; i < maxRetries; i++ {
+		engine, err = xorm.NewEngine(driver, connectionString)
+		if err == nil {
+			if pingErr := engine.Ping(); pingErr == nil {
+				return engine, nil
+			} else {
+				err = pingErr
+			}
+		}
+		_ = internal.LogErrorWithMessage(err, "Failed to connect to DB (attempt "+fmt.Sprint(i+1)+")")
+		if i == maxRetries-1 {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return nil, err
+}

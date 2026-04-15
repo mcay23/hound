@@ -1,0 +1,73 @@
+package workers
+
+import (
+	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
+	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+)
+
+func InitializeWorkers() {
+	InitializeDownloadWorkers()
+	InitializeIngestWorkers()
+	// external library workers has some dependencies on ingest workers, start
+	// it after ingest workers are initialized
+	InitializeExternalLibraryWorkers()
+	go cleanUpDownloads()
+}
+
+func cleanUpDownloads() {
+	// clean up downloads if not in use
+	// p2p case
+	ticker := time.NewTicker(15 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		entries, err := os.ReadDir(model.HoundP2PDownloadsPath)
+		if err != nil {
+			slog.Error("Failed to read p2p downloads directory", "error", err)
+			return
+		}
+		// for p2p, directories are infohash names
+		for _, folder := range entries {
+			if folder.IsDir() {
+				infoHash := folder.Name()
+				// check if still being ingested
+				magnetURI := internal.GetMagnetURI(infoHash, nil)
+				task, err := database.GetIngestTask(database.IngestTask{SourceURI: &magnetURI})
+				if err != nil {
+					slog.Error("Failed to get ingest task", "infohash", infoHash, "error", err)
+					continue
+				}
+				// if torrent session exists, never remove, wait for it to be cleaned up
+				session, _ := model.GetTorrentSession(infoHash)
+				if session == nil {
+					if task == nil {
+						removeP2PFiles(infoHash)
+					} else if slices.Contains(database.IngestTerminalStatuses, task.Status) {
+						removeP2PFiles(infoHash)
+					}
+				}
+			}
+		}
+	}
+}
+
+// Having issues with this on windows, directory is removed on next startup
+func removeP2PFiles(infoHash string) {
+	slog.Info("Removing unused torrent files", "infohash", infoHash)
+	targetDir := filepath.Join(model.HoundP2PDownloadsPath, infoHash)
+	// err := os.Chmod(targetDir, 0666)
+	// if err != nil {
+	// 	slog.Error("Failed to chmod dir", "dir", targetDir, "error", err)
+	// }
+	err := os.RemoveAll(targetDir)
+	if err != nil {
+		slog.Error("Failed to remove dir", "dir", targetDir, "error", err)
+	}
+}

@@ -1,0 +1,384 @@
+package v1
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
+	"github.com/mcay23/hound/view"
+
+	"github.com/gin-gonic/gin"
+)
+
+// @Router /v1/watch_activity [get]
+// @Summary Get Watch Activity for User
+// @ID get-user-watch-activity
+// @Tags Watch Activity
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit - Defaults at 500"
+// @Param offset query int false "Offset"
+// @Param start_time query string false "Start time in RFC3339 format" example(2026-03-13T10:20:30Z)
+// @Param end_time query string false "End time in RFC3339 format" example(2026-03-13T10:20:30Z)
+// @Success 200 {object} V1SuccessResponse{data=view.WatchActivityResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetWatchActivityHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	limitQuery := c.DefaultQuery("limit", "500")
+	offsetQuery := c.DefaultQuery("offset", "0")
+	startQuery := c.Query("start_time")
+	endQuery := c.Query("end_time")
+	limit, offset, err := getLimitOffset(limitQuery, offsetQuery)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	var startTime, endTime *time.Time
+	if startQuery != "" {
+		t, err := time.Parse(time.RFC3339, startQuery)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("error parsing start time: %w (must be RFC3339): %w", internal.BadRequestError, err))
+			return
+		}
+		startTime = &t
+	}
+	if endQuery != "" {
+		t, err := time.Parse(time.RFC3339, endQuery)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("error parsing end time: %w (must be RFC3339): %w", internal.BadRequestError, err))
+			return
+		}
+		endTime = &t
+	}
+	activity, total, err := database.GetWatchActivity(userID, startTime, endTime, limit, offset)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	res := view.WatchActivityResponse{
+		WatchActivity: activity,
+		Limit:         limit,
+		Offset:        offset,
+		TotalRecords:  total,
+	}
+	internal.SuccessResponse(c, res, 200)
+}
+
+// @Router /v1/tv/{id}/history [get]
+// @Summary Get TV Show Watch History
+// @ID get-tvshow-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVShowWatchHistoryHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /v1/tv/{id}/season/{seasonNumber}/history [get]
+// @Summary Get TV Season Watch History
+// @ID get-tvseason-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param seasonNumber path int true "Season number"
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetTVSeasonWatchHistoryHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /v1/movie/{id}/history [get]
+// @Summary Get Movie Watch History
+// @ID get-movie-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRewatchRecordWatchEvents}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetWatchHistoryMovieHandler(c *gin.Context) {
+	handleGetWatchHistory(c, database.RecordTypeMovie)
+}
+
+func handleGetWatchHistory(c *gin.Context, recordType string) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	mediaSource, parentSourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("error parsing id: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	rewatchRecords, err := database.GetRewatchesFromSourceID(recordType, mediaSource, strconv.Itoa(parentSourceID), userID)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	// exit early if rewatch record doesn't exist, since this means no watch history
+	if len(rewatchRecords) == 0 {
+		internal.SuccessResponse(c, nil, 200)
+		return
+	}
+	var targetSeason *int
+	if c.Param("seasonNumber") != "" {
+		if recordType != database.RecordTypeTVShow {
+			internal.ErrorResponse(c, fmt.Errorf("season number passed for non-tvshow: %w", internal.BadRequestError))
+			return
+		}
+		temp, err := strconv.Atoi(c.Param("seasonNumber"))
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("error parsing season number: %w: %w", internal.BadRequestError, err))
+			return
+		}
+		targetSeason = &temp
+	}
+	var rewatchObjects []*view.MediaRewatchRecordWatchEvents
+	for _, rewatchRecord := range rewatchRecords {
+		watchEvents, err := database.GetWatchEventsFromRewatchID(rewatchRecord.RewatchID, targetSeason)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("error getting watch events from rewatch id: %w: %w", internal.BadRequestError, err))
+			return
+		}
+		rewatchObjects = append(rewatchObjects, &view.MediaRewatchRecordWatchEvents{
+			RewatchRecord: *rewatchRecord,
+			TargetSeason:  targetSeason,
+			WatchEvents:   watchEvents,
+		})
+	}
+	internal.SuccessResponse(c, rewatchObjects, 200)
+}
+
+type AddWatchHistoryTVResponse struct {
+	MediaSource        string `json:"media_source"`
+	InsertedEpisodeIDs *[]int `json:"inserted_episode_ids,omitempty"`
+	SkippedEpisodeIDs  *[]int `json:"skipped_episode_ids,omitempty"`
+}
+
+// @Router /v1/tv/{id}/history [post]
+// @Summary Add TV Show Watch History
+// @ID add-tvshow-watch-history
+// @Description Only one of season_number and episode_number, or []episode_ids should be defined.
+// @Description By default, if []episode_ids are used, this won't clear existing playback progress for
+// @Description those episodes, however, this behavior might change in the future. For the season_number,
+// @Description episode_number case, the current playback progress will be cleared if the watched_at is newer
+// @Description than the existing playback progress.
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchHistoryTVShowPayload true "Watch History Payload"
+// @Success 200 {object} V1SuccessResponse{data=AddWatchHistoryTVResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func AddWatchHistoryTVHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("error parsing id param: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	// Only episode ids that belong to the same show should be inserted at the same time
+	watchHistoryPayload := model.WatchHistoryTVShowPayload{}
+	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	insertedEpisodeIDs, skippedEpisodeIDs, err :=
+		model.CreateTVShowWatchHistory(userID, mediaSource, showID, watchHistoryPayload)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	response := AddWatchHistoryTVResponse{
+		MediaSource:        mediaSource,
+		InsertedEpisodeIDs: insertedEpisodeIDs,
+	}
+	if len(*skippedEpisodeIDs) > 0 {
+		response.SkippedEpisodeIDs = skippedEpisodeIDs
+	}
+	internal.SuccessResponse(c, response, 200)
+}
+
+// @Router /tv/{id}/history/delete [post]
+// @Summary Delete TV Show Watch History
+// @ID delete-tvshow-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body DeleteWatchHistoryPayload true "Watch Event IDs to delete"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteWatchHistoryTVHandler(c *gin.Context) {
+	handleDeleteWatchHistory(c, database.RecordTypeTVShow)
+}
+
+// @Router /movie/{id}/history/delete [post]
+// @Summary Delete Movie Watch History
+// @ID delete-movie-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body DeleteWatchHistoryPayload true "Watch Event IDs to delete"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DeleteWatchHistoryMovieHandler(c *gin.Context) {
+	handleDeleteWatchHistory(c, database.RecordTypeMovie)
+}
+
+type DeleteWatchHistoryPayload struct {
+	WatchEventIDs []int64 `json:"watch_event_ids" binding:"required"`
+}
+
+func handleDeleteWatchHistory(c *gin.Context, recordType string) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	// Only episode ids that belong to the same show should be inserted at the same time
+	payload := DeleteWatchHistoryPayload{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	// get record id from source id
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	has, record, err := database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(sourceID))
+	if !has || err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("error getting media record for %s-%d: %w", mediaSource, sourceID, err))
+		return
+	}
+	if err := database.BatchDeleteWatchEvents(payload.WatchEventIDs, userID, int(record.RecordID)); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("error deleting watch history records for %s-%d: %w", mediaSource, sourceID, err))
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
+}
+
+// @Router /v1/tv/{id}/history/rewatch [post]
+// @Summary Create TV Show Rewatch
+// @ID create-tvshow-rewatch
+// @Description Create new rewatch for tv show. This archives the previous watches, so user's can start fresh.
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=database.RewatchRecord}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func AddTVShowRewatchHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	mediaSource, showID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	startedAt := time.Now().UTC()
+	// for now, we don't support custom startedAt, evaluate in the future if this might be needed
+	// supplying a body is optional
+	// if c.Request.ContentLength != 0 {
+	// 	type addRewatchPayload struct {
+	// 		StartedAt string `json:"rewatch_started_at"`
+	// 	}
+	// 	rewatchPayload := addRewatchPayload{}
+	// 	if err := c.ShouldBindJSON(&rewatchPayload); err != nil {
+	// 		helpers.ErrorResponse(c, helpers.LogErrorWithMessage(err, "Failed to bind watch history body: "+c.Param("id")))
+	// 		return
+	// 	}
+	// 	if rewatchPayload.StartedAt != "" {
+	// 		parsed, err := time.Parse(time.RFC3339, rewatchPayload.StartedAt)
+	// 		if err != nil {
+	// 			helpers.ErrorResponseWithMessage(c, err, "Error parsing rewatch_started_at, must be RFC3339 string")
+	// 			return
+	// 		}
+	// 		startedAt = parsed
+	// 	}
+	// }
+	rewatchRecord, err := model.InsertRewatchFromSourceID(database.MediaTypeTVShow, mediaSource,
+		strconv.Itoa(showID), userID, startedAt)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, rewatchRecord, 200)
+}
+
+type AddWatchHistoryMovieResponse struct {
+	MediaSource      string `json:"media_source"`
+	ActionType       string `json:"action_type"`
+	InsertedSourceID *int   `json:"inserted_source_id"`
+}
+
+// @Router /v1/movie/{id}/history [post]
+// @Summary Add Movie Watch History
+// @ID add-movie-watch-history
+// @Tags Watch History
+// @Accept json
+// @Produce json
+// @Param id path int true "Media ID" example(tmdb-1234)
+// @Param body body model.WatchHistoryMoviePayload true "Watch History Payload"
+// @Success 200 {object} V1SuccessResponse{data=AddWatchHistoryMovieResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func AddWatchHistoryMovieHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("error param %s: %w", c.Param("id"), err))
+		return
+	}
+	watchHistoryPayload := model.WatchHistoryMoviePayload{}
+	if err := c.ShouldBindJSON(&watchHistoryPayload); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind watch history body: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	insertedSourceID, err := model.CreateMovieWatchHistory(userID, mediaSource, sourceID, watchHistoryPayload)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, AddWatchHistoryMovieResponse{
+		MediaSource:      mediaSource,
+		ActionType:       strings.ToLower(watchHistoryPayload.ActionType),
+		InsertedSourceID: insertedSourceID,
+	}, 200)
+}

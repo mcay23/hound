@@ -22,8 +22,9 @@
 }
 
 .media-page-tv-poster {
-    width: 200px;
-    height: 300px;
+    width: 200px !important;
+    height: 300px !important;
+    transition: all 0.5s ease;
     display: inline-flex;
     border-radius: 6px;
     border: solid rgba(255, 255, 255, 0.8) 2px;
@@ -34,9 +35,15 @@
     align-items: center;
 }
 
+.media-page-tv-poster-skeleton {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    width: 200px !important;
+    height: 300px !important;
+}
+
 .media-page-tv-header-info {
     margin-left: 40px;
-    margin-top: 25px;
+    margin-top: 5px;
     font-family: 'Cabin', sans-serif;
     font-weight: 400;
 }
@@ -160,6 +167,54 @@
 
 .progress-margin {
     margin-bottom: 1000px;
+}
+
+.stream-play-button {
+    margin-right: 16px;
+    color: rgba(var(--hound-primary), 1);
+}
+
+.stream-play-button-spinner {
+    margin-left: 15px;
+}
+
+.stream-play-button .btn {
+    width: 150px;
+}
+
+.stream-play-button .dropdown-toggle {
+    width: 30px;
+}
+
+.stream-play-button > .btn,
+.stream-play-button > .dropdown-toggle {
+    height: 42px;
+    background-color: rgba(var(--hound-secondary), 0.85);
+    color: rgba(var(--hound-primary), 1);
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.stream-play-button > .dropdown-toggle {
+  margin-left: 0 !important;
+  border-left: none !important;
+}
+
+.stream-play-button > .dropdown-toggle::after {
+  margin-left: 0 !important;
+  padding-left: 0;
+}
+
+#stream-select-button-loading {
+    align-items: center;
+}
+
+.stream-play-button > .btn:hover,
+.stream-play-button > .dropdown-toggle:hover {
+    color: rgba(var(--hound-primary), 1);
+    background-color: rgba(var(--hound-secondary), 0.65);
+    border-color: rgba(var(--hound-secondary), 0.65);
+    transition: all 0.4s ease,
 }
 
 @media only screen and (max-width:900px) {

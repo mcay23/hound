@@ -1,0 +1,3960 @@
+basePath: /
+definitions:
+  database.APIKey:
+    properties:
+      api_key:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      key_id:
+        type: integer
+      name:
+        type: string
+      revoked_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  database.DownloadPreference:
+    properties:
+      info_hash_preference:
+        $ref: '#/definitions/database.DownloadPreferenceInfoHash'
+      match_type:
+        type: string
+      string_match_preference:
+        $ref: '#/definitions/database.DownloadPreferenceString'
+    type: object
+  database.DownloadPreferenceInfoHash:
+    properties:
+      info_hash:
+        type: string
+    type: object
+  database.DownloadPreferenceString:
+    properties:
+      case_sensitive:
+        type: boolean
+      match_string:
+        type: string
+    type: object
+  database.GenreObject:
+    properties:
+      genre:
+        type: string
+      genre_id:
+        type: integer
+      media_source:
+        type: string
+      media_type:
+        type: string
+      source_id:
+        type: integer
+    type: object
+  database.GenreRecord:
+    properties:
+      created_at:
+        type: string
+      genre:
+        type: string
+      genre_id:
+        type: integer
+      media_source:
+        type: string
+      media_type:
+        type: string
+      source_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  database.IngestDownloadPreferences:
+    properties:
+      preference_list:
+        items:
+          $ref: '#/definitions/database.DownloadPreference'
+        type: array
+      provider_profile_id:
+        type: integer
+      strict_match:
+        description: whether if no match is found, to fail the download
+        type: boolean
+    type: object
+  database.IngestTaskFullRecord:
+    properties:
+      connected_seeders:
+        description: number of seeders (p2p only)
+        type: integer
+      created_at:
+        type: string
+      destination_path:
+        description: path to final destination in hound media dir
+        type: string
+      download_preferences:
+        allOf:
+        - $ref: '#/definitions/database.IngestDownloadPreferences'
+        description: for season/auto downloads
+      download_priority:
+        description: priority of task, not used for now
+        type: integer
+      download_protocol:
+        description: p2p, http, external (not downloaded by hound)
+        type: string
+      download_speed:
+        description: bytes per second
+        type: integer
+      downloaded_bytes:
+        type: integer
+      episode_media_record:
+        $ref: '#/definitions/database.MediaRecord'
+      file_idx:
+        description: index for p2p only
+        type: integer
+      finished_at:
+        type: string
+      ingest_task_id:
+        type: integer
+      last_message:
+        description: store last error message
+        type: string
+      last_seen:
+        description: track stale download/copy jobs
+        type: string
+      media_type:
+        type: string
+      movie_media_record:
+        $ref: '#/definitions/database.MediaRecord'
+      record_id:
+        description: episode or movie to be ingested
+        type: integer
+      show_media_record:
+        $ref: '#/definitions/database.MediaRecord'
+      source_path:
+        description: path to source file/download path
+        type: string
+      source_uri:
+        description: magnet uri with trackers / http link
+        type: string
+      started_at:
+        description: time queued task was started
+        type: string
+      status:
+        description: pending_insert, processing, completed
+        type: string
+      total_bytes:
+        description: total bytes to be downloaded
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  database.MediaFile:
+    properties:
+      bit_rate:
+        type: string
+      created_at:
+        type: string
+      duration:
+        type: integer
+      file_id:
+        type: integer
+      file_idx:
+        type: integer
+      file_name:
+        type: string
+      file_origin:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      format_long_name:
+        type: string
+      format_name:
+        type: string
+      framerate:
+        type: string
+      height:
+        type: integer
+      original_file_name:
+        type: string
+      record_id:
+        type: integer
+      source_uri:
+        type: string
+      streams:
+        items:
+          $ref: '#/definitions/database.Stream'
+        type: array
+      updated_at:
+        type: string
+      width:
+        type: integer
+    type: object
+  database.MediaRecord:
+    properties:
+      ancestor_id:
+        description: reference to fk record_id of the show, for episodes
+        type: integer
+      backdrop_uri:
+        description: backgrounds
+        type: string
+      content_hash:
+        description: checksum to compare changes/updates
+        type: string
+      created_at:
+        type: string
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_number:
+        type: integer
+      full_data:
+        description: full data from tmdb
+        items:
+          type: integer
+        type: array
+      genres:
+        description: to store genres, tags
+        items:
+          $ref: '#/definitions/database.GenreObject'
+        type: array
+      last_air_date:
+        description: for shows, latest episode air date
+        type: string
+      logo_uri:
+        description: logo for the show/movie
+        type: string
+      media_source:
+        description: tmdb, openlibrary, etc. the main metadata provider
+        type: string
+      media_title:
+        description: movie, tvshow, season or episode title
+        type: string
+      next_air_date:
+        description: for shows, next scheduled episode air date
+        type: string
+      origin_country:
+        items:
+          type: string
+        type: array
+      original_language:
+        type: string
+      original_title:
+        description: original title in release language
+        type: string
+      overview:
+        description: game of thrones is a show about ...
+        type: string
+      parent_id:
+        description: reference to fk record_id, null for movie, tvshow
+        type: integer
+      record_id:
+        type: integer
+      record_type:
+        description: movie,tvshow,season,episode
+        type: string
+      release_date:
+        description: 2012-12-30, for shows/seasons - first_air_date, for episodes
+          - air_date
+        type: string
+      season_number:
+        type: integer
+      sort_index:
+        description: not in use yet, used to sort based on user preferences
+        type: integer
+      source_id:
+        description: tmdb id, episode/season tmdb id
+        type: string
+      status:
+        description: Returning Series, Released, etc.
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/database.TagObject'
+        type: array
+      thumbnail_uri:
+        description: poster image for shows/movies, still image for episode
+        type: string
+      updated_at:
+        type: string
+    type: object
+  database.ProviderProfile:
+    properties:
+      created_at:
+        type: string
+      is_default_downloading:
+        description: default profile for downloading
+        type: boolean
+      is_default_streaming:
+        description: default profile for streaming
+        type: boolean
+      manifest_url:
+        description: url to manifest.json for stremio providers
+        type: string
+      name:
+        description: profile name, eg. Performance, Quality, etc.
+        type: string
+      provider_profile_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  database.RewatchRecord:
+    properties:
+      created_at:
+        type: string
+      record_id:
+        description: record id for movie/show
+        type: integer
+      rewatch_finished_at:
+        type: string
+      rewatch_id:
+        type: integer
+      rewatch_started_at:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  database.Stream:
+    properties:
+      channel_layout:
+        type: string
+      channels:
+        type: integer
+      codec_long_name:
+        type: string
+      codec_name:
+        type: string
+      codec_type:
+        description: video, audio, subtitle
+        type: string
+      color_primaries:
+        type: string
+      color_range:
+        type: string
+      color_space:
+        type: string
+      color_transfer:
+        type: string
+      language:
+        type: string
+      pix_fmt:
+        type: string
+      profile:
+        type: string
+      title:
+        type: string
+    type: object
+  database.TagObject:
+    properties:
+      tagID:
+        format: int64
+        type: integer
+      tagName:
+        type: string
+    type: object
+  database.User:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      hashed_password:
+        type: string
+      is_admin:
+        type: boolean
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      user_meta:
+        $ref: '#/definitions/database.UserMeta'
+      username:
+        type: string
+    type: object
+  database.UserMeta:
+    properties:
+      test1:
+        type: string
+      test2:
+        type: string
+    type: object
+  database.VideoMetadata:
+    properties:
+      bit_rate:
+        type: string
+      duration:
+        type: integer
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      format_long_name:
+        type: string
+      format_name:
+        type: string
+      framerate:
+        type: string
+      height:
+        type: integer
+      streams:
+        items:
+          $ref: '#/definitions/database.Stream'
+        type: array
+      width:
+        type: integer
+    type: object
+  database.WatchActivity:
+    properties:
+      created_at:
+        type: string
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_number:
+        type: integer
+      media_source:
+        description: tmdb, openlibrary, etc. the main metadata provider
+        type: string
+      media_title:
+        description: movie, tvshow, season or episode title
+        type: string
+      overview:
+        description: game of thrones is a show about ...
+        type: string
+      record_id:
+        type: integer
+      record_type:
+        description: movie,episode
+        type: string
+      release_date:
+        description: 2012-12-30, for shows/seasons - first_air_date, for episodes
+          - air_date
+        type: string
+      rewatch_id:
+        type: integer
+      season_number:
+        type: integer
+      show_media_title:
+        type: string
+      show_source_id:
+        type: string
+      source_id:
+        description: tmdb id, episode/movie tmdb id
+        type: string
+      updated_at:
+        type: string
+      watch_event_id:
+        type: integer
+      watch_type:
+        description: watch, scrobble
+        type: string
+      watched_at:
+        type: string
+    type: object
+  database.WatchEventMediaRecord:
+    properties:
+      created_at:
+        type: string
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_number:
+        type: integer
+      media_source:
+        description: tmdb, openlibrary, etc. the main metadata provider
+        type: string
+      media_title:
+        description: movie, tvshow, season or episode title
+        type: string
+      overview:
+        description: game of thrones is a show about ...
+        type: string
+      record_id:
+        type: integer
+      record_type:
+        description: movie,episode
+        type: string
+      release_date:
+        description: 2012-12-30, for shows/seasons - first_air_date, for episodes
+          - air_date
+        type: string
+      rewatch_id:
+        type: integer
+      season_number:
+        type: integer
+      source_id:
+        description: tmdb id, episode/movie tmdb id
+        type: string
+      updated_at:
+        type: string
+      watch_event_id:
+        type: integer
+      watch_type:
+        description: watch, scrobble
+        type: string
+      watched_at:
+        type: string
+    type: object
+  database.WatchStats:
+    properties:
+      episodes_watched:
+        description: a show is included even though it's not completed
+        type: integer
+      finish_time:
+        type: string
+      movies_watched:
+        type: integer
+      shows_watched:
+        type: integer
+      start_time:
+        description: query start, finish time
+        type: string
+      total_episodes_duration:
+        type: integer
+      total_movies_duration:
+        type: integer
+    type: object
+  internal.BuildInfo:
+    properties:
+      buildTime:
+        type: string
+      commit:
+        type: string
+      version:
+        type: string
+    type: object
+  model.LoginUser:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.NextEpisode:
+    properties:
+      episode_number:
+        description: only defined for shows
+        type: integer
+      episode_source_id:
+        description: episode source id
+        type: string
+      episode_title:
+        type: string
+      media_title:
+        description: movie/show title
+        type: string
+      overview:
+        type: string
+      release_date:
+        type: string
+      season_number:
+        description: only defined for shows
+        type: integer
+      thumbnail_uri:
+        type: string
+    type: object
+  model.PlayerSettings:
+    properties:
+      audio_idx:
+        type: integer
+      audio_lang:
+        type: string
+      player:
+        description: mpv, exoplayer, etc.
+        type: string
+      resize_mode:
+        description: whether the video is zoomed to fill/normal, etc.
+        type: string
+      subtitle_idx:
+        type: integer
+      subtitle_lang:
+        type: string
+    type: object
+  model.RegistrationUser:
+    properties:
+      display_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        type: string
+    required:
+    - display_name
+    - password
+    - username
+    type: object
+  model.WatchAction:
+    properties:
+      media_source:
+        type: string
+      media_type:
+        type: string
+      next_episode:
+        allOf:
+        - $ref: '#/definitions/model.NextEpisode'
+        description: only for next episode watch action type
+      source_id:
+        type: string
+      watch_action_type:
+        description: next_episode or resume
+        type: string
+      watch_progress:
+        allOf:
+        - $ref: '#/definitions/model.WatchProgress'
+        description: only for resume watch action type
+    type: object
+  model.WatchHistoryMoviePayload:
+    properties:
+      action_type:
+        enum:
+        - watch
+        - scrobble
+        type: string
+      watched_at:
+        type: string
+    required:
+    - action_type
+    type: object
+  model.WatchHistoryTVShowPayload:
+    properties:
+      action_type:
+        enum:
+        - watch
+        - scrobble
+        type: string
+      episode_ids:
+        description: tmdb unique id for episode
+        items:
+          type: integer
+        type: array
+      episode_number:
+        type: integer
+      rewatch_id:
+        type: integer
+      season_number:
+        type: integer
+      watched_at:
+        type: string
+    required:
+    - action_type
+    type: object
+  model.WatchProgress:
+    properties:
+      client_platform:
+        description: android-tv, etc.
+        type: string
+      current_progress_seconds:
+        description: how many seconds in the user is
+        type: integer
+      encoded_data:
+        description: for hound-proxied sources
+        type: string
+      episode_number:
+        description: only defined for shows
+        type: integer
+      episode_source_id:
+        description: episode source id
+        type: string
+      episode_title:
+        type: string
+      last_watched_at:
+        description: last unix time when the playback progress was set
+        type: integer
+      media_source:
+        description: '"tmdb"'
+        type: string
+      media_title:
+        description: movie/show title
+        type: string
+      media_type:
+        description: '"movie" or "tvshow"'
+        type: string
+      overview:
+        type: string
+      player_settings:
+        allOf:
+        - $ref: '#/definitions/model.PlayerSettings'
+        description: player, audio, subtitle selections, etc.
+      release_date:
+        type: string
+      season_number:
+        description: only defined for shows
+        type: integer
+      source_id:
+        description: movie/show source id
+        type: string
+      source_uri:
+        description: magnet, http link, local path
+        type: string
+      stream_protocol:
+        description: p2p, http, local, etc.
+        type: string
+      thumbnail_uri:
+        type: string
+      total_duration_seconds:
+        description: total duration of the media in seconds
+        type: integer
+    required:
+    - current_progress_seconds
+    - total_duration_seconds
+    type: object
+  providers.ProviderObject:
+    properties:
+      provider:
+        description: provider name in /providers folder
+        type: string
+      streams:
+        items:
+          $ref: '#/definitions/providers.StreamObject'
+        type: array
+    type: object
+  providers.ProviderResponseObject:
+    properties:
+      episode_number:
+        type: integer
+      episode_source_id:
+        description: tv shows only
+        type: string
+      imdb_id:
+        description: starts with 'tt'
+        type: string
+      media_source:
+        type: string
+      media_type:
+        description: movies or tvshows, etc.
+        type: string
+      providers:
+        items:
+          $ref: '#/definitions/providers.ProviderObject'
+        type: array
+      season_number:
+        description: shows only
+        type: integer
+      source_id:
+        type: string
+    type: object
+  providers.StreamObject:
+    properties:
+      description:
+        type: string
+      encoded_data:
+        description: data encoded in AES for playing streams in hound
+        type: string
+      file_idx:
+        description: file index for p2p type
+        type: integer
+      file_name:
+        description: might not be reliable
+        type: string
+      file_size:
+        description: file size in bytes
+        type: integer
+      info_hash:
+        type: string
+      provider:
+        type: string
+      sources:
+        description: trackers for p2p
+        items:
+          type: string
+        type: array
+      stream_protocol:
+        description: http or p2p
+        type: string
+      title:
+        type: string
+      uri:
+        description: magnet link, http link, or file path
+        type: string
+      video_metadata:
+        $ref: '#/definitions/database.VideoMetadata'
+    type: object
+  v1.AddToCollectionRequest:
+    properties:
+      media_source:
+        type: string
+      media_type:
+        type: string
+      source_id:
+        type: string
+    required:
+    - media_source
+    - media_type
+    - source_id
+    type: object
+  v1.AddWatchHistoryMovieResponse:
+    properties:
+      action_type:
+        type: string
+      inserted_source_id:
+        type: integer
+      media_source:
+        type: string
+    type: object
+  v1.AddWatchHistoryTVResponse:
+    properties:
+      inserted_episode_ids:
+        items:
+          type: integer
+        type: array
+      media_source:
+        type: string
+      skipped_episode_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  v1.AdminResetPasswordPayload:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    type: object
+  v1.CancelIngestTaskResponse:
+    properties:
+      ingest_task_id:
+        type: integer
+      status:
+        example: pending_cancel
+        type: string
+    type: object
+  v1.ChangePasswordPayload:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  v1.CommentRequest:
+    properties:
+      comment:
+        description: actual content of comment, review
+        type: string
+      comment_type:
+        description: review, etc.
+        type: string
+      episode_number:
+        type: integer
+      score:
+        description: only required for reviews
+        type: integer
+      season_number:
+        description: only for tvshows, when commenting on a particular episode
+        type: integer
+      title:
+        type: string
+    required:
+    - comment_type
+    type: object
+  v1.CreateProviderRequest:
+    properties:
+      manifest_url:
+        type: string
+      name:
+        type: string
+    type: object
+  v1.DeletePlaybackProgressPayload:
+    properties:
+      episode_number:
+        type: integer
+      season_number:
+        type: integer
+    type: object
+  v1.DeleteWatchHistoryPayload:
+    properties:
+      watch_event_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - watch_event_ids
+    type: object
+  v1.DownloadResponse:
+    properties:
+      status:
+        example: started
+        type: string
+    type: object
+  v1.LoginResponse:
+    properties:
+      display_name:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  v1.SetPlaybackProgressResponse:
+    properties:
+      watched:
+        example: false
+        type: boolean
+    type: object
+  v1.TVSeasonDownloadRequest:
+    properties:
+      episodes_to_download:
+        items:
+          type: integer
+        type: array
+      preference_list:
+        items:
+          $ref: '#/definitions/database.DownloadPreference'
+        type: array
+      provider_profile_id:
+        type: integer
+      skip_downloaded_episodes:
+        type: boolean
+      strict_match:
+        description: whether if no match is found, to fail the download
+        type: boolean
+    type: object
+  v1.TVSeasonDownloadResponse:
+    properties:
+      queued_episodes:
+        items:
+          type: integer
+        type: array
+      season_number:
+        type: integer
+      skipped_episodes:
+        items:
+          $ref: '#/definitions/v1.skippedEpisode'
+        type: array
+      status:
+        example: queued
+        type: string
+    type: object
+  v1.UpdateProviderProfileRequest:
+    properties:
+      is_default_downloading:
+        type: boolean
+      is_default_streaming:
+        type: boolean
+    type: object
+  v1.V1ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+      status:
+        enum:
+        - success
+        - error
+        example: error
+        type: string
+    type: object
+  v1.V1SuccessResponse:
+    properties:
+      data: {}
+      status:
+        enum:
+        - success
+        - error
+        example: success
+        type: string
+    type: object
+  v1.skippedEpisode:
+    properties:
+      episode_number:
+        type: integer
+      error:
+        type: string
+    type: object
+  view.CollectionObject:
+    properties:
+      collection_id:
+        type: integer
+      collection_title:
+        description: my collection, etc.
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      is_public:
+        type: boolean
+      owner_display_name:
+        type: string
+      owner_username:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/database.TagObject'
+        type: array
+      thumbnail_uri:
+        description: url for media thumbnails
+        type: string
+      updated_at:
+        type: string
+    type: object
+  view.CollectionView:
+    properties:
+      collection:
+        $ref: '#/definitions/view.CollectionObject'
+      limit:
+        type: integer
+      offset:
+        type: integer
+      records:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+      total_records:
+        type: integer
+    type: object
+  view.CommentObject:
+    properties:
+      comment:
+        description: actual content of comment, review
+        type: string
+      comment_id:
+        type: integer
+      comment_type:
+        type: string
+      created_at:
+        type: string
+      is_public:
+        type: boolean
+      owner_display_name:
+        type: string
+      owner_username:
+        type: string
+      record_id:
+        type: integer
+      score:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  view.Credit:
+    properties:
+      character:
+        type: string
+      credit_id:
+        type: string
+      job:
+        description: cast, director, etc.
+        type: string
+      meta_source:
+        type: string
+      name:
+        type: string
+      original_name:
+        type: string
+      source_id:
+        type: string
+      thumbnail_uri:
+        description: profile pic of person
+        type: string
+    required:
+    - meta_source
+    - source_id
+    type: object
+  view.GeneralSearchResponse:
+    properties:
+      movie_results:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+      tv_results:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+    type: object
+  view.IngestTaskResponse:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/database.IngestTaskFullRecord'
+        type: array
+      total_records:
+        type: integer
+    type: object
+  view.MediaFilesResponse:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/database.MediaFile'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total_records:
+        type: integer
+    type: object
+  view.MediaRecordCatalog:
+    properties:
+      backdrop_uri:
+        type: string
+      cast:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      creators:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_count:
+        type: integer
+      episode_number:
+        type: integer
+      extra_data:
+        additionalProperties: true
+        type: object
+      genres:
+        items:
+          $ref: '#/definitions/database.GenreObject'
+        type: array
+      guest_stars:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      last_air_date:
+        description: for shows, latest episode air date
+        type: string
+      logo_uri:
+        type: string
+      media_source:
+        description: tmdb, openlibrary, etc
+        example: tmdb
+        type: string
+      media_title:
+        type: string
+      media_type:
+        enum:
+        - movie
+        - tvshow
+        type: string
+      next_air_date:
+        description: for shows, next scheduled episode air date
+        type: string
+      origin_country:
+        items:
+          type: string
+        type: array
+      original_language:
+        type: string
+      original_title:
+        type: string
+      overview:
+        type: string
+      popularity:
+        type: number
+      release_date:
+        type: string
+      season_count:
+        type: integer
+      season_number:
+        type: integer
+      source_id:
+        type: string
+      status:
+        description: Returning Series, Released, etc.
+        type: string
+      thumbnail_uri:
+        type: string
+      vote_average:
+        type: number
+      vote_count:
+        type: integer
+    required:
+    - media_source
+    - media_title
+    - media_type
+    - source_id
+    type: object
+  view.MediaRewatchRecordWatchEvents:
+    properties:
+      created_at:
+        type: string
+      record_id:
+        description: record id for movie/show
+        type: integer
+      rewatch_finished_at:
+        type: string
+      rewatch_id:
+        type: integer
+      rewatch_started_at:
+        type: string
+      target_season:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      watch_events:
+        items:
+          $ref: '#/definitions/database.WatchEventMediaRecord'
+        type: array
+    type: object
+  view.TVSeasonCatalogObject:
+    properties:
+      backdrop_uri:
+        type: string
+      cast:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      creators:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_count:
+        type: integer
+      episode_number:
+        type: integer
+      episodes:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+      extra_data:
+        additionalProperties: true
+        type: object
+      genres:
+        items:
+          $ref: '#/definitions/database.GenreObject'
+        type: array
+      guest_stars:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      last_air_date:
+        description: for shows, latest episode air date
+        type: string
+      logo_uri:
+        type: string
+      media_source:
+        description: tmdb, openlibrary, etc
+        example: tmdb
+        type: string
+      media_title:
+        type: string
+      media_type:
+        enum:
+        - movie
+        - tvshow
+        type: string
+      next_air_date:
+        description: for shows, next scheduled episode air date
+        type: string
+      origin_country:
+        items:
+          type: string
+        type: array
+      original_language:
+        type: string
+      original_title:
+        type: string
+      overview:
+        type: string
+      popularity:
+        type: number
+      release_date:
+        type: string
+      season_count:
+        type: integer
+      season_number:
+        type: integer
+      source_id:
+        type: string
+      status:
+        description: Returning Series, Released, etc.
+        type: string
+      thumbnail_uri:
+        type: string
+      vote_average:
+        type: number
+      vote_count:
+        type: integer
+    required:
+    - media_source
+    - media_title
+    - media_type
+    - source_id
+    type: object
+  view.TVShowCatalogObject:
+    properties:
+      backdrop_uri:
+        type: string
+      cast:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      creators:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      duration:
+        description: duration/runtime in minutes
+        type: integer
+      episode_count:
+        type: integer
+      episode_number:
+        type: integer
+      extra_data:
+        additionalProperties: true
+        type: object
+      genres:
+        items:
+          $ref: '#/definitions/database.GenreObject'
+        type: array
+      guest_stars:
+        items:
+          $ref: '#/definitions/view.Credit'
+        type: array
+      last_air_date:
+        description: for shows, latest episode air date
+        type: string
+      logo_uri:
+        type: string
+      media_source:
+        description: tmdb, openlibrary, etc
+        example: tmdb
+        type: string
+      media_title:
+        type: string
+      media_type:
+        enum:
+        - movie
+        - tvshow
+        type: string
+      next_air_date:
+        description: for shows, next scheduled episode air date
+        type: string
+      origin_country:
+        items:
+          type: string
+        type: array
+      original_language:
+        type: string
+      original_title:
+        type: string
+      overview:
+        type: string
+      popularity:
+        type: number
+      release_date:
+        type: string
+      season_count:
+        type: integer
+      season_number:
+        type: integer
+      seasons:
+        items:
+          $ref: '#/definitions/view.MediaRecordCatalog'
+        type: array
+      source_id:
+        type: string
+      status:
+        description: Returning Series, Released, etc.
+        type: string
+      thumbnail_uri:
+        type: string
+      vote_average:
+        type: number
+      vote_count:
+        type: integer
+    required:
+    - media_source
+    - media_title
+    - media_type
+    - source_id
+    type: object
+  view.WatchActivityResponse:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total_records:
+        type: integer
+      watch_activity:
+        items:
+          $ref: '#/definitions/database.WatchActivity'
+        type: array
+    type: object
+host: localhost:2323
+info:
+  contact: {}
+  description: |-
+    V1 Hound Media Server API Documentation
+    While in beta, please expect breaking api changes in short/no notice
+  title: Hound API Documentation V1
+  version: beta-0.1.0
+paths:
+  /api/v1/api_keys:
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-api-keys
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.APIKey'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get User API Keys
+      tags:
+      - API Keys
+    post:
+      consumes:
+      - application/json
+      operationId: create-api-key
+      parameters:
+      - description: API Key Name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.APIKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create API Key
+      tags:
+      - API Keys
+  /api/v1/api_keys/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: revoke-api-key
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Revoke API Key
+      tags:
+      - API Keys
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      operationId: user-login
+      parameters:
+      - description: Login Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: User login
+      tags:
+      - Auth
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      operationId: user-logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: User logout
+      tags:
+      - Auth
+  /api/v1/auth/password:
+    post:
+      consumes:
+      - application/json
+      operationId: user-change-password
+      parameters:
+      - description: Password Change Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ChangePasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Change user password
+      tags:
+      - Auth
+  /api/v1/backdrops:
+    get:
+      consumes:
+      - application/json
+      operationId: get-media-backdrops
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL to backdrop
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Media Backdrops
+      tags:
+      - General
+  /api/v1/catalog/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-catalog
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Catalog
+      tags:
+      - Catalog
+  /api/v1/collection/hound-library:
+    get:
+      consumes:
+      - application/json
+      description: Get content downloaded to Hound
+      operationId: get-hound-library
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Media Type eg. tvshow or movie
+        in: query
+        name: media_type
+        type: string
+      - collectionFormat: csv
+        description: Genre IDs
+        in: query
+        items:
+          type: integer
+        name: genre_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.CollectionView'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Hound Library
+      tags:
+      - Collections
+  /api/v1/comments/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-comment
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a Comment
+      tags:
+      - Comments
+  /api/v1/continue_watching:
+    get:
+      consumes:
+      - application/json
+      operationId: get-continue-watching
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.WatchAction'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Continue Watching
+      tags:
+      - Watch Activity
+  /api/v1/download/{encodedString}:
+    post:
+      consumes:
+      - application/json
+      operationId: download-media
+      parameters:
+      - description: Encoded Stream String - get from Query providers
+        in: path
+        name: encodedString
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.DownloadResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Download media file to server
+      tags:
+      - Download
+  /api/v1/ingest:
+    get:
+      consumes:
+      - application/json
+      operationId: get-ingest-tasks
+      parameters:
+      - description: Comma separated status
+        in: query
+        name: status
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.IngestTaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Ingest Tasks
+      tags:
+      - Media
+  /api/v1/ingest/{taskID}/cancel:
+    post:
+      consumes:
+      - application/json
+      operationId: cancel-download-task
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.CancelIngestTaskResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Cancel an ingest/download task
+      tags:
+      - Download
+  /api/v1/media_files:
+    get:
+      consumes:
+      - application/json
+      operationId: get-media-files
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.MediaFilesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get all media file records
+      tags:
+      - Media Files
+  /api/v1/media_files/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-media-file
+      parameters:
+      - description: Media File ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a media file
+      tags:
+      - Media Files
+  /api/v1/movie/{id}/comments:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-comments
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment Type
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CommentObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Comments for a Movie
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      operationId: post-movie-comment
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Post Comment for a Movie
+      tags:
+      - Comments
+  /api/v1/movie/{id}/continue_watching:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-next-watch-action
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.WatchAction'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Next Watch Action
+      tags:
+      - Watch Activity
+  /api/v1/movie/{id}/media_files:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-media-files
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Media Files by ID
+      tags:
+      - Media Files
+  /api/v1/movie/{id}/providers:
+    get:
+      consumes:
+      - application/json
+      operationId: search-providers-movie
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Provider Profile ID
+        in: query
+        name: provider_profile_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search Stream Providers for Movies
+      tags:
+      - Providers
+  /api/v1/movie/genres:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-genres
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.GenreRecord'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Genres
+      tags:
+      - TV Shows
+      - Genres
+  /api/v1/provider_profiles:
+    get:
+      consumes:
+      - application/json
+      operationId: get-provider-profiles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.ProviderProfile'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get all provider profiles
+      tags:
+      - Provider Profiles
+    post:
+      consumes:
+      - application/json
+      operationId: create-provider-profile
+      parameters:
+      - description: Provider Profile
+        in: body
+        name: provider_profile
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.ProviderProfile'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create a provider profile
+      tags:
+      - Provider Profiles
+  /api/v1/provider_profiles/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-provider-profile
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a provider profile
+      tags:
+      - Provider Profiles
+    put:
+      consumes:
+      - application/json
+      description: Set the default provider profiles for streaming, downloading. Note
+        that clients may choose to override their own defaults.
+      operationId: update-provider-profile
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Provider Profile Body
+        in: body
+        name: provider_profile
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateProviderProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.ProviderProfile'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Update a provider profile
+      tags:
+      - Provider Profiles
+  /api/v1/search:
+    get:
+      consumes:
+      - application/json
+      operationId: search-media
+      parameters:
+      - description: Search Query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.GeneralSearchResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: General Media Search
+      tags:
+      - Search
+  /api/v1/server_info:
+    get:
+      consumes:
+      - application/json
+      operationId: get-server-info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal.BuildInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Server Info
+      tags:
+      - General
+  /api/v1/stream/{encodedString}:
+    get:
+      consumes:
+      - application/json
+      description: A streamable link for a video defined by the encodedString
+      operationId: stream-video
+      parameters:
+      - description: Encoded Stream Details
+        in: path
+        name: encodedString
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Stream Video
+      tags:
+      - Stream
+  /api/v1/torrent/{encodedString}:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Adds a p2p torrent to the server for streaming/download.
+        Not strictly necessary, as calling stream directly invokes this. May be deprecated in the future.
+      operationId: add-torrent
+      parameters:
+      - description: Encoded Stream Details
+        in: path
+        name: encodedString
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add Torrent
+      tags:
+      - Stream
+  /api/v1/tv/{id}/comments:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-comments
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment Type
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CommentObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Comments for a TV Show
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      operationId: post-tvshow-comment
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Post Comment for a TV Show
+      tags:
+      - Comments
+  /api/v1/tv/{id}/continue_watching:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-next-watch-action
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.WatchAction'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Next Watch Action
+      tags:
+      - Watch Activity
+  /api/v1/tv/{id}/media_files:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-media-files
+      parameters:
+      - description: TV Show ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season Number
+        in: query
+        name: season
+        type: integer
+      - description: Episode Number
+        in: query
+        name: episode
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Media Files by ID
+      tags:
+      - Media Files
+  /api/v1/tv/{id}/providers:
+    get:
+      consumes:
+      - application/json
+      operationId: search-providers-tvshow
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Season Number
+        in: query
+        name: season
+        required: true
+        type: integer
+      - description: Episode Number
+        in: query
+        name: episode
+        required: true
+        type: integer
+      - description: Provider Profile ID
+        in: query
+        name: provider_profile_id
+        type: integer
+      - description: Episode Group ID
+        in: query
+        name: episode_group_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search Stream Providers for TV Shows by ID
+      tags:
+      - Providers
+  /api/v1/tv/{id}/season/{seasonNumber}/download:
+    post:
+      consumes:
+      - application/json
+      operationId: download-tv-season
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season Number
+        in: path
+        name: seasonNumber
+        required: true
+        type: integer
+      - description: Download Preferences
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/v1.TVSeasonDownloadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.TVSeasonDownloadResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Download TV Season
+      tags:
+      - Download
+  /api/v1/tv/genres:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-genres
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.GenreRecord'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Genres
+      tags:
+      - TV Shows
+      - Genres
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      operationId: get-users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/database.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      operationId: user-register
+      parameters:
+      - description: Registration Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegistrationUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete a user
+      tags:
+      - Users
+  /api/v1/users/{id}/password:
+    post:
+      consumes:
+      - application/json
+      operationId: admin-reset-password
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New Password Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AdminResetPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Admin reset user password
+      tags:
+      - Users
+  /api/v1/watch_stats:
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-watch-stats
+      parameters:
+      - description: Start Time RFC3339
+        in: query
+        name: start_time
+        type: string
+      - description: End Time RFC3339
+        in: query
+        name: end_time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.WatchStats'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Watch Stats
+      tags:
+      - Watch Activity
+  /movie/{id}/history/delete:
+    post:
+      consumes:
+      - application/json
+      operationId: delete-movie-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch Event IDs to delete
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DeleteWatchHistoryPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete Movie Watch History
+      tags:
+      - Watch History
+  /tv/{id}/history/delete:
+    post:
+      consumes:
+      - application/json
+      operationId: delete-tvshow-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch Event IDs to delete
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DeleteWatchHistoryPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete TV Show Watch History
+      tags:
+      - Watch History
+  /v1/collection/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: colllections-delete-media
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Delete from Collection Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AddToCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete A Media from Collection
+      tags:
+      - Collection
+    get:
+      consumes:
+      - application/json
+      operationId: get-collection-contents
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.CollectionView'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Collection Contents
+      tags:
+      - Collection
+    post:
+      consumes:
+      - application/json
+      operationId: collections-add-media
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Add to Collection Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AddToCollectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add Media to Collection
+      tags:
+      - Collection
+  /v1/collection/{id}/delete:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-collection
+      parameters:
+      - description: Collection ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete Collection
+      tags:
+      - Collection
+  /v1/collection/all:
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-collections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.CollectionObject'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get a User's Collections
+      tags:
+      - Collection
+  /v1/collection/new:
+    post:
+      consumes:
+      - application/json
+      operationId: create-collection
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create New Collection
+      tags:
+      - Collection
+  /v1/collection/recent:
+    get:
+      consumes:
+      - application/json
+      description: Gets 20 most recent records added to any collection
+      operationId: get-user-recent-collections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get User's Recent Collection Records
+      tags:
+      - Collection
+  /v1/movie/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-details
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.MediaRecordCatalog'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Details
+      tags:
+      - Movie
+  /v1/movie/{id}/history:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRewatchRecordWatchEvents'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Watch History
+      tags:
+      - Watch History
+    post:
+      consumes:
+      - application/json
+      operationId: add-movie-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch History Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WatchHistoryMoviePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.AddWatchHistoryMovieResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add Movie Watch History
+      tags:
+      - Watch History
+  /v1/movie/{id}/playback:
+    get:
+      consumes:
+      - application/json
+      operationId: get-movie-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.WatchProgress'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Movie Playback Progress
+      tags:
+      - Watch Progress
+    post:
+      consumes:
+      - application/json
+      operationId: set-movie-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch Progress Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WatchProgress'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.SetPlaybackProgressResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Set Movie Playback Progress
+      tags:
+      - Watch Progress
+  /v1/movie/{id}/playback/delete:
+    post:
+      consumes:
+      - application/json
+      operationId: delete-movie-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete Movie Playback Progress
+      tags:
+      - Watch Progress
+  /v1/movie/search:
+    get:
+      consumes:
+      - application/json
+      operationId: search-movies
+      parameters:
+      - description: Search Query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search Movies
+      tags:
+      - Movie
+      - Search
+  /v1/tv/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-details
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.TVShowCatalogObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Details
+      tags:
+      - TV Show
+  /v1/tv/{id}/episode_groups:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-episode-groups
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Episode Groups
+      tags:
+      - TV Show
+  /v1/tv/{id}/history:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvshow-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRewatchRecordWatchEvents'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Show Watch History
+      tags:
+      - Watch History
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Only one of season_number and episode_number, or []episode_ids should be defined.
+        By default, if []episode_ids are used, this won't clear existing playback progress for
+        those episodes, however, this behavior might change in the future. For the season_number,
+        episode_number case, the current playback progress will be cleared if the watched_at is newer
+        than the existing playback progress.
+      operationId: add-tvshow-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch History Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WatchHistoryTVShowPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.AddWatchHistoryTVResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Add TV Show Watch History
+      tags:
+      - Watch History
+  /v1/tv/{id}/history/rewatch:
+    post:
+      consumes:
+      - application/json
+      description: Create new rewatch for tv show. This archives the previous watches,
+        so user's can start fresh.
+      operationId: create-tvshow-rewatch
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.RewatchRecord'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Create TV Show Rewatch
+      tags:
+      - Watch History
+  /v1/tv/{id}/playback:
+    post:
+      consumes:
+      - application/json
+      operationId: set-tvshow-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Watch Progress Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WatchProgress'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.SetPlaybackProgressResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Set TV Playback Progress
+      tags:
+      - Watch Progress
+  /v1/tv/{id}/playback/delete:
+    post:
+      consumes:
+      - application/json
+      operationId: delete-tv-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Delete Payload (only for TV)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/v1.DeletePlaybackProgressPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Delete TV Playback Progress
+      tags:
+      - Watch Progress
+  /v1/tv/{id}/season/{seasonNumber}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvseason-details
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Season Number
+        in: path
+        name: seasonNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.TVSeasonCatalogObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Season Details
+      tags:
+      - TV Show
+  /v1/tv/{id}/season/{seasonNumber}/history:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvseason-watch-history
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season number
+        in: path
+        name: seasonNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRewatchRecordWatchEvents'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Season Watch History
+      tags:
+      - Watch History
+  /v1/tv/{id}/season/{seasonNumber}/playback:
+    get:
+      consumes:
+      - application/json
+      operationId: get-tvseason-playback-progress
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season Number
+        in: path
+        name: seasonNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.WatchProgress'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get TV Season Playback Progress
+      tags:
+      - Watch Progress
+  /v1/tv/search:
+    get:
+      consumes:
+      - application/json
+      operationId: search-tvshows
+      parameters:
+      - description: Search Query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search TV Shows
+      tags:
+      - TV Show
+      - Search
+  /v1/watch_activity:
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-watch-activity
+      parameters:
+      - description: Limit - Defaults at 500
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Start time in RFC3339 format
+        example: "2026-03-13T10:20:30Z"
+        in: query
+        name: start_time
+        type: string
+      - description: End time in RFC3339 format
+        example: "2026-03-13T10:20:30Z"
+        in: query
+        name: end_time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/view.WatchActivityResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Watch Activity for User
+      tags:
+      - Watch Activity
+swagger: "2.0"

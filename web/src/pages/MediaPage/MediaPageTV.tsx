@@ -1,20 +1,31 @@
 import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
+import CachedIcon from "@mui/icons-material/Cached";
 import {
+  Chip,
   IconButton,
+  Skeleton,
   styled,
   Tooltip,
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
 import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
 import HistoryModal from "../Modals/HistoryModal";
+import ConfirmRewatchModal from "../Modals/ConfirmRewatchModal";
+import StreamModal from "../Modals/StreamModal";
+import SelectStreamModal from "../Modals/StreamSelectModal";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
+import { useMediaFiles } from "../../api/hooks/media";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 
 const offsetFix = {
   modifiers: [
@@ -41,10 +52,38 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
 function MediaPageTV(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isConfirmRewatchModalOpen, setIsConfirmRewatchModalOpen] =
+    useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isPosterLoaded, setIsPosterLoaded] = useState(false);
+  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
+  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
+  const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
+    useState(false);
+  const [streams, setStreams] = useState<any>(null);
+  const [mainStream, setMainStream] = useState<any>(null);
+  const [selectStreamFetchParams, setSelectStreamFetchParams] = useState<
+    | {
+        mediaType: string;
+        mediaSource: string;
+        sourceId: string;
+        season?: number;
+        episode?: number;
+      }
+    | undefined
+  >(undefined);
+  const [streamStartTime, setStreamStartTime] = useState(0);
+  const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
+  const { data: mediaFiles } = useMediaFiles(
+    "tv",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
 
   var styles = {
     noBackdrop: {
@@ -56,7 +95,7 @@ function MediaPageTV(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -66,71 +105,205 @@ function MediaPageTV(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
     },
   };
   // handle variables for display
-  var releaseYear = props.data.first_air_date.slice(0, 4);
+  var releaseYear = props.data.release_date.slice(0, 4);
   var genres = props.data.genres
     .map((item: any) => {
-      return item.name;
+      return item.genre;
     })
     .join(", ");
   var runtime = "";
-  const lf = new Intl.ListFormat("en");
-  var creators = lf.format(
-    props.data.created_by.map((item: any) => {
-      return item.name;
-    })
-  );
-  if (props.data.episode_run_time.length > 0) {
-    runtime = props.data.episode_run_time[0] + "m";
+  var creators = "";
+  try {
+    const lf = new Intl.ListFormat("en");
+    creators = lf.format(props.data.creators.map((item: any) => item.name));
+  } catch {}
+  if (props.data.duration > 0) {
+    if (props.data.duration >= 60) {
+      runtime =
+        Math.floor(props.data.duration / 60) +
+        "h " +
+        (props.data.duration % 60) +
+        "m";
+    } else {
+      runtime = props.data.duration + "m";
+    }
   }
-  // handle actor profiles
-  var creditsList = props.data.credits.cast.map((item: any) => {
-    return {
-      thumbnail_url: item.profile_path,
-      credits: {
-        name: item.name,
-        character: item.character,
-        id: item.id,
-      },
-      id: item.credit_id,
-    };
-  });
   // if specials exist (season number 0), move to end of array for displaying
   // if (props.data.seasons && props.data.seasons[0].season_number === 0) {
   //   props.data.seasons.push(props.data.seasons.shift());
   // }
   // modal functions
-  const handleAddToCollectionButtonClick = () => {
-    setIsCollectionModalOpen(true);
-  };
-  const handleAddToCollectionClose = () => {
-    setIsCollectionModalOpen(false);
-  };
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);
     setVideoKey(key);
-  };
-  const handleVideoButtonClose = () => {
-    setIsVideoModalOpen(false);
   };
   const handleSeasonButtonClick = (key: number) => {
     setSeasonModal(key);
     setIsSeasonModalOpen(true);
   };
-  const handleSeasonModalClose = () => {
-    setIsSeasonModalOpen(false);
+
+  useEffect(() => {
+    if (props.data) {
+      const mediaSource = props.data.media_source;
+      const sourceID = props.data.source_id;
+      axios
+        .get(`/api/v1/tv/${mediaSource}-${sourceID}/continue_watching`)
+        .then((res) => {
+          setContinueWatchingData(res.data);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch continue watching data", err);
+        });
+    }
+  }, [
+    props.data,
+    isStreamModalOpen,
+    isSeasonModalOpen,
+    isConfirmRewatchModalOpen,
+  ]);
+
+  const handleStreamButtonClick = (
+    season: number,
+    episode: number,
+    mode: string,
+    episodeID: number,
+    overrideStartTime?: number,
+    overrideEncodedData?: string,
+  ) => {
+    if (mode === "direct") {
+      setIsStreamButtonLoading(true);
+    } else if (mode === "select") {
+      setIsStreamSelectButtonLoading(true);
+    }
+    const mediaSource = props.data.media_source;
+    const sourceID = props.data.source_id;
+    const searchProvidersToast = toast.loading("Searching providers...");
+    // if we have current watch data, use encodedData to match a stream
+    const fetchParams = {
+      mediaType: "tv",
+      mediaSource,
+      sourceId: sourceID,
+      season,
+      episode,
+    };
+    const requestProviderStream = (startTime: number, encodedData: string) => {
+      setStreamStartTime(startTime);
+      return searchProviders(fetchParams)
+        .then((data) => {
+          toast.dismiss(searchProvidersToast);
+          setStreams(data);
+          let numStreams = data?.streams?.length;
+          if (numStreams > 0) {
+            let selectedStream = data.streams[0];
+            // if we have watch progress, set this as the main stream
+            // note this doesn't handle different hosts/protocols, eg. if
+            // the urls are different even if they are the same file, it won't match
+            if (mode === "direct" && encodedData) {
+              const matchingStream = data.streams.find(
+                (stream: any) => stream.encoded_data === encodedData,
+              );
+              if (matchingStream) {
+                selectedStream = matchingStream;
+              }
+            }
+            setMainStream(selectedStream);
+            if (mode === "direct") {
+              setIsStreamModalOpen(true);
+            } else {
+              setSelectStreamFetchParams(fetchParams);
+              setIsSelectStreamModalOpen(true);
+            }
+          } else {
+            toast.error("No streams found");
+          }
+        })
+        .catch((err) => {
+          toast.dismiss(searchProvidersToast);
+          console.error("Failed to fetch providers", err);
+          toast.error("Failed to fetch providers");
+        });
+    };
+    if (overrideStartTime !== undefined) {
+      requestProviderStream(
+        overrideStartTime,
+        overrideEncodedData || "",
+      ).finally(() => {
+        if (mode === "direct") {
+          setIsStreamButtonLoading(false);
+        } else if (mode === "select") {
+          setIsStreamSelectButtonLoading(false);
+        }
+      });
+      return;
+    }
+    // no override, get playback progress (season modal case)
+    axios
+      .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`)
+      .then((progressRes) => {
+        let startTime = 0;
+        let encodedData = "";
+        if (progressRes.data && episodeID !== -1) {
+          const episodeProgress = progressRes.data.find(
+            (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
+          );
+          if (episodeProgress) {
+            startTime = episodeProgress.current_progress_seconds || 0;
+            encodedData = episodeProgress.encoded_data;
+          }
+        }
+        return requestProviderStream(startTime, encodedData);
+      })
+      .catch((err) => {
+        toast.error("Failed to get playback progress " + err, {
+          id: searchProvidersToast,
+        });
+      })
+      .finally(() => {
+        if (mode === "direct") {
+          setIsStreamButtonLoading(false);
+        } else if (mode === "select") {
+          setIsStreamSelectButtonLoading(false);
+        }
+      });
   };
-  const handleHistoryModalButtonClick = () => {
-    setIsHistoryModalOpen(true);
-  };
-  const handleHistoryModalClose = () => {
-    setIsHistoryModalOpen(false);
+
+  const handleHeaderPlayClick = (mode: string) => {
+    if (!continueWatchingData) {
+      // Fallback if data not loaded
+      handleStreamButtonClick(1, 1, mode, -1);
+      return;
+    }
+    const { watch_action_type, next_episode, watch_progress } =
+      continueWatchingData;
+
+    if (watch_action_type === "resume" && watch_progress) {
+      handleStreamButtonClick(
+        watch_progress.season_number,
+        watch_progress.episode_number,
+        mode,
+        parseInt(watch_progress.episode_source_id, 10),
+        watch_progress.current_progress_seconds,
+        watch_progress.encoded_data,
+      );
+    } else if (watch_action_type === "next_episode" && next_episode) {
+      handleStreamButtonClick(
+        next_episode.season_number,
+        next_episode.episode_number,
+        mode,
+        parseInt(next_episode.episode_source_id, 10),
+      );
+    } else {
+      // Fallback, episodeID is only used to find progress
+      // fine to ignore
+      handleStreamButtonClick(1, 1, mode, -1);
+    }
   };
   if (props.data.media_title) {
     var yearString = props.data.first_air_date
@@ -138,22 +311,42 @@ function MediaPageTV(props: any) {
       : "";
     document.title = props.data.media_title + " " + yearString + " - Hound";
   }
+  var continueWatchingText = "▶ Play S1E1";
+  if (continueWatchingData) {
+    const { watch_action_type, next_episode, watch_progress } =
+      continueWatchingData;
+    if (watch_action_type === "resume" && watch_progress) {
+      continueWatchingText = `▶ Resume S${watch_progress.season_number}E${watch_progress.episode_number}`;
+    } else if (watch_action_type === "next_episode" && next_episode) {
+      continueWatchingText = `▶ Play S${next_episode.season_number}E${next_episode.episode_number}`;
+    }
+  }
   return (
     <>
       <div
         className="media-page-tv-header"
         style={
-          props.data.backdrop_url ? styles.withBackdrop : styles.noBackdrop
+          props.data.backdrop_uri ? styles.withBackdrop : styles.noBackdrop
         }
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
-              {props.data.poster_url ? (
+              {!isPosterLoaded && props.data.thumbnail_uri && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded media-page-tv-poster-skeleton"
+                  animation="wave"
+                />
+              )}
+              {props.data.thumbnail_uri ? (
                 <img
-                  className="media-page-tv-poster"
-                  src={props.data.poster_url}
+                  className={
+                    "media-page-tv-poster " + (!isPosterLoaded && "d-none")
+                  }
+                  src={props.data.thumbnail_uri}
                   alt={props.data.media_title}
+                  onLoad={() => setIsPosterLoaded(true)}
                 />
               ) : (
                 <div className="media-page-tv-poster">
@@ -162,6 +355,19 @@ function MediaPageTV(props: any) {
               )}
             </div>
             <div className="media-page-tv-header-info">
+              {mediaFiles?.providers[0]?.streams?.length > 0 && (
+                <Chip
+                  label={"In Hound"}
+                  size="medium"
+                  color="primary"
+                  sx={{
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    fontFamily: '"Cabin", sans-serif',
+                  }}
+                />
+              )}
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
                 <span className="media-page-tv-header-year">
@@ -187,6 +393,47 @@ function MediaPageTV(props: any) {
                 {creators ? "by " + creators : ""}
               </div>
               <div className="media-page-tv-header-button-container">
+                <SplitButton
+                  title={
+                    isStreamButtonLoading ? (
+                      <Spinner
+                        animation="grow"
+                        size="sm"
+                        role="status"
+                        className="stream-play-button-spinner"
+                      />
+                    ) : (
+                      continueWatchingText
+                    )
+                  }
+                  autoClose="outside"
+                  className="stream-play-button"
+                  onClick={() => {
+                    handleHeaderPlayClick("direct");
+                  }}
+                >
+                  <Dropdown.Item
+                    eventKey="1"
+                    onClick={() => {
+                      handleHeaderPlayClick("select");
+                    }}
+                  >
+                    {isStreamSelectButtonLoading ? (
+                      <div className="d-flex justify-content-center">
+                        <Spinner
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          id="stream-select-button-loading"
+                        >
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                      </div>
+                    ) : (
+                      "Select Stream..."
+                    )}
+                  </Dropdown.Item>
+                </SplitButton>
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
@@ -195,7 +442,11 @@ function MediaPageTV(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleAddToCollectionButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsCollectionModalOpen(true);
+                    }}
+                  >
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -207,8 +458,28 @@ function MediaPageTV(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleHistoryModalButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsHistoryModalOpen(true);
+                    }}
+                  >
                     <HistoryIcon id="media-page-tv-header-track-button" />
+                  </IconButton>
+                </BootstrapTooltip>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
+                      Rewatch Show
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton
+                    onClick={() => {
+                      setIsConfirmRewatchModalOpen(true);
+                    }}
+                  >
+                    <CachedIcon />
                   </IconButton>
                 </BootstrapTooltip>
               </div>
@@ -218,13 +489,13 @@ function MediaPageTV(props: any) {
       </div>
       <div className="media-page-tv-main" style={styles.opacityBackdrop}>
         <HorizontalSection
-          items={creditsList}
+          items={props.data.cast}
           header={"Cast"}
           itemType="cast"
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos.results}
+          items={props.data.videos?.results}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}
@@ -235,30 +506,70 @@ function MediaPageTV(props: any) {
           itemType="seasons"
           itemOnClick={handleSeasonButtonClick}
         />
-        <Reviews data={props.data.comments} />
+        <Reviews
+          mediaType={props.data.media_type}
+          mediaSource={props.data.media_source}
+          sourceId={props.data.source_id}
+        />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
-        onClose={handleAddToCollectionClose}
+        onClose={() => {
+          setIsCollectionModalOpen(false);
+        }}
         open={isCollectionModalOpen}
         item={props.data}
       />
       <VideoModal
-        onClose={handleVideoButtonClose}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+        }}
         open={isVideoModalOpen}
         videoKey={videoKey}
       />
       <SeasonModal
-        onClose={handleSeasonModalClose}
+        onClose={() => {
+          setIsSeasonModalOpen(false);
+        }}
         open={isSeasonModalOpen}
+        mediaSource={props.data ? props.data.media_source : undefined}
         sourceID={props.data ? props.data.source_id : undefined}
         seasonNumber={seasonModal}
         mediaTitle={props.data.media_title}
+        handleStreamButtonClick={handleStreamButtonClick}
+        isStreamButtonLoading={isStreamButtonLoading}
+        isStreamSelectButtonLoading={isStreamSelectButtonLoading}
+        isStreamModalOpen={isStreamModalOpen}
       />
       <HistoryModal
-        onClose={handleHistoryModalClose}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+        }}
         open={isHistoryModalOpen}
         data={props.data}
+      />
+      <ConfirmRewatchModal
+        onClose={() => {
+          setIsConfirmRewatchModalOpen(false);
+        }}
+        open={isConfirmRewatchModalOpen}
+        mediaSource={props.data ? props.data.media_source : undefined}
+        sourceID={props.data ? props.data.source_id : undefined}
+      />
+      <StreamModal
+        setOpen={setIsStreamModalOpen}
+        open={isStreamModalOpen}
+        streamDetails={mainStream}
+        startTime={streamStartTime}
+        streams={streams}
+      />
+      <SelectStreamModal
+        modalType="select-stream"
+        setOpen={setIsSelectStreamModalOpen}
+        open={isSelectStreamModalOpen}
+        fetchParams={selectStreamFetchParams}
+        setMainStream={setMainStream}
+        setIsStreamModalOpen={setIsStreamModalOpen}
       />
     </>
   );

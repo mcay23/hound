@@ -3,13 +3,15 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
 import {
+  Chip,
   IconButton,
+  Skeleton,
   styled,
   Tooltip,
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -17,7 +19,13 @@ import convertDateToReadable from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
-import Footer from "../Footer";
+import StreamModal from "../Modals/StreamModal";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
+import SelectStreamModal from "../Modals/StreamSelectModal";
+import { useMediaFiles } from "../../api/hooks/media";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 
 const offsetFix = {
   modifiers: [
@@ -41,14 +49,51 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
+type WatchProgressItem = {
+  current_progress_seconds: number;
+  total_duration_seconds: number;
+  encoded_data: string;
+};
+
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
   const [videoKey, setVideoKey] = useState("");
-
+  const [streams, setStreams] = useState<any>(null);
+  const [mainStream, setMainStream] = useState<any>(null);
+  const [watchProgress, setWatchProgress] = useState<
+    WatchProgressItem | undefined
+  >(undefined);
+  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
+  const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
+    useState(false);
+  const [isPosterLoaded, setIsPosterLoaded] = useState(false);
+  const { data: mediaFiles } = useMediaFiles(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
+  useEffect(() => {
+    axios
+      .get(
+        "/api/v1/movie/" +
+          `${props.data.media_source}-${props.data.source_id}/playback`,
+      )
+      .then((res) => {
+        if (res.data) {
+          setWatchProgress(res.data);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [isStreamModalOpen, props.data.media_source, props.data.source_id]);
   var styles = {
     noBackdrop: {
       background:
@@ -59,7 +104,7 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(24, 11, 111, 1) 9%, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.3) 70%), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -69,7 +114,7 @@ function MediaPageMovie(props: any) {
       // backgroundColor: "blue",
       backgroundImage:
         "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
-        props.data.backdrop_url +
+        props.data.backdrop_uri +
         ")",
       backgroundAttachment: "fixed",
       backgroundSize: "cover",
@@ -82,7 +127,7 @@ function MediaPageMovie(props: any) {
   } catch {}
   var genres = props.data.genres
     .map((item: any) => {
-      return item.name;
+      return item.genre;
     })
     .join(", ");
   var runtime = "";
@@ -94,54 +139,89 @@ function MediaPageMovie(props: any) {
   // get creators (directors)
   try {
     const lf = new Intl.ListFormat("en");
-    creators = lf.format(
-      props.data.credits.crew
-        .filter((item: any) => item.job === "Director")
-        .map((item: any) => {
-          return item.name;
-        })
-    );
+    creators = lf.format(props.data.creators.map((item: any) => item.name));
   } catch {}
   if (props.data.runtime > 0) {
-    runtime = props.data.runtime + "m";
+    if (props.data.runtime >= 60) {
+      runtime =
+        Math.floor(props.data.runtime / 60) +
+        "h " +
+        (props.data.runtime % 60) +
+        "m";
+    } else {
+      runtime = props.data.runtime + "m";
+    }
   }
-  // handle actor profiles
-  var creditsList = props.data.credits.cast.map((item: any) => {
-    return {
-      thumbnail_url: item.profile_path,
-      credits: {
-        name: item.name,
-        character: item.character,
-        id: item.id,
-      },
-      id: item.credit_id,
-    };
-  });
-  // modal functions
-  const handleAddToCollectionButtonClick = () => {
-    setIsCollectionModalOpen(true);
-  };
-  const handleAddToCollectionClose = () => {
-    setIsCollectionModalOpen(false);
+  // mode is either "direct" or "select"
+  // direct plays the stream directly, select opens the stream selection modal
+  const handleStreamButtonClick = (mode: string) => {
+    if (mode === "direct") {
+      setIsStreamButtonLoading(true);
+    } else if (mode === "select") {
+      setIsStreamSelectButtonLoading(true);
+    }
+    if (!streams) {
+      const searchProvidersToast = toast.loading("Searching providers...");
+      searchProviders({
+        mediaType: "movie",
+        mediaSource: props.data.media_source,
+        sourceId: props.data.source_id,
+      })
+        .then((data) => {
+          toast.dismiss(searchProvidersToast);
+          setStreams(data);
+          let numStreams = data?.streams?.length;
+          if (numStreams > 0) {
+            let selectedStream = data.streams[0];
+            if (mode === "direct" && watchProgress) {
+              const matchingStream = data.streams.find(
+                (stream: any) =>
+                  stream.encoded_data === watchProgress.encoded_data,
+              );
+              if (matchingStream) {
+                selectedStream = matchingStream;
+              }
+            }
+            setMainStream(selectedStream);
+          } else {
+            toast.error("No streams found");
+          }
+          // open stream select modal if only few streams
+          if (numStreams > 5 && mode === "direct") {
+            setIsStreamModalOpen(true);
+          } else {
+            setIsSelectStreamModalOpen(true);
+          }
+        })
+        .catch((err) => {
+          toast.error("Failed to search providers " + err, {
+            id: searchProvidersToast,
+          });
+        })
+        .finally(() => {
+          if (mode === "direct") {
+            setIsStreamButtonLoading(false);
+          } else if (mode === "select") {
+            setIsStreamSelectButtonLoading(false);
+          }
+        });
+    } else if (streams?.streams?.length > 0) {
+      if (mode === "direct") {
+        setIsStreamModalOpen(true);
+        setIsStreamButtonLoading(false);
+      } else if (mode === "select") {
+        setIsSelectStreamModalOpen(true);
+        setIsStreamSelectButtonLoading(false);
+      }
+    } else {
+      toast.error("No Streams found");
+      setIsStreamButtonLoading(false);
+      setIsStreamSelectButtonLoading(false);
+    }
   };
   const handleVideoButtonClick = (key: string) => {
     setIsVideoModalOpen(true);
     setVideoKey(key);
-  };
-  const handleVideoButtonClose = () => {
-    setIsVideoModalOpen(false);
-  };
-  const handleHistoryModalButtonClick = () => {
-    setIsHistoryModalOpen(true);
-  };
-  const handleHistoryModalClose = () => {
-    setIsHistoryModalOpen(false);
-  };
-  const handleCreateHistoryButtonClick = () => {
-    setisCreateHistoryModalOpen(true);
-  };
-  const handleCreateHistoryModalClose = () => {
-    setisCreateHistoryModalOpen(false);
   };
   if (props.data.media_title) {
     var yearString = props.data.release_date
@@ -154,17 +234,27 @@ function MediaPageMovie(props: any) {
       <div
         className="media-page-tv-header"
         style={
-          props.data.backdrop_url ? styles.withBackdrop : styles.noBackdrop
+          props.data.backdrop_uri ? styles.withBackdrop : styles.noBackdrop
         }
       >
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
-              {props.data.poster_url ? (
+              {!isPosterLoaded && props.data.thumbnail_uri && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded media-page-tv-poster-skeleton"
+                  animation="wave"
+                />
+              )}
+              {props.data.thumbnail_uri ? (
                 <img
-                  className="media-page-tv-poster"
-                  src={props.data.poster_url}
+                  className={
+                    "media-page-tv-poster " + (!isPosterLoaded && "d-none")
+                  }
+                  src={props.data.thumbnail_uri}
                   alt={props.data.media_title}
+                  onLoad={() => setIsPosterLoaded(true)}
                 />
               ) : (
                 <div className="media-page-tv-poster">
@@ -173,6 +263,19 @@ function MediaPageMovie(props: any) {
               )}
             </div>
             <div className="media-page-tv-header-info">
+              {mediaFiles?.providers[0]?.streams?.length > 0 && (
+                <Chip
+                  label={"In Hound"}
+                  size="medium"
+                  color="primary"
+                  sx={{
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    fontFamily: '"Cabin", sans-serif',
+                  }}
+                />
+              )}
               <div className="media-page-tv-header-title">
                 {props.data.media_title}
                 <span className="media-page-tv-header-year">
@@ -205,6 +308,49 @@ function MediaPageMovie(props: any) {
                 {creators ? "by " + creators : ""}
               </div>
               <div className="media-page-tv-header-button-container">
+                <SplitButton
+                  title={
+                    isStreamButtonLoading ? (
+                      <Spinner
+                        animation="grow"
+                        size="sm"
+                        role="status"
+                        className="stream-play-button-spinner"
+                      />
+                    ) : watchProgress ? (
+                      "▶ Resume"
+                    ) : (
+                      "▶ Play Movie"
+                    )
+                  }
+                  autoClose="outside"
+                  className="stream-play-button"
+                  onClick={() => {
+                    handleStreamButtonClick("direct");
+                  }}
+                >
+                  <Dropdown.Item
+                    eventKey="1"
+                    onClick={() => {
+                      handleStreamButtonClick("select");
+                    }}
+                  >
+                    {isStreamSelectButtonLoading ? (
+                      <div className="d-flex justify-content-center">
+                        <Spinner
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          id="stream-select-button-loading"
+                        >
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                      </div>
+                    ) : (
+                      "Select Stream..."
+                    )}
+                  </Dropdown.Item>
+                </SplitButton>
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
@@ -213,7 +359,11 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleAddToCollectionButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsCollectionModalOpen(true);
+                    }}
+                  >
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -225,7 +375,11 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleCreateHistoryButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setisCreateHistoryModalOpen(true);
+                    }}
+                  >
                     <VisibilityIcon />
                   </IconButton>
                 </BootstrapTooltip>
@@ -237,22 +391,14 @@ function MediaPageMovie(props: any) {
                   }
                   PopperProps={offsetFix}
                 >
-                  <IconButton onClick={handleHistoryModalButtonClick}>
+                  <IconButton
+                    onClick={() => {
+                      setIsHistoryModalOpen(true);
+                    }}
+                  >
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
-                {/* <BootstrapTooltip
-                  title={
-                    <span className="media-page-tv-header-button-tooltip-title">
-                      Track Show
-                    </span>
-                  }
-                  PopperProps={offsetFix}
-                >
-                  <IconButton>
-                    <BookmarkIcon id="media-page-tv-header-track-button" />
-                  </IconButton>
-                </BootstrapTooltip> */}
               </div>
             </div>
           </div>
@@ -260,39 +406,72 @@ function MediaPageMovie(props: any) {
       </div>
       <div className="media-page-tv-main" style={styles.opacityBackdrop}>
         <HorizontalSection
-          items={creditsList}
+          items={props.data.cast}
           header={"Cast"}
           itemType="cast"
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos.results}
+          items={props.data.videos?.results}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
-        <Reviews data={props.data.comments} />
+        <Reviews
+          mediaType={props.data.media_type}
+          mediaSource={props.data.media_source}
+          sourceId={props.data.source_id}
+        />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal
-        onClose={handleAddToCollectionClose}
+        onClose={() => {
+          setIsCollectionModalOpen(false);
+        }}
         open={isCollectionModalOpen}
         item={props.data}
       />
+      <StreamModal
+        setOpen={setIsStreamModalOpen}
+        open={isStreamModalOpen}
+        streamDetails={mainStream}
+        streams={streams}
+        startTime={watchProgress?.current_progress_seconds || 0}
+      />
+      <SelectStreamModal
+        modalType="select-stream"
+        setOpen={setIsSelectStreamModalOpen}
+        open={isSelectStreamModalOpen}
+        fetchParams={{
+          mediaType: "movie",
+          mediaSource: props.data.media_source,
+          sourceId: props.data.source_id,
+        }}
+        setMainStream={setMainStream}
+        setIsStreamModalOpen={setIsStreamModalOpen}
+      />
       <VideoModal
-        onClose={handleVideoButtonClose}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+        }}
         open={isVideoModalOpen}
         videoKey={videoKey}
       />
       <HistoryModal
-        onClose={handleHistoryModalClose}
+        onClose={() => {
+          setIsHistoryModalOpen(false);
+        }}
         open={isHistoryModalOpen}
         data={props.data}
       />
       <CreateHistoryModal
-        onClose={handleCreateHistoryModalClose}
+        onClose={() => {
+          setisCreateHistoryModalOpen(false);
+        }}
         open={isCreateHistoryModalOpen}
         type={"movie"}
+        mediaSource={props.data.media_source}
+        sourceID={props.data.source_id}
       />
     </>
   );

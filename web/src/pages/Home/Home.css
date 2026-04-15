@@ -1,6 +1,7 @@
 .home-page-search-section {
   height: 350px;
-  background: url('https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg') no-repeat;
+  background: url("https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg")
+    no-repeat;
   background-size: cover;
   animation: backgroundScroll 150s linear infinite;
   display: flex;
@@ -9,8 +10,8 @@
 }
 
 .home-page-primary-section {
-  color: black;
-  background-color: rgb(235, 235, 235);
+  color: white;
+  background-color: rgba(var(--hound-primary), 1);
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   padding-top: 30px;
   padding-bottom: 30px;
@@ -23,14 +24,24 @@
   color: white; */
 }
 
-@media only screen and (max-width:600px) {
+.home-page-placeholder {
+  height: 1300px;
+}
+
+@media only screen and (max-width: 600px) {
   .home-page-search-section {
     height: 200px;
   }
 }
-  
+
 @keyframes backgroundScroll {
-  0%   {background-position: 0 0%;}
-  50%  {background-position: 0 60%;}
-  100% {background-position: 0 0%;}
+  0% {
+    background-position: 0 0%;
+  }
+  50% {
+    background-position: 0 60%;
+  }
+  100% {
+    background-position: 0 0%;
+  }
 }

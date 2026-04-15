@@ -4,12 +4,9 @@ import HistoryTable from "../Comments/HistoryTable";
 
 function HistoryModal(props: any) {
   const { onClose, open } = props;
-  const handleClose = () => {
-    onClose();
-  };
   return (
     <Dialog
-      onClose={handleClose}
+      onClose={onClose}
       open={open}
       disableScrollLock={false}
       className="video-dialog"

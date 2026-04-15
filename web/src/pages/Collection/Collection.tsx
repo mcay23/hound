@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import "./Collection.css";
-import Topnav from "../Topnav";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -17,18 +16,17 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import MediaItem from "./MediaItem";
 import CollectionCover from "../Library/CollectionCover";
-import toast, { Toaster } from "react-hot-toast";
-import Footer from "../Footer";
+import toast from "react-hot-toast";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
-    results: [],
+    records: [],
     collection: {
       collection_title: "",
       description: "",
       is_public: false,
-      is_primary: true,
-      owner_user_id: "",
+      owner_username: "",
+      owner_display_name: "",
     },
     total_records: 0,
   });
@@ -39,9 +37,14 @@ function Collection(props: any) {
   const navigate = useNavigate();
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
-    value: number
+    value: number,
   ) => {
     setPage(value);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
   };
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const handleDeleteClickOpen = () => {
@@ -54,13 +57,14 @@ function Collection(props: any) {
   var showDeleteButton = false;
   if (
     isCollectionDataLoaded &&
-    collectionData.collection.owner_user_id === localStorage.getItem("username")
+    collectionData.collection.owner_username ===
+      localStorage.getItem("username")
   ) {
     showDeleteButton = true;
   }
   const handleDeleteCollection = () => {
     axios
-      .delete(`/api/v1/collection/delete/${collectionID}`)
+      .delete(`/api/v1/collection/${collectionID}/delete`)
       .then((res) => {
         setIsDeleteDialogOpen(false);
         navigate("/library");
@@ -76,7 +80,7 @@ function Collection(props: any) {
       .get(
         `/api/v1/collection/${collectionID}?limit=${itemsPerPage}&offset=${
           itemsPerPage * (page - 1)
-        }`
+        }`,
       )
       .then((res) => {
         setCollectionData(res.data);
@@ -94,7 +98,6 @@ function Collection(props: any) {
   }
   return (
     <>
-      <Topnav />
       {isCollectionDataLoaded ? (
         <>
           <div className="collection-main-section">
@@ -111,25 +114,24 @@ function Collection(props: any) {
                       {collectionData.collection.collection_title}
                     </div>
                     <div className="collection-cover-date">
-                      {`by ${collectionData.collection.owner_user_id}`}
+                      {`by ${collectionData.collection.owner_display_name}`}
                     </div>
                     <hr />
                     <div className="collection-cover-main-description">
                       {collectionData.collection.description}
                     </div>
                     <div className="collection-top-section-actions">
-                      {showDeleteButton &&
-                        !collectionData.collection.is_primary && (
-                          <IconButton onClick={handleDeleteClickOpen}>
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
+                      {showDeleteButton && (
+                        <IconButton onClick={handleDeleteClickOpen}>
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-              {collectionData.results ? (
-                collectionData.results.map((item) => (
+              {collectionData.records ? (
+                collectionData.records.map((item) => (
                   <MediaItem
                     item={item}
                     collectionID={collectionID}
@@ -147,11 +149,14 @@ function Collection(props: any) {
                   <br />
                   <br />
                   <br />
+                  <br />
+                  <br />
+                  <br />
                 </span>
               )}
             </div>
           </div>
-          {collectionData.results ? (
+          {collectionData.records ? (
             <div className="d-flex justify-content-center mb-4 mt-2">
               <div className="paginator-container shadow-lg">
                 <Pagination
@@ -186,16 +191,10 @@ function Collection(props: any) {
               <Button onClick={handleDeleteCollection}>Delete</Button>
             </DialogActions>
           </Dialog>
-          <Toaster
-            toastOptions={{
-              duration: 5000,
-            }}
-          />
         </>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Footer />
     </>
   );
 }

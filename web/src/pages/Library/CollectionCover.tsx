@@ -2,13 +2,13 @@ import React from "react";
 import "./CollectionCover.css";
 
 function CollectionCover(props: any) {
-  var backdropURL =
+  var backdropURI =
     "https://image.tmdb.org/t/p/w300/sHim6U0ANsbzxcmNRYuIubBVQaz.jpg";
   var styles = {
     withBackdrop: {
       backgroundImage:
         "linear-gradient(rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0.4) 70%), url(" +
-        backdropURL +
+        backdropURI +
         ")",
       backgroundSize: "cover",
       color: "yellow",
@@ -31,7 +31,7 @@ function CollectionCover(props: any) {
               {props.data.collection_title}
             </div>
             <div className="itemcard-item-caption-secondary">
-              {"by " + props.data.owner_user_id}
+              {"by " + props.data.owner_display_name}
             </div>
           </figcaption>
         ) : (

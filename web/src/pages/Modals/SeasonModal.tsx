@@ -4,21 +4,27 @@ import {
   Tooltip,
   tooltipClasses,
   TooltipProps,
+  useMediaQuery,
+  IconButton,
+  useTheme,
+  Fade,
+  Button,
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import "./SeasonModal.css";
 import convertDateToReadable from "../../helpers/helpers";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
-import {
-  IconButton,
-  // styled,
-  // Tooltip,
-  // tooltipClasses,
-  // TooltipProps,
-} from "@mui/material";
 import CreateHistoryModal from "./CreateHistoryModal";
+import { paperPropsGlass, slotPropsGlass } from "./modalStyles";
+import Dropdown from "react-bootstrap/Dropdown";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Spinner } from "react-bootstrap";
+import { PlayArrowRounded } from "@mui/icons-material";
+import toast from "react-hot-toast";
+import DownloadSeasonModal from "./DownloadSeasonModal";
 
 const offsetFix = {
   modifiers: [
@@ -41,8 +47,27 @@ const BootstrapTooltip = styled(({ className, ...props }: TooltipProps) => (
     backgroundColor: theme.palette.common.black,
   },
 }));
+
+type WatchProgressItem = {
+  current_progress_seconds: number;
+  total_duration_seconds: number;
+  encoded_data: string;
+};
+
+import {
+  useAddTVWatchHistoryMutation,
+  useTVSeasonHistory,
+} from "../../api/hooks/watchHistory";
+
 function SeasonModal(props: any) {
-  const { onClose, open, sourceID, seasonNumber } = props;
+  const {
+    onClose,
+    open,
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    isStreamModalOpen,
+  } = props;
   const handleClose = () => {
     setIsSeasonDataLoaded(false);
     onClose();
@@ -50,133 +75,208 @@ function SeasonModal(props: any) {
   const [seasonData, setSeasonData] = useState({
     media_source: "",
     source_id: -1,
-    season: {
-      air_date: "",
-      episodes: [],
-      id: -1,
-      name: "",
-      poster_path: "",
-      season_number: -1,
-      overview: "",
-    },
+    release_date: "",
+    episodes: [],
+    id: -1,
+    media_title: "",
+    thumbnail_uri: "",
+    season_number: -1,
+    overview: "",
     watch_info: [],
   });
-  const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
+
+  const { data: historyData } = useTVSeasonHistory(
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    open,
+  );
+
+  const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
+  const [watchProgress, setWatchProgress] = useState<
+    Map<string, WatchProgressItem>
+  >(() => new Map());
   const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
-  const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
+  const [isCreateHistoryModalOpen, setIsCreateHistoryModalOpen] =
     useState(false);
-  const handleCreateHistoryButtonClick = () => {
-    setisCreateHistoryModalOpen(true);
+  const [isDownloadSeasonModalOpen, setIsDownloadSeasonModalOpen] =
+    useState(false);
+
+  const addTVWatchActivityMutation = useAddTVWatchHistoryMutation();
+
+  useEffect(() => {
+    if (historyData) {
+      const latest = historyData.reduce(
+        (a: any, b: any) =>
+          new Date(a.rewatch_started_at) > new Date(b.rewatch_started_at)
+            ? a
+            : b,
+        historyData[0],
+      );
+      if (latest) {
+        const sourceIDs = (latest.watch_events || []).map(
+          (event: any) => event.source_id,
+        );
+        setWatchedEpisodes(sourceIDs);
+      }
+    }
+  }, [historyData]);
+
+  const handleWatchEpisode = (
+    season: number,
+    episode: number,
+    episodeID: string,
+  ) => {
+    addTVWatchActivityMutation.mutate(
+      {
+        mediaSource,
+        sourceID,
+        episodeIDs: [],
+        seasonNumber: season,
+        episodeNumber: episode,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Episode marked as watched");
+        },
+        onError: (err) => {
+          console.error(err);
+          toast.error("Failed to mark episode as watched");
+        },
+      },
+    );
   };
-  const handleCreateHistoryModalClose = () => {
-    setisCreateHistoryModalOpen(false);
+
+  const [historyModalType, setHistoryModalType] = useState<
+    "season" | "episode"
+  >("season");
+  const [historyModalEpisodeIDs, setHistoryModalEpisodeIDs] = useState<
+    number[]
+  >([]);
+  const [historyModalSeasonNumber, setHistoryModalSeasonNumber] = useState<
+    number | undefined
+  >();
+  const [historyModalEpisodeNumber, setHistoryModalEpisodeNumber] = useState<
+    number | undefined
+  >();
+
+  const handleOpenEpisodeHistoryModal = (
+    episodeID: number,
+    seasonNumber: number,
+    episodeNumber: number,
+  ) => {
+    setHistoryModalType("episode");
+    setHistoryModalEpisodeIDs([episodeID]);
+    setHistoryModalSeasonNumber(seasonNumber);
+    setHistoryModalEpisodeNumber(episodeNumber);
+    setIsCreateHistoryModalOpen(true);
   };
-  const handleWatchEpisode = (tagData: string) => {
-    var date = new Date();
-    var payload = {
-      comment_type: "history",
-      is_private: true,
-      tag_data: tagData,
-      start_date: date.toISOString(),
-      end_date: date.toISOString(),
-    };
-    axios
-      .post(`/api/v1${window.location.pathname}/comments`, payload)
-      .then(() => {
-        setWatchedEpisodes([
-          ...watchedEpisodes,
-          parseInt(tagData.split("E")[1]),
-        ]);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
+
   var seasonOverviewPlaceholder = "No description available.";
   if (isSeasonDataLoaded) {
-    seasonOverviewPlaceholder = `Season ${seasonData.season.season_number} of ${props.mediaTitle}`;
-    if (seasonData.season.season_number === 0) {
+    seasonOverviewPlaceholder = `Season ${seasonData.season_number} of ${props.mediaTitle}`;
+    if (seasonData.season_number === 0) {
       seasonOverviewPlaceholder = "Special Episodes";
     }
   }
+
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px by default
   useEffect(() => {
-    console.log("calling");
-    // check data is loaded
-    if (seasonNumber >= 0) {
+    // no need to call on close
+    if (open === false) return;
+    if (seasonNumber < 0) return;
+
+    // season 0 is used for extras, specials sometimes
+    const loadData = async () => {
+      const seasonRes = await axios
+        .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`)
+        .catch((err) => {
+          console.log(err);
+        });
+      if (!seasonRes) return;
+      setSeasonData(seasonRes.data);
+      setIsSeasonDataLoaded(true);
+
+      // get watch progress
       axios
-        .get(`/api/v1/tv/tmdb-${sourceID}/season/${seasonNumber}`)
-        .then((res) => {
-          setSeasonData(res.data);
-          if (res.data.watch_info) {
-            setWatchedEpisodes(
-              res.data.watch_info.map((item: { tag_data: string }) =>
-                parseInt(item.tag_data.split("E")[1])
-              )
-            );
+        .get(
+          `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`,
+        )
+        .then((progressRes) => {
+          // overwrite state each time
+          if (progressRes.data) {
+            const progressMap = new Map<string, WatchProgressItem>();
+            progressRes.data.forEach((item: any) => {
+              progressMap.set(item.episode_source_id, {
+                current_progress_seconds: item.current_progress_seconds,
+                total_duration_seconds: item.total_duration_seconds,
+                encoded_data: item.encoded_data,
+              });
+            });
+            setWatchProgress(progressMap);
           } else {
-            setWatchedEpisodes([]);
+            // null progress is also a valid response
+            setWatchProgress(new Map<string, WatchProgressItem>());
           }
-          setIsSeasonDataLoaded(true);
         })
         .catch((err) => {
-          if (err.response.status === 500) {
-            alert("500");
-          }
+          console.log(err);
         });
-    }
-  }, [seasonNumber, sourceID, open]);
-  // data is already loaded, useEffect not triggered (open and close same season modal)
-  if (
-    !isSeasonDataLoaded &&
-    seasonData &&
-    seasonData.season.season_number === seasonNumber
-  ) {
-    setIsSeasonDataLoaded(true);
-  }
+    };
+    loadData();
+  }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
+
   return (
     <>
-      <Dialog
-        onClose={handleClose}
-        open={open}
-        className="season-modal-dialog"
-        maxWidth={false}
-      >
-        {isSeasonDataLoaded ? (
-          <>
+      {isSeasonDataLoaded ? (
+        <Dialog
+          onClose={handleClose}
+          open={open}
+          className="season-modal-dialog"
+          maxWidth={false}
+          fullScreen={fullScreen}
+          TransitionComponent={Fade}
+          TransitionProps={{ timeout: 0 }}
+          slotProps={slotPropsGlass}
+          PaperProps={paperPropsGlass}
+        >
+          <div className="season-modal-container">
             <div className="season-modal-info-container">
-              {seasonData.season.poster_path ? (
+              {seasonData.thumbnail_uri ? (
                 <img
-                  className="rounded season-modal-poster"
-                  src={seasonData.season.poster_path}
-                  alt={seasonData.season.name}
+                  className="season-modal-poster"
+                  src={seasonData.thumbnail_uri}
+                  alt={seasonData.media_title}
                 />
               ) : (
-                <div
-                  className={
-                    "rounded season-modal-poster item-card-no-thumbnail"
-                  }
-                >
-                  {seasonData.season.name}
+                <div className={"season-modal-poster item-card-no-thumbnail"}>
+                  {seasonData.media_title}
                 </div>
               )}
               <div className="season-modal-info-inner">
                 <div className="season-modal-info-title">
-                  {seasonData.season.name}
-                  {seasonData.season.air_date ? (
+                  {seasonData.media_title}
+                  {seasonData.release_date ? (
                     <>
-                      <span className="media-item-separator">|</span>
+                      <span
+                        className="media-item-separator"
+                        style={{ color: "gray" }}
+                      >
+                        |
+                      </span>
                       <span className="season-modal-info-date">
-                        {seasonData.season.air_date.slice(0, 4)}
+                        {seasonData.release_date?.slice(0, 4)}
                       </span>
                     </>
                   ) : (
                     ""
                   )}
                 </div>
-                <hr />
+                <hr className="" />
                 <div className="season-modal-info-description">
-                  {seasonData.season.overview
-                    ? seasonData.season.overview
+                  {seasonData.overview
+                    ? seasonData.overview
                     : seasonOverviewPlaceholder}
                 </div>
                 <div className="season-modal-actions-container">
@@ -189,8 +289,36 @@ function SeasonModal(props: any) {
                       }
                       PopperProps={offsetFix}
                     >
-                      <IconButton onClick={handleCreateHistoryButtonClick}>
+                      <IconButton
+                        onClick={() => {
+                          setHistoryModalType("season");
+                          setHistoryModalEpisodeIDs(
+                            seasonData.episodes.map((ep: any) => ep.source_id),
+                          );
+                          setHistoryModalSeasonNumber(undefined);
+                          setHistoryModalEpisodeNumber(undefined);
+                          setIsCreateHistoryModalOpen(true);
+                        }}
+                      >
                         <VisibilityIcon />
+                      </IconButton>
+                    </BootstrapTooltip>
+                    <BootstrapTooltip
+                      title={
+                        <span className="media-page-tv-header-button-tooltip-title">
+                          Download Season
+                        </span>
+                      }
+                      PopperProps={offsetFix}
+                    >
+                      <IconButton
+                        onClick={() => {
+                          if (isSeasonDataLoaded) {
+                            setIsDownloadSeasonModalOpen(true);
+                          }
+                        }}
+                      >
+                        <DownloadIcon />
                       </IconButton>
                     </BootstrapTooltip>
                   </span>
@@ -211,55 +339,136 @@ function SeasonModal(props: any) {
                 </div>
               </div>
             </div>
-            {seasonData.season.episodes.map((episode) => {
-              return EpisodeCard(
-                episode,
-                watchedEpisodes.includes(episode["episode_number"]),
-                handleWatchEpisode
-              );
-            })}
-          </>
-        ) : (
-          ""
-        )}
-      </Dialog>
-      <CreateHistoryModal
-        onClose={handleCreateHistoryModalClose}
-        open={isCreateHistoryModalOpen}
-        type={"season"}
-        seasonNumber={seasonData.season.season_number}
-      />
+            <div className="season-episode-card-container">
+              {seasonData.episodes.map((episode: any) => {
+                return EpisodeCard(
+                  episode,
+                  watchedEpisodes.includes(episode["source_id"]),
+                  watchProgress.get(episode["source_id"]),
+                  handleWatchEpisode,
+                  props.handleStreamButtonClick,
+                  props.isStreamButtonLoading,
+                  props.isStreamSelectButtonLoading,
+                  handleOpenEpisodeHistoryModal,
+                );
+              })}
+            </div>
+          </div>
+          <CreateHistoryModal
+            onClose={() => {
+              setIsCreateHistoryModalOpen(false);
+            }}
+            open={isCreateHistoryModalOpen}
+            type={historyModalType}
+            mediaSource={mediaSource}
+            sourceID={sourceID}
+            episodeIDs={historyModalEpisodeIDs}
+            seasonNumber={historyModalSeasonNumber}
+            episodeNumber={historyModalEpisodeNumber}
+          />
+          <DownloadSeasonModal
+            onClose={() => {
+              setIsDownloadSeasonModalOpen(false);
+            }}
+            open={isDownloadSeasonModalOpen}
+            mediaSource={mediaSource}
+            sourceID={sourceID}
+            seasonNumber={seasonNumber}
+            seasonData={seasonData}
+          />
+        </Dialog>
+      ) : (
+        ""
+      )}
     </>
   );
 }
 
-function EpisodeCard(episode: any, watched: boolean, handleWatchEpisode: any) {
+function EpisodeCard(
+  episode: any,
+  watched: boolean,
+  watchProgress: WatchProgressItem | undefined,
+  handleWatchEpisode: Function,
+  handleStreamButtonClick: Function,
+  isStreamButtonLoading: boolean,
+  isStreamSelectButtonLoading: boolean,
+  handleOpenEpisodeHistoryModal: Function,
+) {
   var episodeNumber =
     episode.season_number.toString() &&
     episode.episode_number.toString() &&
     `S${episode.season_number}E${episode.episode_number}`.replace(
       "S0E",
-      "Special #"
+      "Special #",
     );
   return (
-    <div className="episode-card-container" key={episode.id}>
-      <img
-        src={episode.still_path}
-        alt={episode.name}
-        className="episode-card-img hide-alt"
-        loading="lazy"
-        onError={({ currentTarget }) => {
-          currentTarget.onerror = null; // prevents looping
-          currentTarget.src = "/landscape-placeholder.jpg";
+    <div
+      className="episode-card-container"
+      key={episode.media_source + "-" + episode.source_id}
+    >
+      <div
+        className="episode-card-img-container"
+        onClick={() => {
+          if (isStreamButtonLoading || isStreamSelectButtonLoading) {
+            return;
+          }
+          handleStreamButtonClick(
+            episode.season_number,
+            episode.episode_number,
+            "direct",
+            episode.source_id,
+          );
         }}
-      />
+      >
+        <img
+          src={episode.thumbnail_uri}
+          alt={episode.media_title}
+          className="episode-card-img hide-alt"
+          loading="lazy"
+          onError={({ currentTarget }) => {
+            currentTarget.onerror = null; // prevents looping
+            currentTarget.src = "/landscape-placeholder.jpg";
+          }}
+        />
+        <div className="episode-card-img-play-overlay">
+          <div className="episode-card-img-play-icon">
+            <PlayArrowRounded sx={{ fontSize: "90px" }} />
+          </div>
+        </div>
+        {watchProgress && (
+          <>
+            <div className="episode-card-progress-pill">
+              <div className="episode-card-progress-pill-text">
+                {Math.ceil(
+                  (watchProgress.total_duration_seconds -
+                    watchProgress.current_progress_seconds) /
+                    60,
+                )}
+                {"m left"}
+              </div>
+            </div>
+            <div className="episode-card-progress-bar-container">
+              <div
+                className="episode-card-progress-bar"
+                style={{
+                  width: `${
+                    (watchProgress.current_progress_seconds /
+                      watchProgress.total_duration_seconds) *
+                    100
+                  }%`,
+                }}
+              />
+            </div>
+          </>
+        )}
+      </div>
       <div className="episode-card-content">
-        <div className="episode-card-title">{episode.name}</div>
-        {episode.air_date && (
+        <div className="episode-card-title">{episode.media_title}</div>
+        {episode.release_date && (
           <div className="episode-card-date">
             {episodeNumber}
-            {episodeNumber && episode.air_date && "     ⸱     "}
-            {convertDateToReadable(episode.air_date)}
+            {episodeNumber && episode.release_date && "     ⸱     "}
+            {convertDateToReadable(episode.release_date)}
           </div>
         )}
         <div className="episode-card-description">
@@ -267,6 +476,84 @@ function EpisodeCard(episode: any, watched: boolean, handleWatchEpisode: any) {
         </div>
       </div>
       <div className="episode-card-actions">
+        <Dropdown
+          align="end"
+          autoClose="outside"
+          id="season-episode-card-dropdown-container"
+        >
+          <Dropdown.Toggle
+            as={Button}
+            variant="light"
+            id="season-episode-card-dropdown"
+            className="border-0 p-0"
+            style={{ minWidth: "auto" }}
+          >
+            <MoreVertIcon />
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item
+              onClick={() => {
+                handleStreamButtonClick(
+                  episode.season_number,
+                  episode.episode_number,
+                  "direct",
+                  episode.source_id,
+                );
+              }}
+            >
+              {isStreamButtonLoading ? (
+                <div className="d-flex justify-content-center">
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    id="stream-select-button-loading"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                "Play Episode"
+              )}
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => {
+                handleStreamButtonClick(
+                  episode.season_number,
+                  episode.episode_number,
+                  "select",
+                  episode.source_id,
+                );
+              }}
+            >
+              {isStreamSelectButtonLoading ? (
+                <div className="d-flex justify-content-center">
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    id="stream-select-button-loading"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                "Select Stream..."
+              )}
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => {
+                handleOpenEpisodeHistoryModal(
+                  episode.source_id,
+                  episode.season_number,
+                  episode.episode_number,
+                );
+              }}
+            >
+              Add Watch History...
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
         {watched ? (
           <IconButton disabled>
             <DoneAllIcon />
@@ -283,7 +570,9 @@ function EpisodeCard(episode: any, watched: boolean, handleWatchEpisode: any) {
             <IconButton
               onClick={() => {
                 handleWatchEpisode(
-                  `S${episode.season_number}E${episode.episode_number}`
+                  episode.season_number,
+                  episode.episode_number,
+                  episode.source_id,
                 );
               }}
             >

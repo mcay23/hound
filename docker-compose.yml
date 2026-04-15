@@ -1,55 +1,33 @@
-version: '3.8'
 services:
-  db:
-    image: mysql:8.0
-    container_name: hound-db
-    cap_add:
-      - SYS_NICE
-    restart: always
-    env_file:
-      - compose.env
-    ports:
-      - '9207:3306'
-    volumes:
-      - db:/var/lib/mysql
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: hound-pma
-    links:
-      - db
+  hound-postgres:
+    container_name: hound-postgres
+    image: postgres:18
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_ARBITRARY: 1
-    restart: always
-    ports:
-      - 8081:80
-  server:
-    build:
-      context: ./server
+      POSTGRES_USER: hound
+      POSTGRES_PASSWORD: super-strong-password
+      POSTGRES_DB: hound_db
     volumes:
-      - "./server:/go/src/app"
-    env_file:
-      - compose.env
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hound -d hound_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  hound-server:
     container_name: hound-server
-    ports:
-      - "8080:8080"
-    tty: true
+    image: houndmediaserver/hound:latest
     depends_on:
-      - db
-  web:
-    build:
-      context: ./web
+      hound-postgres:
+        condition: service_healthy
+    ports:
+      - "2323:2323"
+    environment:
+      - POSTGRES_USER=hound
+      - POSTGRES_PASSWORD=super-strong-password
+      - HOUND_SECRET=super-strong-secret
     volumes:
-      - .:/usr/app/
-      - /usr/app/node_modules
-    container_name: hound-web
-    ports:
-      - "3000:3000"
-    tty: true
-    depends_on:
-      - server
-      - db
+      - ./docker/Hound Data:/app/Hound Data
+
 volumes:
-  db:
-    driver: local
+  postgres_data:

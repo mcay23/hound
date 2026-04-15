@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import LinearProgress from "@mui/material/LinearProgress";
 import HorizontalSection from "../Home/HorizontalSection";
 import SearchBar from "../Home/SearchBar";
-import Topnav from "../Topnav";
 import "./SearchPage.css";
 
 function SearchPage(props: any) {
@@ -15,11 +14,11 @@ function SearchPage(props: any) {
     game_results: [],
   });
   const [isLoaded, setIsLoaded] = useState(false);
-  const [backdropURL, setBackdropURL] = useState("");
+  const [backdropURI, setBackdropURI] = useState("");
   var styles = {
     withBackdrop: {
       // backgroundColor: "blue",
-      backgroundImage: "url(" + backdropURL + ")",
+      backgroundImage: "url(" + backdropURI + ")",
       backgroundSize: "cover",
       animation: "backgroundScroll 150s linear infinite",
     },
@@ -37,16 +36,11 @@ function SearchPage(props: any) {
           alert("500");
         }
       });
-    if (backdropURL === "") {
+    if (backdropURI === "") {
       axios
-        .get("/api/v1/backdrops")
+        .get("/api/v1/backdrop")
         .then((res) => {
-          var randomBackdrop =
-            res.data.backdrop_urls[
-              Math.floor(Math.random() * res.data.backdrop_urls.length)
-            ];
-          console.log(randomBackdrop);
-          setBackdropURL(randomBackdrop);
+          setBackdropURI(res.data);
         })
         .catch((err) => {
           if (err.response.status === 500) {
@@ -54,39 +48,38 @@ function SearchPage(props: any) {
           }
         });
     }
-  }, [backdropURL, query]);
+  }, [backdropURI, query]);
   if (isLoaded) {
     document.title = query + " - Hound";
   }
   return (
     <>
-      <Topnav />
       <div
         className="search-page-search-section"
-        style={backdropURL ? styles.withBackdrop : {}}
+        style={backdropURI ? styles.withBackdrop : {}}
       >
         <SearchBar />
       </div>
       {isLoaded ? (
         <div className="search-page-main-section">
-          {data.tv_results ||
-          data.movie_results ||
-          data.game_results.length > 0 ? (
+          {data?.tv_results?.length > 0 ||
+          data?.movie_results?.length > 0 ||
+          data?.game_results?.length > 0 ? (
             <>
               <HorizontalSection
-                items={data.tv_results}
+                items={data?.tv_results}
                 header={"TV Shows"}
                 itemType={"search"}
                 itemOnClick={undefined}
               />
               <HorizontalSection
-                items={data.movie_results}
+                items={data?.movie_results}
                 header={"Movies"}
                 itemType={"search"}
                 itemOnClick={undefined}
               />
               <HorizontalSection
-                items={data.game_results}
+                items={data?.game_results}
                 header={"Games"}
                 itemType={"search"}
                 itemOnClick={undefined}

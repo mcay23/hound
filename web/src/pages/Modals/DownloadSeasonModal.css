@@ -1,0 +1,17 @@
+.download-season-modal-container {
+  padding: 20px;
+}
+
+.download-season-main-content {
+  padding-bottom: 15px;
+}
+
+.download-season-pack-card {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px;
+  background-color: rgba(255, 255, 255, 0.3);
+}

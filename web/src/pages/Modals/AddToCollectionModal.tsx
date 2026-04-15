@@ -6,17 +6,13 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import toast, { Toaster } from "react-hot-toast";
-import AddIcon from "@mui/icons-material/Add";
+import toast from "react-hot-toast";
 import "./AddToCollectionModal.css";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
 function AddToCollectionModal(props: any) {
   const { onClose, open, item } = props;
-  const handleClose = () => {
-    onClose();
-  };
   const handleListItemClick = (collectionID: number) => {
     // add item to collection
     if (item && item["source_id"]) {
@@ -42,10 +38,6 @@ function AddToCollectionModal(props: any) {
     onClose();
   };
 
-  const handleCreateNewCollection = () => {
-    onClose();
-  };
-
   const [data, setData] = useState([]);
 
   useEffect(() => {
@@ -60,11 +52,10 @@ function AddToCollectionModal(props: any) {
         }
       });
   }, [props.open]);
-
   return (
     <>
       <Dialog
-        onClose={handleClose}
+        onClose={onClose}
         open={open}
         className="add-to-collection-dialog"
       >
@@ -105,13 +96,15 @@ function AddToCollectionModal(props: any) {
           ) : (
             ""
           )}
+          {data?.length === 0 ? (
+            <div className="d-flex justify-content-center px-4 w-full mt-2 mb-2">
+              You don't have any collections.
+            </div>
+          ) : (
+            ""
+          )}
         </div>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }

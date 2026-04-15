@@ -1,5 +1,4 @@
 import "./MediaItem.css";
-import convertDateToReadable from "../../helpers/helpers";
 import {
   Button,
   Dialog,
@@ -9,10 +8,11 @@ import {
   DialogTitle,
   IconButton,
 } from "@mui/material";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import ClearIcon from "@mui/icons-material/Clear";
 import { useState } from "react";
 import axios from "axios";
+import ItemCard from "../Home/ItemCard";
 
 function MediaItem(props: any) {
   var mediaType = props.item.media_type;
@@ -53,26 +53,10 @@ function MediaItem(props: any) {
   return (
     <>
       <div className="media-item-container">
-        <a
-          href={`/${mediaType}/${props.item.media_source}-${props.item.source_id}`}
-          className="a-no-style"
-        >
-          <div className="media-item-poster">
-            {props.item.thumbnail_url ? (
-              <img
-                className="rounded media-item-img-poster"
-                src={props.item.thumbnail_url}
-                alt={props.item.media_title}
-                loading="lazy"
-              />
-            ) : (
-              <div className="rounded media-item-img-poster item-card-no-thumbnail item-card-no-thumbnail-small">
-                {props.item.media_title}
-              </div>
-            )}
-          </div>
-        </a>
-        <div className="media-item-main-container">
+        <div className="media-item-img-container d-flex">
+          <ItemCard item={props.item} itemType={"poster"} />
+        </div>
+        <div className="media-item-content-container">
           <div className="media-item-title-container">
             <a
               href={`/${mediaType}/${props.item.media_source}-${props.item.source_id}`}
@@ -93,8 +77,8 @@ function MediaItem(props: any) {
           </div>
           <div className="media-item-secondary">{mediaTypeReadable}</div>
           <div className="media-item-description">
-            {props.item.description
-              ? props.item.description
+            {props.item.overview
+              ? props.item.overview
               : "No description available."}
           </div>
         </div>
@@ -125,11 +109,6 @@ function MediaItem(props: any) {
           <Button onClick={handleDeleteItem}>Delete</Button>
         </DialogActions>
       </Dialog>
-      <Toaster
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
     </>
   );
 }
