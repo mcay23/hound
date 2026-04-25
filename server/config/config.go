@@ -15,7 +15,7 @@ the provided docker-compose.yml
 */
 var (
 	AppEnvironment                string = "development"
-	PostgresDBName                string = "hound"
+	PostgresDBName                string = "hound_db"
 	PostgresHost                  string = "hound-postgres"
 	PostgresPort                  string = "5432"
 	PostgresUser                  string = "hound"

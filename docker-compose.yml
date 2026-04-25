@@ -3,9 +3,9 @@ services:
     container_name: hound-postgres
     image: postgres:18
     environment:
+      POSTGRES_DB: hound_db
       POSTGRES_USER: hound
       POSTGRES_PASSWORD: super-strong-password
-      POSTGRES_DB: hound_db
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -23,11 +23,17 @@ services:
     ports:
       - "2323:2323"
     environment:
+      - POSTGRES_DB=hound_db
       - POSTGRES_USER=hound
       - POSTGRES_PASSWORD=super-strong-password
       - HOUND_SECRET=super-strong-secret
     volumes:
       - ./docker/Hound Data:/app/Hound Data
+      # (Optional) attach your media library
+      # IMPORTANT: Please read the [External Library] page before
+      # doing this
+      # - /path/to/movies:/app/External Library/Movies
+      # - /path/to/shows:/app/External Library/TV Shows
 
 volumes:
   postgres_data:

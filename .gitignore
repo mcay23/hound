@@ -51,3 +51,4 @@ server/.env
 /server/Hound Data
 /docker
 /server/logs
+server/dev.env
