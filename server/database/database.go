@@ -31,7 +31,7 @@ func InstantiateDB() {
 		config.PostgresDBName,
 	)
 
-	slog.Info("Attempting DB connection", "uri", connectionString)
+	slog.Info("Attempting DB connection", "host", config.PostgresHost, "port", config.PostgresPort, "user", config.PostgresUser, "dbname", config.PostgresDBName)
 	databaseEngine, err = NewEngineWithRetry(DriverPostgres, connectionString)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to instantiate DB connection")
