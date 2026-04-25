@@ -23,6 +23,7 @@
     "react-horizontal-scrolling-menu": "^4.0.1",
     "react-hot-toast": "^2.4.0",
     "react-responsive-masonry": "^2.1.7",
+    "uuid": "^14.0.0",
     "video.js": "^8.23.4",
     "web-vitals": "^2.1.4"
   },

@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 const getBaseUrl = () => {
   if (process.env.NODE_ENV === "production") {
     // relative url in prod
@@ -9,7 +11,8 @@ const getBaseUrl = () => {
 const getDeviceID = () => {
   let deviceID = localStorage.getItem("deviceID");
   if (!deviceID) {
-    deviceID = crypto.randomUUID();
+    // we don't use crypto.randomUUID() because it's disabled in http
+    deviceID = uuidv4();
     localStorage.setItem("deviceID", deviceID);
   }
   return deviceID;
