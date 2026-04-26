@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { ContentCopy, Visibility, VisibilityOff } from "@mui/icons-material";
+import { copyToClipboard } from "../../helpers/helpers";
 
 export default function ApiKeys() {
   const { data, isLoading, error } = useApiKeys();
@@ -128,9 +129,13 @@ function ApiKeyField({ apiKey }: { apiKey: string }) {
             </IconButton>
             <IconButton
               className="ms-2"
-              onClick={() => {
-                navigator.clipboard.writeText(apiKey);
-                toast.success("Copied to clipboard");
+              onClick={async () => {
+                try {
+                  await copyToClipboard(apiKey);
+                  toast.success("Copied to clipboard");
+                } catch (err) {
+                  toast.error("Failed to copy: " + err);
+                }
               }}
             >
               <ContentCopy />

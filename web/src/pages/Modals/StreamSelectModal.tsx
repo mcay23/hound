@@ -21,6 +21,7 @@ import {
   useUnifiedStreamsMutation,
 } from "../../api/hooks/providers";
 import { useProviderProfiles } from "../../api/hooks/providerProfiles";
+import { copyToClipboard } from "../../helpers/helpers";
 
 type FetchParams = {
   mediaType: string;
@@ -247,7 +248,7 @@ function SelectStreamModal(props: {
                           onClick={() => {
                             const handleCopy = async () => {
                               try {
-                                await navigator.clipboard.writeText(
+                                await copyToClipboard(
                                   window.location.origin +
                                     "/api/v1/stream/" +
                                     stream.encoded_data,
