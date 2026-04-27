@@ -1,7 +1,7 @@
 # Hound Media Server
 
 <p align="center">
-  <img src="https://github.com/Hound-Media-Server/hound/blob/main/web/public/hound-logo.png" alt="Logo" width="200">
+  <img src="https://github.com/Hound-Media-Server/hound/blob/main/web/public/hound-logo.png" alt="Logo" width="500">
 </p>
 
 <p align="center">
