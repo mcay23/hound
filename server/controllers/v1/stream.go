@@ -37,17 +37,17 @@ func StreamHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to decode aes stream with encodedString %s: %w", c.Param("encodedString"), err))
 		return
 	}
-	slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
-		"filename", streamDetails.Filename)
+	// slog.Info("Initializing Stream ", "infohash", streamDetails.InfoHash,
+	// 	"filename", streamDetails.Filename)
 
-	if streamDetails.StreamProtocol == database.ProtocolP2P {
-		handleP2PStream(c, streamDetails)
-		return
-	}
-	if streamDetails.StreamProtocol == database.ProtocolFileHTTP {
-		handleFileStream(c, streamDetails)
-		return
-	}
+	// if streamDetails.StreamProtocol == database.ProtocolP2P {
+	// 	handleP2PStream(c, streamDetails)
+	// 	return
+	// }
+	// if streamDetails.StreamProtocol == database.ProtocolFileHTTP {
+	// 	handleFileStream(c, streamDetails)
+	// 	return
+	// }
 	// Direct stream case, just proxy url
 	handleProxyStream(c, streamDetails)
 }
@@ -138,7 +138,7 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 }
 
 func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
-	videoURL := streamDetails.URI
+	videoURL := "https://github.com/Hound-Media-Server/hound/raw/refs/heads/hound-demo/screenshots/nocando.mp4"
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
