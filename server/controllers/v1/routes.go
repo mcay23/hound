@@ -157,7 +157,7 @@ func SetupRoutes(r *gin.Engine) {
 		Media Routes
 	*/
 	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound
-	privateRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
+	adminRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
 
 	/*
 		Testing purposes only
