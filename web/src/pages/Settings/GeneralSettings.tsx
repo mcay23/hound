@@ -23,17 +23,17 @@ export default function GeneralSettings() {
       <Button
         className="mt-3"
         onClick={() => {
-          setIsChangePasswordModalOpen(true);
+          toast.error("Can't do this in the demo");
         }}
         variant="contained"
         size="small"
       >
         Change Password
       </Button>
-      <ChangePasswordModal
+      {/* <ChangePasswordModal
         open={isChangePasswordModalOpen}
         setOpen={setIsChangePasswordModalOpen}
-      />
+      /> */}
     </div>
   );
 }

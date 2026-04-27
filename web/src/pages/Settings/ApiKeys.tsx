@@ -47,7 +47,7 @@ export default function ApiKeys() {
         variant="contained"
         size="small"
         onClick={() => {
-          setIsAddUserDialogOpen(true);
+          toast.error("Can't do this in the demo");
         }}
       >
         Add API Key
@@ -55,10 +55,10 @@ export default function ApiKeys() {
       {data?.map((apiKey: any) => (
         <ApiKeyCard key={apiKey.key_id} apiKey={apiKey} />
       ))}
-      <AddApiKeyModal
+      {/* <AddApiKeyModal
         open={isAddUserDialogOpen}
         onClose={() => setIsAddUserDialogOpen(false)}
-      />
+      /> */}
     </div>
   );
 }

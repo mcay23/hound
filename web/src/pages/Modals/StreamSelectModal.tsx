@@ -228,14 +228,7 @@ function SelectStreamModal(props: {
                             variant="light"
                             size="sm"
                             onClick={() => {
-                              axios
-                                .post("/api/v1/download/" + stream.encoded_data)
-                                .then((res) => {
-                                  toast.success("Download added to queue");
-                                })
-                                .catch((err) => {
-                                  toast.error("Download Failed! " + err);
-                                });
+                              toast.error("Can't do this in the demo");
                             }}
                           >
                             Download to Hound

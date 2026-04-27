@@ -99,24 +99,25 @@ function DownloadSeasonModal(props: any) {
       toast.error("Select at least 1 episode");
       return;
     }
-    toast.promise(
-      downloadSeasonMutation.mutateAsync({
-        mediaType: "tv",
-        mediaSource: mediaSource,
-        sourceID: sourceID,
-        seasonNum: seasonData.season_number,
-        episodesToDownload: episodesToDownload,
-        strictMatch: strictMatch,
-        skipDownloadedEpisodes: skipDownloaded,
-        providerProfileID: providerID,
-        preferenceList: preferenceList,
-      }),
-      {
-        loading: "Queueing download...",
-        success: "Downloads queued",
-        error: (err) => `Error downloading season: ${err}`,
-      },
-    );
+    toast.error("Can't do this in the demo");
+    // toast.promise(
+    //   downloadSeasonMutation.mutateAsync({
+    //     mediaType: "tv",
+    //     mediaSource: mediaSource,
+    //     sourceID: sourceID,
+    //     seasonNum: seasonData.season_number,
+    //     episodesToDownload: episodesToDownload,
+    //     strictMatch: strictMatch,
+    //     skipDownloadedEpisodes: skipDownloaded,
+    //     providerProfileID: providerID,
+    //     preferenceList: preferenceList,
+    //   }),
+    //   {
+    //     loading: "Queueing download...",
+    //     success: "Downloads queued",
+    //     error: (err) => `Error downloading season: ${err}`,
+    //   },
+    // );
     onClose();
   };
 

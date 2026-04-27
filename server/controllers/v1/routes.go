@@ -41,7 +41,7 @@ func SetupRoutes(r *gin.Engine) {
 		API Keys
 	*/
 	privateRoutes.GET("/api_keys", GetUserAPIKeysHandler)
-	privateRoutes.POST("/api_keys", CreateAPIKeyHandler)
+	//privateRoutes.POST("/api_keys", CreateAPIKeyHandler)
 	privateRoutes.DELETE("/api_keys/:id", RevokeAPIKeyHandler)
 
 	/*
@@ -125,11 +125,11 @@ func SetupRoutes(r *gin.Engine) {
 		Video Streaming, Downloads Routes
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
-	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
-	privateRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
-	privateRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
-	privateRoutes.GET("/ingest", GetIngestTasksHandler)
-	privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
+	// privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
+	// privateRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
+	// privateRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
+	// privateRoutes.GET("/ingest", GetIngestTasksHandler)
+	// privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
 
 	/*
 		Provider Profiles
@@ -157,7 +157,7 @@ func SetupRoutes(r *gin.Engine) {
 		Media Routes
 	*/
 	privateRoutes.GET("/media_files", GetMediaFilesHandler) // list all downloaded media files in hound
-	privateRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
+	adminRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
 
 	/*
 		Testing purposes only

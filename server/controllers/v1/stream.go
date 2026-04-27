@@ -214,10 +214,11 @@ func AddTorrentHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("torrent hash, file index and/or file name not provided: %w", internal.BadRequestError))
 		return
 	}
-	err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources)
-	if err != nil {
-		internal.ErrorResponse(c, err)
-		return
-	}
+	// err = model.AddTorrent(streamDetails.InfoHash, streamDetails.Sources)
+	// if err != nil {
+	// 	internal.ErrorResponse(c, err)
+	// 	return
+	// }
+	// demo, just return success
 	internal.SuccessResponse(c, nil, 200)
 }
