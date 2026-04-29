@@ -26,6 +26,13 @@ Hound is a fully-featured media server, like Jellyfin or Plex, but with the addi
 - [App Repo (Android, iOS)](https://github.com/Hound-Media-Server/hound-app) <- Download the clients here
 - [API Docs](https://hound-media-server.github.io/hound-site/operations/authentication.html)
 
+# Demo
+Access the demo [here](https://hound-demo.yuwono.xyz)
+```
+username: github
+password: password
+```
+
 # Features
 
 ### Current
