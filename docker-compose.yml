@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: hound
       POSTGRES_PASSWORD: super-strong-password
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - ./Hound Data/postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hound -d hound_db"]
       interval: 5s
@@ -28,7 +28,7 @@ services:
       - POSTGRES_PASSWORD=super-strong-password
       - HOUND_SECRET=super-strong-secret
     volumes:
-      - ./docker/Hound Data:/app/Hound Data
+      - ./Hound Data:/app/Hound Data
       # (Optional) attach your media library
       # IMPORTANT: Please read the [External Library] page before
       # doing this
