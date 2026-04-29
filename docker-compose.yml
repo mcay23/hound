@@ -30,10 +30,6 @@ services:
     volumes:
       - ./Hound Data:/app/Hound Data
       # (Optional) attach your media library
-      # IMPORTANT: Please read the [External Library] page before
-      # doing this
+      # IMPORTANT: Please read the docs before doing this
       # - /path/to/movies:/app/External Library/Movies
       # - /path/to/shows:/app/External Library/TV Shows
-
-volumes:
-  postgres_data:
