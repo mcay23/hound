@@ -230,7 +230,7 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 				break
 			}
 		}
-		// stil not found, check next season
+		// still not found, check next season
 		if nextEpisodeRecord == nil {
 			nextSeasonNumber := *targetWatchEvent.SeasonNumber + 1
 			nextSeason, err :=
