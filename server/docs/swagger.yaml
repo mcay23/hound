@@ -705,17 +705,17 @@ definitions:
     - current_progress_seconds
     - total_duration_seconds
     type: object
-  providers.ProviderObject:
+  providers.ProviderStreamObject:
     properties:
       provider:
-        description: provider name in /providers folder
+        description: should refactor to provider_profile_name and id
         type: string
       streams:
         items:
           $ref: '#/definitions/providers.StreamObject'
         type: array
     type: object
-  providers.ProviderResponseObject:
+  providers.ProviderStreamsResponseObject:
     properties:
       episode_number:
         type: integer
@@ -732,13 +732,49 @@ definitions:
         type: string
       providers:
         items:
-          $ref: '#/definitions/providers.ProviderObject'
+          $ref: '#/definitions/providers.ProviderStreamObject'
         type: array
       season_number:
         description: shows only
         type: integer
       source_id:
         type: string
+    type: object
+  providers.ProviderSubtitleObject:
+    properties:
+      provider_profile_id:
+        type: integer
+      provider_profile_name:
+        type: string
+      subtitles:
+        items:
+          $ref: '#/definitions/providers.SubtitleObject'
+        type: array
+    type: object
+  providers.ProviderSubtitlesResponseObject:
+    properties:
+      episode_number:
+        type: integer
+      episode_source_id:
+        description: tv shows only
+        type: string
+      imdb_id:
+        description: starts with 'tt'
+        type: string
+      media_source:
+        type: string
+      media_type:
+        description: movies or tvshows, etc.
+        type: string
+      season_number:
+        description: shows only
+        type: integer
+      source_id:
+        type: string
+      subtitles:
+        items:
+          $ref: '#/definitions/providers.ProviderSubtitleObject'
+        type: array
     type: object
   providers.StreamObject:
     properties:
@@ -758,7 +794,9 @@ definitions:
         type: integer
       info_hash:
         type: string
-      provider:
+      provider_profile_id:
+        type: integer
+      provider_profile_name:
         type: string
       sources:
         description: trackers for p2p
@@ -775,6 +813,19 @@ definitions:
         type: string
       video_metadata:
         $ref: '#/definitions/database.VideoMetadata'
+    type: object
+  providers.SubtitleObject:
+    properties:
+      lang:
+        type: string
+      provider_profile_id:
+        type: integer
+      provider_profile_name:
+        type: string
+      title:
+        type: string
+      uri:
+        type: string
     type: object
   v1.AddToCollectionRequest:
     properties:
@@ -2088,7 +2139,7 @@ paths:
             - $ref: '#/definitions/v1.V1SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/providers.ProviderResponseObject'
+                  $ref: '#/definitions/providers.ProviderStreamsResponseObject'
               type: object
         "400":
           description: Bad Request
@@ -2127,7 +2178,7 @@ paths:
             - $ref: '#/definitions/v1.V1SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/providers.ProviderResponseObject'
+                  $ref: '#/definitions/providers.ProviderStreamsResponseObject'
               type: object
         "400":
           description: Bad Request
@@ -2137,7 +2188,46 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Search Stream Providers for Movies
+      summary: Search Stream Providers for Movie by ID
+      tags:
+      - Providers
+  /api/v1/movie/{id}/subtitles:
+    get:
+      consumes:
+      - application/json
+      operationId: search-subtitles-movie
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Provider Profile ID
+        in: query
+        name: provider_profile_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderSubtitlesResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search Subtitles for Movies by ID
       tags:
       - Providers
   /api/v1/movie/genres:
@@ -2589,7 +2679,7 @@ paths:
             - $ref: '#/definitions/v1.V1SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/providers.ProviderResponseObject'
+                  $ref: '#/definitions/providers.ProviderStreamsResponseObject'
               type: object
         "400":
           description: Bad Request
@@ -2642,7 +2732,7 @@ paths:
             - $ref: '#/definitions/v1.V1SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/providers.ProviderResponseObject'
+                  $ref: '#/definitions/providers.ProviderStreamsResponseObject'
               type: object
         "400":
           description: Bad Request
@@ -2652,7 +2742,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Search Stream Providers for TV Shows by ID
+      summary: Search Stream Providers for TV Show by ID
       tags:
       - Providers
   /api/v1/tv/{id}/season/{seasonNumber}/download:
@@ -2699,6 +2789,59 @@ paths:
       summary: Download TV Season
       tags:
       - Download
+  /api/v1/tv/{id}/subtitles:
+    get:
+      consumes:
+      - application/json
+      operationId: search-subtitles-tvshow
+      parameters:
+      - description: Media ID
+        example: tmdb-1234
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Season Number
+        in: query
+        name: season
+        required: true
+        type: integer
+      - description: Episode Number
+        in: query
+        name: episode
+        required: true
+        type: integer
+      - description: Provider Profile ID
+        in: query
+        name: provider_profile_id
+        type: integer
+      - description: Episode Group ID
+        in: query
+        name: episode_group_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.ProviderSubtitlesResponseObject'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Search Subtitles for TV Show by ID
+      tags:
+      - Providers
   /api/v1/tv/genres:
     get:
       consumes:

@@ -1,11 +1,12 @@
 package providers
 
 import (
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/sources"
 )
 
 func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
@@ -97,13 +98,13 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		title = file.VideoMetadata.Filename
 	}
 	streamObj := &StreamObject{
-		Provider:       "Hound",
-		StreamProtocol: database.ProtocolFileHTTP,
-		URI:            file.Filepath,
-		Title:          title,
-		Description:    "Local file: " + file.Filepath,
-		FileSize:       &fileSize,
-		VideoMetadata:  nil,
+		ProviderProfileName: "Hound",
+		StreamProtocol:      database.ProtocolFileHTTP,
+		URI:                 file.Filepath,
+		Title:               title,
+		Description:         "Local file: " + file.Filepath,
+		FileSize:            &fileSize,
+		VideoMetadata:       nil,
 	}
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,

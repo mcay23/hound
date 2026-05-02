@@ -146,6 +146,8 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVHandler)
 	privateRoutes.GET("/movie/:id/media_files", GetMovieMediaFilesHandler)
 	privateRoutes.GET("/tv/:id/media_files", GetTVShowMediaFilesHandler)
+	privateRoutes.GET("/movie/:id/subtitles", SearchSubtitlesMovieHandler)
+	privateRoutes.GET("/tv/:id/subtitles", SearchSubtitlesTVHandler)
 
 	/*
 		Genres Routes

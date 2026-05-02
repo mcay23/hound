@@ -21,7 +21,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "Movie ID"
-// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetMovieMediaFilesHandler(c *gin.Context) {
@@ -35,13 +35,13 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
 	}
-	res := &providers.ProviderResponseObject{
+	res := &providers.ProviderStreamsResponseObject{
 		StreamMediaDetails: providers.StreamMediaDetails{
 			MediaType:   database.MediaTypeMovie,
 			MediaSource: sources.MediaSourceTMDB,
 			SourceID:    strconv.Itoa(sourceID),
 		},
-		Providers: []*providers.ProviderObject{
+		Providers: []*providers.ProviderStreamObject{
 			{
 				Provider: "Hound",
 				Streams:  streamObjects,
@@ -60,7 +60,7 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 // @Param id path int true "TV Show ID"
 // @Param season query int false "Season Number"
 // @Param episode query int false "Episode Number"
-// @Success 200 {object} V1SuccessResponse{data=providers.ProviderResponseObject}
+// @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetTVShowMediaFilesHandler(c *gin.Context) {
@@ -101,7 +101,7 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 			epID = &idStr
 		}
 	}
-	res := &providers.ProviderResponseObject{
+	res := &providers.ProviderStreamsResponseObject{
 		StreamMediaDetails: providers.StreamMediaDetails{
 			MediaType:       database.MediaTypeTVShow,
 			MediaSource:     sources.MediaSourceTMDB,
@@ -110,7 +110,7 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 			EpisodeNumber:   episodeNumber,
 			EpisodeSourceID: epID,
 		},
-		Providers: []*providers.ProviderObject{
+		Providers: []*providers.ProviderStreamObject{
 			{
 				Provider: "Hound",
 				Streams:  streamObjects,

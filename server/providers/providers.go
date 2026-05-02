@@ -13,18 +13,19 @@ import (
 )
 
 type ProvidersQueryRequest struct {
-	ProviderProfileID *int     `json:"provider_profile_id,omitempty"` // which provider profile to use
-	MediaSource       string   `json:"media_source"`                  // eg. tmdb
-	SourceID          string   `json:"source_id"`
-	IMDbID            string   `json:"imdb_id,omitempty"` // starts with 'tt'
-	MediaType         string   `json:"media_type"`        // movies or tvshows, etc.
-	SeasonNumber      *int     `json:"season_number,omitempty"`
-	EpisodeNumber     *int     `json:"episode_number,omitempty"`
-	EpisodeSourceID   *string  `json:"episode_source_id,omitempty"`
-	EpisodeGroupID    string   `json:"episode_group_id,omitempty"`
-	RequestType       string   `json:"request_type"`           // stream vs. downloaded, used to decide which provider profile to use if not supplied
-	Query             string   `json:"search_query,omitempty"` // not used for now
-	Params            []string `json:"params"`
+	ProviderProfileID   *int     `json:"provider_profile_id,omitempty"` // which provider profile to use
+	ProviderProfileName *string  `json:"provider_profile_name,omitempty"`
+	MediaSource         string   `json:"media_source"` // eg. tmdb
+	SourceID            string   `json:"source_id"`
+	IMDbID              string   `json:"imdb_id,omitempty"` // starts with 'tt'
+	MediaType           string   `json:"media_type"`        // movies or tvshows, etc.
+	SeasonNumber        *int     `json:"season_number,omitempty"`
+	EpisodeNumber       *int     `json:"episode_number,omitempty"`
+	EpisodeSourceID     *string  `json:"episode_source_id,omitempty"`
+	EpisodeGroupID      string   `json:"episode_group_id,omitempty"`
+	RequestType         string   `json:"request_type"`           // stream vs. downloaded, used to decide which provider profile to use if not supplied
+	Query               string   `json:"search_query,omitempty"` // not used for now
+	Params              []string `json:"params"`
 }
 
 // to encode into JWT string
@@ -46,28 +47,48 @@ type StreamMediaDetails struct {
 }
 
 type StreamObject struct {
-	Provider       string                  `json:"provider"`
-	StreamProtocol string                  `json:"stream_protocol"` // http or p2p
-	URI            string                  `json:"uri"`             // magnet link, http link, or file path
-	InfoHash       string                  `json:"info_hash"`
-	Title          string                  `json:"title"`
-	Description    string                  `json:"description"`
-	Filename       *string                 `json:"file_name,omitempty"` // might not be reliable
-	FileIdx        *int                    `json:"file_idx,omitempty"`  // file index for p2p type
-	FileSize       *int                    `json:"file_size,omitempty"` // file size in bytes
-	Sources        *[]string               `json:"sources,omitempty"`   // trackers for p2p
-	EncodedData    string                  `json:"encoded_data"`        // data encoded in AES for playing streams in hound
-	VideoMetadata  *database.VideoMetadata `json:"video_metadata,omitempty"`
+	ProviderProfileName string                  `json:"provider_profile_name"`
+	ProviderProfileID   int                     `json:"provider_profile_id"`
+	StreamProtocol      string                  `json:"stream_protocol"` // http or p2p
+	URI                 string                  `json:"uri"`             // magnet link, http link, or file path
+	InfoHash            string                  `json:"info_hash"`
+	Title               string                  `json:"title"`
+	Description         string                  `json:"description"`
+	Filename            *string                 `json:"file_name,omitempty"` // might not be reliable
+	FileIdx             *int                    `json:"file_idx,omitempty"`  // file index for p2p type
+	FileSize            *int                    `json:"file_size,omitempty"` // file size in bytes
+	Sources             *[]string               `json:"sources,omitempty"`   // trackers for p2p
+	EncodedData         string                  `json:"encoded_data"`        // data encoded in AES for playing streams in hound
+	VideoMetadata       *database.VideoMetadata `json:"video_metadata,omitempty"`
 }
 
-type ProviderObject struct {
-	Provider string          `json:"provider"` // provider name in /providers folder
+type SubtitleObject struct {
+	ProviderProfileName string `json:"provider_profile_name"`
+	ProviderProfileID   int    `json:"provider_profile_id"`
+	URI                 string `json:"uri"`
+	Language            string `json:"lang"`
+	Title               string `json:"title"`
+}
+
+type ProviderStreamObject struct {
+	Provider string          `json:"provider"` // should refactor to provider_profile_name and id
 	Streams  []*StreamObject `json:"streams"`
 }
 
-type ProviderResponseObject struct {
+type ProviderStreamsResponseObject struct {
 	StreamMediaDetails
-	Providers []*ProviderObject `json:"providers"`
+	Providers []*ProviderStreamObject `json:"providers"`
+}
+
+type ProviderSubtitleObject struct {
+	ProviderProfileName string           `json:"provider_profile_name"`
+	ProviderProfileID   int              `json:"provider_profile_id"`
+	Subtitles           []SubtitleObject `json:"subtitles"`
+}
+
+type ProviderSubtitlesResponseObject struct {
+	StreamMediaDetails
+	Providers []ProviderSubtitleObject `json:"subtitles"`
 }
 
 const (
@@ -77,7 +98,7 @@ const (
 
 const providersCacheTTL = time.Hour * 2
 
-func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error) {
+func QueryProvidersStreams(query ProvidersQueryRequest) (*ProviderStreamsResponseObject, error) {
 	// automatically select provider if none supplied
 	// using the given requestType based on provider defaults
 	if query.ProviderProfileID == nil {
@@ -93,10 +114,12 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		}
 		for _, p := range providers {
 			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
+				query.ProviderProfileName = &p.Name
 				temp := int(p.ProviderProfileID)
 				query.ProviderProfileID = &temp
 				break
 			} else if p.IsDefaultStreaming && query.RequestType == ProviderRequestStream {
+				query.ProviderProfileName = &p.Name
 				temp := int(p.ProviderProfileID)
 				query.ProviderProfileID = &temp
 				break
@@ -107,12 +130,15 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 				query.RequestType, internal.NotFoundError)
 		}
 	}
-	providersCacheKey := fmt.Sprintf("providers|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
+	providersCacheKey := fmt.Sprintf("providers|streams|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {
+		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
+			return nil, fmt.Errorf("query %s invalid season/episode number: %w", query.MediaType, internal.BadRequestError)
+		}
 		providersCacheKey += fmt.Sprintf("|S%d|E%d|episode_group_id:%s", *query.SeasonNumber, *query.EpisodeNumber, query.EpisodeGroupID)
 	}
 	// get cache
-	var cacheObject ProviderResponseObject
+	var cacheObject ProviderStreamsResponseObject
 	cacheExists, _ := database.GetCache(providersCacheKey, &cacheObject)
 	if cacheExists {
 		return &cacheObject, nil
@@ -126,74 +152,32 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		EpisodeNumber:   query.EpisodeNumber,
 		EpisodeSourceID: query.EpisodeSourceID,
 	}
-	// for TV shows,
-	// check if the season starts with episode 1
-	// some shows in tmdb don't start in episode 1
-	// eg. Season 1 has 20 episodes, Season 2 starts at ep. 21
-	// Sometimes happens for Japanese anime
-	// This is an indication that we might want to use TVDB episode numbers
+	// attempt to get the tvdb season/episode ordering
 	if query.MediaType == database.MediaTypeTVShow {
-		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
-			return nil, fmt.Errorf("invalid season/episode number for %s %s-%s", query.MediaType, query.MediaSource, query.SourceID)
-		}
-		showID, err := strconv.Atoi(query.SourceID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid source id for %s %s-%s", query.MediaType, query.MediaSource, query.SourceID)
-		}
-		seasonDetails, err := sources.GetTVSeasonTMDB(showID, *query.SeasonNumber)
+		newSeason, newEpisode, newEpSourceID, newEpGroupID, err := getNormalizedSeasonEpisodes(
+			query.SeasonNumber,
+			query.EpisodeNumber,
+			query.MediaSource,
+			query.SourceID,
+			query.EpisodeGroupID,
+			query.EpisodeSourceID,
+		)
 		if err != nil {
 			return nil, err
 		}
-		// check if episode group mapping is available
-		// this is a manually curated list
-		manualGroupID, _ := GetEpisodeGroupMapping(query.MediaSource, query.SourceID)
-		// if episode doesn't start with 1, check if media has tvdb ordering available
-		if seasonDetails.Episodes[0].EpisodeNumber != 1 || query.EpisodeGroupID != "" || manualGroupID != "" {
-			oldEp := *query.EpisodeNumber
-			firstEp := seasonDetails.Episodes[0].EpisodeNumber
-			if query.EpisodeSourceID == nil {
-				// find episodeID
-				epItem, err := sources.GetEpisodeTMDB(showID,
-					*query.SeasonNumber, *query.EpisodeNumber)
-				if err != nil {
-					return nil, err
-				}
-				epStr := strconv.Itoa(int(epItem.ID))
-				query.EpisodeSourceID = &epStr
-				streamMediaDetails.EpisodeSourceID = &epStr
-			}
-			episodeID, err := strconv.Atoi(*query.EpisodeSourceID)
-			if err != nil {
-				return nil, err
-			}
-			// no episodeGroupID, use manualGroupID if available
-			if query.EpisodeGroupID == "" {
-				query.EpisodeGroupID = manualGroupID
-			}
-			// if empty string is passed, automatically searches for tvdb ordering
-			// at this point, groupID not supplied so we attempt to search for tvdb ordering
-			tvdbSeasonNumber, tvdbEpisodeNumber, err :=
-				getSeasonEpisodeFromEpisodeGroup(showID, episodeID, query.EpisodeGroupID)
-			if err == nil {
-				query.SeasonNumber = &tvdbSeasonNumber
-				query.EpisodeNumber = &tvdbEpisodeNumber
-			} else {
-				// search unsuccessful, normalize episode numbers so they start from 1 anyway
-				// we do this since this is more likely to align to tvdb standards (unconfirmed?),
-				// which many providers use
-				normalizedEp := oldEp - firstEp + 1
-				query.EpisodeNumber = &normalizedEp
-			}
-		}
+		query.SeasonNumber = newSeason
+		query.EpisodeNumber = newEpisode
+		query.EpisodeSourceID = newEpSourceID
+		query.EpisodeGroupID = newEpGroupID
+		streamMediaDetails.EpisodeSourceID = newEpSourceID
 	}
 	stremioStreams, err := getStremioStreams(query, streamMediaDetails)
 	if err != nil {
 		return nil, err
 	}
-	allProviders := []*ProviderObject{}
+	allProviders := []*ProviderStreamObject{}
 	allProviders = append(allProviders, stremioStreams)
-
-	result := ProviderResponseObject{
+	result := ProviderStreamsResponseObject{
 		StreamMediaDetails: streamMediaDetails,
 		Providers:          allProviders,
 	}
@@ -213,6 +197,165 @@ func QueryProviders(query ProvidersQueryRequest) (*ProviderResponseObject, error
 		}
 	}
 	return &result, nil
+}
+
+func QueryProvidersSubtitles(query ProvidersQueryRequest) (*ProviderSubtitlesResponseObject, error) {
+	// automatically select first provider if none supplied
+	if query.ProviderProfileID == nil {
+		providers, err := database.GetProviderProfiles()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get providers: %w", err)
+		}
+		if len(providers) == 0 {
+			return nil, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
+		}
+		temp := int(providers[0].ProviderProfileID)
+		query.ProviderProfileID = &temp
+	}
+	providersCacheKey := fmt.Sprintf("providers|subtitles|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
+	if query.MediaType == database.MediaTypeTVShow {
+		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
+			return nil, fmt.Errorf("query %s invalid season/episode number: %w", query.MediaType, internal.BadRequestError)
+		}
+		providersCacheKey += fmt.Sprintf("|S%d|E%d|episode_group_id:%s", *query.SeasonNumber, *query.EpisodeNumber, query.EpisodeGroupID)
+	}
+	// get cache
+	var cacheObject ProviderSubtitlesResponseObject
+	cacheExists, _ := database.GetCache(providersCacheKey, &cacheObject)
+	if cacheExists {
+		return &cacheObject, nil
+	}
+	streamMediaDetails := StreamMediaDetails{
+		MediaType:       query.MediaType,
+		MediaSource:     query.MediaSource,
+		SourceID:        query.SourceID,
+		IMDbID:          query.IMDbID,
+		SeasonNumber:    query.SeasonNumber,
+		EpisodeNumber:   query.EpisodeNumber,
+		EpisodeSourceID: query.EpisodeSourceID,
+	}
+	// attempt to get the tvdb season/episode ordering
+	if query.MediaType == database.MediaTypeTVShow {
+		newSeason, newEpisode, newEpSourceID, newEpGroupID, err := getNormalizedSeasonEpisodes(
+			query.SeasonNumber,
+			query.EpisodeNumber,
+			query.MediaSource,
+			query.SourceID,
+			query.EpisodeGroupID,
+			query.EpisodeSourceID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		query.SeasonNumber = newSeason
+		query.EpisodeNumber = newEpisode
+		query.EpisodeSourceID = newEpSourceID
+		query.EpisodeGroupID = newEpGroupID
+		streamMediaDetails.EpisodeSourceID = newEpSourceID
+	}
+	stremioSubs, err := getStremioSubtitles(query)
+	if err != nil {
+		return nil, err
+	}
+	var allProviders []ProviderSubtitleObject
+	if stremioSubs != nil {
+		allProviders = append(allProviders, *stremioSubs)
+	}
+	result := ProviderSubtitlesResponseObject{
+		StreamMediaDetails: streamMediaDetails,
+		Providers:          allProviders,
+	}
+	// only set cache if we have results
+	hasResults := false
+	for _, p := range allProviders {
+		if len(p.Subtitles) > 0 {
+			hasResults = true
+			break
+		}
+	}
+	if hasResults {
+		_, err = database.SetCache(providersCacheKey, result, providersCacheTTL)
+		if err != nil {
+			// just log error, no failed return
+			slog.Debug("Failed to set cache for provider subtitles", "cacheKey", providersCacheKey, "error", err)
+		}
+	}
+	return &result, nil
+}
+
+// For TV shows,
+// check if the season starts with episode 1
+// some shows in tmdb don't start in episode 1
+// eg. Season 1 has 20 episodes, Season 2 starts at ep. 21
+// Sometimes happens for Japanese anime
+// This is an indication that we might want to use TVDB episode numbers
+func getNormalizedSeasonEpisodes(
+	seasonNumber *int,
+	episodeNumber *int,
+	mediaSource string,
+	sourceID string,
+	episodeGroupID string,
+	episodeSourceID *string,
+) (*int, *int, *string, string, error) {
+	newSeason := seasonNumber
+	newEpisode := episodeNumber
+	newEpSourceID := episodeSourceID
+	newEpGroupID := episodeGroupID
+
+	if seasonNumber == nil || episodeNumber == nil {
+		return nil, nil, nil, "", fmt.Errorf("invalid season/episode number for %s %s-%s", database.MediaTypeTVShow, mediaSource, sourceID)
+	}
+	showID, err := strconv.Atoi(sourceID)
+	if err != nil {
+		return nil, nil, nil, "", fmt.Errorf("invalid source id for %s %s-%s", database.MediaTypeTVShow, mediaSource, sourceID)
+	}
+	seasonDetails, err := sources.GetTVSeasonTMDB(showID, *seasonNumber)
+	if err != nil {
+		return nil, nil, nil, "", err
+	}
+	// check if episode group mapping is available
+	// this is a manually curated list
+	manualGroupID, _ := GetEpisodeGroupMapping(mediaSource, sourceID)
+	// if episode doesn't start with 1, check if media has tvdb ordering available
+	// Otherwise, if no none of these conditions are true, we assume tmdb and tvdb has the same season/episode
+	// ordering, so we return. The code below involves db and network calls, so we want to minimize false positives
+	if seasonDetails.Episodes[0].EpisodeNumber != 1 || episodeGroupID != "" || manualGroupID != "" {
+		oldEp := *episodeNumber
+		firstEp := seasonDetails.Episodes[0].EpisodeNumber
+		if newEpSourceID == nil {
+			// find episodeID
+			epItem, err := sources.GetEpisodeTMDB(showID,
+				*seasonNumber, *episodeNumber)
+			if err != nil {
+				return nil, nil, nil, "", err
+			}
+			epStr := strconv.Itoa(int(epItem.ID))
+			newEpSourceID = &epStr
+		}
+		episodeID, err := strconv.Atoi(*newEpSourceID)
+		if err != nil {
+			return nil, nil, nil, "", err
+		}
+		// no episodeGroupID, use manualGroupID (could be empty as well)
+		if newEpGroupID == "" {
+			newEpGroupID = manualGroupID
+		}
+		// if both episodeGroupID and manualGroupID is empty,
+		// this function will automatically search for tvdb ordering
+		tvdbSeasonNumber, tvdbEpisodeNumber, err :=
+			getSeasonEpisodeFromEpisodeGroup(showID, episodeID, newEpGroupID)
+		if err == nil {
+			newSeason = &tvdbSeasonNumber
+			newEpisode = &tvdbEpisodeNumber
+		} else {
+			// search unsuccessful, normalize episode numbers so they start from 1 anyway
+			// we do this since this is more likely to align to tvdb standards (unconfirmed?),
+			// which many providers use
+			normalizedEp := oldEp - firstEp + 1
+			newEpisode = &normalizedEp
+		}
+	}
+	return newSeason, newEpisode, newEpSourceID, newEpGroupID, nil
 }
 
 /*

@@ -1160,7 +1160,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                            "$ref": "#/definitions/providers.ProviderStreamsResponseObject"
                                         }
                                     }
                                 }
@@ -1193,7 +1193,7 @@
                 "tags": [
                     "Providers"
                 ],
-                "summary": "Search Stream Providers for Movies",
+                "summary": "Search Stream Providers for Movie by ID",
                 "operationId": "search-providers-movie",
                 "parameters": [
                     {
@@ -1223,7 +1223,70 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                            "$ref": "#/definitions/providers.ProviderStreamsResponseObject"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movie/{id}/subtitles": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Providers"
+                ],
+                "summary": "Search Subtitles for Movies by ID",
+                "operationId": "search-subtitles-movie",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderSubtitlesResponseObject"
                                         }
                                     }
                                 }
@@ -1972,7 +2035,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                            "$ref": "#/definitions/providers.ProviderStreamsResponseObject"
                                         }
                                     }
                                 }
@@ -2005,7 +2068,7 @@
                 "tags": [
                     "Providers"
                 ],
-                "summary": "Search Stream Providers for TV Shows by ID",
+                "summary": "Search Stream Providers for TV Show by ID",
                 "operationId": "search-providers-tvshow",
                 "parameters": [
                     {
@@ -2055,7 +2118,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/providers.ProviderResponseObject"
+                                            "$ref": "#/definitions/providers.ProviderStreamsResponseObject"
                                         }
                                     }
                                 }
@@ -2127,6 +2190,89 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/v1.TVSeasonDownloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tv/{id}/subtitles": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Providers"
+                ],
+                "summary": "Search Subtitles for TV Show by ID",
+                "operationId": "search-subtitles-tvshow",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "tmdb-1234",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Season Number",
+                        "name": "season",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Episode Number",
+                        "name": "episode",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Provider Profile ID",
+                        "name": "provider_profile_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Episode Group ID",
+                        "name": "episode_group_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/providers.ProviderSubtitlesResponseObject"
                                         }
                                     }
                                 }
@@ -5165,11 +5311,11 @@
                 }
             }
         },
-        "providers.ProviderObject": {
+        "providers.ProviderStreamObject": {
             "type": "object",
             "properties": {
                 "provider": {
-                    "description": "provider name in /providers folder",
+                    "description": "should refactor to provider_profile_name and id",
                     "type": "string"
                 },
                 "streams": {
@@ -5180,7 +5326,7 @@
                 }
             }
         },
-        "providers.ProviderResponseObject": {
+        "providers.ProviderStreamsResponseObject": {
             "type": "object",
             "properties": {
                 "episode_number": {
@@ -5204,7 +5350,7 @@
                 "providers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/providers.ProviderObject"
+                        "$ref": "#/definitions/providers.ProviderStreamObject"
                     }
                 },
                 "season_number": {
@@ -5213,6 +5359,59 @@
                 },
                 "source_id": {
                     "type": "string"
+                }
+            }
+        },
+        "providers.ProviderSubtitleObject": {
+            "type": "object",
+            "properties": {
+                "provider_profile_id": {
+                    "type": "integer"
+                },
+                "provider_profile_name": {
+                    "type": "string"
+                },
+                "subtitles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/providers.SubtitleObject"
+                    }
+                }
+            }
+        },
+        "providers.ProviderSubtitlesResponseObject": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "type": "integer"
+                },
+                "episode_source_id": {
+                    "description": "tv shows only",
+                    "type": "string"
+                },
+                "imdb_id": {
+                    "description": "starts with 'tt'",
+                    "type": "string"
+                },
+                "media_source": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "description": "movies or tvshows, etc.",
+                    "type": "string"
+                },
+                "season_number": {
+                    "description": "shows only",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "type": "string"
+                },
+                "subtitles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/providers.ProviderSubtitleObject"
+                    }
                 }
             }
         },
@@ -5241,7 +5440,10 @@
                 "info_hash": {
                     "type": "string"
                 },
-                "provider": {
+                "provider_profile_id": {
+                    "type": "integer"
+                },
+                "provider_profile_name": {
                     "type": "string"
                 },
                 "sources": {
@@ -5264,6 +5466,26 @@
                 },
                 "video_metadata": {
                     "$ref": "#/definitions/database.VideoMetadata"
+                }
+            }
+        },
+        "providers.SubtitleObject": {
+            "type": "object",
+            "properties": {
+                "lang": {
+                    "type": "string"
+                },
+                "provider_profile_id": {
+                    "type": "integer"
+                },
+                "provider_profile_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "uri": {
+                    "type": "string"
                 }
             }
         },
