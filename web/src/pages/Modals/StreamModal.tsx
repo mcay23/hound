@@ -7,11 +7,24 @@ import { SERVER_URL } from "./../../config/axios_config";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useSubtitles } from "../../api/hooks/providers";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { data: subtitleData } = useSubtitles(
+    streams?.media_type === "tvshow" ? "tv" : "movie",
+    streams?.media_source,
+    streams?.source_id,
+    streams?.season_number,
+    streams?.episode_number,
+    open && !!streams
+  );
+
+  const subtitles =
+    subtitleData?.subtitles?.flatMap((p: any) => p.subtitles || []) || [];
   const handleClose = () => {
     setLoading(false);
     setOpen(false);
@@ -119,6 +132,7 @@ function StreamModal(props: any) {
         options={videoJsOptions}
         onVideoProgress={handleVideoProgress}
         setLoading={setLoading}
+        subtitles={subtitles}
       />
     </Dialog>
   );

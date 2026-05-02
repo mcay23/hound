@@ -69,6 +69,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 		if err != nil {
 			continue
 		}
+		// TODO os.Stat() is really slow on network mounted drives if the file doesn't exist
 		for _, file := range mediaFiles {
 			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
 				slog.Debug("File not found", "filepath", file.Filepath)

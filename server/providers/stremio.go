@@ -224,10 +224,16 @@ func getStremioSubtitles(query ProvidersQueryRequest) (*ProviderSubtitleObject, 
 			slog.Debug("invalid subtitle url, skipping", "subtitle", sub)
 			continue
 		}
+		encodedURI, err := EncodeURIAES(sub.URL)
+		if err != nil {
+			slog.Debug("error encoding subtitle url, skipping", "subtitle", sub, "error", err)
+			continue
+		}
 		validSubs = append(validSubs, SubtitleObject{
 			ProviderProfileID:   int(provider.ProviderProfileID),
 			ProviderProfileName: provider.Name,
 			URI:                 sub.URL,
+			EncodedData:         encodedURI,
 			Language:            sub.Lang,
 			Title:               sub.Lang + " | " + provider.Name,
 		})

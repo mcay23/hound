@@ -2,12 +2,14 @@ import React, { useRef, useEffect } from "react";
 import videojs from "video.js";
 import Player from "video.js/dist/types/player";
 import "video.js/dist/video-js.css";
+import { SERVER_URL } from "./../../config/axios_config";
 
 // 1. Define the props interface for type safety
 interface IVideoPlayerProps {
   options: any;
   onVideoProgress?: (current: number, total: number) => void;
   setLoading?: (loading: boolean) => void;
+  subtitles?: any[];
 }
 
 const initialOptions: any = {
@@ -30,6 +32,7 @@ function VideoPlayer({
   options,
   onVideoProgress,
   setLoading,
+  subtitles,
 }: IVideoPlayerProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Player | null>(null);
@@ -70,7 +73,6 @@ function VideoPlayer({
           lastReportTime = currentTime;
         }
       };
-
       player.on("timeupdate", handleTimeUpdate);
     }
     return () => {
@@ -81,6 +83,38 @@ function VideoPlayer({
       }
     };
   }, [options, onVideoProgress]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    if (player && subtitles) {
+      player.ready(function () {
+        // Remove existing remote text tracks to avoid duplicates
+        const remoteTracks = player.remoteTextTracks();
+        if (remoteTracks) {
+          const tracksArray = Array.prototype.slice.call(remoteTracks);
+          tracksArray.forEach((track) => {
+            player.removeRemoteTextTrack(track);
+          });
+        }
+        subtitles.forEach((sub) => {
+          const url =
+            SERVER_URL +
+            "/api/v1/subtitle/" +
+            sub.encoded_data +
+            "?convert=vtt";
+          player.addRemoteTextTrack(
+            {
+              src: url,
+              kind: "subtitles",
+              srclang: sub.lang,
+              label: sub.title,
+            },
+            false,
+          );
+        });
+      });
+    }
+  }, [subtitles]);
 
   return <div ref={videoRef} style={{ width: "100%", height: "100%" }} />;
 }

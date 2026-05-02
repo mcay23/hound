@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -26,7 +28,7 @@ Proxies links through the server
 // @Description A streamable link for a video defined by the encodedString
 // @Tags Stream
 // @Accept json
-// @Produce json
+// @Produce plain
 // @Param encodedString path string true "Encoded Stream Details"
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
@@ -151,16 +153,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
 		req.Header.Set("Range", rangeHeader)
 	}
-	// mock browser
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
-	req.Header.Set("Sec-Fetch-Site", "none")
-	req.Header.Set("Sec-Fetch-User", "?1")
+	setMockBrowserHeaders(req)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -185,6 +178,82 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 		internal.ErrorResponse(c, fmt.Errorf("io copy error: %w", err))
 		return
 	}
+}
+
+/*
+Stream subtitle files through the server
+Converts .srt to .vtt if requested
+*/
+// @Router /api/v1/subtitle/{encodedString} [get]
+// @Summary Get Subtitle File
+// @ID get-subtitle-file
+// @Description A link for a subtitle file defined by the encodedString
+// @Tags Stream
+// @Accept json
+// @Produce plain
+// @Param encodedString path string true "Encoded Subtitle String"
+// @Param convert query string false "Convert to VTT"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func SubtitleHandler(c *gin.Context) {
+	uri, err := providers.DecodeURIAES(c.Param("encodedString"))
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to decode aes stream with encodedString %s: %w", c.Param("encodedString"), err))
+		return
+	}
+	// web videoJS only handles .vtt, convert for web
+	convertVTT := false
+	if c.Query("convert") == "vtt" {
+		convertVTT = true
+	}
+	valid := internal.IsValidURL(uri)
+	if !valid {
+		internal.ErrorResponse(c, fmt.Errorf("invalid URI: %s: %w", uri, internal.BadRequestError))
+		return
+	}
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", uri, nil)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
+		return
+	}
+	setMockBrowserHeaders(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("http error fetching url: %w", err))
+		return
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("io read error: %w", err))
+		return
+	}
+	content := string(body)
+	// SRT to VTT conversion if needed
+	// skip .ass/.ssa files
+	if convertVTT && !strings.HasSuffix(content, "[Script Info]") {
+		if strings.HasSuffix(strings.ToLower(uri), ".srt") || !strings.Contains(content, "WEBVTT") {
+			re := regexp.MustCompile(`(?m)(.*\n)?(\d\d:\d\d:\d\d),(\d\d\d --> \d\d:\d\d:\d\d),(\d\d\d)`)
+			content = "WEBVTT\n\n" + re.ReplaceAllString(content, "$1$2.$3.$4")
+		}
+	}
+	c.Header("Content-Type", "text/vtt")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.String(http.StatusOK, content)
+}
+
+func setMockBrowserHeaders(req *http.Request) {
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-User", "?1")
 }
 
 // @Router /api/v1/torrent/{encodedString} [post]

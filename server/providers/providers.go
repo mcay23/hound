@@ -66,6 +66,7 @@ type SubtitleObject struct {
 	ProviderProfileName string `json:"provider_profile_name"`
 	ProviderProfileID   int    `json:"provider_profile_id"`
 	URI                 string `json:"uri"`
+	EncodedData         string `json:"encoded_data"`
 	Language            string `json:"lang"`
 	Title               string `json:"title"`
 }
