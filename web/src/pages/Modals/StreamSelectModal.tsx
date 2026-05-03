@@ -216,9 +216,11 @@ function SelectStreamModal(props: {
                     <div className="stream-info-card-subtitle">
                       {stream.description}
                     </div>
-                    <div className="stream-info-card-subtitle mb-2">
-                      info hash: {stream.info_hash}
-                    </div>
+                    {stream?.info_hash && (
+                      <div className="stream-info-card-subtitle mb-2">
+                        info hash: {stream.info_hash}
+                      </div>
+                    )}
                     <Chip label={stream.provider_profile_name} size="small" />
                     {modalType === "select-stream" ? (
                       <div className="stream-info-card-footer mt-2">
