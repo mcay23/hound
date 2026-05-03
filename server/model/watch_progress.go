@@ -159,7 +159,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	watchProgress.MediaSource = mediaSource
 	watchProgress.SourceID = sourceID
 	watchProgress.LastWatchedAt = time.Now().Unix()
-	// dyamically fill episodeID
+	// dynamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {
 		if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
 			return fmt.Errorf("invalid param: season/episode number is nil: %w", internal.BadRequestError)
