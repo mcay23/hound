@@ -199,7 +199,27 @@ Converts .srt to .vtt if requested
 func SubtitleHandler(c *gin.Context) {
 	uri, err := providers.DecodeURIAES(c.Param("encodedString"))
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to decode aes stream with encodedString %s: %w", c.Param("encodedString"), err))
+		slog.Error("failed to decode aes stream", "encodedString", c.Param("encodedString"), "error", err)
+		handleFallbackSubtitle(c, "", "invalid", false)
+		return
+	}
+	valid := internal.IsValidURL(uri)
+	if !valid {
+		slog.Error("invalid subtitle URI", "uri", uri)
+		handleFallbackSubtitle(c, uri, "invalid", false)
+		return
+	}
+	// check if current service is blocked for this
+	// soft lock, if there's an error grabbing we don't want to block forever
+	blocked, err := providers.IsServiceBlocked(uri)
+	if err == nil && blocked {
+		handleFallbackSubtitle(c, uri, "remote", false)
+		return
+	}
+	// this is considered a failure state, since AIOStreams sometimes returns
+	// this url when there is an issue in the upstream provider
+	if strings.Contains(uri, "https://github.com/Viren070/AIOStreams") {
+		handleFallbackSubtitle(c, uri, "remote", false)
 		return
 	}
 	// web videoJS only handles .vtt, convert for web
@@ -207,27 +227,32 @@ func SubtitleHandler(c *gin.Context) {
 	if c.Query("convert") == "vtt" {
 		convertVTT = true
 	}
-	valid := internal.IsValidURL(uri)
-	if !valid {
-		internal.ErrorResponse(c, fmt.Errorf("invalid URI: %s: %w", uri, internal.BadRequestError))
-		return
-	}
 	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", uri, nil)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
+		slog.Error("error creating subtitle request", "uri", uri, "error", err)
+		handleFallbackSubtitle(c, uri, "invalid", false)
 		return
 	}
 	setMockBrowserHeaders(req)
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("http error fetching url: %w", err))
+		slog.Error("http error fetching subtitle", "uri", uri, "error", err)
+		handleFallbackSubtitle(c, uri, "remote", true)
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("error fetching subtitle, status not OK", "uri", uri, "status", resp.StatusCode)
+		handleFallbackSubtitle(c, uri, "remote", true)
+		return
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("io read error: %w", err))
+		slog.Error("io read error reading subtitle", "uri", uri, "error", err)
+		handleFallbackSubtitle(c, uri, "remote", true)
 		return
 	}
 	content := string(body)
@@ -239,9 +264,37 @@ func SubtitleHandler(c *gin.Context) {
 			content = "WEBVTT\n\n" + re.ReplaceAllString(content, "$1$2.$3.$4")
 		}
 	}
+	providers.ClearServiceFailures(uri)
 	c.Header("Content-Type", "text/vtt")
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.String(http.StatusOK, content)
+}
+
+/*
+Handles remote fetch failures and invalid requests with fallback subtitles.
+Currently, some players don't handle not being able to grab subtitles well,
+and will block playback until all subtitles have been fetched or timeout.
+If there are 5+ subtitles, this can block playback for a while.
+Ideally, clients would handle subtitle fetching failures better, but this
+should be fine for now.
+*/
+func handleFallbackSubtitle(c *gin.Context, url string, fallbackType string, incrementFailure bool) {
+	slog.Error("Failed to fetch subtitle", "url", url, "type", fallbackType, "incrementFailure", incrementFailure)
+	var fallbackSubtitle string
+	switch fallbackType {
+	case "remote":
+		fallbackSubtitle = "WEBVTT\n\n00:00:00.000 --> 03:00:00.000\nFailed to fetch remote subtitles, you may be rate-limited or the service is down"
+	case "invalid":
+		fallbackSubtitle = "WEBVTT\n\n00:00:00.000 --> 03:00:00.000\nHound: invalid subtitle requested"
+	default:
+		fallbackSubtitle = "WEBVTT\n\n00:00:00.000 --> 03:00:00.000\nFailed to fetch remote subtitles, you may be rate-limited or the service is down"
+	}
+	if incrementFailure {
+		providers.IncrementServiceFailure(url)
+	}
+	c.Header("Content-Type", "text/vtt")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.String(http.StatusOK, fallbackSubtitle)
 }
 
 func setMockBrowserHeaders(req *http.Request) {
