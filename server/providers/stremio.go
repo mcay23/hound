@@ -55,8 +55,8 @@ type StremioSubtitlesResponse struct {
 }
 
 func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) (*ProviderStreamObject, error) {
-	if query.ProviderProfileID == nil || query.ProviderProfileName == nil {
-		return nil, fmt.Errorf("nil provider profile id or name: %w", internal.BadRequestError)
+	if query.ProviderProfileID == nil {
+		return nil, fmt.Errorf("nil provider profile id: %w", internal.BadRequestError)
 	}
 	url := ""
 	provider, err := database.GetProviderProfile(*query.ProviderProfileID)
@@ -94,7 +94,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 	}
 	var streamResponse []*StreamObject
 	for _, stream := range stremioResp.Streams {
-		obj, err := stream.toStreamObject(details, *query.ProviderProfileName, *query.ProviderProfileID)
+		obj, err := stream.toStreamObject(details, provider.Name, int(provider.ProviderProfileID))
 		// if unexpected response in an object, skip instead of blocking
 		if err != nil {
 			slog.Debug("convert stremio stream to generic stream object",
@@ -104,7 +104,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 		streamResponse = append(streamResponse, obj)
 	}
 	providerObject := &ProviderStreamObject{
-		Provider: *query.ProviderProfileName,
+		Provider: provider.Name,
 		Streams:  streamResponse,
 	}
 	return providerObject, nil

@@ -66,8 +66,6 @@ function SelectStreamModal(props: {
     }
   }, [providerProfiles]);
 
-  const providerProfileId = providerID;
-
   useEffect(() => {
     if (!open) return;
     if (
@@ -77,11 +75,12 @@ function SelectStreamModal(props: {
     ) {
       return;
     }
+    console.log("q id" + providerID);
     setStreamData(null);
     if (fetchParams && modalType === "select-stream") {
       fetchUnifiedStreams({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           setStreamData(data?.streams ?? []);
@@ -93,7 +92,7 @@ function SelectStreamModal(props: {
     } else if (fetchParams && modalType === "download-season") {
       fetchProviders({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           const allStreams =

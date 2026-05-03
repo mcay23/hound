@@ -363,7 +363,7 @@ function MediaPageTV(props: any) {
                   sx={{
                     color: "#fff",
                     fontSize: "14px",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     fontFamily: '"Cabin", sans-serif',
                   }}
                 />
