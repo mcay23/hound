@@ -12,13 +12,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func DecodeTestHandler(c *gin.Context) {
-	str := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjoie1wibWVkaWFfc291cmNlXCI6XCJ0bWRiXCIsXCJzb3VyY2VfaWRcIjozNzIwNTgsXCJtZWRpYV90eXBlXCI6XCJtb3ZpZVwiLFwiaW1kYl9pZFwiOlwidHQ1MzExNTE0XCIsXCJzZWFzb25cIjowLFwiZXBpc29kZVwiOjAsXCJhZGRvblwiOlwiVG9ycmVudGlvXCIsXCJjYWNoZWRcIjpcInRydWVcIixcInNlcnZpY2VcIjpcIlJEXCIsXCJwMnBcIjpcImRlYnJpZFwiLFwiaW5mb2hhc2hcIjpcIjcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTVcIixcImluZGV4ZXJcIjpcIlRvcnJlbnRHYWxheHlcIixcImZpbGVfbmFtZVwiOlwiWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImZvbGRlcl9uYW1lXCI6XCJJTURCIFRvcCAyNTAgLSAyMDI0IEVkaXRpb24gLSAxMDgwcCBCbHVSYXkgZVN1YnMgalpRXCIsXCJyZXNvbHV0aW9uXCI6XCIxMDgwcFwiLFwiZmlsZV9pZHhcIjotMSxcImZpbGVfc2l6ZVwiOjIxNzk2OTU5MDMsXCJyYW5rXCI6MTExNTAsXCJzZWVkZXJzXCI6NTI4LFwibGVlY2hlcnNcIjotMSxcInVybFwiOlwiaHR0cHM6Ly90b3JyZW50aW8uc3RyZW0uZnVuL3Jlc29sdmUvcmVhbGRlYnJpZC80RkhDTlBJVEhNQ1VDUkVHRDNETkNMNDVNNUpPV1RHQ0pMVkJGR1JFNEVBNEtYM1hNVVRRLzcxZmVlMjkzZGMxMTdjNDg0ODcwMjljNmRjYjUwMzhkOTc0YTAyOTUvbnVsbC82NTkvWW91ci5OYW1lLjIwMTYuSkFQQU5FU0UuMTA4MHAuQmx1UmF5LkgyNjQuQUFDLVZYVC5tcDRcIixcImVuY29kZWRfZGF0YVwiOlwiXCIsXCJkYXRhXCI6e1wiY29kZWNcIjpcImF2Y1wiLFwiYXVkaW9cIjpbXCJBQUNcIl0sXCJjaGFubmVsc1wiOltdLFwiY29udGFpbmVyXCI6XCJtcDRcIixcImxhbmd1YWdlc1wiOltcImphXCJdLFwiYml0X2RlcHRoXCI6XCJcIixcImhkclwiOltdfX0ifQ.RqCPlPNTk2BRPto2vqPHvI8nHgItOW4kNR-lKfRyXg0"
+// @Router /api/v1/decode [get]
+// @Summary Decode Stream AES Encoded String
+// @ID decode-stream
+// @Tags Providers
+// @Accept json
+// @Produce json
+// @Param encoded_data query string true "Encoded String"
+// @Success 200 {object} V1SuccessResponse{data=providers.StreamObjectFull}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func DecodeStreamHandler(c *gin.Context) {
+	str := c.Query("encoded_data")
+	if str == "" {
+		internal.ErrorResponse(c, fmt.Errorf("missing encoded_data query parameter: %w", internal.BadRequestError))
+		return
+	}
 	obj, err := providers.DecodeJsonStreamAES(str)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to decode json stream aes: %w: %w", internal.BadRequestError, err))
 		return
 	}
+	obj.URI = "<hidden>"
 	internal.SuccessResponse(c, obj, 200)
 }
 
@@ -36,6 +51,7 @@ func ClearCacheHandler(c *gin.Context) {
 // @Param id path string true "Media ID" example(tmdb-1234)
 // @Param season query int true "Season Number"
 // @Param episode query int true "Episode Number"
+// @Param request_type query string false "request_stream or request_download"
 // @Param provider_profile_id query int false "Provider Profile ID"
 // @Param episode_group_id query string false "Episode Group ID"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
@@ -71,6 +87,7 @@ func SearchProvidersTVHandler(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Media ID" example(tmdb-1234)
+// @Param request_type query string false "request_stream or request_download"
 // @Param provider_profile_id query int false "Provider Profile ID"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
 // @Failure 400 {object} V1ErrorResponse

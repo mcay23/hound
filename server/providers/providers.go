@@ -201,8 +201,11 @@ func QueryProvidersStreams(query ProvidersQueryRequest) (*ProviderStreamsRespons
 }
 
 func QueryProvidersSubtitles(query ProvidersQueryRequest) (*ProviderSubtitlesResponseObject, error) {
-	// automatically select first provider if none supplied
+	// automatically select provider if none supplied
 	if query.ProviderProfileID == nil {
+		if query.RequestType == "" {
+			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", internal.BadRequestError)
+		}
 		providers, err := database.GetProviderProfiles()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
@@ -210,8 +213,23 @@ func QueryProvidersSubtitles(query ProvidersQueryRequest) (*ProviderSubtitlesRes
 		if len(providers) == 0 {
 			return nil, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
 		}
-		temp := int(providers[0].ProviderProfileID)
-		query.ProviderProfileID = &temp
+		for _, p := range providers {
+			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
+				query.ProviderProfileName = &p.Name
+				temp := int(p.ProviderProfileID)
+				query.ProviderProfileID = &temp
+				break
+			} else if p.IsDefaultStreaming && query.RequestType == ProviderRequestStream {
+				query.ProviderProfileName = &p.Name
+				temp := int(p.ProviderProfileID)
+				query.ProviderProfileID = &temp
+				break
+			}
+		}
+		if query.ProviderProfileID == nil {
+			return nil, fmt.Errorf("no provider profile found for request type (should not happen, create issue on github): %s: %w",
+				query.RequestType, internal.NotFoundError)
+		}
 	}
 	providersCacheKey := fmt.Sprintf("providers|subtitles|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {

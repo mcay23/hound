@@ -163,10 +163,14 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
 
 	/*
+		Misc.
+	*/
+	privateRoutes.GET("/decode", DecodeStreamHandler) // get decoded stream details
+
+	/*
 		Testing purposes only
 	*/
 	if config.AppEnvironment != "production" {
-		privateRoutes.GET("/decode", DecodeTestHandler)
 		privateRoutes.GET("/clearcache", ClearCacheHandler)
 		privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
 		privateRoutes.GET("/media_files/metadata", GetMetadataHandler)
