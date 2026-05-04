@@ -814,8 +814,66 @@ definitions:
       video_metadata:
         $ref: '#/definitions/database.VideoMetadata'
     type: object
+  providers.StreamObjectFull:
+    properties:
+      description:
+        type: string
+      encoded_data:
+        description: data encoded in AES for playing streams in hound
+        type: string
+      episode_number:
+        type: integer
+      episode_source_id:
+        description: tv shows only
+        type: string
+      file_idx:
+        description: file index for p2p type
+        type: integer
+      file_name:
+        description: might not be reliable
+        type: string
+      file_size:
+        description: file size in bytes
+        type: integer
+      imdb_id:
+        description: starts with 'tt'
+        type: string
+      info_hash:
+        type: string
+      media_source:
+        type: string
+      media_type:
+        description: movies or tvshows, etc.
+        type: string
+      provider_profile_id:
+        type: integer
+      provider_profile_name:
+        type: string
+      season_number:
+        description: shows only
+        type: integer
+      source_id:
+        type: string
+      sources:
+        description: trackers for p2p
+        items:
+          type: string
+        type: array
+      stream_protocol:
+        description: http or p2p
+        type: string
+      title:
+        type: string
+      uri:
+        description: magnet link, http link, or file path
+        type: string
+      video_metadata:
+        $ref: '#/definitions/database.VideoMetadata'
+    type: object
   providers.SubtitleObject:
     properties:
+      encoded_data:
+        type: string
       lang:
         type: string
       provider_profile_id:
@@ -1822,6 +1880,40 @@ paths:
       summary: Get Continue Watching
       tags:
       - Watch Activity
+  /api/v1/decode:
+    get:
+      consumes:
+      - application/json
+      operationId: decode-stream
+      parameters:
+      - description: Encoded String
+        in: query
+        name: encoded_data
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/providers.StreamObjectFull'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Decode Stream AES Encoded String
+      tags:
+      - Providers
   /api/v1/download/{encodedString}:
     post:
       consumes:
@@ -2164,6 +2256,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: request_stream or request_download
+        in: query
+        name: request_type
+        type: string
       - description: Provider Profile ID
         in: query
         name: provider_profile_id
@@ -2475,7 +2571,7 @@ paths:
         required: true
         type: string
       produces:
-      - application/json
+      - text/plain
       responses:
         "200":
           description: OK
@@ -2495,6 +2591,45 @@ paths:
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
       summary: Stream Video
+      tags:
+      - Stream
+  /api/v1/subtitle/{encodedString}:
+    get:
+      consumes:
+      - application/json
+      description: A link for a subtitle file defined by the encodedString
+      operationId: get-subtitle-file
+      parameters:
+      - description: Encoded Subtitle String
+        in: path
+        name: encodedString
+        required: true
+        type: string
+      - description: Convert to VTT
+        in: query
+        name: convert
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Subtitle File
       tags:
       - Stream
   /api/v1/torrent/{encodedString}:
@@ -2714,6 +2849,10 @@ paths:
         name: episode
         required: true
         type: integer
+      - description: request_stream or request_download
+        in: query
+        name: request_type
+        type: string
       - description: Provider Profile ID
         in: query
         name: provider_profile_id
