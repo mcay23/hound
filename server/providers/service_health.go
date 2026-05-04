@@ -14,8 +14,8 @@ const (
 	serviceFailureCacheKey = "service|%s|fail"
 	serviceBlockCacheKey   = "service|%s|block"
 	serviceFailThreshold   = 3
-	serviceFailWindow      = 5 * time.Minute  // note that each failure resets the window to this value, but a success clears the failures
-	serviceBlockDuration   = 10 * time.Minute // how long to block the service for after threshold is met
+	serviceFailWindow      = 5 * time.Minute // note that each failure resets the window to this value, but a success clears the failures
+	serviceBlockDuration   = 5 * time.Minute // how long to block the service for after threshold is met
 )
 
 /*
@@ -83,7 +83,9 @@ func IsServiceBlocked(rawURL string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	slog.Info("service access currently blocked due to multiple failures", "provider", provider, "blocked", blocked)
+	if blocked {
+		slog.Info("service access currently blocked due to multiple failures", "provider", provider, "blocked", blocked)
+	}
 	return blocked, nil
 }
 

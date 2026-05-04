@@ -231,7 +231,7 @@ func QueryProvidersSubtitles(query ProvidersQueryRequest) (*ProviderSubtitlesRes
 				query.RequestType, internal.NotFoundError)
 		}
 	}
-	providersCacheKey := fmt.Sprintf("providers|subtitles|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
+	providersCacheKey := fmt.Sprintf("providers|subtitles|provider_profile_id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {
 		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
 			return nil, fmt.Errorf("query %s invalid season/episode number: %w", query.MediaType, internal.BadRequestError)

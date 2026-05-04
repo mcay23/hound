@@ -417,6 +417,8 @@ function EpisodeCard(
             episode.episode_number,
             "direct",
             episode.source_id,
+            watchProgress?.current_progress_seconds,
+            watchProgress?.encoded_data,
           );
         }}
       >
@@ -498,6 +500,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "direct",
                   episode.source_id,
+                  watchProgress?.current_progress_seconds,
+                  watchProgress?.encoded_data,
                 );
               }}
             >
@@ -523,6 +527,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "select",
                   episode.source_id,
+                  watchProgress?.current_progress_seconds,
+                  watchProgress?.encoded_data,
                 );
               }}
             >
