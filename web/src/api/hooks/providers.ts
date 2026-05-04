@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { fetchProviders } from "../services/providers";
+import { fetchProviders, fetchSubtitles } from "../services/providers";
 import { fetchMediaFiles } from "../services/media";
 
 export const useProviders = (
@@ -75,5 +75,21 @@ export const useUnifiedStreamsMutation = () => {
         streams: allStreams,
       };
     },
+  });
+};
+
+export const useSubtitles = (
+  mediaType: string,
+  mediaSource: string,
+  sourceId: string,
+  season?: number,
+  episode?: number,
+  enabled: boolean = true
+) => {
+  return useQuery({
+    queryKey: ["subtitles", mediaType, mediaSource, sourceId, season, episode],
+    queryFn: () =>
+      fetchSubtitles(mediaType, mediaSource, sourceId, season, episode),
+    enabled,
   });
 };

@@ -66,8 +66,6 @@ function SelectStreamModal(props: {
     }
   }, [providerProfiles]);
 
-  const providerProfileId = providerID;
-
   useEffect(() => {
     if (!open) return;
     if (
@@ -77,11 +75,12 @@ function SelectStreamModal(props: {
     ) {
       return;
     }
+    console.log("q id" + providerID);
     setStreamData(null);
     if (fetchParams && modalType === "select-stream") {
       fetchUnifiedStreams({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           setStreamData(data?.streams ?? []);
@@ -93,7 +92,7 @@ function SelectStreamModal(props: {
     } else if (fetchParams && modalType === "download-season") {
       fetchProviders({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           const allStreams =
@@ -216,13 +215,15 @@ function SelectStreamModal(props: {
                     <div className="stream-info-card-subtitle">
                       {stream.description}
                     </div>
-                    <div className="stream-info-card-subtitle mb-2">
-                      info hash: {stream.info_hash}
-                    </div>
-                    <Chip label={stream.provider} size="small" />
+                    {stream?.info_hash && (
+                      <div className="stream-info-card-subtitle mb-2">
+                        info hash: {stream.info_hash}
+                      </div>
+                    )}
+                    <Chip label={stream.provider_profile_name} size="small" />
                     {modalType === "select-stream" ? (
                       <div className="stream-info-card-footer mt-2">
-                        {stream.provider !== "Hound" && (
+                        {stream.provider_profile_name !== "Hound" && (
                           <Button
                             className="stream-info-card-footer-buttons me-2"
                             variant="light"

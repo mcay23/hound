@@ -44,5 +44,4 @@ func main() {
 	// workers should run after db, since some row cleanups are done during startup
 	workers.InitializeWorkers()
 	controllers.SetupRoutes()
-
 }

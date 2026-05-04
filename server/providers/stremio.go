@@ -12,8 +12,12 @@ import (
 )
 
 const MANIFEST_PATH = "/manifest.json"
-const TV_STREAMS_PATH = "/stream/series/%s:%d:%d.json"
-const MOVIE_STREAMS_PATH = "/stream/movie/%s.json"
+const TV_SERIES_PATH = "/series/%s:%d:%d.json"
+const MOVIES_PATH = "/movie/%s.json"
+const TV_STREAMS_PATH = "/stream" + TV_SERIES_PATH
+const MOVIE_STREAMS_PATH = "/stream" + MOVIES_PATH
+const TV_SUBTITLES_PATH = "/subtitles" + TV_SERIES_PATH
+const MOVIE_SUBTITLES_PATH = "/subtitles" + MOVIES_PATH
 
 type StremioStreamBehaviorHints struct {
 	BingeGroup *string `json:"bingeGroup,omitempty"`
@@ -40,8 +44,20 @@ type StremioStreamResponse struct {
 	Streams []StremioStreamObject `json:"streams,omitempty"`
 }
 
-func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) (*ProviderObject, error) {
-	providerName := "AIOStreams"
+type StremioSubtitleObject struct {
+	ID   string `json:"id"`
+	Lang string `json:"lang"`
+	URL  string `json:"url"`
+}
+
+type StremioSubtitlesResponse struct {
+	Subtitles []StremioSubtitleObject `json:"subtitles,omitempty"`
+}
+
+func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) (*ProviderStreamObject, error) {
+	if query.ProviderProfileID == nil {
+		return nil, fmt.Errorf("nil provider profile id: %w", internal.BadRequestError)
+	}
 	url := ""
 	provider, err := database.GetProviderProfile(*query.ProviderProfileID)
 	if err != nil {
@@ -78,7 +94,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 	}
 	var streamResponse []*StreamObject
 	for _, stream := range stremioResp.Streams {
-		obj, err := stream.toStreamObject(details, providerName)
+		obj, err := stream.toStreamObject(details, provider.Name, int(provider.ProviderProfileID))
 		// if unexpected response in an object, skip instead of blocking
 		if err != nil {
 			slog.Debug("convert stremio stream to generic stream object",
@@ -87,8 +103,8 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 		}
 		streamResponse = append(streamResponse, obj)
 	}
-	providerObject := &ProviderObject{
-		Provider: providerName,
+	providerObject := &ProviderStreamObject{
+		Provider: provider.Name,
 		Streams:  streamResponse,
 	}
 	return providerObject, nil
@@ -96,7 +112,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 
 // convert stremio results to a generic stream object
 func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDetails,
-	providerName string) (*StreamObject, error) {
+	providerName string, providerID int) (*StreamObject, error) {
 	if stremioStream == nil {
 		return nil, fmt.Errorf("nil stremio stream: %w", internal.BadRequestError)
 	}
@@ -137,18 +153,22 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	} else if stremioStream.Title != nil {
 		description = *stremioStream.Title
 	}
+	// next, we encode the full stream object, including metadata such as movie/show, season, episode,
+	// and stream details such as source uri and which provider profile it's from.
+	// this encoded data is used in the final stream link
 	streamObject := &StreamObject{
-		Provider:       providerName,
-		StreamProtocol: streamProtocol,
-		URI:            uri,
-		Title:          title,
-		Description:    description,
-		InfoHash:       infoHash,
-		Filename:       stremioStream.BehaviorHints.Filename,
-		FileIdx:        stremioStream.FileIdx,
-		FileSize:       stremioStream.BehaviorHints.VideoSize,
-		Sources:        stremioStream.Sources,
-		VideoMetadata:  nil,
+		ProviderProfileName: providerName,
+		ProviderProfileID:   providerID,
+		StreamProtocol:      streamProtocol,
+		URI:                 uri,
+		Title:               title,
+		Description:         description,
+		InfoHash:            infoHash,
+		Filename:            stremioStream.BehaviorHints.Filename,
+		FileIdx:             stremioStream.FileIdx,
+		FileSize:            stremioStream.BehaviorHints.VideoSize,
+		Sources:             stremioStream.Sources,
+		VideoMetadata:       nil,
 	}
 	// create encoding from full object
 	streamObjectFull := StreamObjectFull{
@@ -161,4 +181,66 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	}
 	streamObject.EncodedData = encodedData
 	return streamObject, nil
+}
+
+func getStremioSubtitles(query ProvidersQueryRequest) (*ProviderSubtitleObject, error) {
+	url := ""
+	provider, err := database.GetProviderProfile(*query.ProviderProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider profile: %w", err)
+	}
+	url += provider.ManifestURL
+	switch query.MediaType {
+	case database.MediaTypeMovie:
+		url += fmt.Sprintf(MOVIE_SUBTITLES_PATH, query.IMDbID)
+	case database.MediaTypeTVShow:
+		if query.SeasonNumber == nil || query.EpisodeNumber == nil {
+			return nil, fmt.Errorf("query %s invalid season/episode number", query.MediaType)
+		}
+		url += fmt.Sprintf(TV_SUBTITLES_PATH, query.IMDbID, *query.SeasonNumber, *query.EpisodeNumber)
+	default:
+		return nil, fmt.Errorf("query %s invalid media type", query.MediaType)
+	}
+	client := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("query %s-%s non-200 response received from stremio plugin status %s: %w",
+			query.MediaSource, query.SourceID, resp.Status, internal.GatewayTimeoutError)
+	}
+	var stremioResp StremioSubtitlesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&stremioResp); err != nil {
+		return nil, fmt.Errorf("query %s-%s error decoding stremio plugin response: %w",
+			query.MediaSource, query.SourceID, err)
+	}
+	var validSubs []SubtitleObject
+	for _, sub := range stremioResp.Subtitles {
+		if !internal.IsValidURL(sub.URL) {
+			slog.Debug("invalid subtitle url, skipping", "subtitle", sub)
+			continue
+		}
+		encodedURI, err := EncodeURIAES(sub.URL)
+		if err != nil {
+			slog.Debug("error encoding subtitle url, skipping", "subtitle", sub, "error", err)
+			continue
+		}
+		validSubs = append(validSubs, SubtitleObject{
+			ProviderProfileID:   int(provider.ProviderProfileID),
+			ProviderProfileName: provider.Name,
+			URI:                 sub.URL,
+			EncodedData:         encodedURI,
+			Language:            sub.Lang,
+			Title:               sub.Lang + " | " + provider.Name,
+		})
+	}
+	return &ProviderSubtitleObject{
+		ProviderProfileID:   int(provider.ProviderProfileID),
+		ProviderProfileName: provider.Name,
+		Subtitles:           validSubs,
+	}, nil
 }

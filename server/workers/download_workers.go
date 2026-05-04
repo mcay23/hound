@@ -617,7 +617,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 	if record.RecordType == database.RecordTypeEpisode {
 		query.MediaType = database.MediaTypeTVShow
 	}
-	response, err := providers.QueryProviders(query)
+	response, err := providers.QueryProvidersStreams(query)
 	if err != nil {
 		return err
 	}

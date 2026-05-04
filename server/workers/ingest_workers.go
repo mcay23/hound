@@ -43,12 +43,21 @@ func processIngestTask(workerID int, task *database.IngestTask) {
 	loggers.IngestLogger().Info("Worker picked up ingest task", "workerID", workerID, "taskID", task.IngestTaskID)
 	var infoHashStr string
 	var infoHash *string
-	// p2p case, for external ingests we don't know the source
-	if task.DownloadProtocol == database.ProtocolP2P && task.SourceURI != nil {
-		uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
-		if err == nil {
-			infoHashStr = uri.InfoHash.HexString()
-			infoHash = &infoHashStr
+	// For external ingests we don't know the source, skip loading infohash
+	if task.SourceURI != nil {
+		switch task.DownloadProtocol {
+		case database.ProtocolP2P:
+			uri, err := metainfo.ParseMagnetUri(*task.SourceURI)
+			if err == nil {
+				infoHashStr = uri.InfoHash.HexString()
+				infoHash = &infoHashStr
+			}
+		case database.ProtocolProxyHTTP:
+			tempInfoHash, ok := internal.ExtractInfoHashFromURL(*task.SourceURI)
+			if ok {
+				infoHashStr = tempInfoHash
+				infoHash = &infoHashStr
+			}
 		}
 	}
 	// Fetch mediaRecord

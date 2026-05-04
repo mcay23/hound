@@ -1,11 +1,12 @@
 package providers
 
 import (
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/sources"
 )
 
 func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
@@ -68,6 +69,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 		if err != nil {
 			continue
 		}
+		// TODO os.Stat() is really slow on network mounted drives if the file doesn't exist
 		for _, file := range mediaFiles {
 			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
 				slog.Debug("File not found", "filepath", file.Filepath)
@@ -97,13 +99,13 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		title = file.VideoMetadata.Filename
 	}
 	streamObj := &StreamObject{
-		Provider:       "Hound",
-		StreamProtocol: database.ProtocolFileHTTP,
-		URI:            file.Filepath,
-		Title:          title,
-		Description:    "Local file: " + file.Filepath,
-		FileSize:       &fileSize,
-		VideoMetadata:  nil,
+		ProviderProfileName: "Hound",
+		StreamProtocol:      database.ProtocolFileHTTP,
+		URI:                 file.Filepath,
+		Title:               title,
+		Description:         "Local file: " + file.Filepath,
+		FileSize:            &fileSize,
+		VideoMetadata:       nil,
 	}
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,

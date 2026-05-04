@@ -29,13 +29,44 @@ exposed if hound link is shared
 For our purposes, we want a stable hash, so we use a fixed salt and nonce
 */
 func EncodeJsonStreamAES(streamObject StreamObjectFull) (string, error) {
-	key, err := getAESKey([]byte(fixedSalt))
-	if err != nil {
-		return "", fmt.Errorf("error getting AES key: %w", err)
-	}
 	bytes, err := json.Marshal(streamObject)
 	if err != nil {
 		return "", fmt.Errorf("error marshaling stream object: %w", err)
+	}
+	return encrypt(bytes)
+}
+
+/*
+Decode a string back into StreamObjectFull data
+*/
+func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
+	bytes, err := decrypt(encryptedText)
+	if err != nil {
+		return nil, err
+	}
+	var streamObject StreamObjectFull
+	if err := json.Unmarshal(bytes, &streamObject); err != nil {
+		return nil, fmt.Errorf("error unmarshaling stream object: %w", err)
+	}
+	return &streamObject, nil
+}
+
+func EncodeURIAES(uri string) (string, error) {
+	return encrypt([]byte(uri))
+}
+
+func DecodeURIAES(encryptedText string) (string, error) {
+	bytes, err := decrypt(encryptedText)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+func encrypt(plaintext []byte) (string, error) {
+	key, err := getAESKey([]byte(fixedSalt))
+	if err != nil {
+		return "", fmt.Errorf("error getting AES key: %w", err)
 	}
 	block, err := aes.NewCipher(*key)
 	if err != nil {
@@ -45,16 +76,13 @@ func EncodeJsonStreamAES(streamObject StreamObjectFull) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating GCM: %w", err)
 	}
-	ciphertext := gcm.Seal([]byte(fixedNonce), []byte(fixedNonce), bytes, nil)
+	ciphertext := gcm.Seal([]byte(fixedNonce), []byte(fixedNonce), plaintext, nil)
 	final := append([]byte(fixedSalt), ciphertext...)
 
 	return base64.URLEncoding.EncodeToString(final), nil
 }
 
-/*
-Decode a string back into StreamObjectFull data
-*/
-func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
+func decrypt(encryptedText string) ([]byte, error) {
 	fullCiphertext, err := base64.URLEncoding.DecodeString(encryptedText)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding base64: %w", err)
@@ -87,9 +115,5 @@ func DecodeJsonStreamAES(encryptedText string) (*StreamObjectFull, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening GCM: %w", err)
 	}
-	var streamObject StreamObjectFull
-	if err := json.Unmarshal(bytes, &streamObject); err != nil {
-		return nil, fmt.Errorf("error unmarshaling stream object: %w", err)
-	}
-	return &streamObject, nil
+	return bytes, nil
 }
