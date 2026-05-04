@@ -8,9 +8,9 @@ RUN npm run build
 
 # Stage 2: Build Server
 FROM golang:1.26.1-alpine AS server-builder
-ARG VERSION=production
-ARG COMMIT
-ARG BUILD_TIME
+ARG VERSION=development
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
 RUN apk add --no-cache git
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
