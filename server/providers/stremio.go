@@ -92,7 +92,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 		return nil, fmt.Errorf("query %s-%s error decoding stremio plugin response: %w",
 			query.MediaSource, query.SourceID, err)
 	}
-	var streamResponse []*StreamObject
+	streamResponse := []*StreamObject{}
 	for _, stream := range stremioResp.Streams {
 		obj, err := stream.toStreamObject(details, provider.Name, int(provider.ProviderProfileID))
 		// if unexpected response in an object, skip instead of blocking
@@ -218,7 +218,7 @@ func getStremioSubtitles(query ProvidersQueryRequest) (*ProviderSubtitleObject, 
 		return nil, fmt.Errorf("query %s-%s error decoding stremio plugin response: %w",
 			query.MediaSource, query.SourceID, err)
 	}
-	var validSubs []SubtitleObject
+	validSubs := []SubtitleObject{}
 	for _, sub := range stremioResp.Subtitles {
 		if !internal.IsValidURL(sub.URL) {
 			slog.Debug("invalid subtitle url, skipping", "subtitle", sub)
