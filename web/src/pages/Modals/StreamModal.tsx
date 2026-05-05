@@ -1,18 +1,27 @@
-import { Dialog, IconButton } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
 import "./StreamModal.css";
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, InfoOutlined } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { SERVER_URL } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useSubtitles } from "../../api/hooks/providers";
+import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
 
   const { data: subtitleData } = useSubtitles(
     streams?.media_type === "tvshow" ? "tv" : "movie",
@@ -20,12 +29,11 @@ function StreamModal(props: any) {
     streams?.source_id,
     streams?.season_number,
     streams?.episode_number,
-    open && !!streams
+    open && !!streams,
   );
-
+  const { data: decodedData } = useDecodeStream(streamDetails?.encoded_data);
   const subtitles = useMemo(
-    () =>
-      subtitleData?.subtitles?.flatMap((p: any) => p.subtitles || []) || [],
+    () => subtitleData?.subtitles?.flatMap((p: any) => p.subtitles || []) || [],
     [subtitleData],
   );
   const handleClose = () => {
@@ -63,17 +71,20 @@ function StreamModal(props: any) {
     }
   }, [streamDetails, streams, open, startTime]);
 
-  const videoJsOptions = useMemo(() => ({
-    autoplay: true,
-    muted: false,
-    startTime: startTime,
-    sources: [
-      {
-        src: videoURL,
-        type: "video/mp4",
-      },
-    ],
-  }), [videoURL, startTime]);
+  const videoJsOptions = useMemo(
+    () => ({
+      autoplay: true,
+      muted: false,
+      startTime: startTime,
+      sources: [
+        {
+          src: videoURL,
+          type: "video/mp4",
+        },
+      ],
+    }),
+    [videoURL, startTime],
+  );
 
   const handleVideoProgress = useCallback(
     (current: number, total: number) => {
@@ -134,12 +145,61 @@ function StreamModal(props: any) {
       >
         <ArrowBack />
       </IconButton>
+      <IconButton
+        onClick={() => setInfoModalOpen(true)}
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          color: "white",
+          zIndex: 10,
+        }}
+      >
+        <InfoOutlined />
+      </IconButton>
       <VideoPlayer
         options={videoJsOptions}
         onVideoProgress={handleVideoProgress}
         setLoading={setLoading}
         subtitles={subtitles}
       />
+      <InfoModal
+        open={infoModalOpen}
+        setOpen={setInfoModalOpen}
+        decodedData={decodedData}
+      />
+    </Dialog>
+  );
+}
+
+function InfoModal({
+  open,
+  setOpen,
+  decodedData,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  decodedData: any;
+}) {
+  const handleClose = () => {
+    setOpen(false);
+  };
+  return (
+    <Dialog onClose={handleClose} open={open}>
+      <DialogTitle>Stream Info</DialogTitle>
+      <DialogContent>
+        <hr />
+        <DialogContentText>
+          <h4> {decodedData?.title}</h4>
+          {decodedData?.description}
+          <br />
+          <hr />
+          {decodedData?.provider_profile_name &&
+            "Provider Profile: " + decodedData?.provider_profile_name}
+          <br />
+          Protocol: {decodedData?.stream_protocol}
+        </DialogContentText>
+      </DialogContent>
     </Dialog>
   );
 }

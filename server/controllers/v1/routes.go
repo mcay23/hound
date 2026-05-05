@@ -165,7 +165,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Misc.
 	*/
-	privateRoutes.GET("/decode", DecodeStreamHandler) // get decoded stream details
+	privateRoutes.POST("/decode", DecodeStreamHandler) // get decoded stream details
 
 	/*
 		Testing purposes only

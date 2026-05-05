@@ -32,3 +32,10 @@ export const fetchSubtitles = async (
   );
   return data;
 };
+
+export const decodeStream = async (encodedData: string) => {
+  const { data } = await axios.post(`/api/v1/decode`, {
+    encoded_data: encodedData,
+  });
+  return data;
+};

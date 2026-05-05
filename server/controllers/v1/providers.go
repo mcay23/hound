@@ -12,23 +12,32 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type DecodeStreamRequest struct {
+	EncodedData string `json:"encoded_data" binding:"required"`
+}
+
 // @Router /api/v1/decode [get]
-// @Summary Decode Stream AES Encoded String
+// @Summary Decode Stream AES from Encoded Data
+// @Description Use this to decode the stream object if you have the encoded data. Returns the same output as the providers endpoint for a stream
 // @ID decode-stream
 // @Tags Providers
 // @Accept json
 // @Produce json
-// @Param encoded_data query string true "Encoded String"
+// @Param request body DecodeStreamRequest true "Encoded Data"
 // @Success 200 {object} V1SuccessResponse{data=providers.StreamObjectFull}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func DecodeStreamHandler(c *gin.Context) {
-	str := c.Query("encoded_data")
-	if str == "" {
-		internal.ErrorResponse(c, fmt.Errorf("missing encoded_data query parameter: %w", internal.BadRequestError))
+	var req DecodeStreamRequest
+	if err := c.BindJSON(&req); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind json: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	obj, err := providers.DecodeJsonStreamAES(str)
+	if req.EncodedData == "" {
+		internal.ErrorResponse(c, fmt.Errorf("missing encoded_data: %w", internal.BadRequestError))
+		return
+	}
+	obj, err := providers.DecodeJsonStreamAES(req.EncodedData)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to decode json stream aes: %w: %w", internal.BadRequestError, err))
 		return
