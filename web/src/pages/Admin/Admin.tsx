@@ -57,6 +57,18 @@ export default function Admin(props: any) {
               <Card variant="outlined">
                 <div className="p-3">
                   <p>Version: {serverInfo?.version}</p>
+                  {serverInfo?.latest_version && (
+                    <p>
+                      Latest Version:{" "}
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/Hound-Media-Server/hound/releases"
+                      >
+                        {serverInfo?.latest_version}
+                      </a>
+                    </p>
+                  )}
                   <p>Server ID: {serverInfo?.server_id}</p>
                 </div>
               </Card>
