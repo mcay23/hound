@@ -29,7 +29,7 @@ func FetchRemoteVersionInfo() (*RemoteVersionInfo, error) {
 	}
 	// cache miss
 	client := &http.Client{
-		Timeout: time.Second * 10,
+		Timeout: time.Second * 30,
 	}
 	resp, err := client.Get(githubVersionCheckURL)
 	if err != nil {
