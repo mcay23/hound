@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { fetchProviders, fetchSubtitles } from "../services/providers";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { decodeStream, fetchProviders, fetchSubtitles } from "../services/providers";
 import { fetchMediaFiles } from "../services/media";
 
 export const useProviders = (
@@ -91,5 +91,14 @@ export const useSubtitles = (
     queryFn: () =>
       fetchSubtitles(mediaType, mediaSource, sourceId, season, episode),
     enabled,
+  });
+};
+
+export const useDecodeStream = (
+  encodedData: string
+) => {
+  return useQuery({
+    queryKey: ["decode-stream", encodedData],
+    queryFn: () => decodeStream(encodedData)
   });
 };

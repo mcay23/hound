@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -89,7 +90,8 @@ func GetMediaBackdrops(c *gin.Context) {
 }
 
 type ServerInfoResponse struct {
-	ServerID string `json:"server_id"`
+	ServerID      string `json:"server_id"`
+	LatestVersion string `json:"latest_version"`
 	internal.BuildInfo
 }
 
@@ -108,9 +110,21 @@ func GetServerInfoHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get server ID: %w", err))
 		return
 	}
+	latestVersion := ""
+	remoteVersionInfo, err := model.FetchRemoteVersionInfo()
+	if err != nil {
+		slog.Error("failed to get remote version info: %w", err)
+	} else {
+		latestVersion = remoteVersionInfo.LatestServerVersion
+	}
+	buildInfo := internal.GetBuildInfo()
+	if buildInfo.Version == "development" {
+		latestVersion = buildInfo.Version
+	}
 	response := ServerInfoResponse{
-		ServerID:  serverID,
-		BuildInfo: internal.GetBuildInfo(),
+		ServerID:      serverID,
+		LatestVersion: latestVersion,
+		BuildInfo:     buildInfo,
 	}
 	internal.SuccessResponse(c, response, 200)
 }

@@ -975,6 +975,13 @@ definitions:
       name:
         type: string
     type: object
+  v1.DecodeStreamRequest:
+    properties:
+      encoded_data:
+        type: string
+    required:
+    - encoded_data
+    type: object
   v1.DeletePlaybackProgressPayload:
     properties:
       episode_number:
@@ -1884,13 +1891,16 @@ paths:
     get:
       consumes:
       - application/json
+      description: Use this to decode the stream object if you have the encoded data.
+        Returns the same output as the providers endpoint for a stream
       operationId: decode-stream
       parameters:
-      - description: Encoded String
-        in: query
-        name: encoded_data
+      - description: Encoded Data
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/v1.DecodeStreamRequest'
       produces:
       - application/json
       responses:
@@ -1911,7 +1921,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.V1ErrorResponse'
-      summary: Decode Stream AES Encoded String
+      summary: Decode Stream AES from Encoded Data
       tags:
       - Providers
   /api/v1/download/{encodedString}:

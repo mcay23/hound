@@ -51,8 +51,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	// public, can also be used as health check
-	publicRoutes.GET("/server_info", GetServerInfoHandler)
+	privateRoutes.GET("/server_info", GetServerInfoHandler)
 
 	/*
 		Catalog Routes
@@ -165,7 +164,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Misc.
 	*/
-	privateRoutes.GET("/decode", DecodeStreamHandler) // get decoded stream details
+	privateRoutes.POST("/decode", DecodeStreamHandler) // get decoded stream details
 
 	/*
 		Testing purposes only

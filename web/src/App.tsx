@@ -98,10 +98,10 @@ function App() {
           duration: 5000,
         }}
       />
-      {!!isAuthenticated && <Topnav />}
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
+            {!!isAuthenticated && <Topnav />}
             <Routes>
               <Route
                 path="/"

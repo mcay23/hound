@@ -594,6 +594,7 @@
         },
         "/api/v1/decode": {
             "get": {
+                "description": "Use this to decode the stream object if you have the encoded data. Returns the same output as the providers endpoint for a stream",
                 "consumes": [
                     "application/json"
                 ],
@@ -603,15 +604,17 @@
                 "tags": [
                     "Providers"
                 ],
-                "summary": "Decode Stream AES Encoded String",
+                "summary": "Decode Stream AES from Encoded Data",
                 "operationId": "decode-stream",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Encoded String",
-                        "name": "encoded_data",
-                        "in": "query",
-                        "required": true
+                        "description": "Encoded Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DecodeStreamRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -5832,6 +5835,17 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.DecodeStreamRequest": {
+            "type": "object",
+            "required": [
+                "encoded_data"
+            ],
+            "properties": {
+                "encoded_data": {
                     "type": "string"
                 }
             }
