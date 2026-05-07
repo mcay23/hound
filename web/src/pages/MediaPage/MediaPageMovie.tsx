@@ -130,7 +130,7 @@ function MediaPageMovie(props: any) {
       return item.genre;
     })
     .join(", ");
-  var runtime = "";
+  var duration = "";
   var creators = "";
   var isComingSoon = false;
   if (props.data.release_date) {
@@ -141,15 +141,15 @@ function MediaPageMovie(props: any) {
     const lf = new Intl.ListFormat("en");
     creators = lf.format(props.data.creators.map((item: any) => item.name));
   } catch {}
-  if (props.data.runtime > 0) {
-    if (props.data.runtime >= 60) {
-      runtime =
-        Math.floor(props.data.runtime / 60) +
+  if (props.data.duration > 0) {
+    if (props.data.duration >= 60) {
+      duration =
+        Math.floor(props.data.duration / 60) +
         "h " +
-        (props.data.runtime % 60) +
+        (props.data.duration % 60) +
         "m";
     } else {
-      runtime = props.data.runtime + "m";
+      duration = props.data.duration + "m";
     }
   }
   // mode is either "direct" or "select"
@@ -294,9 +294,9 @@ function MediaPageMovie(props: any) {
                       : ""}
                   </>
                 )}
-                {props.data.status && (runtime || genres) ? "     ⸱     " : ""}
-                {runtime}
-                {runtime && genres ? "     ⸱     " : ""}
+                {props.data.status && (duration || genres) ? "     ⸱     " : ""}
+                {duration}
+                {duration && genres ? "     ⸱     " : ""}
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
