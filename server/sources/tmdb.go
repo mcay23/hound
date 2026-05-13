@@ -32,6 +32,7 @@ var tmdbMovieGenreInternalIDs = map[int64]int64{}
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
 const getCacheTTL = 30 * time.Minute
+const discoverCacheTTL = 24 * time.Hour
 
 // defined anonymously in tmdb, so we redefine
 type TMDBEpisode struct {
@@ -855,4 +856,55 @@ func PrefetchSeasons(sourceID int) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+var (
+	TMDBProviderAmazonVideo   = "10|119"
+	TMDBProviderAppleTV       = "350"
+	TMDBProviderDisneyPlus    = "337"
+	TMDBProviderNetflix       = "8"
+	TMDBProviderHBOMax        = "1899"
+	TMDBProviderParamount     = "531|2303|2616"
+	TMDBDefaultDiscoverRegion = "US"
+)
+
+/*
+Catalog Generation
+*/
+func TMDBMovieDiscover(watchProvider string) (*tmdb.DiscoverMovie, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|discover|%s|%s", database.MediaTypeMovie, TMDBDefaultDiscoverRegion, watchProvider)
+	var cachedObject tmdb.DiscoverMovie
+	cacheExists, _ := database.GetCache(cacheKey, &cachedObject)
+	if cacheExists {
+		return &cachedObject, nil
+	}
+	options := make(map[string]string)
+	options["with_watch_monetization_types"] = "flatrate" // weed out rent/buy
+	options["watch_region"] = TMDBDefaultDiscoverRegion
+	options["with_watch_providers"] = watchProvider
+	results, err := tmdbClient.GetDiscoverMovie(options)
+	if err != nil {
+		return nil, err
+	}
+	_, _ = database.SetCache(cacheKey, results, discoverCacheTTL)
+	return results, nil
+}
+
+func TMDBTVShowDiscover(watchProvider string) (*tmdb.DiscoverTV, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|discover|%s|%s", database.MediaTypeTVShow, TMDBDefaultDiscoverRegion, watchProvider)
+	var cachedObject tmdb.DiscoverTV
+	cacheExists, _ := database.GetCache(cacheKey, &cachedObject)
+	if cacheExists {
+		return &cachedObject, nil
+	}
+	options := make(map[string]string)
+	options["with_watch_monetization_types"] = "flatrate" // weed out rent/buy
+	options["watch_region"] = TMDBDefaultDiscoverRegion
+	options["with_watch_providers"] = watchProvider
+	results, err := tmdbClient.GetDiscoverTV(options)
+	if err != nil {
+		return nil, err
+	}
+	_, _ = database.SetCache(cacheKey, results, discoverCacheTTL)
+	return results, nil
 }

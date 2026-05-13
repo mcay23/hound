@@ -214,7 +214,7 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 	// at least one of these will exist at this point
 	// if lastcompletewatch exists, we know the show has been upserted
 	// so we search there instead of making a tmdb network call
-	if lastCompleteWatch > lastResume {
+	if lastCompleteWatch >= lastResume {
 		// find the next episode
 		currentSeason, err :=
 			database.GetEpisodeMediaRecords(mediaSource, showID, targetWatchEvent.SeasonNumber, nil)

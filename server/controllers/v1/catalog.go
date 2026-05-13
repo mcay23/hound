@@ -1,8 +1,11 @@
 package v1
 
 import (
+	"strings"
+
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,13 +22,30 @@ import (
 // @Failure 500 {object} V1ErrorResponse
 func GetCatalogHandler(c *gin.Context) {
 	idParam := c.Param("id")
+	catalogType := c.Query("type")
+	if catalogType == "" {
+		catalogType = "internal"
+	}
 	catalogID := idParam
-	// lock to page 1 for now
-	page := 1
-	viewArray, err := model.GetInternalCatalog(catalogID, &page)
-	if err != nil {
-		internal.ErrorResponse(c, err)
+	switch catalogType {
+	case "internal":
+		// lock to page 1 for now
+		page := 1
+		viewArray, err := model.GetInternalCatalog(catalogID, &page)
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		internal.SuccessResponse(c, viewArray, 200)
+		return
+	case "mdblist":
+		split := strings.Split(idParam, "$")
+		viewArray, err := sources.GetMDBList(split[0], split[1])
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		internal.SuccessResponse(c, viewArray, 200)
 		return
 	}
-	internal.SuccessResponse(c, viewArray, 200)
 }

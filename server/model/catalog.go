@@ -18,6 +18,30 @@ func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog,
 		return getTrendingTVShows(*page)
 	case "trending-movies":
 		return getTrendingMovies(*page)
+	case "netflix-movies":
+		return getDiscoverMovies(sources.TMDBProviderNetflix)
+	case "netflix-shows":
+		return getDiscoverTVShows(sources.TMDBProviderNetflix)
+	case "disney-plus-movies":
+		return getDiscoverMovies(sources.TMDBProviderDisneyPlus)
+	case "disney-plus-shows":
+		return getDiscoverTVShows(sources.TMDBProviderDisneyPlus)
+	case "hbo-max-movies":
+		return getDiscoverMovies(sources.TMDBProviderHBOMax)
+	case "hbo-max-shows":
+		return getDiscoverTVShows(sources.TMDBProviderHBOMax)
+	case "apple-tv-movies":
+		return getDiscoverMovies(sources.TMDBProviderAppleTV)
+	case "apple-tv-shows":
+		return getDiscoverTVShows(sources.TMDBProviderAppleTV)
+	case "amazon-prime-movies":
+		return getDiscoverMovies(sources.TMDBProviderAmazonVideo)
+	case "amazon-prime-shows":
+		return getDiscoverTVShows(sources.TMDBProviderAmazonVideo)
+	case "paramount-movies":
+		return getDiscoverMovies(sources.TMDBProviderParamount)
+	case "paramount-shows":
+		return getDiscoverTVShows(sources.TMDBProviderParamount)
 	default:
 		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
 	}
@@ -75,6 +99,65 @@ func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
 			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
 			ReleaseDate:      item.ReleaseDate,
+			Genres:           genreArray,
+			OriginalLanguage: item.OriginalLanguage,
+			OriginCountry:    item.OriginCountry,
+		}
+		viewArray = append(viewArray, viewObject)
+	}
+	return viewArray, nil
+}
+
+func getDiscoverMovies(watchProvider string) ([]view.MediaRecordCatalog, error) {
+	results, err := sources.TMDBMovieDiscover(watchProvider)
+	if err != nil {
+		return nil, fmt.Errorf("error getting discover movies: %w", err)
+	}
+	var viewArray []view.MediaRecordCatalog
+	for _, item := range results.Results {
+		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
+		viewObject := view.MediaRecordCatalog{
+			MediaType:        database.MediaTypeMovie,
+			MediaSource:      sources.MediaSourceTMDB,
+			SourceID:         strconv.Itoa(int(item.ID)),
+			MediaTitle:       item.Title,
+			OriginalTitle:    item.OriginalTitle,
+			Overview:         item.Overview,
+			VoteCount:        item.VoteCount,
+			VoteAverage:      item.VoteAverage,
+			Popularity:       item.Popularity,
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ReleaseDate:      item.ReleaseDate,
+			Genres:           genreArray,
+			OriginalLanguage: item.OriginalLanguage,
+		}
+		viewArray = append(viewArray, viewObject)
+	}
+	return viewArray, nil
+}
+
+func getDiscoverTVShows(watchProvider string) ([]view.MediaRecordCatalog, error) {
+	results, err := sources.TMDBTVShowDiscover(watchProvider)
+	if err != nil {
+		return nil, fmt.Errorf("error getting discover tv shows: %w", err)
+	}
+	var viewArray []view.MediaRecordCatalog
+	for _, item := range results.Results {
+		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		viewObject := view.MediaRecordCatalog{
+			MediaType:        database.MediaTypeTVShow,
+			MediaSource:      sources.MediaSourceTMDB,
+			SourceID:         strconv.Itoa(int(item.ID)),
+			MediaTitle:       item.Name,
+			OriginalTitle:    item.OriginalName,
+			Overview:         item.Overview,
+			VoteCount:        item.VoteCount,
+			VoteAverage:      item.VoteAverage,
+			Popularity:       item.Popularity,
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ReleaseDate:      item.FirstAirDate,
 			Genres:           genreArray,
 			OriginalLanguage: item.OriginalLanguage,
 			OriginCountry:    item.OriginCountry,
