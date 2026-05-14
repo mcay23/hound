@@ -6,6 +6,7 @@ import (
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
 
@@ -253,7 +254,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray = []view.MediaRecordCatalog{}
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	// note collection owner can be different from calling user (public collections)
@@ -306,7 +307,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	internal.SuccessResponse(c, viewArray, 200)
@@ -340,27 +341,4 @@ func DeleteCollectionHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, nil, 200)
-}
-
-func createMediaRecordCatalogObject(record database.MediaRecordGroup) view.MediaRecordCatalog {
-	return view.MediaRecordCatalog{
-		MediaType:        record.RecordType,
-		MediaSource:      record.MediaSource,
-		SourceID:         record.SourceID,
-		MediaTitle:       record.MediaTitle,
-		OriginalTitle:    record.OriginalTitle,
-		Status:           record.Status,
-		Overview:         record.Overview,
-		Duration:         record.Duration,
-		ReleaseDate:      record.ReleaseDate,
-		LastAirDate:      record.LastAirDate,
-		NextAirDate:      record.NextAirDate,
-		SeasonNumber:     record.SeasonNumber,
-		EpisodeNumber:    record.EpisodeNumber,
-		ThumbnailURI:     record.ThumbnailURI,
-		BackdropURI:      record.BackdropURI,
-		Genres:           record.Genres,
-		OriginalLanguage: record.OriginalLanguage,
-		OriginCountry:    record.OriginCountry,
-	}
 }

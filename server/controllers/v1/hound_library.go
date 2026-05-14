@@ -6,6 +6,7 @@ import (
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
@@ -71,7 +72,7 @@ func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	collectionView := view.CollectionView{

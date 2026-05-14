@@ -13,12 +13,23 @@ import (
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
-func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog, error) {
+func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.MediaRecordCatalog, error) {
+	switch catalogSource {
+	case database.CatalogSourceTMDB:
+		return GetTMDBCatalog(catalogID)
+	case database.CatalogSourceInternal:
+		return GetInternalCatalog(userID, catalogID)
+	default:
+		return nil, fmt.Errorf("invalid catalog type: %s: %w", catalogSource, internal.BadRequestError)
+	}
+}
+
+func GetTMDBCatalog(catalogID string) ([]view.MediaRecordCatalog, error) {
 	switch catalogID {
 	case "trending-shows":
-		return getTrendingTVShows(*page)
+		return getTrendingTVShows(1)
 	case "trending-movies":
-		return getTrendingMovies(*page)
+		return getTrendingMovies(1)
 	case "netflix-movies":
 		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderNetflix)
 	case "netflix-shows":
@@ -65,12 +76,25 @@ func GetInternalCatalog(catalogID string, page *int) ([]view.MediaRecordCatalog,
 	}
 }
 
+func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatalog, error) {
+	switch catalogID {
+	case "hound-library-shows":
+		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, database.MediaTypeTVShow, nil)
+	case "hound-library-movies":
+		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, database.MediaTypeMovie, nil)
+	case "hound-recent-collection":
+		return getHoundRecentRecords(userID)
+	default:
+		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
+	}
+}
+
 func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
 		return nil, fmt.Errorf("error getting popular tv shows: %w", err)
 	}
-	var viewArray []view.MediaRecordCatalog
+	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		obj := view.MediaRecordCatalog{
@@ -101,7 +125,7 @@ func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 		return nil, fmt.Errorf("error getting popular movies: %w", err)
 	}
 	// convert url results
-	var viewArray []view.MediaRecordCatalog
+	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		viewObject := view.MediaRecordCatalog{
@@ -131,7 +155,7 @@ func getDiscoverMovies(discoverType string, query string) ([]view.MediaRecordCat
 	if err != nil {
 		return nil, fmt.Errorf("error getting discover movies: %w", err)
 	}
-	var viewArray []view.MediaRecordCatalog
+	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
 		viewObject := view.MediaRecordCatalog{
@@ -160,7 +184,7 @@ func getDiscoverTVShows(discoverType string, query string) ([]view.MediaRecordCa
 	if err != nil {
 		return nil, fmt.Errorf("error getting discover tv shows: %w", err)
 	}
-	var viewArray []view.MediaRecordCatalog
+	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
 		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
 		viewObject := view.MediaRecordCatalog{
@@ -183,4 +207,53 @@ func getDiscoverTVShows(discoverType string, query string) ([]view.MediaRecordCa
 		viewArray = append(viewArray, viewObject)
 	}
 	return viewArray, nil
+}
+
+func getHoundRecentRecords(userID int64) ([]view.MediaRecordCatalog, error) {
+	records, err := database.GetRecentCollectionRecords(userID, MaxItemsPerHomeRow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent collection records: %w: %w", internal.InternalServerError, err)
+	}
+	var viewArray []view.MediaRecordCatalog
+	for _, item := range records {
+		viewObject := CreateMediaRecordCatalogObject(item)
+		viewArray = append(viewArray, viewObject)
+	}
+	return viewArray, nil
+}
+
+func getHoundLibraryRecords(limit int, offset int, mediaType string, genreIDs []int64) ([]view.MediaRecordCatalog, error) {
+	records, _, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get downloaded records: %w", err)
+	}
+	var viewArray []view.MediaRecordCatalog
+	for _, item := range records {
+		viewObject := CreateMediaRecordCatalogObject(item)
+		viewArray = append(viewArray, viewObject)
+	}
+	return viewArray, nil
+}
+
+func CreateMediaRecordCatalogObject(record database.MediaRecordGroup) view.MediaRecordCatalog {
+	return view.MediaRecordCatalog{
+		MediaType:        record.RecordType,
+		MediaSource:      record.MediaSource,
+		SourceID:         record.SourceID,
+		MediaTitle:       record.MediaTitle,
+		OriginalTitle:    record.OriginalTitle,
+		Status:           record.Status,
+		Overview:         record.Overview,
+		Duration:         record.Duration,
+		ReleaseDate:      record.ReleaseDate,
+		LastAirDate:      record.LastAirDate,
+		NextAirDate:      record.NextAirDate,
+		SeasonNumber:     record.SeasonNumber,
+		EpisodeNumber:    record.EpisodeNumber,
+		ThumbnailURI:     record.ThumbnailURI,
+		BackdropURI:      record.BackdropURI,
+		Genres:           record.Genres,
+		OriginalLanguage: record.OriginalLanguage,
+		OriginCountry:    record.OriginCountry,
+	}
 }

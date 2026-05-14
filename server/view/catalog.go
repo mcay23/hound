@@ -4,6 +4,11 @@ import (
 	"github.com/mcay23/hound/database"
 )
 
+type HomeRowView struct {
+	Title string               `json:"title"`
+	Items []MediaRecordCatalog `json:"items"`
+}
+
 type MediaRecordCatalog struct {
 	MediaType        string                 `json:"media_type" binding:"required" enums:"movie,tvshow"`
 	MediaSource      string                 `json:"media_source" binding:"required" example:"tmdb"` // tmdb, openlibrary, etc

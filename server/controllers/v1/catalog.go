@@ -3,6 +3,7 @@ package v1
 import (
 	"strings"
 
+	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
@@ -22,16 +23,19 @@ import (
 // @Failure 500 {object} V1ErrorResponse
 func GetCatalogHandler(c *gin.Context) {
 	idParam := c.Param("id")
-	catalogType := c.Query("type")
-	if catalogType == "" {
-		catalogType = "internal"
+	catalogSource := c.Query("source")
+	if catalogSource == "" {
+		catalogSource = database.CatalogSourceTMDB
 	}
 	catalogID := idParam
-	switch catalogType {
-	case "internal":
-		// lock to page 1 for now
-		page := 1
-		viewArray, err := model.GetInternalCatalog(catalogID, &page)
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	switch catalogSource {
+	default:
+		viewArray, err := model.GetCatalog(catalogSource, catalogID, userID)
 		if err != nil {
 			internal.ErrorResponse(c, err)
 			return
