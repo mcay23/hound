@@ -94,6 +94,8 @@ func GetTMDBCatalog(catalogID string) ([]view.MediaRecordCatalog, error) {
 
 func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatalog, error) {
 	switch catalogID {
+	case "hound-library":
+		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, "", nil)
 	case "hound-library-shows":
 		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, database.MediaTypeTVShow, nil)
 	case "hound-library-movies":
@@ -239,7 +241,7 @@ func getHoundRecentRecords(userID int64) ([]view.MediaRecordCatalog, error) {
 }
 
 func getHoundLibraryRecords(limit int, offset int, mediaType string, genreIDs []int64) ([]view.MediaRecordCatalog, error) {
-	records, _, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
+	records, _, err := database.GetDownloadedParentRecords("recent", limit, offset, mediaType, genreIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get downloaded records: %w", err)
 	}

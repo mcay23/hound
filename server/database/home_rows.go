@@ -95,7 +95,7 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 				{
 					CatalogTitle:  "Recently Added to Hound",
 					CatalogSource: CatalogSourceInternal,
-					CatalogID:     "hound-library-movies",
+					CatalogID:     "hound-library",
 				},
 			},
 		},

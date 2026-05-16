@@ -491,7 +491,14 @@ func GetEpisodeMediaRecord(mediaSource string, showSourceID string,
 // This returns the movie/show-level record, not the episodes
 // For shows, if you have at least 1 downloaded episode
 // it will be included
-func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreIDs []int64) ([]MediaRecordGroup, int64, error) {
+func GetDownloadedParentRecords(order string, limit int, offset int, mediaType string, genreIDs []int64) ([]MediaRecordGroup, int64, error) {
+	if order == "recent" {
+		return GetDownloadedParentRecordsRecent(limit, offset, mediaType, genreIDs)
+	}
+	return GetDownloadedParentRecordsAlphabetical(limit, offset, mediaType, genreIDs)
+}
+
+func GetDownloadedParentRecordsAlphabetical(limit int, offset int, mediaType string, genreIDs []int64) ([]MediaRecordGroup, int64, error) {
 	var recordGroups []MediaRecordGroup
 	// find movies with files OR shows with episodes that have files
 	whereClause := `(
@@ -545,6 +552,123 @@ func GetDownloadedParentRecords(limit int, offset int, mediaType string, genreID
 	if err != nil {
 		return nil, 0, fmt.Errorf("query %s for media_type %s, genre_ids %v: %w", mediaRecordsTable,
 			mediaType, genreIDs, err)
+	}
+	return recordGroups, totalRecords, nil
+}
+
+// same as above, but default sorted by newest
+func GetDownloadedParentRecordsRecent(
+	limit int,
+	offset int,
+	mediaType string,
+	genreIDs []int64,
+) ([]MediaRecordGroup, int64, error) {
+	var recordGroups []MediaRecordGroup
+	var conditions []string
+	var args []interface{}
+	conditions = append(conditions, `
+	(
+		(
+			mr.record_type = 'movie'
+			AND mf.record_id IS NOT NULL
+		)
+		OR
+		(
+			mr.record_type = 'tvshow'
+			AND epmf.record_id IS NOT NULL
+		)
+	)
+	`)
+	if mediaType != "" {
+		conditions = append(conditions, "mr.record_type = ?")
+		args = append(args, mediaType)
+	}
+	if len(genreIDs) > 0 {
+		placeholders := make([]string, len(genreIDs))
+		for i, id := range genreIDs {
+			placeholders[i] = "?"
+			args = append(args, id)
+		}
+		conditions = append(conditions, fmt.Sprintf(`
+			EXISTS (
+				SELECT 1
+				FROM %s mrg
+				WHERE mrg.record_id = mr.record_id
+				AND mrg.genre_id IN (%s)
+			)
+		`, mediaRecordGenresTable, strings.Join(placeholders, ",")))
+	}
+	whereClause := strings.Join(conditions, " AND ")
+	query := fmt.Sprintf(`
+		SELECT
+			mr.*,
+			GREATEST(
+				COALESCE(MAX(mf.updated_at), '1970-01-01'),
+				COALESCE(MAX(epmf.updated_at), '1970-01-01')
+			) AS latest_updated_at
+		FROM %s mr
+
+		-- movie files
+		LEFT JOIN %s mf
+			ON mr.record_type = 'movie'
+			AND mf.record_id = mr.record_id
+
+		-- episodes for tv shows
+		LEFT JOIN %s ep
+			ON mr.record_type = 'tvshow'
+			AND ep.ancestor_id = mr.record_id
+			AND ep.record_type = 'episode'
+
+		-- episode files
+		LEFT JOIN %s epmf
+			ON epmf.record_id = ep.record_id
+
+		WHERE %s
+
+		GROUP BY mr.record_id
+		ORDER BY latest_updated_at DESC
+	`,
+		mediaRecordsTable,
+		mediaFilesTable,
+		mediaRecordsTable,
+		mediaFilesTable,
+		whereClause,
+	)
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(DISTINCT mr.record_id)
+		FROM %s mr
+
+		LEFT JOIN %s mf
+			ON mr.record_type = 'movie'
+			AND mf.record_id = mr.record_id
+
+		LEFT JOIN %s ep
+			ON mr.record_type = 'tvshow'
+			AND ep.ancestor_id = mr.record_id
+			AND ep.record_type = 'episode'
+
+		LEFT JOIN %s epmf
+			ON epmf.record_id = ep.record_id
+
+		WHERE %s
+	`,
+		mediaRecordsTable,
+		mediaFilesTable,
+		mediaRecordsTable,
+		mediaFilesTable,
+		whereClause,
+	)
+	var totalRecords int64
+	_, err := databaseEngine.SQL(countQuery, args...).Get(&totalRecords)
+	if err != nil {
+		return nil, 0, err
+	}
+	if limit > 0 && offset >= 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+	}
+	err = databaseEngine.SQL(query, args...).Find(&recordGroups)
+	if err != nil {
+		return nil, 0, err
 	}
 	return recordGroups, totalRecords, nil
 }

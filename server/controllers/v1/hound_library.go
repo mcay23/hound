@@ -66,7 +66,7 @@ func GetHoundLibraryHandler(c *gin.Context) {
 }
 
 func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs []int64) (view.CollectionView, error) {
-	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
+	records, total_records, err := database.GetDownloadedParentRecords("alphabetical", limit, offset, mediaType, genreIDs)
 	if err != nil {
 		return view.CollectionView{}, fmt.Errorf("failed to get downloaded records: %w", err)
 	}
