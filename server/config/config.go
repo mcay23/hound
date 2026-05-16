@@ -30,6 +30,7 @@ var (
 	ExternalLibraryScanInterval   int    = 360
 	MaxExternalLibraryWorkers     int    = 2
 	TMDBAPIKey                    string = ""
+	MDBListAPIKey                 string = ""
 )
 
 func InitializeConfig() {
@@ -56,6 +57,7 @@ func InitializeConfig() {
 	ExternalLibraryTVPath = getEnvString("EXTERNAL_LIBRARY_SHOWS_PATH", ExternalLibraryTVPath)
 	ExternalLibraryScanInterval = getEnvInt("EXTERNAL_LIBRARY_SCAN_INTERVAL_MINUTES", ExternalLibraryScanInterval)
 	TMDBAPIKey = getEnvString("TMDB_API_KEY", TMDBAPIKey)
+	MDBListAPIKey = getEnvString("MDBLIST_API_KEY", MDBListAPIKey)
 	slog.Info("Config Initialized",
 		"AppEnvironment", AppEnvironment,
 		"PostgresHost", PostgresHost,

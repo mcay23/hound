@@ -8,7 +8,7 @@ import (
 type UserHomeRows struct {
 	UserID      int64     `json:"user_id"`
 	LastUpdated time.Time `json:"last_updated"`
-	HomeRows    []HomeRow `json:"home_row" binding:"required,min=1,dive"`
+	HomeRows    []HomeRow `json:"home_rows" binding:"required,min=1,dive"`
 }
 
 /*

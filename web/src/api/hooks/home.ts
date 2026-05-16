@@ -6,6 +6,7 @@ import {
   fetchContinueWatching,
   fetchUserHomeRows,
   fetchHomeRow,
+  fetchDefaultHomeRows,
 } from "../services/home";
 
 export const useTrendingTVShows = () => {
@@ -50,4 +51,11 @@ export const useHomeRow = (length: number) => {
       queryFn: () => fetchHomeRow(id),
     })),
   })
+};
+
+export const useDefaultHomeRows = () => {
+  return useQuery({
+    queryKey: ["default-home-rows"],
+    queryFn: fetchDefaultHomeRows,
+  });
 };

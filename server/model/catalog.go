@@ -36,6 +36,8 @@ func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.Me
 		return result, nil
 	case database.CatalogSourceInternal:
 		return GetInternalCatalog(userID, catalogID)
+	case database.CatalogSourceMDBList:
+		return GetMDBListCatalog(catalogID, MaxItemsPerHomeRow)
 	default:
 		return nil, fmt.Errorf("invalid catalog type: %s: %w", catalogSource, internal.BadRequestError)
 	}
@@ -115,7 +117,7 @@ func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	}
 	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeTVShow)
 		obj := view.MediaRecordCatalog{
 			MediaType:        database.MediaTypeTVShow,
 			MediaSource:      sources.MediaSourceTMDB,
@@ -146,7 +148,7 @@ func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
 	// convert url results
 	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeMovie)
 		viewObject := view.MediaRecordCatalog{
 			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
@@ -176,7 +178,7 @@ func getDiscoverMovies(discoverType string, query string) ([]view.MediaRecordCat
 	}
 	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeMovie)
 		viewObject := view.MediaRecordCatalog{
 			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
@@ -205,7 +207,7 @@ func getDiscoverTVShows(discoverType string, query string) ([]view.MediaRecordCa
 	}
 	viewArray := []view.MediaRecordCatalog{}
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeTVShow)
 		viewObject := view.MediaRecordCatalog{
 			MediaType:        database.MediaTypeTVShow,
 			MediaSource:      sources.MediaSourceTMDB,
@@ -252,6 +254,156 @@ func getHoundLibraryRecords(limit int, offset int, mediaType string, genreIDs []
 		viewArray = append(viewArray, viewObject)
 	}
 	return viewArray, nil
+}
+
+// This is network expensive, first call will be slow
+func GetMDBListCatalog(listID string, limit int) ([]view.MediaRecordCatalog, error) {
+	cacheKey := fmt.Sprintf("mdb_list|%s", listID)
+	var cachedObject []view.MediaRecordCatalog
+	found, _ := database.GetCache(cacheKey, &cachedObject)
+	if found {
+		return cachedObject, nil
+	}
+	// parse listID
+	parts := strings.Split(listID, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid list id")
+	}
+	results, err := sources.GetMDBList(parts[0], parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("error getting mdb list: %w", err)
+	}
+	clamp := limit
+	if len(results) < clamp {
+		clamp = len(results)
+	}
+	results = results[:clamp]
+	// get tmdb objects, necessary to grab backdrops
+	// if an error is encountered during network calls, skip and continue
+	// and don't save cache so it's fetched the next time
+	viewArray := []view.MediaRecordCatalog{}
+	fetchError := false
+	for _, item := range results {
+		// if an item doesn't have a tmdb id, create a generic object
+		if item.IDs.TMDB == nil {
+			viewArray = append(viewArray, *createGenericCatalogObjectfromMDBList(item))
+			continue
+		}
+		// mdblist uses 'movie' and 'show' for media types
+		if item.MediaType == database.MediaTypeMovie {
+			details, err := sources.GetMovieFromIDTMDB(int(*item.IDs.TMDB))
+			if err != nil || details == nil {
+				fetchError = true
+				viewArray = append(viewArray, *createGenericCatalogObjectfromMDBList(item))
+				continue
+			}
+			viewArray = append(viewArray, *createTMDBMovieCatalogObject(details))
+		} else {
+			details, err := sources.GetTVShowFromIDTMDB(int(*item.IDs.TMDB))
+			if err != nil || details == nil {
+				fetchError = true
+				viewArray = append(viewArray, *createGenericCatalogObjectfromMDBList(item))
+				continue
+			}
+			viewArray = append(viewArray, *createTMDBShowCatalogObject(details))
+		}
+	}
+	if !fetchError {
+		_, _ = database.SetCache(cacheKey, viewArray, HomeRowRefreshTime)
+	}
+	return viewArray, nil
+}
+
+// if fetching from tmdb fails, create a generic object. This loses genre, backdrop data
+func createGenericCatalogObjectfromMDBList(item sources.MDBListItem) *view.MediaRecordCatalog {
+	return &view.MediaRecordCatalog{
+		MediaType:        item.MediaType,
+		MediaSource:      sources.MediaSourceTMDB,
+		SourceID:         strconv.Itoa(int(*item.IDs.TMDB)),
+		MediaTitle:       item.Title,
+		OriginalTitle:    item.Title,
+		Overview:         item.Description,
+		ThumbnailURI:     item.Poster,
+		ReleaseDate:      item.ReleaseDate,
+		OriginalLanguage: item.Language,
+		OriginCountry:    []string{strings.ToUpper(item.Country)},
+	}
+}
+
+func createTMDBMovieCatalogObject(item *tmdb.MovieDetails) *view.MediaRecordCatalog {
+	if item == nil {
+		return nil
+	}
+	genreIDs := []int64{}
+	for _, genre := range item.Genres {
+		genreIDs = append(genreIDs, genre.ID)
+	}
+	logoURI := ""
+	if len(item.Images.Logos) > 0 {
+		logoURI = internal.GetTMDBImageURL(item.Images.Logos[0].FilePath, tmdb.W500)
+	}
+	genreArray := sources.GetGenresMapFromTMDBIDs(genreIDs, database.MediaTypeMovie)
+	viewObject := view.MediaRecordCatalog{
+		MediaType:        database.MediaTypeMovie,
+		MediaSource:      sources.MediaSourceTMDB,
+		SourceID:         strconv.Itoa(int(item.ID)),
+		MediaTitle:       item.Title,
+		OriginalTitle:    item.OriginalTitle,
+		Overview:         item.Overview,
+		VoteCount:        item.VoteCount,
+		VoteAverage:      item.VoteAverage,
+		Popularity:       item.Popularity,
+		ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+		BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+		LogoURI:          logoURI,
+		ReleaseDate:      item.ReleaseDate,
+		Duration:         item.Runtime,
+		Genres:           genreArray,
+		OriginalLanguage: item.OriginalLanguage,
+		OriginCountry:    item.OriginCountry,
+	}
+	return &viewObject
+}
+
+func createTMDBShowCatalogObject(item *tmdb.TVDetails) *view.MediaRecordCatalog {
+	if item == nil {
+		return nil
+	}
+	genreIDs := []int64{}
+	for _, genre := range item.Genres {
+		genreIDs = append(genreIDs, genre.ID)
+	}
+	genreArray := sources.GetGenresMapFromTMDBIDs(genreIDs, database.MediaTypeTVShow)
+	duration := 0
+	if len(item.EpisodeRunTime) > 0 {
+		duration = item.EpisodeRunTime[0]
+	}
+	logoURI := ""
+	if len(item.Images.Logos) > 0 {
+		logoURI = internal.GetTMDBImageURL(item.Images.Logos[0].FilePath, tmdb.W500)
+	}
+	viewObject := view.MediaRecordCatalog{
+		MediaType:        database.MediaTypeTVShow,
+		MediaSource:      sources.MediaSourceTMDB,
+		SourceID:         strconv.Itoa(int(item.ID)),
+		MediaTitle:       item.Name,
+		OriginalTitle:    item.OriginalName,
+		Overview:         item.Overview,
+		VoteCount:        item.VoteCount,
+		VoteAverage:      item.VoteAverage,
+		Popularity:       item.Popularity,
+		ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+		BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+		LogoURI:          logoURI,
+		ReleaseDate:      item.FirstAirDate,
+		LastAirDate:      item.LastAirDate,
+		Status:           item.Status,
+		Duration:         duration,
+		Genres:           genreArray,
+		OriginalLanguage: item.OriginalLanguage,
+		OriginCountry:    item.OriginCountry,
+	}
+	return &viewObject
 }
 
 func CreateMediaRecordCatalogObject(record database.MediaRecordGroup) view.MediaRecordCatalog {

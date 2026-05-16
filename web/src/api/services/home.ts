@@ -29,3 +29,8 @@ export const fetchHomeRow = async (homeRowIndex: number) => {
   const { data } = await axios.get(`/api/v1/home/${homeRowIndex}`);
   return data;
 };
+
+export const fetchDefaultHomeRows = async () => {
+  const { data } = await axios.get("/api/v1/home/default");
+  return data;
+};

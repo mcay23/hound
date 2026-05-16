@@ -13,6 +13,7 @@ import { useState } from "react";
 import ProviderProfiles from "./ProviderProfiles";
 import UserList from "./Users";
 import { useServerInfo } from "../../api/hooks/general";
+import HomeRows from "./HomeRows";
 
 export default function Admin(props: any) {
   const [activeTab, setActiveTab] = useState(0);
@@ -40,18 +41,21 @@ export default function Admin(props: any) {
               <h2>Admin Panel</h2>
             </div>
             <List>
-              {["Downloads", "Users", "Provider Profiles"].map(
-                (text, index) => (
-                  <ListItem key={text} disablePadding>
-                    <ListItemButton onClick={() => setActiveTab(index)}>
-                      {/* <ListItemIcon>
+              {[
+                "Downloads",
+                "Users",
+                "Provider Profiles",
+                "Default Home Catalogs",
+              ].map((text, index) => (
+                <ListItem key={text} disablePadding>
+                  <ListItemButton onClick={() => setActiveTab(index)}>
+                    {/* <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                 </ListItemIcon> */}
-                      <ListItemText primary={text} />
-                    </ListItemButton>
-                  </ListItem>
-                ),
-              )}
+                    <ListItemText primary={text} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
             </List>
             <div className="p-2">
               <Card variant="outlined">
@@ -78,6 +82,7 @@ export default function Admin(props: any) {
             {activeTab === 0 && <Downloads />}
             {activeTab === 1 && <UserList />}
             {activeTab === 2 && <ProviderProfiles />}
+            {activeTab === 3 && <HomeRows />}
           </div>
         </div>
       </div>

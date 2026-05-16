@@ -17,14 +17,9 @@ function Home() {
   const { data: userHomeRows, isLoading: isUserHomeRowsLoading } =
     useUserHomeRows();
   const homeRows = useHomeRow(
-    isUserHomeRowsLoading ? 0 : (userHomeRows?.home_row?.length ?? 0),
+    isUserHomeRowsLoading ? 0 : (userHomeRows?.home_rows?.length ?? 0),
   );
-
   const [backdropURI, setBackdropURI] = useState("");
-
-  for (const homeRow of homeRows) {
-    console.log(homeRow.data);
-  }
 
   const styles = useMemo(
     () => ({
@@ -77,8 +72,10 @@ function Home() {
                 itemOnClick={undefined}
               />
               {index !== 0 &&
+                !homeRow.isLoading &&
+                !homeRow.isError &&
                 index !== homeRows?.length - 1 &&
-                homeRow?.data?.items?.length !== 0 && (
+                homeRow?.data?.items?.length > 0 && (
                   <div className="home-page-section-divider" />
                 )}
             </div>

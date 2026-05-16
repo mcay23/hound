@@ -31,8 +31,8 @@ var tmdbMovieGenreInternalIDs = map[int64]int64{}
 
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
-const getCacheTTL = 30 * time.Minute
-const discoverCacheTTL = 24 * time.Hour
+const getCacheTTL = 1 * time.Hour
+const discoverCacheTTL = 12 * time.Hour
 
 // defined anonymously in tmdb, so we redefine
 type TMDBEpisode struct {
@@ -419,7 +419,7 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 	return ret, missing, nil
 }
 
-func GetGenresMap(genreIds []int64, mediaType string) []database.GenreObject {
+func GetGenresMapFromTMDBIDs(genreIds []int64, mediaType string) []database.GenreObject {
 	var ret []database.GenreObject
 	for _, id := range genreIds {
 		cached := database.GetGenreFromCache(MediaSourceTMDB, mediaType, id)

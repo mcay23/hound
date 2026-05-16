@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 )
 
 const MDBListListURL = `https://api.mdblist.com/lists/%s/%s/items?append_to_response=poster,description&unified=true&apikey=%s`
@@ -17,10 +19,11 @@ type MDBListItem struct {
 	IDs            MDBListIDs `json:"ids"`
 	MediaType      string     `json:"mediatype"` // movie or show
 	Rank           int        `json:"rank"`
-	Adult          int        `json:"adult"`
+	Adult          bool       `json:"adult"`
 	Title          string     `json:"title"`
 	Poster         string     `json:"poster"`
 	Description    string     `json:"description"`
+	Country        string     `json:"country"`
 	Language       string     `json:"language"`
 	SpokenLanguage string     `json:"spoken_language"`
 	ReleaseDate    string     `json:"release_date"`
@@ -31,10 +34,13 @@ type MDBListIDs struct {
 	IMDB *string `json:"imdb,omitempty"`
 }
 
-var apiKey = "abc"
+const mdbListTTL = 1 * time.Hour
 
-func GetMDBList(listOwner string, listName string) ([]MDBListItem, error) {
-	cacheKey := fmt.Sprintf("mdblist|%s|%s", listOwner, listName)
+func GetMDBList(listAuthor string, listName string) ([]MDBListItem, error) {
+	if config.MDBListAPIKey == "" {
+		return nil, fmt.Errorf("MDBLIST_API_KEY is not set: %w", internal.BadRequestError)
+	}
+	cacheKey := fmt.Sprintf("mdblist|%s|%s", listAuthor, listName)
 	var cacheObject []MDBListItem
 	found, _ := database.GetCache(cacheKey, &cacheObject)
 	if found {
@@ -42,9 +48,9 @@ func GetMDBList(listOwner string, listName string) ([]MDBListItem, error) {
 	}
 	url := fmt.Sprintf(
 		MDBListListURL,
-		url.PathEscape(listOwner),
+		url.PathEscape(listAuthor),
 		url.PathEscape(listName),
-		apiKey,
+		config.MDBListAPIKey,
 	)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -55,6 +61,6 @@ func GetMDBList(listOwner string, listName string) ([]MDBListItem, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
 		return nil, err
 	}
-	database.SetCache(cacheKey, items, time.Hour*24)
+	database.SetCache(cacheKey, items, mdbListTTL)
 	return items, nil
 }
