@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
@@ -13,10 +14,25 @@ import (
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
+const (
+	TMDBCatalogRefreshTime = 24 * time.Hour
+)
+
 func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.MediaRecordCatalog, error) {
 	switch catalogSource {
 	case database.CatalogSourceTMDB:
-		return GetTMDBCatalog(catalogID)
+		cacheKey := fmt.Sprintf("tmdb_catalog|%s", catalogID)
+		var cachedObject []view.MediaRecordCatalog
+		found, _ := database.GetCache(cacheKey, &cachedObject)
+		if found {
+			return cachedObject, nil
+		}
+		result, err := GetTMDBCatalog(catalogID)
+		if err != nil {
+			return nil, err
+		}
+		database.SetCache(cacheKey, result, TMDBCatalogRefreshTime)
+		return result, nil
 	case database.CatalogSourceInternal:
 		return GetInternalCatalog(userID, catalogID)
 	default:

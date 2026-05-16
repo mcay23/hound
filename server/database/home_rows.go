@@ -17,21 +17,26 @@ a single row can be composed of multiple catalogs.
 
 eg. You mix two catalogs - crime shows and crime movies into a single row
 
-Selection Type - "mix" - mixes all catalogs || "rotate" - rotate between catalogs, only one is shown at a time
-Title - The default title, used if selection_type is mix
+Row Order - "random" - randomizes order of catalogs || "rotate" - rotate between catalogs, only one is shown at a time
+  - "default" - follows order of catalogs in array
+
+Title - The default title, used if row_order is mix
 */
 type HomeRow struct {
-	Title         string    `json:"title"`
-	SelectionType string    `json:"selection_type"`
-	Catalogs      []Catalog `json:"catalogs"`
+	Title            string    `json:"title"`
+	CatalogSelection string    `json:"catalog_selection"`
+	ItemOrder        string    `json:"item_order"`
+	Catalogs         []Catalog `json:"catalogs"`
 }
 
 const (
-	CatalogSourceInternal = "internal"
-	CatalogSourceTMDB     = "tmdb"
-	CatalogSourceMDBList  = "mdblist"
-	SelectionTypeMix      = "mix"
-	SelectionTypeRotate   = "rotate"
+	CatalogSourceInternal  = "internal"
+	CatalogSourceTMDB      = "tmdb"
+	CatalogSourceMDBList   = "mdblist"
+	CatalogSelectionRotate = "rotate"  // one catalog is shown at a time, rotated every period
+	CatalogSelectionAll    = "all"     // all catalogs are shown
+	ItemOrderDefault       = "default" // follows order of catalog
+	ItemOrderRandom        = "random"  // randomize order of catalog
 )
 
 type Catalog struct {
@@ -39,10 +44,6 @@ type Catalog struct {
 	CatalogSource string `json:"catalog_source"`
 	CatalogID     string `json:"catalog_id"`
 }
-
-const (
-	CatalogRotationTime = time.Hour * 24 // Catalogs are refreshed/rotated every 24 hours by default
-)
 
 func GetUserHomeRows(userID int64) (*UserHomeRows, error) {
 	var userHomeRows UserHomeRows
@@ -53,18 +54,19 @@ func GetUserHomeRows(userID int64) (*UserHomeRows, error) {
 	return GetDefaultHomeRows(userID)
 }
 
-// Default home rows for all users.
+// Default home rows for all users
 func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 	var userHomeRows UserHomeRows
-	found, _ := GetCache("default_home_rows", &userHomeRows)
-	if found {
-		userHomeRows.UserID = userID
-		return &userHomeRows, nil
-	}
+	// found, _ := GetCache("default_home_rows", &userHomeRows)
+	// if found {
+	// 	userHomeRows.UserID = userID
+	// 	return &userHomeRows, nil
+	// }
 	userHomeRows.HomeRows = []HomeRow{
 		{
-			Title:         "Trending Shows",
-			SelectionType: SelectionTypeMix,
+			Title:            "Trending Shows",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
 			Catalogs: []Catalog{
 				{
 					CatalogTitle:  "Trending Shows",
@@ -74,8 +76,9 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 			},
 		},
 		{
-			Title:         "Trending Movies",
-			SelectionType: SelectionTypeMix,
+			Title:            "Trending Movies",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
 			Catalogs: []Catalog{
 				{
 					CatalogTitle:  "Trending Movies",
@@ -85,8 +88,9 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 			},
 		},
 		{
-			Title:         "Recently Added to Hound",
-			SelectionType: SelectionTypeRotate,
+			Title:            "Recently Added to Hound",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
 			Catalogs: []Catalog{
 				{
 					CatalogTitle:  "Recently Added to Hound",
@@ -96,8 +100,9 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 			},
 		},
 		{
-			Title:         "From Netflix",
-			SelectionType: SelectionTypeMix,
+			Title:            "From Netflix",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderRandom,
 			Catalogs: []Catalog{
 				{
 					CatalogTitle:  "From Netflix",
@@ -112,8 +117,9 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 			},
 		},
 		{
-			Title:         "Animation Movies",
-			SelectionType: SelectionTypeMix,
+			Title:            "Animation Movies",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderRandom,
 			Catalogs: []Catalog{
 				{
 					CatalogTitle:  "Animation Movies",
