@@ -18,6 +18,7 @@ const (
 	TMDBCatalogRefreshTime = 24 * time.Hour
 )
 
+// TMDB catalogs are cached, internal isn't since db data can change (eg. new download)
 func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.MediaRecordCatalog, error) {
 	switch catalogSource {
 	case database.CatalogSourceTMDB:

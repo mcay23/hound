@@ -36,23 +36,6 @@ func GetHomeRow(userID int64, rowIndex int) (*view.HomeRowView, error) {
 		return nil, fmt.Errorf("invalid home row index: %d: %w", rowIndex, internal.BadRequestError)
 	}
 	homeRow := userHomeRows.HomeRows[rowIndex]
-	// check if internal catalogs exist, if they do, don't use cache
-	// This is so new downloads appear in the catalog immediately
-	useCache := true
-	for _, catalog := range homeRow.Catalogs {
-		if catalog.CatalogSource == database.CatalogSourceInternal {
-			useCache = false
-			break
-		}
-	}
-	cacheKey := fmt.Sprintf("user_home_row|%d|%d", userID, rowIndex)
-	if useCache {
-		var homeRowView view.HomeRowView
-		found, _ := database.GetCache(cacheKey, &homeRowView)
-		if found && useCache {
-			return &homeRowView, nil
-		}
-	}
 	catalogItems := []view.MediaRecordCatalog{}
 	title := homeRow.Title
 	switch homeRow.CatalogSelection {
@@ -79,12 +62,6 @@ func GetHomeRow(userID int64, rowIndex int) (*view.HomeRowView, error) {
 		return nil, fmt.Errorf("invalid home row selection type: %s: %w", homeRow.CatalogSelection, internal.BadRequestError)
 	}
 	catalogItems = deduplicateCatalogItems(userID, rowIndex, catalogItems, homeRow.ItemOrder == database.ItemOrderRandom)
-	if len(catalogItems) > 0 && useCache {
-		_, _ = database.SetCache(cacheKey, view.HomeRowView{
-			Title: title,
-			Items: catalogItems,
-		}, HomeRowRefreshTime)
-	}
 	return &view.HomeRowView{
 		Title: title,
 		Items: catalogItems,

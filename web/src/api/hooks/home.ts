@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   fetchBackdrops,
   fetchTrendingMovies,
   fetchTrendingTVShows,
   fetchContinueWatching,
+  fetchUserHomeRows,
+  fetchHomeRow,
 } from "../services/home";
 
 export const useTrendingTVShows = () => {
@@ -32,4 +34,20 @@ export const useContinueWatching = () => {
     queryKey: ["continue-watching"],
     queryFn: fetchContinueWatching,
   });
+};
+
+export const useUserHomeRows = () => {
+  return useQuery({
+    queryKey: ["home-rows"],
+    queryFn: fetchUserHomeRows,
+  });
+};
+
+export const useHomeRow = (length: number) => {
+  return useQueries({
+    queries: Array.from({ length: length }, (_, i) => i).map((id) => ({
+      queryKey: ["home-rows", id],
+      queryFn: () => fetchHomeRow(id),
+    })),
+  })
 };

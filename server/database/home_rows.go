@@ -8,7 +8,7 @@ import (
 type UserHomeRows struct {
 	UserID      int64     `json:"user_id"`
 	LastUpdated time.Time `json:"last_updated"`
-	HomeRows    []HomeRow `json:"home_row"`
+	HomeRows    []HomeRow `json:"home_row" binding:"required,min=1,dive"`
 }
 
 /*
@@ -23,10 +23,10 @@ Row Order - "random" - randomizes order of catalogs || "rotate" - rotate between
 Title - The default title, used if row_order is mix
 */
 type HomeRow struct {
-	Title            string    `json:"title"`
-	CatalogSelection string    `json:"catalog_selection"`
-	ItemOrder        string    `json:"item_order"`
-	Catalogs         []Catalog `json:"catalogs"`
+	Title            string    `json:"title" binding:"required,gt=0"`
+	CatalogSelection string    `json:"catalog_selection" binding:"required,oneof=all rotate mix"`
+	ItemOrder        string    `json:"item_order" binding:"required,oneof=default random"`
+	Catalogs         []Catalog `json:"catalogs" binding:"required,min=1,dive"`
 }
 
 const (
@@ -41,8 +41,8 @@ const (
 
 type Catalog struct {
 	CatalogTitle  string `json:"catalog_title"` // Prioritized if selection_type is rotate
-	CatalogSource string `json:"catalog_source"`
-	CatalogID     string `json:"catalog_id"`
+	CatalogSource string `json:"catalog_source" binding:"required,oneof=internal tmdb mdblist"`
+	CatalogID     string `json:"catalog_id" binding:"required,gt=0"`
 }
 
 func GetUserHomeRows(userID int64) (*UserHomeRows, error) {
@@ -51,18 +51,23 @@ func GetUserHomeRows(userID int64) (*UserHomeRows, error) {
 	if found {
 		return &userHomeRows, nil
 	}
-	return GetDefaultHomeRows(userID)
+	defaultHomeRows, err := GetDefaultHomeRows()
+	if err != nil {
+		return nil, err
+	}
+	userHomeRows.HomeRows = defaultHomeRows.HomeRows
+	userHomeRows.UserID = userID
+	return &userHomeRows, nil
 }
 
 // Default home rows for all users
-func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
-	var userHomeRows UserHomeRows
-	// found, _ := GetCache("default_home_rows", &userHomeRows)
-	// if found {
-	// 	userHomeRows.UserID = userID
-	// 	return &userHomeRows, nil
-	// }
-	userHomeRows.HomeRows = []HomeRow{
+func GetDefaultHomeRows() (*UserHomeRows, error) {
+	var defaultHomeRow UserHomeRows
+	found, _ := GetCache("default_home_rows", &defaultHomeRow)
+	if found {
+		return &defaultHomeRow, nil
+	}
+	defaultHomeRow.HomeRows = []HomeRow{
 		{
 			Title:            "Trending Shows",
 			CatalogSelection: CatalogSelectionAll,
@@ -124,16 +129,35 @@ func GetDefaultHomeRows(userID int64) (*UserHomeRows, error) {
 				{
 					CatalogTitle:  "Animation Movies",
 					CatalogSource: CatalogSourceTMDB,
-					CatalogID:     "genre-movies-2",
+					CatalogID:     "genre-movies-19",
 				},
 			},
 		},
 	}
-	userHomeRows.LastUpdated = time.Now()
-	userHomeRows.UserID = userID
-	_, err := SetCache("default_home_rows", userHomeRows, -1)
+	defaultHomeRow.UserID = -1
+	defaultHomeRow.LastUpdated = time.Now()
+	_, err := SetCache("default_home_rows", defaultHomeRow, -1)
 	if err != nil {
 		return nil, err
 	}
-	return &userHomeRows, nil
+	return &defaultHomeRow, nil
+}
+
+func UpdateUserHomeRows(homeRow UserHomeRows) error {
+	homeRow.LastUpdated = time.Now()
+	_, err := SetCache(fmt.Sprintf("user_home_rows|%d", homeRow.UserID), homeRow, -1)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateDefaultHomeRows(homeRow UserHomeRows) error {
+	homeRow.UserID = -1
+	homeRow.LastUpdated = time.Now()
+	_, err := SetCache("default_home_rows", homeRow, -1)
+	if err != nil {
+		return err
+	}
+	return nil
 }

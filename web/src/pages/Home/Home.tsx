@@ -6,20 +6,25 @@ import Footer from "../Footer";
 import {
   useBackdrops,
   useContinueWatching,
-  useTrendingMovies,
-  useTrendingTVShows,
+  useUserHomeRows,
+  useHomeRow,
 } from "../../api/hooks/home";
 
 function Home() {
-  const { data: trendingTVShows = [], isLoading: isTrendingTVShowsLoading } =
-    useTrendingTVShows();
-  const { data: trendingMovies = [], isLoading: isTrendingMoviesLoading } =
-    useTrendingMovies();
   const { data: backdropsData } = useBackdrops();
   const { data: continueWatchingData, isLoading: isContinueWatchingLoading } =
     useContinueWatching();
+  const { data: userHomeRows, isLoading: isUserHomeRowsLoading } =
+    useUserHomeRows();
+  const homeRows = useHomeRow(
+    isUserHomeRowsLoading ? 0 : (userHomeRows?.home_row?.length ?? 0),
+  );
 
   const [backdropURI, setBackdropURI] = useState("");
+
+  for (const homeRow of homeRows) {
+    console.log(homeRow.data);
+  }
 
   const styles = useMemo(
     () => ({
@@ -47,26 +52,6 @@ function Home() {
         <SearchBar />
       </div>
       <div className="home-page-main-section">
-        {!isTrendingTVShowsLoading ? (
-          <div className="home-page-primary-section">
-            <HorizontalSection
-              items={trendingTVShows}
-              header="Trending TV Shows"
-              itemType="poster"
-              itemOnClick={undefined}
-            />
-          </div>
-        ) : (
-          <div className="home-page-placeholder"></div>
-        )}
-        {!isTrendingMoviesLoading && (
-          <HorizontalSection
-            items={trendingMovies}
-            header="Trending Movies"
-            itemType="poster"
-            itemOnClick={undefined}
-          />
-        )}
         {!isContinueWatchingLoading ? (
           <div className="mt-3">
             <HorizontalSection
@@ -79,6 +64,26 @@ function Home() {
         ) : (
           <div className="home-page-placeholder"></div>
         )}
+        {homeRows.map((homeRow, index) => {
+          return (
+            <div
+              key={index}
+              className={index === 0 ? "home-page-primary-section" : "mt-3"}
+            >
+              <HorizontalSection
+                items={homeRow?.data?.items}
+                header={homeRow?.data?.title}
+                itemType={"poster"}
+                itemOnClick={undefined}
+              />
+              {index !== 0 &&
+                index !== homeRows?.length - 1 &&
+                homeRow?.data?.items?.length !== 0 && (
+                  <div className="home-page-section-divider" />
+                )}
+            </div>
+          );
+        })}
       </div>
       <Footer />
     </>

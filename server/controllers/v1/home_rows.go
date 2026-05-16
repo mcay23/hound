@@ -43,7 +43,7 @@ func GetUserHomeRowsHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetDefaultHomeRowsHandler(c *gin.Context) {
-	homeRows, err := database.GetDefaultHomeRows(-1)
+	homeRows, err := database.GetDefaultHomeRows()
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -83,4 +83,56 @@ func GetHomeRowIndexHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, viewArray, 200)
+}
+
+// @Router /api/v1/home [put]
+// @Summary Update User Home Rows
+// @ID update-user-home-rows
+// @Tags Home Rows
+// @Accept json
+// @Produce json
+// @Param homeRows body database.UserHomeRows true "Home Rows"
+// @Success 200 {object} V1SuccessResponse{}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateUserHomeRowsHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	var homeRows database.UserHomeRows
+	if err := c.ShouldBindJSON(&homeRows); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	homeRows.UserID = userID
+	if err := database.UpdateUserHomeRows(homeRows); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
+}
+
+// @Router /api/v1/home/default [put]
+// @Summary Update Default Home Rows
+// @ID update-default-home-rows
+// @Tags Home Rows
+// @Accept json
+// @Produce json
+// @Param homeRows body database.UserHomeRows true "Home Rows"
+// @Success 200 {object} V1SuccessResponse{}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateDefaultHomeRowsHandler(c *gin.Context) {
+	var homeRows database.UserHomeRows
+	if err := c.ShouldBindJSON(&homeRows); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	if err := database.UpdateDefaultHomeRows(homeRows); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
 }

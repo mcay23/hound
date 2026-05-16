@@ -60,6 +60,8 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/home", GetUserHomeRowsHandler)
 	privateRoutes.GET("/home/default", GetDefaultHomeRowsHandler)
 	privateRoutes.GET("/home/:rowIndex", GetHomeRowIndexHandler)
+	privateRoutes.PUT("/home", UpdateUserHomeRowsHandler)
+	adminRoutes.PUT("/home/default", UpdateDefaultHomeRowsHandler)
 
 	/*
 		Collection Routes
