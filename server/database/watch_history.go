@@ -160,7 +160,8 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 
 // useful to answer, what's the 10 most recent unique movies/shows the user has watched
 // we want to get the parent of the media record, so that we can group by show or movie
-func GetUniqueWatchParents(userID int64, limit int, offset int, after time.Time) ([]*WatchEventMediaRecord, error) {
+// Note that this is bound to the last 3 months for efficiency, this means watches older than 3 months will not be returned
+func GetUniqueWatchedParents(userID int64, limit int, offset int, after time.Time) ([]*WatchEventMediaRecord, error) {
 	var records []*WatchEventMediaRecord
 	err := databaseEngine.
 		SQL(`

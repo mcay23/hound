@@ -89,7 +89,7 @@ func GetContinueWatching(userID int64) ([]WatchAction, error) {
 	}
 	// get 10 most recent watch events, within 3 months
 	now := time.Now()
-	watchEvents, err := database.GetUniqueWatchParents(userID, 10, 0, now.AddDate(0, -3, 0))
+	watchEvents, err := database.GetUniqueWatchedParents(userID, 10, 0, now.AddDate(0, -3, 0))
 	if err != nil {
 		return nil, err
 	}
@@ -264,6 +264,9 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		nextEp.Overview = nextEpisodeRecord.Overview
 		nextEp.ReleaseDate = nextEpisodeRecord.ReleaseDate
 		nextEp.ThumbnailURI = nextEpisodeRecord.ThumbnailURI
+		if nextEp.ThumbnailURI == "" {
+			nextEp.ThumbnailURI = showRecord.BackdropURI
+		}
 		nextEp.EpisodeTitle = &nextEpisodeRecord.MediaTitle
 		watchAction.NextEpisode = &nextEp
 		watchAction.WatchActionType = WatchActionTypeNextEpisode
