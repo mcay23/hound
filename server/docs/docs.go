@@ -414,6 +414,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/catalogs": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get Available Catalogs",
+                "operationId": "get-available-catalogs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.CatalogDefinitionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/collection/hound-library": {
             "get": {
                 "description": "Get content downloaded to Hound",
@@ -692,6 +739,280 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/v1.DownloadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/home": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Get User Home Rows",
+                "operationId": "get-user-home-rows",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.UserHomeRows"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Update User Home Rows",
+                "operationId": "update-user-home-rows",
+                "parameters": [
+                    {
+                        "description": "Home Rows",
+                        "name": "homeRows",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/database.UserHomeRows"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Reset User Home Rows to Server Defaults",
+                "operationId": "reset-user-home-rows",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/home/default": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Get Default Home Rows",
+                "operationId": "get-default-home-rows",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/database.UserHomeRows"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Update Default Home Rows",
+                "operationId": "update-default-home-rows",
+                "parameters": [
+                    {
+                        "description": "Home Rows",
+                        "name": "homeRows",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/database.UserHomeRows"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.V1ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/home/{rowIndex}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Rows"
+                ],
+                "summary": "Get Home Row by Index",
+                "operationId": "get-home-row-index",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Row Index",
+                        "name": "rowIndex",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.V1SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/view.MediaRecordCatalog"
+                                            }
                                         }
                                     }
                                 }
@@ -4446,6 +4767,30 @@ const docTemplate = `{
                 }
             }
         },
+        "database.Catalog": {
+            "type": "object",
+            "required": [
+                "catalog_id",
+                "catalog_source"
+            ],
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "catalog_source": {
+                    "type": "string",
+                    "enum": [
+                        "internal",
+                        "tmdb",
+                        "mdblist"
+                    ]
+                },
+                "catalog_title": {
+                    "description": "Prioritized if selection_type is rotate",
+                    "type": "string"
+                }
+            }
+        },
         "database.DownloadPreference": {
             "type": "object",
             "properties": {
@@ -4521,6 +4866,42 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.HomeRow": {
+            "type": "object",
+            "required": [
+                "catalog_selection",
+                "catalogs",
+                "item_order",
+                "title"
+            ],
+            "properties": {
+                "catalog_selection": {
+                    "type": "string",
+                    "enum": [
+                        "all",
+                        "rotate",
+                        "mix"
+                    ]
+                },
+                "catalogs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/database.Catalog"
+                    }
+                },
+                "item_order": {
+                    "type": "string",
+                    "enum": [
+                        "default",
+                        "random"
+                    ]
+                },
+                "title": {
                     "type": "string"
                 }
             }
@@ -4968,6 +5349,27 @@ const docTemplate = `{
                 }
             }
         },
+        "database.UserHomeRows": {
+            "type": "object",
+            "required": [
+                "home_rows"
+            ],
+            "properties": {
+                "home_rows": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/database.HomeRow"
+                    }
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "database.UserMeta": {
             "type": "object",
             "properties": {
@@ -5184,6 +5586,40 @@ const docTemplate = `{
                 },
                 "version": {
                     "type": "string"
+                }
+            }
+        },
+        "model.CatalogDefinition": {
+            "type": "object",
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "catalog_source": {
+                    "type": "string"
+                },
+                "catalog_title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "media_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CatalogDefinitionsResponse": {
+            "type": "object",
+            "properties": {
+                "catalogs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CatalogDefinition"
+                    }
+                },
+                "mdblist_configured": {
+                    "type": "boolean"
                 }
             }
         },
