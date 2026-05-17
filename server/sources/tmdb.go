@@ -31,7 +31,7 @@ var tmdbMovieGenreInternalIDs = map[int64]int64{}
 
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
-const getCacheTTL = 1 * time.Hour
+const getCacheTTL = 6 * time.Hour
 const discoverCacheTTL = 12 * time.Hour
 
 // defined anonymously in tmdb, so we redefine

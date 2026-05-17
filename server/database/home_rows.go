@@ -93,6 +93,18 @@ func GetDefaultHomeRows() (*UserHomeRows, error) {
 			},
 		},
 		{
+			Title:            "Movies You Might Like",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
+			Catalogs: []Catalog{
+				{
+					CatalogTitle:  "Movies You Might Like",
+					CatalogSource: CatalogSourceInternal,
+					CatalogID:     "hound-recommended-movies",
+				},
+			},
+		},
+		{
 			Title:            "Recently Added to Hound",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderDefault,

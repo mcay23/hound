@@ -129,16 +129,17 @@ var addComplexIndexes = &migrate.Migration{
 }
 
 var Index20260516_01 = &migrate.Migration{
-	ID: "20260516_01_add_indexes",
+	ID: "20260516_02_add_indexes",
 	Migrate: func(tx *xorm.Engine) error {
 		fmt.Println("[DB Migration] Running migration Index20260516_01")
 		query := `
 			CREATE INDEX IF NOT EXISTS idx_media_files_record_updated ON media_files(record_id, updated_at DESC);
 			CREATE INDEX IF NOT EXISTS idx_media_records_ancestor_type ON media_records(ancestor_id, record_type);
+			CREATE INDEX IF NOT EXISTS idx_rewatches_user_rewatch ON rewatches(user_id, rewatch_id);
 		`
 		_, err := tx.Exec(query)
 		if err == nil {
-			fmt.Println("[DB Migration] Successfully ran migration Index20260516_01")
+			fmt.Println("[DB Migration] Successfully ran migration Index20260516_02")
 		}
 		return err
 	},
@@ -147,6 +148,7 @@ var Index20260516_01 = &migrate.Migration{
 		query := `
 			DROP INDEX IF EXISTS idx_media_files_record_updated;
 			DROP INDEX IF EXISTS idx_media_records_ancestor_type;
+			DROP INDEX IF EXISTS idx_rewatches_user_rewatch;
 		`
 		_, err := tx.Exec(query)
 		return err

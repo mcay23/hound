@@ -2,8 +2,10 @@ package model
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -17,6 +19,16 @@ import (
 const (
 	TMDBCatalogRefreshTime = 24 * time.Hour
 )
+
+// used by recommendations, mdblist
+type catalogLock struct {
+	locks sync.Map
+}
+
+func (m *catalogLock) getLock(key string) *sync.Mutex {
+	lock, _ := m.locks.LoadOrStore(key, &sync.Mutex{})
+	return lock.(*sync.Mutex)
+}
 
 // TMDB catalogs are cached, internal isn't since db data can change (eg. new download)
 func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.MediaRecordCatalog, error) {
@@ -46,9 +58,9 @@ func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.Me
 func GetTMDBCatalog(catalogID string) ([]view.MediaRecordCatalog, error) {
 	switch catalogID {
 	case "trending-movies":
-		return getTrendingMovies(1)
+		return getTrendingMovies()
 	case "trending-shows":
-		return getTrendingTVShows(1)
+		return getTrendingTVShows()
 	}
 	if catalog, ok := getTMDBCatalogDefinition(catalogID); ok {
 		switch catalog.MediaType {
@@ -72,13 +84,17 @@ func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatal
 	case "hound-library-movies":
 		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, database.MediaTypeMovie, nil)
 	case "hound-recent-collection":
-		return getHoundRecentRecords(userID)
+		return getHoundRecentRecords(userID, MaxItemsPerHomeRow)
+	case "hound-recommended-movies":
+		return GetUserRecommendations(userID, database.MediaTypeMovie, MaxItemsPerHomeRow)
+	case "hound-recommended-shows":
+		return GetUserRecommendations(userID, database.MediaTypeTVShow, MaxItemsPerHomeRow)
 	default:
 		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
 	}
 }
 
-func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
+func getTrendingTVShows() ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
 		return nil, fmt.Errorf("error getting popular tv shows: %w", err)
@@ -108,7 +124,7 @@ func getTrendingTVShows(page int) ([]view.MediaRecordCatalog, error) {
 	return viewArray, nil
 }
 
-func getTrendingMovies(page int) ([]view.MediaRecordCatalog, error) {
+func getTrendingMovies() ([]view.MediaRecordCatalog, error) {
 	results, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
 		return nil, fmt.Errorf("error getting popular movies: %w", err)
@@ -198,8 +214,8 @@ func getDiscoverTVShows(discoverType string, query string) ([]view.MediaRecordCa
 	return viewArray, nil
 }
 
-func getHoundRecentRecords(userID int64) ([]view.MediaRecordCatalog, error) {
-	records, err := database.GetRecentCollectionRecords(userID, MaxItemsPerHomeRow)
+func getHoundRecentRecords(userID int64, limit int) ([]view.MediaRecordCatalog, error) {
+	records, err := database.GetRecentCollectionRecords(userID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recent collection records: %w: %w", internal.InternalServerError, err)
 	}
@@ -224,14 +240,44 @@ func getHoundLibraryRecords(limit int, offset int, mediaType string, genreIDs []
 	return viewArray, nil
 }
 
+var (
+	mdbListCacheKey       = "mdb_list|%s|%d"
+	mdbListLock           catalogLock
+	mdbListRefreshingLock catalogLock
+	mdbListStaleExpiry    = 14 * 24 * time.Hour
+)
+
 // This is network expensive, first call will be slow
 func GetMDBListCatalog(listID string, limit int) ([]view.MediaRecordCatalog, error) {
-	cacheKey := fmt.Sprintf("mdb_list|%s", listID)
+	cacheKey := fmt.Sprintf(mdbListCacheKey, listID, limit)
+	lock := mdbListLock.getLock(cacheKey)
+	lock.Lock()
+	defer lock.Unlock()
 	var cachedObject []view.MediaRecordCatalog
 	found, _ := database.GetCache(cacheKey, &cachedObject)
 	if found {
+		expiryKey := cacheKey + "|expiry"
+		notExpired, _ := database.GetCache(expiryKey, nil)
+		if notExpired {
+			return cachedObject, nil
+		}
+		// only allow one refresh to run at a time
+		refreshLock := mdbListRefreshingLock.getLock(cacheKey)
+		if refreshLock.TryLock() {
+			go func() {
+				defer refreshLock.Unlock()
+				_, err := getMDBListCatalogInternal(listID, limit)
+				if err != nil {
+					slog.Error("failed refreshing mdb list catalog", "listID", listID, "limit", limit, "err", err)
+				}
+			}()
+		}
 		return cachedObject, nil
 	}
+	return getMDBListCatalogInternal(listID, limit)
+}
+
+func getMDBListCatalogInternal(listID string, limit int) ([]view.MediaRecordCatalog, error) {
 	// parse listID
 	parts := strings.Split(listID, "/")
 	if len(parts) != 2 {
@@ -266,7 +312,7 @@ func GetMDBListCatalog(listID string, limit int) ([]view.MediaRecordCatalog, err
 				continue
 			}
 			viewArray = append(viewArray, *createTMDBMovieCatalogObject(details))
-		} else {
+		} else if item.MediaType == "show" {
 			details, err := sources.GetTVShowFromIDTMDB(int(*item.IDs.TMDB))
 			if err != nil || details == nil {
 				fetchError = true
@@ -274,10 +320,14 @@ func GetMDBListCatalog(listID string, limit int) ([]view.MediaRecordCatalog, err
 				continue
 			}
 			viewArray = append(viewArray, *createTMDBShowCatalogObject(details))
+		} else {
+			fetchError = true
 		}
 	}
 	if !fetchError {
-		_, _ = database.SetCache(cacheKey, viewArray, HomeRowRefreshTime)
+		cacheKey := fmt.Sprintf(mdbListCacheKey, listID, limit)
+		database.SetCache(cacheKey, viewArray, HomeRowRefreshTime)
+		database.SetCache(cacheKey+"|expiry", 1, mdbListStaleExpiry)
 	}
 	return viewArray, nil
 }

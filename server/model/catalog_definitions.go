@@ -51,6 +51,20 @@ var internalCatalogDefinitions = []CatalogDefinition{
 		CatalogID:     "hound-recent-collection",
 		Description:   "Media recently added to your collections",
 	},
+	{
+		CatalogTitle:  "Movies You Might Like",
+		CatalogSource: database.CatalogSourceInternal,
+		CatalogID:     "hound-recommended-movies",
+		MediaType:     database.MediaTypeMovie,
+		Description:   "Recommended Movies for you based on your watch history",
+	},
+	{
+		CatalogTitle:  "Shows You Might Like",
+		CatalogSource: database.CatalogSourceInternal,
+		CatalogID:     "hound-recommended-shows",
+		MediaType:     database.MediaTypeTVShow,
+		Description:   "Recommended Shows for you based on your watch history",
+	},
 }
 
 var tmdbStaticCatalogDefinitions = []tmdbCatalogDefinition{

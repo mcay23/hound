@@ -74,6 +74,7 @@ func deduplicateCatalogItems(userID int64, rowIndex int, viewArray []view.MediaR
 	}
 	// Build deterministic seed, so internal catalog randomization is stable if there are no
 	// additional changes, since internal catalogs are not cached (eg. Hound Library/Downloads)
+	// this will break if rowIndex changes, but not really that critical
 	day := time.Now().UTC().Unix() / 86400
 	hash := fnv.New64a()
 	hash.Write([]byte(strconv.FormatInt(userID, 10)))
