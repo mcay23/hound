@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/sources"
 )
@@ -16,6 +17,11 @@ type CatalogDefinition struct {
 	CatalogID     string `json:"catalog_id"`
 	MediaType     string `json:"media_type,omitempty"`
 	Description   string `json:"description"`
+}
+
+type CatalogDefinitionsResponse struct {
+	Catalogs          []CatalogDefinition `json:"catalogs"`
+	MDBListConfigured bool                `json:"mdblist_configured"`
 }
 
 type tmdbCatalogDefinition struct {
@@ -285,6 +291,17 @@ func GetCatalogDefinitions() ([]CatalogDefinition, error) {
 	}
 	catalogs = append(catalogs, genreCatalogs...)
 	return catalogs, nil
+}
+
+func GetCatalogDefinitionsResponse() (*CatalogDefinitionsResponse, error) {
+	catalogs, err := GetCatalogDefinitions()
+	if err != nil {
+		return nil, err
+	}
+	return &CatalogDefinitionsResponse{
+		Catalogs:          catalogs,
+		MDBListConfigured: config.MDBListAPIKey != "",
+	}, nil
 }
 
 func getGenreCatalogDefinitions() ([]CatalogDefinition, error) {

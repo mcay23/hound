@@ -325,9 +325,10 @@ func getMDBListCatalogInternal(listID string, limit int) ([]view.MediaRecordCata
 		}
 	}
 	if !fetchError {
+		// cache the results for 14 days, but mark for update in 24 hours
 		cacheKey := fmt.Sprintf(mdbListCacheKey, listID, limit)
-		database.SetCache(cacheKey, viewArray, HomeRowRefreshTime)
-		database.SetCache(cacheKey+"|expiry", 1, mdbListStaleExpiry)
+		database.SetCache(cacheKey, viewArray, mdbListStaleExpiry)
+		database.SetCache(cacheKey+"|expiry", 1, HomeRowRefreshTime)
 	}
 	return viewArray, nil
 }

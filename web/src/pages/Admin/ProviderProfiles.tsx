@@ -131,6 +131,7 @@ function ProviderProfile({
     <Card
       variant="outlined"
       key={profile.provider_profile_id}
+      sx={{ boxShadow: 1 }}
       className="mt-3 provider-profile-card"
     >
       <CardContent className="provider-profile-card-content">

@@ -18,11 +18,11 @@ import (
 // @Tags Catalog
 // @Accept json
 // @Produce json
-// @Success 200 {object} V1SuccessResponse{data=[]model.CatalogDefinition}
+// @Success 200 {object} V1SuccessResponse{data=model.CatalogDefinitionsResponse}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetCatalogDefinitionsHandler(c *gin.Context) {
-	catalogs, err := model.GetCatalogDefinitions()
+	catalogs, err := model.GetCatalogDefinitionsResponse()
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get catalog definitions: %w", err))
 		return

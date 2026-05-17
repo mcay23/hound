@@ -1,4 +1,9 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   fetchBackdrops,
   fetchTrendingMovies,
@@ -7,6 +12,8 @@ import {
   fetchUserHomeRows,
   fetchHomeRow,
   fetchDefaultHomeRows,
+  fetchAvailableCatalogs,
+  updateDefaultHomeRows,
 } from "../services/home";
 
 export const useTrendingTVShows = () => {
@@ -50,12 +57,29 @@ export const useHomeRow = (length: number) => {
       queryKey: ["home-rows", id],
       queryFn: () => fetchHomeRow(id),
     })),
-  })
+  });
 };
 
 export const useDefaultHomeRows = () => {
   return useQuery({
     queryKey: ["default-home-rows"],
     queryFn: fetchDefaultHomeRows,
+  });
+};
+
+export const useAvailableCatalogs = () => {
+  return useQuery({
+    queryKey: ["available-catalogs"],
+    queryFn: fetchAvailableCatalogs,
+  });
+};
+
+export const useUpdateDefaultHomeRowsMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateDefaultHomeRows,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["default-home-rows"] });
+    },
   });
 };

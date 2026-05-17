@@ -34,3 +34,13 @@ export const fetchDefaultHomeRows = async () => {
   const { data } = await axios.get("/api/v1/home/default");
   return data;
 };
+
+export const updateDefaultHomeRows = async (homeRows: any) => {
+  const { data } = await axios.put("/api/v1/home/default", homeRows);
+  return data;
+};
+
+export const fetchAvailableCatalogs = async () => {
+  const { data } = await axios.get("/api/v1/catalogs");
+  return data;
+};

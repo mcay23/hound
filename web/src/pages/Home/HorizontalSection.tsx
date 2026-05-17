@@ -20,10 +20,10 @@ function HorizontalSection(props: {
     | "watch_tile";
   itemOnClick: any | undefined;
 }) {
+  const navigate = useNavigate();
   if (!props.items || props.items.length === 0) {
     return <></>;
   }
-  const navigate = useNavigate();
   return (
     <>
       <div className="horizontal-section horizontal-section-menu">

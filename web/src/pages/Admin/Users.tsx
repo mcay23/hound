@@ -85,7 +85,12 @@ function UserCard({ user }: { user: any }) {
   };
 
   return (
-    <Card variant="outlined" key={user.user_id} className="mt-3">
+    <Card
+      variant="outlined"
+      key={user.user_id}
+      className="mt-3"
+      sx={{ boxShadow: 1 }}
+    >
       <CardContent>
         <h5>{user.display_name}</h5>
         <h6>Username: {user.username}</h6>

@@ -48,7 +48,8 @@ func GetUserRecommendations(userID int64, mediaType string, limit int) ([]view.M
 	if found {
 		// check if expired. If expired, run in background while returning current cache early
 		expiryKey := cacheKey + "|expiry"
-		notExpired, _ := database.GetCache(expiryKey, nil)
+		notExpired := false
+		database.GetCache(expiryKey, &notExpired)
 		if notExpired {
 			return recs, nil
 		}
@@ -128,11 +129,12 @@ func getUserRecommendationsInternal(userID int64, mediaType string, limit int) (
 	// if recommendations are sparse, cache shorter
 	if len(dedupedRecs) >= limit {
 		dedupedRecs = dedupedRecs[:limit]
-		database.SetCache(cacheKey, dedupedRecs, userRecommendationsCacheTTL)
-		database.SetCache(cacheKey+"|expiry", 1, userRecommendationsStaleExpiry)
+		// cache the results for 14 days, but mark for update in 24 hours
+		database.SetCache(cacheKey, dedupedRecs, userRecommendationsStaleExpiry)
+		database.SetCache(cacheKey+"|expiry", true, userRecommendationsCacheTTL)
 	} else {
 		database.SetCache(cacheKey, dedupedRecs, 1*time.Hour)
-		database.SetCache(cacheKey+"|expiry", 1, userRecommendationsStaleExpiry)
+		database.SetCache(cacheKey+"|expiry", true, 1*time.Hour)
 	}
 	return dedupedRecs, nil
 }
