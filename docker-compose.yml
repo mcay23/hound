@@ -27,6 +27,8 @@ services:
       - POSTGRES_USER=hound
       - POSTGRES_PASSWORD=super-strong-password
       - HOUND_SECRET=super-strong-secret
+      # (Optional) Add if you want MDBList catalogs
+      # - MDBLIST_API_KEY=
     volumes:
       - ./Hound Data:/app/Hound Data
       # (Optional) attach your media library
