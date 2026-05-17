@@ -865,6 +865,7 @@ const (
 	TMDBProviderNetflix       = "8"
 	TMDBProviderHBOMax        = "1899"
 	TMDBProviderParamount     = "531|2303|2616"
+	TMDBProviderHulu          = "15"
 	TMDBDefaultDiscoverRegion = "US"
 )
 

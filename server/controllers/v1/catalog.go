@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mcay23/hound/database"
@@ -10,6 +11,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// @Router /api/v1/catalogs [get]
+// @Summary Get Available Catalogs
+// @ID get-available-catalogs
+// @Tags Catalog
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]model.CatalogDefinition}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetCatalogDefinitionsHandler(c *gin.Context) {
+	catalogs, err := model.GetCatalogDefinitions()
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get catalog definitions: %w", err))
+		return
+	}
+	internal.SuccessResponse(c, catalogs, 200)
+}
 
 // @Router /api/v1/catalog/{id} [get]
 // @Summary Get Catalog

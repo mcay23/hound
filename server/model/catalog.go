@@ -45,57 +45,25 @@ func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.Me
 
 func GetTMDBCatalog(catalogID string) ([]view.MediaRecordCatalog, error) {
 	switch catalogID {
-	case "trending-shows":
-		return getTrendingTVShows(1)
 	case "trending-movies":
 		return getTrendingMovies(1)
-	case "netflix-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderNetflix)
-	case "netflix-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderNetflix)
-	case "disney-plus-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderDisneyPlus)
-	case "disney-plus-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderDisneyPlus)
-	case "hbo-max-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderHBOMax)
-	case "hbo-max-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderHBOMax)
-	case "apple-tv-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderAppleTV)
-	case "apple-tv-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderAppleTV)
-	case "amazon-prime-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderAmazonVideo)
-	case "amazon-prime-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderAmazonVideo)
-	case "paramount-movies":
-		return getDiscoverMovies(sources.DiscoverTypeWatchProvider, sources.TMDBProviderParamount)
-	case "paramount-shows":
-		return getDiscoverTVShows(sources.DiscoverTypeWatchProvider, sources.TMDBProviderParamount)
-	default:
-		// genre ids should be hound's internal ids, not tmdb's
-		if strings.Contains(catalogID, "genre-movies") {
-			parts := strings.Split(catalogID, "genre-movies-")
-			if len(parts) < 2 {
-				return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
-			}
-			genreID := parts[1]
-			return getDiscoverMovies(sources.DiscoverTypeGenre, genreID)
-		}
-		if strings.Contains(catalogID, "genre-shows") {
-			parts := strings.Split(catalogID, "genre-shows-")
-			if len(parts) < 2 {
-				return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
-			}
-			genreID := parts[1]
-			return getDiscoverTVShows(sources.DiscoverTypeGenre, genreID)
-		}
-		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
+	case "trending-shows":
+		return getTrendingTVShows(1)
 	}
+	if catalog, ok := getTMDBCatalogDefinition(catalogID); ok {
+		switch catalog.MediaType {
+		case database.MediaTypeMovie:
+			return getDiscoverMovies(catalog.DiscoverType, catalog.DiscoverQuery)
+		case database.MediaTypeTVShow:
+			return getDiscoverTVShows(catalog.DiscoverType, catalog.DiscoverQuery)
+		}
+	}
+	return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
 }
 
 func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatalog, error) {
+	// if these are updated, catalog_definitions.go should also be
+	// TODO find a better way to define once
 	switch catalogID {
 	case "hound-library":
 		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, "", nil)
@@ -267,7 +235,7 @@ func GetMDBListCatalog(listID string, limit int) ([]view.MediaRecordCatalog, err
 	// parse listID
 	parts := strings.Split(listID, "/")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid list id")
+		return nil, fmt.Errorf("invalid list id: %s: %w", listID, internal.BadRequestError)
 	}
 	results, err := sources.GetMDBList(parts[0], parts[1])
 	if err != nil {
