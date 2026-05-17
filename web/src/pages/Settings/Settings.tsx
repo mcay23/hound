@@ -9,6 +9,7 @@ import "./Settings.css";
 import { useState } from "react";
 import ApiKeys from "./ApiKeys";
 import GeneralSettings from "./GeneralSettings";
+import UserHomeRows from "./UserHomeRows";
 
 export default function Settings(props: any) {
   const [activeTab, setActiveTab] = useState(0);
@@ -35,7 +36,7 @@ export default function Settings(props: any) {
               <h2>User Settings</h2>
             </div>
             <List>
-              {["General Settings", "API Keys"].map((text, index) => (
+              {["General Settings", "API Keys", "Home Layout"].map((text, index) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => setActiveTab(index)}>
                     {/* <ListItemIcon>
@@ -50,6 +51,7 @@ export default function Settings(props: any) {
           <div className="d-flex settings-content">
             {activeTab === 0 && <GeneralSettings />}
             {activeTab === 1 && <ApiKeys />}
+            {activeTab === 2 && <UserHomeRows />}
           </div>
         </div>
       </div>

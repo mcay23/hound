@@ -40,6 +40,16 @@ export const updateDefaultHomeRows = async (homeRows: any) => {
   return data;
 };
 
+export const updateUserHomeRows = async (homeRows: any) => {
+  const { data } = await axios.put("/api/v1/home", homeRows);
+  return data;
+};
+
+export const resetUserHomeRows = async () => {
+  const { data } = await axios.delete("/api/v1/home");
+  return data;
+};
+
 export const fetchAvailableCatalogs = async () => {
   const { data } = await axios.get("/api/v1/catalogs");
   return data;

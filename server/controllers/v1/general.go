@@ -113,7 +113,7 @@ func GetServerInfoHandler(c *gin.Context) {
 	latestVersion := ""
 	remoteVersionInfo, err := model.FetchRemoteVersionInfo()
 	if err != nil {
-		slog.Error("failed to get remote version info: %w", err)
+		slog.Error("failed to get remote version info:", "error", err)
 	} else {
 		latestVersion = remoteVersionInfo.LatestServerVersion
 	}

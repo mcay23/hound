@@ -47,7 +47,7 @@ function Home() {
         <SearchBar />
       </div>
       <div className="home-page-main-section">
-        {!isContinueWatchingLoading ? (
+        {!isContinueWatchingLoading && continueWatchingData?.length > 0 ? (
           <div className="mt-3">
             <HorizontalSection
               items={continueWatchingData}
@@ -57,9 +57,12 @@ function Home() {
             />
           </div>
         ) : (
-          <div className="home-page-placeholder"></div>
+          <></>
         )}
         {homeRows.map((homeRow, index) => {
+          if (!(homeRow?.data?.items?.length > 0)) {
+            return <></>;
+          }
           return (
             <div
               key={index}

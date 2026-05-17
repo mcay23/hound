@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   Alert,
@@ -72,16 +72,68 @@ export default function HomeRows() {
     error: catalogsError,
   } = useAvailableCatalogs();
   const updateDefaultHomeRows = useUpdateDefaultHomeRowsMutation();
+
+  return (
+    <HomeRowsEditor
+      title="Default Home Layout"
+      description={
+        <>
+          Change the default home catalogs for all users. Users can customize
+          their own home catalogs from their My Account page. Each home row can
+          have several catalogs. You can mix between different catalogs or
+          rotate through them, so that only one catalog is shown at a time.
+          <br />
+          <br />
+          If you choose Catalog Selection: rotate, the catalog title will be
+          shown instead of the home row title.
+        </>
+      }
+      homeRowsData={defaultHomeRows}
+      catalogDefinitionsResponse={catalogDefinitionsResponse}
+      isLoading={isHomeRowsLoading || isCatalogsLoading}
+      error={homeRowsError ?? catalogsError}
+      onSave={(homeRows) =>
+        updateDefaultHomeRows.mutateAsync({
+          user_id: -1,
+          home_rows: homeRows,
+        })
+      }
+      isSaving={updateDefaultHomeRows.isPending}
+    />
+  );
+}
+
+export function HomeRowsEditor({
+  title,
+  description,
+  homeRowsData,
+  catalogDefinitionsResponse,
+  isLoading,
+  error,
+  onSave,
+  isSaving,
+  footerActions,
+}: {
+  title: string;
+  description: ReactNode;
+  homeRowsData: any;
+  catalogDefinitionsResponse: any;
+  isLoading: boolean;
+  error: any;
+  onSave: (homeRows: HomeRow[]) => Promise<any>;
+  isSaving: boolean;
+  footerActions?: ReactNode;
+}) {
   const [homeRows, setHomeRows] = useState<HomeRow[]>([]);
   const [isDirty, setIsDirty] = useState(false);
   const selectableCatalogs = catalogDefinitionsResponse?.catalogs ?? [];
 
   useEffect(() => {
-    if (!defaultHomeRows?.home_rows || isDirty) {
+    if (!homeRowsData?.home_rows || isDirty) {
       return;
     }
-    setHomeRows(defaultHomeRows.home_rows);
-  }, [defaultHomeRows, isDirty]);
+    setHomeRows(homeRowsData.home_rows);
+  }, [homeRowsData, isDirty]);
 
   const updateRows = (nextRows: HomeRow[]) => {
     setHomeRows(nextRows);
@@ -125,54 +177,34 @@ export default function HomeRows() {
       }
     }
 
-    updateDefaultHomeRows.mutate(
-      {
-        user_id: -1,
-        home_rows: homeRows,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Default home catalogs updated");
-          setIsDirty(false);
-        },
-        onError: (error: any) => {
-          toast.error("Failed to save default home catalogs: " + error.message);
-        },
-      },
-    );
+    onSave(homeRows)
+      .then(() => {
+        toast.success("Home layout updated");
+        setIsDirty(false);
+      })
+      .catch((error: any) => {
+        toast.error("Failed to update home layout: " + error.message);
+      });
   };
 
   const resetHomeRows = () => {
-    setHomeRows(defaultHomeRows?.home_rows ?? []);
+    setHomeRows(homeRowsData?.home_rows ?? []);
     setIsDirty(false);
   };
 
-  if (isHomeRowsLoading || isCatalogsLoading) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (homeRowsError) {
-    return <div>Error: {homeRowsError.message}</div>;
-  }
-
-  if (catalogsError) {
-    return <div>Error: {catalogsError.message}</div>;
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
   return (
     <div className="w-100">
-      <h2>Default Home Catalogs</h2>
+      <h2>{title}</h2>
       <hr />
-      <p className="w-50">
-        Change the default home catalogs for all users here. Users can customize
-        their own home catalogs from their Account Settings page. Each home row
-        can have several catalogs. You can mix between different catalogs or
-        rotate through them, so that only one catalog is shown at a time.
-        <br />
-        <br />
-        If you choose Catalog Selection: rotate, the catalog title will be shown
-        instead of the home row Title.
-      </p>
+      <p className="w-50">{description}</p>
       <div className="home-rows-content-container">
         {!catalogDefinitionsResponse?.mdblist_configured && (
           <Alert severity="warning" className="mt-3 mb-3">
@@ -212,6 +244,7 @@ export default function HomeRows() {
           className="mt-3"
           justifyContent="flex-end"
         >
+          {footerActions}
           <Button
             variant="outlined"
             size="small"
@@ -224,7 +257,7 @@ export default function HomeRows() {
             variant="outlined"
             size="small"
             onClick={saveHomeRows}
-            disabled={updateDefaultHomeRows.isPending || homeRows.length === 0}
+            disabled={isSaving || homeRows.length === 0}
           >
             Save Changes
           </Button>

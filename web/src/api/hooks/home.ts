@@ -14,6 +14,8 @@ import {
   fetchDefaultHomeRows,
   fetchAvailableCatalogs,
   updateDefaultHomeRows,
+  updateUserHomeRows,
+  resetUserHomeRows,
 } from "../services/home";
 
 export const useTrendingTVShows = () => {
@@ -51,9 +53,9 @@ export const useUserHomeRows = () => {
   });
 };
 
-export const useHomeRow = (length: number) => {
+export const useHomeRow = (totalRows: number) => {
   return useQueries({
-    queries: Array.from({ length: length }, (_, i) => i).map((id) => ({
+    queries: Array.from({ length: totalRows }, (_, i) => i).map((id) => ({
       queryKey: ["home-rows", id],
       queryFn: () => fetchHomeRow(id),
     })),
@@ -80,6 +82,26 @@ export const useUpdateDefaultHomeRowsMutation = () => {
     mutationFn: updateDefaultHomeRows,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["default-home-rows"] });
+    },
+  });
+};
+
+export const useUpdateUserHomeRowsMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateUserHomeRows,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["home-rows"] });
+    },
+  });
+};
+
+export const useResetUserHomeRowsMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetUserHomeRows,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["home-rows"] });
     },
   });
 };

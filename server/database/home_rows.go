@@ -69,18 +69,6 @@ func GetDefaultHomeRows() (*UserHomeRows, error) {
 	}
 	defaultHomeRow.HomeRows = []HomeRow{
 		{
-			Title:            "Trending Shows",
-			CatalogSelection: CatalogSelectionAll,
-			ItemOrder:        ItemOrderDefault,
-			Catalogs: []Catalog{
-				{
-					CatalogTitle:  "Trending Shows",
-					CatalogSource: CatalogSourceTMDB,
-					CatalogID:     "trending-shows",
-				},
-			},
-		},
-		{
 			Title:            "Trending Movies",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderDefault,
@@ -93,14 +81,14 @@ func GetDefaultHomeRows() (*UserHomeRows, error) {
 			},
 		},
 		{
-			Title:            "Movies You Might Like",
+			Title:            "Trending Shows",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderDefault,
 			Catalogs: []Catalog{
 				{
-					CatalogTitle:  "Movies You Might Like",
-					CatalogSource: CatalogSourceInternal,
-					CatalogID:     "hound-recommended-movies",
+					CatalogTitle:  "Trending Shows",
+					CatalogSource: CatalogSourceTMDB,
+					CatalogID:     "trending-shows",
 				},
 			},
 		},
@@ -117,31 +105,60 @@ func GetDefaultHomeRows() (*UserHomeRows, error) {
 			},
 		},
 		{
+			Title:            "Movies You Might Like",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
+			Catalogs: []Catalog{
+				{
+					CatalogTitle:  "Movies You Might Like",
+					CatalogSource: CatalogSourceInternal,
+					CatalogID:     "hound-recommended-movies",
+				},
+			},
+		},
+		{
+			Title:            "Shows You Might Like",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
+			Catalogs: []Catalog{
+				{
+					CatalogTitle:  "Shows You Might Like",
+					CatalogSource: CatalogSourceInternal,
+					CatalogID:     "hound-recommended-shows",
+				},
+			},
+		},
+		{
 			Title:            "From Netflix",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderRandom,
 			Catalogs: []Catalog{
 				{
-					CatalogTitle:  "From Netflix",
+					CatalogTitle:  "Movies on Netflix",
 					CatalogSource: CatalogSourceTMDB,
 					CatalogID:     "netflix-movies",
 				},
 				{
-					CatalogTitle:  "From Netflix",
+					CatalogTitle:  "TV Shows on Netflix",
 					CatalogSource: CatalogSourceTMDB,
 					CatalogID:     "netflix-shows",
 				},
 			},
 		},
 		{
-			Title:            "Animation Movies",
+			Title:            "From Disney+",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderRandom,
 			Catalogs: []Catalog{
 				{
-					CatalogTitle:  "Animation Movies",
+					CatalogTitle:  "Movies on Disney+",
 					CatalogSource: CatalogSourceTMDB,
-					CatalogID:     "genre-movies-19",
+					CatalogID:     "disney-plus-movies",
+				},
+				{
+					CatalogTitle:  "TV Shows on Disney+",
+					CatalogSource: CatalogSourceTMDB,
+					CatalogID:     "disney-plus-shows",
 				},
 			},
 		},
@@ -162,6 +179,10 @@ func UpdateUserHomeRows(homeRow UserHomeRows) error {
 		return err
 	}
 	return nil
+}
+
+func ResetUserHomeRows(userID int64) error {
+	return DeleteCache(fmt.Sprintf("user_home_rows|%d", userID))
 }
 
 func UpdateDefaultHomeRows(homeRow UserHomeRows) error {

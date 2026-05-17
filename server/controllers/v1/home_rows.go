@@ -114,6 +114,28 @@ func UpdateUserHomeRowsHandler(c *gin.Context) {
 	internal.SuccessResponse(c, nil, 200)
 }
 
+// @Router /api/v1/home [delete]
+// @Summary Reset User Home Rows to Server Defaults
+// @ID reset-user-home-rows
+// @Tags Home Rows
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func ResetUserHomeRowsHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	if err := database.ResetUserHomeRows(userID); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
+}
+
 // @Router /api/v1/home/default [put]
 // @Summary Update Default Home Rows
 // @ID update-default-home-rows

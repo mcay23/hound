@@ -45,7 +45,7 @@ export default function Admin(props: any) {
                 "Downloads",
                 "Users",
                 "Provider Profiles",
-                "Default Home Catalogs",
+                "Default Home Layout",
               ].map((text, index) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => setActiveTab(index)}>
