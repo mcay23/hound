@@ -100,6 +100,19 @@ func GetGenresByType(mediaType string) ([]GenreRecord, error) {
 	return genres, nil
 }
 
+func GetGenreByInternalID(mediaType string, id int64) (*GenreRecord, error) {
+	genres, err := GetGenresByType(mediaType)
+	if err != nil {
+		return nil, err
+	}
+	for _, genre := range genres {
+		if genre.GenreID == id {
+			return &genre, nil
+		}
+	}
+	return nil, fmt.Errorf("genre not found: %s: %d: %w", mediaType, id, internal.NotFoundError)
+}
+
 func instantiateGenresTables() error {
 	if err := databaseEngine.Table(genresTable).Sync2(new(GenreRecord)); err != nil {
 		return err

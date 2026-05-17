@@ -97,7 +97,8 @@ function DownloadCard({ item }: { item: any }) {
     <Card
       variant="outlined"
       key={item.ingest_task_id}
-      className="mb-2 download-card"
+      className="mb-3 download-card"
+      sx={{ boxShadow: 1 }}
     >
       <CardContent className="download-card-content">
         <h5>{title}</h5>

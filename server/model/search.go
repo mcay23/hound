@@ -19,7 +19,7 @@ func SearchMovies(queryString string) (*[]view.MediaRecordCatalog, error) {
 	// convert url results
 	var convertedResults []view.MediaRecordCatalog
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeMovie)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeMovie)
 		resultObject := view.MediaRecordCatalog{
 			MediaType:        database.MediaTypeMovie,
 			MediaSource:      sources.MediaSourceTMDB,
@@ -49,7 +49,7 @@ func SearchTVShows(queryString string) (*[]view.MediaRecordCatalog, error) {
 	// convert url results
 	var convertedResults []view.MediaRecordCatalog
 	for _, item := range results.Results {
-		genreArray := sources.GetGenresMap(item.GenreIDs, database.MediaTypeTVShow)
+		genreArray := sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeTVShow)
 		resultObject := view.MediaRecordCatalog{
 			MediaSource:      sources.MediaSourceTMDB,
 			MediaType:        database.MediaTypeTVShow,

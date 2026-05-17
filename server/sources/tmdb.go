@@ -31,7 +31,8 @@ var tmdbMovieGenreInternalIDs = map[int64]int64{}
 
 const trendingCacheTTL = 12 * time.Hour
 const searchCacheTTL = 24 * time.Hour
-const getCacheTTL = 30 * time.Minute
+const getCacheTTL = 6 * time.Hour
+const discoverCacheTTL = 12 * time.Hour
 
 // defined anonymously in tmdb, so we redefine
 type TMDBEpisode struct {
@@ -418,7 +419,7 @@ func resolveTMDBGenreInternalIDs(mediaType string, genres []database.GenreObject
 	return ret, missing, nil
 }
 
-func GetGenresMap(genreIds []int64, mediaType string) []database.GenreObject {
+func GetGenresMapFromTMDBIDs(genreIds []int64, mediaType string) []database.GenreObject {
 	var ret []database.GenreObject
 	for _, id := range genreIds {
 		cached := database.GetGenreFromCache(MediaSourceTMDB, mediaType, id)
@@ -855,4 +856,86 @@ func PrefetchSeasons(sourceID int) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+const (
+	TMDBProviderAmazonVideo   = "10|119"
+	TMDBProviderAppleTV       = "350"
+	TMDBProviderDisneyPlus    = "337"
+	TMDBProviderNetflix       = "8"
+	TMDBProviderHBOMax        = "1899"
+	TMDBProviderParamount     = "531|2303|2616"
+	TMDBProviderHulu          = "15"
+	TMDBDefaultDiscoverRegion = "US"
+)
+
+const (
+	DiscoverTypeWatchProvider = "watch_provider"
+	DiscoverTypeGenre         = "genre"
+)
+
+/*
+Catalog Generation
+*/
+func TMDBMovieDiscover(discoverType string, query string) (*tmdb.DiscoverMovie, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|discover|%s|%s", database.MediaTypeMovie, discoverType, query)
+	var cachedObject tmdb.DiscoverMovie
+	cacheExists, _ := database.GetCache(cacheKey, &cachedObject)
+	if cacheExists {
+		return &cachedObject, nil
+	}
+	options, err := getDiscoverOptions(database.MediaTypeMovie, discoverType, query)
+	if err != nil {
+		return nil, err
+	}
+	results, err := tmdbClient.GetDiscoverMovie(options)
+	if err != nil {
+		return nil, err
+	}
+	_, _ = database.SetCache(cacheKey, results, discoverCacheTTL)
+	return results, nil
+}
+
+func TMDBTVShowDiscover(discoverType string, query string) (*tmdb.DiscoverTV, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|discover|%s|%s", database.MediaTypeTVShow, discoverType, query)
+	var cachedObject tmdb.DiscoverTV
+	cacheExists, _ := database.GetCache(cacheKey, &cachedObject)
+	if cacheExists {
+		return &cachedObject, nil
+	}
+	options, err := getDiscoverOptions(database.MediaTypeTVShow, discoverType, query)
+	if err != nil {
+		return nil, err
+	}
+	results, err := tmdbClient.GetDiscoverTV(options)
+	if err != nil {
+		return nil, err
+	}
+	_, _ = database.SetCache(cacheKey, results, discoverCacheTTL)
+	return results, nil
+}
+
+func getDiscoverOptions(mediaType string, discoverType string, query string) (map[string]string, error) {
+	options := make(map[string]string)
+	switch discoverType {
+	case DiscoverTypeWatchProvider:
+		options["with_watch_monetization_types"] = "flatrate" // weed out rent/buy
+		options["watch_region"] = TMDBDefaultDiscoverRegion
+		options["with_watch_providers"] = query
+	case DiscoverTypeGenre:
+		// only allow one genre at a time for now
+		queryInt, err := strconv.Atoi(query)
+		if err != nil {
+			return nil, fmt.Errorf("invalid genre id: %s: %w", query, internal.BadRequestError)
+		}
+		// genre ids should be hound's internal ids, not tmdb's
+		genre, err := database.GetGenreByInternalID(mediaType, int64(queryInt))
+		if err != nil {
+			return nil, err
+		}
+		options["with_genres"] = strconv.FormatInt(genre.SourceID, 10)
+	default:
+		return nil, fmt.Errorf("invalid discover type: %s", discoverType)
+	}
+	return options, nil
 }

@@ -75,7 +75,6 @@ function SelectStreamModal(props: {
     ) {
       return;
     }
-    console.log("q id" + providerID);
     setStreamData(null);
     if (fetchParams && modalType === "select-stream") {
       fetchUnifiedStreams({

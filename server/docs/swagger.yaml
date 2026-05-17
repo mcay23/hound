@@ -17,6 +17,23 @@ definitions:
       user_id:
         type: integer
     type: object
+  database.Catalog:
+    properties:
+      catalog_id:
+        type: string
+      catalog_source:
+        enum:
+        - internal
+        - tmdb
+        - mdblist
+        type: string
+      catalog_title:
+        description: Prioritized if selection_type is rotate
+        type: string
+    required:
+    - catalog_id
+    - catalog_source
+    type: object
   database.DownloadPreference:
     properties:
       info_hash_preference:
@@ -67,6 +84,32 @@ definitions:
         type: integer
       updated_at:
         type: string
+    type: object
+  database.HomeRow:
+    properties:
+      catalog_selection:
+        enum:
+        - all
+        - rotate
+        - mix
+        type: string
+      catalogs:
+        items:
+          $ref: '#/definitions/database.Catalog'
+        minItems: 1
+        type: array
+      item_order:
+        enum:
+        - default
+        - random
+        type: string
+      title:
+        type: string
+    required:
+    - catalog_selection
+    - catalogs
+    - item_order
+    - title
     type: object
   database.IngestDownloadPreferences:
     properties:
@@ -374,6 +417,20 @@ definitions:
       username:
         type: string
     type: object
+  database.UserHomeRows:
+    properties:
+      home_rows:
+        items:
+          $ref: '#/definitions/database.HomeRow'
+        minItems: 1
+        type: array
+      last_updated:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - home_rows
+    type: object
   database.UserMeta:
     properties:
       test1:
@@ -525,6 +582,28 @@ definitions:
         type: string
       version:
         type: string
+    type: object
+  model.CatalogDefinition:
+    properties:
+      catalog_id:
+        type: string
+      catalog_source:
+        type: string
+      catalog_title:
+        type: string
+      description:
+        type: string
+      media_type:
+        type: string
+    type: object
+  model.CatalogDefinitionsResponse:
+    properties:
+      catalogs:
+        items:
+          $ref: '#/definitions/model.CatalogDefinition'
+        type: array
+      mdblist_configured:
+        type: boolean
     type: object
   model.LoginUser:
     properties:
@@ -1774,6 +1853,34 @@ paths:
       summary: Get Catalog
       tags:
       - Catalog
+  /api/v1/catalogs:
+    get:
+      consumes:
+      - application/json
+      operationId: get-available-catalogs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.CatalogDefinitionsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Available Catalogs
+      tags:
+      - Catalog
   /api/v1/collection/hound-library:
     get:
       consumes:
@@ -1958,6 +2065,178 @@ paths:
       summary: Download media file to server
       tags:
       - Download
+  /api/v1/home:
+    delete:
+      consumes:
+      - application/json
+      operationId: reset-user-home-rows
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Reset User Home Rows to Server Defaults
+      tags:
+      - Home Rows
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-home-rows
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.UserHomeRows'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get User Home Rows
+      tags:
+      - Home Rows
+    put:
+      consumes:
+      - application/json
+      operationId: update-user-home-rows
+      parameters:
+      - description: Home Rows
+        in: body
+        name: homeRows
+        required: true
+        schema:
+          $ref: '#/definitions/database.UserHomeRows'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Update User Home Rows
+      tags:
+      - Home Rows
+  /api/v1/home/{rowIndex}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-home-row-index
+      parameters:
+      - description: Row Index
+        in: path
+        name: rowIndex
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/view.MediaRecordCatalog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Home Row by Index
+      tags:
+      - Home Rows
+  /api/v1/home/default:
+    get:
+      consumes:
+      - application/json
+      operationId: get-default-home-rows
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.V1SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/database.UserHomeRows'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Get Default Home Rows
+      tags:
+      - Home Rows
+    put:
+      consumes:
+      - application/json
+      operationId: update-default-home-rows
+      parameters:
+      - description: Home Rows
+        in: body
+        name: homeRows
+        required: true
+        schema:
+          $ref: '#/definitions/database.UserHomeRows'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.V1SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.V1ErrorResponse'
+      summary: Update Default Home Rows
+      tags:
+      - Home Rows
   /api/v1/ingest:
     get:
       consumes:

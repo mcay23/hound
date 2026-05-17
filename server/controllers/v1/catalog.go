@@ -1,11 +1,34 @@
 package v1
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
+	"github.com/mcay23/hound/sources"
 
 	"github.com/gin-gonic/gin"
 )
+
+// @Router /api/v1/catalogs [get]
+// @Summary Get Available Catalogs
+// @ID get-available-catalogs
+// @Tags Catalog
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=model.CatalogDefinitionsResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetCatalogDefinitionsHandler(c *gin.Context) {
+	catalogs, err := model.GetCatalogDefinitionsResponse()
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get catalog definitions: %w", err))
+		return
+	}
+	internal.SuccessResponse(c, catalogs, 200)
+}
 
 // @Router /api/v1/catalog/{id} [get]
 // @Summary Get Catalog
@@ -19,13 +42,33 @@ import (
 // @Failure 500 {object} V1ErrorResponse
 func GetCatalogHandler(c *gin.Context) {
 	idParam := c.Param("id")
+	catalogSource := c.Query("source")
+	if catalogSource == "" {
+		catalogSource = database.CatalogSourceTMDB
+	}
 	catalogID := idParam
-	// lock to page 1 for now
-	page := 1
-	viewArray, err := model.GetInternalCatalog(catalogID, &page)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	internal.SuccessResponse(c, viewArray, 200)
+	switch catalogSource {
+	default:
+		viewArray, err := model.GetCatalog(catalogSource, catalogID, userID)
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		internal.SuccessResponse(c, viewArray, 200)
+		return
+	case "mdblist":
+		split := strings.Split(idParam, "$")
+		viewArray, err := sources.GetMDBList(split[0], split[1])
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		internal.SuccessResponse(c, viewArray, 200)
+		return
+	}
 }

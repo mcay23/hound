@@ -6,6 +6,7 @@ import (
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
@@ -65,13 +66,13 @@ func GetHoundLibraryHandler(c *gin.Context) {
 }
 
 func getHoundDownloadedRecords(limit int, offset int, mediaType string, genreIDs []int64) (view.CollectionView, error) {
-	records, total_records, err := database.GetDownloadedParentRecords(limit, offset, mediaType, genreIDs)
+	records, total_records, err := database.GetDownloadedParentRecords("alphabetical", limit, offset, mediaType, genreIDs)
 	if err != nil {
 		return view.CollectionView{}, fmt.Errorf("failed to get downloaded records: %w", err)
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	collectionView := view.CollectionView{
