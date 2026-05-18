@@ -2,7 +2,7 @@ import { Container, Nav, Navbar } from "react-bootstrap";
 import "./Topnav.css";
 import ProfileButton from "./ProfileButton";
 import { useServerInfo } from "../../api/hooks/general";
-import { InfoRounded } from "@mui/icons-material";
+import { GitHub, InfoRounded } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 
 function Topnav() {
@@ -36,7 +36,13 @@ function Topnav() {
           {localStorage.getItem("role") !== "admin" || isServerInfoLoading ? (
             <></>
           ) : serverInfo?.latest_version === serverInfo?.version ? (
-            <></>
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://github.com/Hound-Media-Server/hound"
+            >
+              <GitHub sx={{ color: "#FFFFFF" }} className="mx-3" />
+            </a>
           ) : (
             <a
               target="_blank"

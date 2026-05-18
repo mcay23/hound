@@ -1,3 +1,4 @@
+import { GitHub } from "@mui/icons-material";
 import "./Footer.css";
 
 function Footer(props: any) {
@@ -10,6 +11,24 @@ function Footer(props: any) {
           alt="tmdb-logo"
           id="tmdb-logo"
         />
+        <a
+          href="https://github.com/Hound-Media-Server/hound"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <GitHub sx={{ color: "#FFFFFF", fontSize: "100px" }} />
+        </a>
+        <a
+          href="https://reddit.com/r/HoundMediaServer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="https://upload.wikimedia.org/wikipedia/en/b/bd/Reddit_Logo_Icon.svg"
+            alt="reddit-logo"
+            id="reddit-logo"
+          />
+        </a>
       </div>
     </div>
   );

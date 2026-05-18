@@ -1,4 +1,4 @@
-import { Button, Menu, MenuItem } from "@mui/material";
+import { Button, Divider, Menu, MenuItem } from "@mui/material";
 import { useState } from "react";
 
 export default function ProfileButton() {
@@ -42,6 +42,31 @@ export default function ProfileButton() {
         )}
         <MenuItem onClick={() => (window.location.href = "/logout")}>
           Logout
+        </MenuItem>
+        <Divider sx={{ backgroundColor: "#000000", borderWidth: "1px" }} />
+        <MenuItem
+          component="a"
+          href="https://github.com/Hound-Media-Server/hound/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Report an Issue
+        </MenuItem>
+        <MenuItem
+          component="a"
+          href="https://reddit.com/r/HoundMediaServer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Community Forum
+        </MenuItem>
+        <MenuItem
+          component="a"
+          href="https://hound-media-server.github.io/hound-site/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Documentation
         </MenuItem>
       </Menu>
     </div>
