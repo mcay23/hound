@@ -41,21 +41,20 @@ You can download the Android and Android TV apps from the [App Repo](https://git
 
 ### Current
 
-- Stream and download your own content from your drives, or stream content directly from P2P (torrent) and HTTP/ Debrid sources through Stremio addons
+- Stream and download your own content from your drives, or stream content directly from P2P (torrent) and HTTP/Debrid sources through Stremio addon (AIOStreams) 
 - Trakt-like features, all your watches are automatically tracked and easily browsable
+- Customize your home layout with built-in catalogs or MDBList lists
 - Create custom collections/lists
 - Add reviews and comments to your media
+- Watch calendar and statistics
 - Android and Android TV clients (iOS and tvOS coming soon)
 - Focus on UI/UX, and Admin experience
 - Really fast to setup, zero to watching content in <10 mins, few dependencies
 
 ### Planned
 
-- Detailed watch statistics
-- Recommendations
 - Transcoding
 - Manually create your own movies/shows
-- Manually add your own media files
 - Data export
 - Third-party review score integration (eg. IMDB, Metacritic, RT)
 - View actor information (eg. movies they've played)
