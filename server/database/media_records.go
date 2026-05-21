@@ -283,6 +283,8 @@ ON CONFLICT (record_type, media_source, source_id)
 DO UPDATE SET
 	parent_id       = EXCLUDED.parent_id,
 	media_title     = EXCLUDED.media_title,
+	season_number   = EXCLUDED.season_number,
+	episode_number  = EXCLUDED.episode_number,
 	original_title  = EXCLUDED.original_title,
 	original_language = EXCLUDED.original_language,
 	origin_country  = EXCLUDED.origin_country,

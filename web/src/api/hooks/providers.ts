@@ -99,6 +99,7 @@ export const useDecodeStream = (
 ) => {
   return useQuery({
     queryKey: ["decode-stream", encodedData],
-    queryFn: () => decodeStream(encodedData)
+    queryFn: () => decodeStream(encodedData),
+    enabled: !!encodedData && encodedData !== "",
   });
 };

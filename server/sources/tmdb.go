@@ -492,8 +492,11 @@ func hashRecordTMDB(record database.MediaRecord, additionalKey string) string {
 	case "episode":
 		sb.WriteString(record.MediaSource)
 		sb.WriteString(record.SourceID) // tmdb episodeid
+		if record.SeasonNumber != nil {
+			sb.WriteString("|s" + strconv.Itoa(*record.SeasonNumber))
+		}
 		if record.EpisodeNumber != nil {
-			sb.WriteString(strconv.Itoa(*record.EpisodeNumber))
+			sb.WriteString("|e" + strconv.Itoa(*record.EpisodeNumber))
 		}
 		sb.WriteString(record.MediaTitle) // episode title
 		sb.WriteString(record.Overview)
@@ -820,7 +823,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 				Genres:           nil,
 				Tags:             nil,
 				AncestorID:       &showRecord.RecordID,
-				FullData:         showJson,
+				FullData:         nil,
 			}
 			episodeEntry.ContentHash = hashRecordTMDB(episodeEntry, "")
 			episodeRecords = append(episodeRecords, &episodeEntry)
