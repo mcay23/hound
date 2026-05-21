@@ -37,6 +37,10 @@ password: password
 # Platforms
 You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode. Stay tuned. 
 
+# Installation
+
+Docker compose is the preferred method for installing Hound. Read the installation docs [here](https://hound-media-server.github.io/hound-site/installation.html).
+
 # Features
 
 ### Current
@@ -61,10 +65,6 @@ You can download the Android and Android TV apps from the [App Repo](https://git
 - View public collections / other user's collections
 - Review individual seasons, episodes (TV Shows)
 - Add private notes for your movies, episodes
-
-# Installation
-
-Docker compose is the preferred method for installing Hound. Read the installation docs [here](https://hound-media-server.github.io/hound-site/installation.html).
 
 # Development
 
