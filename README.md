@@ -68,7 +68,7 @@ Docker compose is the preferred method for installing Hound. Read the installati
 
 # Development
 
-Make sure postgres is running on your machine. Modify `/server/dev.env` to suit your dev environment. Build and run both the frontend and backend separately. By default, the frontend runs on `http://localhost:3000` and the backend runs on `http://localhost:2323`.
+Make sure postgres is running on your machine. Copy `server/dev.env.example` to `server/dev.env`, then customize for your dev environment — at minimum, set `HOUND_SECRET` to a unique random value (e.g. `openssl rand -base64 48`); the server panics on startup if it's empty. Build and run both the frontend and backend separately. By default, the frontend runs on `http://localhost:3000` and the backend runs on `http://localhost:2323`.
 
 ### Backend
 

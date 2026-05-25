@@ -7,3 +7,4 @@ web/build
 server/main
 docker/
 .env
+server/dev.env
