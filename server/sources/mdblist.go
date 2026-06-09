@@ -19,7 +19,7 @@ type MDBListItem struct {
 	IDs            MDBListIDs `json:"ids"`
 	MediaType      string     `json:"mediatype"` // movie or show
 	Rank           int        `json:"rank"`
-	Adult          bool       `json:"adult"`
+	Adult          int        `json:"adult"`
 	Title          string     `json:"title"`
 	Poster         string     `json:"poster"`
 	Description    string     `json:"description"`
