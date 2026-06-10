@@ -60,14 +60,21 @@ func GetMediaBackdrops(c *gin.Context) {
 		internal.SuccessResponse(c, backdropCache, 200)
 		return
 	}
+	if !internal.IsInternetOnline() {
+		slog.Warn("internet offline, cannot fetch backdrops")
+		internal.SuccessResponse(c, "", 200)
+		return
+	}
 	shows, err := sources.GetTrendingTVShowsTMDB("1")
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to get trending tv shows: %w", err))
+		slog.Warn("failed to get trending tv shows for backdrops", "error", err)
+		internal.SuccessResponse(c, "", 200)
 		return
 	}
 	movies, err := sources.GetTrendingMoviesTMDB("1")
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to get trending movies: %w", err))
+		slog.Warn("failed to get trending movies for backdrops", "error", err)
+		internal.SuccessResponse(c, "", 200)
 		return
 	}
 	candidateURL := ""

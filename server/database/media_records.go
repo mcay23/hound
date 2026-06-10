@@ -376,6 +376,23 @@ func GetMediaRecordByID(recordID int64) (*MediaRecord, error) {
 	return &record, nil
 }
 
+// GetSeasonMediaRecord returns the season record for a show by show record_id and season_number.
+func GetSeasonMediaRecord(showRecordID int64, seasonNumber int) (*MediaRecord, error) {
+	var record MediaRecord
+	has, err := databaseEngine.Table(mediaRecordsTable).
+		Where("record_type = ?", RecordTypeSeason).
+		Where("parent_id = ?", showRecordID).
+		Where("season_number = ?", seasonNumber).
+		Get(&record)
+	if err != nil {
+		return nil, fmt.Errorf("query %s for parent_id %d, season_number %d: %w", mediaRecordsTable, showRecordID, seasonNumber, err)
+	}
+	if !has {
+		return nil, fmt.Errorf("season %d not found for show record_id %d: %w", seasonNumber, showRecordID, internal.NotFoundError)
+	}
+	return &record, nil
+}
+
 // for an array of episode ids, check if exist in
 // the database as a child of the show
 // hierarchy show -> season -> episode

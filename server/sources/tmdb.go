@@ -77,11 +77,17 @@ func InitializeTMDB() {
 	*/
 	err = populateTMDBTVGenres()
 	if err != nil {
-		panic(err)
+		slog.Warn("Failed to populate TV genres from TMDB, falling back to DB", "error", err)
+		if err2 := loadGenreInternalIDsFromDB(database.MediaTypeTVShow); err2 != nil {
+			panic(fmt.Errorf("could not populate TV genres from TMDB or DB: %w", err2))
+		}
 	}
 	err = populateTMDBMovieGenres()
 	if err != nil {
-		panic(err)
+		slog.Warn("Failed to populate movie genres from TMDB, falling back to DB", "error", err)
+		if err2 := loadGenreInternalIDsFromDB(database.MediaTypeMovie); err2 != nil {
+			panic(fmt.Errorf("could not populate movie genres from TMDB or DB: %w", err2))
+		}
 	}
 	slog.Info("TMDB Initialized")
 }
@@ -135,6 +141,9 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	if cacheExists {
 		return &cacheObject, nil
 	}
+	if !internal.IsInternetOnline() {
+		return getTVShowFromDB(tmdbID)
+	}
 	// for now, remove ability to control append_to_response, just cache the complete
 	// response for safety
 	options := map[string]string{
@@ -142,7 +151,8 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	}
 	tvShow, err := tmdbClient.GetTVDetails(tmdbID, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tv show details from tmdb for source_id %d: %w", tmdbID, err)
+		slog.Warn("TMDB unreachable, falling back to DB for tv show", "tmdb_id", tmdbID, "error", err)
+		return getTVShowFromDB(tmdbID)
 	}
 	if tvShow != nil {
 		_, _ = database.SetCache(cacheKey, tvShow, getCacheTTL)
@@ -172,9 +182,13 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	if cacheExists {
 		return &cacheObject, nil
 	}
+	if !internal.IsInternetOnline() {
+		return getSeasonFromDB(tmdbID, seasonNumber)
+	}
 	season, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tv season details from tmdb for source_id %d, season_number %d: %w", tmdbID, seasonNumber, err)
+		slog.Warn("TMDB unreachable, falling back to DB for tv season", "tmdb_id", tmdbID, "season", seasonNumber, "error", err)
+		return getSeasonFromDB(tmdbID, seasonNumber)
 	}
 	if season == nil {
 		return nil, fmt.Errorf("failed to get tv season details from tmdb: season is nil: %w", internal.InternalServerError)
@@ -313,9 +327,12 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	options := map[string]string{
 		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids,alternative_titles",
 	}
+	if !internal.IsInternetOnline() {
+		return getMovieFromDB(tmdbID)
+	}
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get movie details from tmdb for id %d: %w", tmdbID, err)
+		return getMovieFromDB(tmdbID)
 	}
 	if movie != nil {
 		_, _ = database.SetCache(cacheKey, movie, getCacheTTL)
@@ -344,6 +361,86 @@ func AddMovieToCollectionTMDB(userID int64, source string, sourceID int, collect
 	HELPERS
 ------------------------------
 */
+
+// loadGenreInternalIDsFromDB builds the in-memory source→internal ID maps from
+// already-persisted genres. Called as a fallback when TMDB is unreachable at startup.
+func loadGenreInternalIDsFromDB(mediaType string) error {
+	slog.Debug("TMDB Error/Offline Loading genres from DB", "mediaType", mediaType)
+	genres, err := database.GetGenresByType(mediaType)
+	if err != nil {
+		return fmt.Errorf("failed to load %s genres from DB: %w", mediaType, err)
+	}
+	if len(genres) == 0 {
+		return fmt.Errorf("no %s genres found in DB: %w", mediaType, internal.NotFoundError)
+	}
+	switch mediaType {
+	case database.MediaTypeTVShow:
+		for _, g := range genres {
+			tmdbTVGenreInternalIDs[g.SourceID] = g.GenreID
+		}
+	case database.MediaTypeMovie:
+		for _, g := range genres {
+			tmdbMovieGenreInternalIDs[g.SourceID] = g.GenreID
+		}
+	}
+	slog.Info("Loaded genres from DB", "media_type", mediaType, "count", len(genres))
+	return nil
+}
+
+func getTVShowFromDB(tmdbID int) (*tmdb.TVDetails, error) {
+	slog.Debug("TMDB Error/Offline Fetching show from DB", "sourceID", tmdbID)
+	_, record, err := database.GetMediaRecord(database.RecordTypeTVShow, MediaSourceTMDB, strconv.Itoa(tmdbID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tv show from DB for tmdb_id %d: %w", tmdbID, err)
+	}
+	if record == nil || record.FullData == nil {
+		return nil, fmt.Errorf("no full_data in DB for tv show tmdb_id %d: %w", tmdbID, internal.NotFoundError)
+	}
+	var details tmdb.TVDetails
+	if err := json.Unmarshal(record.FullData, &details); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal tv show full_data for tmdb_id %d: %w", tmdbID, err)
+	}
+	return &details, nil
+}
+
+func getSeasonFromDB(showTMDBID int, seasonNumber int) (*tmdb.TVSeasonDetails, error) {
+	slog.Debug("TMDB Error/Offline Fetching season from DB", "sourceID", showTMDBID, "seasonNumber", seasonNumber)
+	_, showRecord, err := database.GetMediaRecord(database.RecordTypeTVShow, MediaSourceTMDB, strconv.Itoa(showTMDBID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get show record from DB for tmdb_id %d: %w", showTMDBID, err)
+	}
+	if showRecord == nil {
+		return nil, fmt.Errorf("show record not found in DB for tmdb_id %d: %w", showTMDBID, internal.NotFoundError)
+	}
+	seasonRecord, err := database.GetSeasonMediaRecord(showRecord.RecordID, seasonNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get season %d from DB for show %d: %w", seasonNumber, showTMDBID, err)
+	}
+	if seasonRecord.FullData == nil {
+		return nil, fmt.Errorf("no full_data in DB for season %d of show %d: %w", seasonNumber, showTMDBID, internal.NotFoundError)
+	}
+	var details tmdb.TVSeasonDetails
+	if err := json.Unmarshal(seasonRecord.FullData, &details); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal season full_data for show %d season %d: %w", showTMDBID, seasonNumber, err)
+	}
+	return &details, nil
+}
+
+func getMovieFromDB(tmdbID int) (*tmdb.MovieDetails, error) {
+	slog.Debug("TMDB Error/Offline Fetching movie from DB", "sourceID", tmdbID)
+	_, record, err := database.GetMediaRecord(database.RecordTypeMovie, MediaSourceTMDB, strconv.Itoa(tmdbID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get movie from DB for tmdb_id %d: %w", tmdbID, err)
+	}
+	if record == nil || record.FullData == nil {
+		return nil, fmt.Errorf("no full_data in DB for movie tmdb_id %d: %w", tmdbID, internal.NotFoundError)
+	}
+	var details tmdb.MovieDetails
+	if err := json.Unmarshal(record.FullData, &details); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal movie full_data for tmdb_id %d: %w", tmdbID, err)
+	}
+	return &details, nil
+}
 
 func populateTMDBTVGenres() error {
 	list, err := tmdbClient.GetGenreTVList(nil)
