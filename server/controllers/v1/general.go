@@ -60,7 +60,7 @@ func GetMediaBackdrops(c *gin.Context) {
 		internal.SuccessResponse(c, backdropCache, 200)
 		return
 	}
-	if !internal.IsInternetOnline() {
+	if !internal.HasInternetConnection() {
 		slog.Warn("internet offline, cannot fetch backdrops")
 		internal.SuccessResponse(c, "", 200)
 		return

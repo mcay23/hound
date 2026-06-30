@@ -22,7 +22,7 @@ type onlineChecker struct {
 var checker onlineChecker
 
 // return immediately, refresh in background if necessary
-func IsInternetOnline() bool {
+func HasInternetConnection() bool {
 	checker.mu.Lock()
 	if time.Since(checker.lastCheck) < onlineCheckTTL {
 		result := checker.lastResult

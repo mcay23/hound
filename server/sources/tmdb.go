@@ -141,7 +141,7 @@ func GetTVShowFromIDTMDB(tmdbID int) (*tmdb.TVDetails, error) {
 	if cacheExists {
 		return &cacheObject, nil
 	}
-	if !internal.IsInternetOnline() {
+	if !internal.HasInternetConnection() {
 		return getTVShowFromDB(tmdbID)
 	}
 	// for now, remove ability to control append_to_response, just cache the complete
@@ -182,7 +182,7 @@ func GetTVSeasonTMDB(tmdbID int, seasonNumber int) (*tmdb.TVSeasonDetails, error
 	if cacheExists {
 		return &cacheObject, nil
 	}
-	if !internal.IsInternetOnline() {
+	if !internal.HasInternetConnection() {
 		return getSeasonFromDB(tmdbID, seasonNumber)
 	}
 	season, err := tmdbClient.GetTVSeasonDetails(tmdbID, seasonNumber, nil)
@@ -327,7 +327,7 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	options := map[string]string{
 		"append_to_response": "videos,watch/providers,credits,recommendations,images,external_ids,alternative_titles",
 	}
-	if !internal.IsInternetOnline() {
+	if !internal.HasInternetConnection() {
 		return getMovieFromDB(tmdbID)
 	}
 	movie, err := tmdbClient.GetMovieDetails(tmdbID, options)
