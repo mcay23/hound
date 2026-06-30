@@ -13,49 +13,32 @@ import (
 	"github.com/mcay23/hound/services"
 )
 
-const (
-	// all hound data should live in this folder
-	// downloads and media are subdirectories of this folder, so move
-	// between downloads and media should be fast
-	dataDir      = "Hound Data"
-	mediaDir     = "Media"
-	downloadsDir = "Downloads"
-)
-
-var (
-	HoundMoviesPath        = filepath.Join(dataDir, mediaDir, "Movies")
-	HoundTVShowsPath       = filepath.Join(dataDir, mediaDir, "TV Shows")
-	HoundP2PDownloadsPath  = filepath.Join(dataDir, downloadsDir, "p2p")
-	HoundHttpDownloadsPath = filepath.Join(dataDir, downloadsDir, "http")
-	ExternalLibraryPath    = filepath.Join("External Library")
-)
-
 /*
 media deals with file ingestion pipeline download->create files->process metadata...etc.
 */
 func InitializeMedia() {
 	// create media directories
-	err := os.MkdirAll(HoundMoviesPath, 0755)
+	err := os.MkdirAll(internal.HoundMoviesPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(HoundTVShowsPath, 0755)
+	err = os.MkdirAll(internal.HoundTVShowsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(HoundP2PDownloadsPath, 0755)
+	err = os.MkdirAll(internal.HoundP2PDownloadsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create p2p downloads directory")
 		panic(fmt.Errorf("fatal error creating p2p downloads directory %w", err))
 	}
-	err = os.MkdirAll(HoundHttpDownloadsPath, 0755)
+	err = os.MkdirAll(internal.HoundHttpDownloadsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create http downloads directory")
 		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
 	}
-	err = os.MkdirAll(ExternalLibraryPath, 0755)
+	err = os.MkdirAll(internal.HoundExternalLibraryPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create external library directory")
 		panic(fmt.Errorf("fatal error creating external library directory %w", err))

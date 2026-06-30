@@ -175,7 +175,7 @@ func startHTTPDownload(workerID int, task *database.IngestTask) {
 		failTask(task, err)
 		return
 	}
-	sourcePath := filepath.Join(model.HoundHttpDownloadsPath, filename)
+	sourcePath := filepath.Join(internal.HoundHttpDownloadsPath, filename)
 	out, err := os.Create(sourcePath)
 	if err != nil {
 		slog.Error("Failed to create HTTP download file", "taskID", task.IngestTaskID, "error", err)
@@ -284,7 +284,7 @@ func startHTTPDownloadV2(workerID int, task *database.IngestTask) {
 				failTask(task, fmt.Errorf("file is not a video file: %s", filename))
 				return
 			}
-			sourcePath := filepath.Join(model.HoundHttpDownloadsPath, filename)
+			sourcePath := filepath.Join(internal.HoundHttpDownloadsPath, filename)
 			out, err = os.OpenFile(sourcePath, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				failTask(task, fmt.Errorf("failed to open file: %s - %s", sourcePath, err))
@@ -431,7 +431,7 @@ func startP2PDownload(workerID int, task *database.IngestTask) {
 	if task.FileIdx == nil {
 		task.FileIdx = &newIdx
 	}
-	task.SourcePath = filepath.Join(model.HoundP2PDownloadsPath, strings.ToLower(infoHash), relativePath)
+	task.SourcePath = filepath.Join(internal.HoundP2PDownloadsPath, strings.ToLower(infoHash), relativePath)
 	task.TotalBytes = file.Length()
 	database.UpdateIngestTask(task)
 

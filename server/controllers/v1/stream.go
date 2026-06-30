@@ -99,9 +99,9 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 	// and files are still in the download path
 	// ideally, dropped torrents should delete its download folder immediately/
 	// but on restarts, this would be an issue since we want to resume downloads
-	stat, err := os.Stat(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+	stat, err := os.Stat(filepath.Join(internal.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
 	if err == nil {
-		f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+		f, err := os.Open(filepath.Join(internal.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
 		if err != nil {
 			internal.ErrorResponse(c, fmt.Errorf("failed to open file: %w", err))
 			return

@@ -52,7 +52,7 @@ var (
 func InitializeP2P() {
 	config := torrent.NewDefaultClientConfig()
 	// downloads grouped by infohash directories
-	config.DefaultStorage = storage.NewFileByInfoHash(HoundP2PDownloadsPath)
+	config.DefaultStorage = storage.NewFileByInfoHash(internal.HoundP2PDownloadsPath)
 	config.Logger.SetHandlers(log.DiscardHandler)
 	var err error
 	torrentClient, err = torrent.NewClient(config)

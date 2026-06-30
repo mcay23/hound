@@ -27,7 +27,6 @@ type User struct {
 
 func instantiateUsersTable() error {
 	err := databaseEngine.Table(usersTable).Sync2(new(User))
-	// if no user exists, insert a default admin user
 	return err
 }
 

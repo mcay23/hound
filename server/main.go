@@ -37,6 +37,7 @@ func main() {
 	database.InitializeCache()
 	database.InstantiateDB()
 	sources.InitializeSources()
+	model.InitializeIPTV()
 	model.InitializeP2P()
 	model.InitializeMedia()
 	services.InitializeFFMPEG()

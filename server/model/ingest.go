@@ -360,7 +360,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 			}
 			targetFilename += "}"
 		}
-		targetDir = filepath.Join(HoundMoviesPath, mediaTitleStr)
+		targetDir = filepath.Join(internal.HoundMoviesPath, mediaTitleStr)
 		targetRecordID = mediaRecord.RecordID
 	case database.RecordTypeTVShow:
 		if seasonNumber == nil || episodeNumber == nil {
@@ -386,7 +386,7 @@ func getMediaDestinationDir(mediaRecord *database.MediaRecord, seasonNumber *int
 			targetFilename += "}"
 		}
 		seasonPath := fmt.Sprintf("Season %02d", *seasonNumber)
-		targetDir = filepath.Join(HoundTVShowsPath, mediaTitleStr, seasonPath)
+		targetDir = filepath.Join(internal.HoundTVShowsPath, mediaTitleStr, seasonPath)
 	default:
 		return "", "", 0, fmt.Errorf("invalid record type: %s: %w", mediaRecord.RecordType, internal.BadRequestError)
 	}

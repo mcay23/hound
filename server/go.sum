@@ -413,6 +413,12 @@ github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417 h1:Lt9DzQALzHoDwMBGJ6v
 github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417/go.mod h1:qe5TWALJ8/a1Lqznoc5BDHpYX/8HU60Hm2AwRmqzxqA=
 github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 h1:GHRpF1pTW19a8tTFrMLUcfWwyC0pnifVo2ClaLq+hP8=
 github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46/go.mod h1:uAQ5PCi+MFsC7HjREoAz1BU+Mq60+05gifQSsHSDG/8=
+github.com/sherif-fanous/m3u v0.4.0 h1:8a7ey/XBMPtsWNED5kX8A8QFwmu7j6QG3dV4DuURCDw=
+github.com/sherif-fanous/m3u v0.4.0/go.mod h1:ZJrHL4OlTF4f7vyH3/0od/QNLHJJGlduLIVeqNt9wCY=
+github.com/sherif-fanous/xmltv v1.1.0 h1:zyupFCTAXA/lU+f6Lw5T+wERq1lzv1Gv/572C7LdZjI=
+github.com/sherif-fanous/xmltv v1.1.0/go.mod h1:StCZHGBCWBTdB2KB/hmZ+iLC1qYNre0uMBLZhRonCvI=
+github.com/sherif-fanous/xtreamcodes v0.0.1 h1:Nf+qV0Z0qKJn6qckqIP6SKbYZ1oBFxAA6m6rCVkixVI=
+github.com/sherif-fanous/xtreamcodes v0.0.1/go.mod h1:5fhaI7pxsrbxCb91CJ+MvqyWQDL3MjGS97dEbnJQODE=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
