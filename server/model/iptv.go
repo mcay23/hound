@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/sources"
@@ -13,6 +14,18 @@ import (
 
 var EPGFilepath = filepath.Join(internal.HoundIPTVDownloadsPath, "epg.xml")
 var epg xmltv.EPG
+
+type LiveIPTVChannel struct {
+	IPTVConfigID int       `json:"iptv_config_id"`
+	StreamID     int       `json:"stream_id"`
+	Name         string    `json:"name"`
+	StreamType   string    `json:"stream_type"`
+	ThumbnailURL string    `json:"thumbnail_url"`
+	EPGChannelID string    `json:"epg_channel_id"`
+	CategoryID   string    `json:"category_id"`
+	AddedAt      time.Time `json:"added_at"`
+	EncodedData  string    `json:"encoded_data"`
+}
 
 func InitializeIPTV() {
 	sources.InitializeXtream()
@@ -55,4 +68,28 @@ func InitializeIPTV() {
 			break
 		}
 	}
+}
+
+func GetLiveChannelsIPTV(categoryID string) []LiveIPTVChannel {
+	channels, err := sources.GetLiveChannelsIPTV(categoryID)
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to get live channels")
+		return nil
+	}
+	var resp []LiveIPTVChannel
+	for _, channel := range channels {
+		temp := LiveIPTVChannel{
+			StreamID:     channel.StreamID,
+			Name:         channel.Name,
+			StreamType:   channel.StreamType,
+			ThumbnailURL: channel.StreamIcon,
+			CategoryID:   categoryID,
+			AddedAt:      channel.AddedOn,
+		}
+		if channel.EPGChannelID != nil {
+			temp.EPGChannelID = *channel.EPGChannelID
+		}
+		resp = append(resp, temp)
+	}
+	return resp
 }

@@ -119,6 +119,12 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
 
 	/*
+		Live TV Routes
+	*/
+	privateRoutes.GET("/live/categories", GetLiveCategoriesHandler)
+	privateRoutes.GET("/live/channels", GetLiveChannelsHandler)
+
+	/*
 		Comments
 	*/
 	privateRoutes.GET("/tv/:id/comments", GetCommentsTVHandler)
