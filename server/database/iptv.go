@@ -5,71 +5,75 @@ import (
 	"time"
 )
 
-const IPTVConfigTypeXTREAM = "xtream"
-const IPTVConfigTypeM3U = "m3u"
+const IPTVStreamTypeXTREAM = "xtream"
+const IPTVStreamTypeM3U = "m3u"
 
-type IPTVConfig struct {
-	IPTVConfigID      int64      `xorm:"pk autoincr 'iptv_config_id'" json:"iptv_config_id"`
-	IPTVConfigType    string     `xorm:"'iptv_config_type'" json:"iptv_config_type"`
-	Name              string     `xorm:"'title'" json:"title"`
-	Host              string     `xorm:"text" json:"host"`
-	Username          string     `xorm:"'username'" json:"username"`
-	EncryptedPassword string     `xorm:"text 'encrypted_password'" json:"encrypted_password,omitempty"`
-	LastDownload      *time.Time `xorm:"timestampz" json:"last_download,omitempty"`
-	LastDownloadError *string    `xorm:"text" json:"last_download_error,omitempty"`
+type IPTVProfile struct {
+	IPTVProfileID        int64      `xorm:"pk autoincr 'iptv_profile_id'" json:"iptv_profile_id"`
+	IPTVStreamType       string     `xorm:"'iptv_stream_type'" json:"iptv_stream_type"`
+	ProxyStream          bool       `xorm:"'proxy_stream'" json:"proxy_stream"` // whether or not to proxy the stream, always false for now
+	Name                 string     `xorm:"'name'" json:"name"`
+	Host                 string     `xorm:"text" json:"host"`
+	Username             string     `xorm:"'username'" json:"username"`
+	EncryptedPassword    string     `xorm:"text 'encrypted_password'" json:"encrypted_password,omitempty"`
+	LastEPGDownload      *time.Time `xorm:"timestampz" json:"last_epg_download,omitempty"`
+	LastEPGDownloadError *string    `xorm:"text" json:"last_epg_download_error,omitempty"`
 }
 
-const iptvConfigTable = "iptv_configs"
+const iptvProfilesTable = "iptv_profiles"
 
-func InstantiateIPTVConfigsTable() error {
-	err := databaseEngine.Table(iptvConfigTable).Sync2(new(IPTVConfig))
+func instantiateIPTVProfilesTable() error {
+	err := databaseEngine.Table(iptvProfilesTable).Sync2(new(IPTVProfile))
 	if err != nil {
-		return fmt.Errorf("sync iptv configs table: %w", err)
+		return fmt.Errorf("sync iptv_profiles table: %w", err)
 	}
 	return nil
 }
 
-func GetIPTVConfigs() ([]*IPTVConfig, error) {
-	var configs []*IPTVConfig
-	err := databaseEngine.Table(iptvConfigTable).Find(&configs)
+func GetIPTVProfiles() ([]*IPTVProfile, error) {
+	var profiles []*IPTVProfile
+	err := databaseEngine.Table(iptvProfilesTable).Find(&profiles)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get IPTV configs: %w", err)
+		return nil, fmt.Errorf("failed to get IPTV profiles: %w", err)
 	}
-	return configs, nil
+	for _, profile := range profiles {
+		profile.EncryptedPassword = ""
+	}
+	return profiles, nil
 }
 
-func GetIPTVConfig(iptvConfigID int64) (*IPTVConfig, error) {
-	var config IPTVConfig
-	has, err := databaseEngine.Table(iptvConfigTable).ID(iptvConfigID).Get(&config)
+func GetIPTVProfile(iptvProfileID int64) (*IPTVProfile, error) {
+	var config IPTVProfile
+	has, err := databaseEngine.Table(iptvProfilesTable).ID(iptvProfileID).Get(&config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get IPTV config: %w", err)
+		return nil, fmt.Errorf("failed to get IPTV profile: %w", err)
 	}
 	if !has {
-		return nil, fmt.Errorf("IPTV config not found")
+		return nil, fmt.Errorf("IPTV profile not found")
 	}
 	return &config, nil
 }
 
-func AddIPTVConfig(config *IPTVConfig) (int64, error) {
-	_, err := databaseEngine.Table(iptvConfigTable).Insert(config)
+func AddIPTVProfile(profile *IPTVProfile) (int64, error) {
+	_, err := databaseEngine.Table(iptvProfilesTable).Insert(profile)
 	if err != nil {
-		return 0, fmt.Errorf("failed to add IPTV config: %w", err)
+		return 0, fmt.Errorf("failed to add IPTV profile: %w", err)
 	}
-	return config.IPTVConfigID, nil
+	return profile.IPTVProfileID, nil
 }
 
-func UpdateIPTVConfig(config *IPTVConfig) error {
-	_, err := databaseEngine.Table(iptvConfigTable).ID(config.IPTVConfigID).Update(config)
+func UpdateIPTVProfile(profile *IPTVProfile) error {
+	_, err := databaseEngine.Table(iptvProfilesTable).ID(profile.IPTVProfileID).Update(profile)
 	if err != nil {
-		return fmt.Errorf("failed to update IPTV config: %w", err)
+		return fmt.Errorf("failed to update IPTV profile: %w", err)
 	}
 	return nil
 }
 
-func DeleteIPTVConfig(iptvConfigID int64) error {
-	_, err := databaseEngine.Table(iptvConfigTable).ID(iptvConfigID).Delete()
+func DeleteIPTVProfile(iptvProfileID int64) error {
+	_, err := databaseEngine.Table(iptvProfilesTable).Where("iptv_profile_id = ?", iptvProfileID).Delete()
 	if err != nil {
-		return fmt.Errorf("failed to delete IPTV config: %w", err)
+		return fmt.Errorf("failed to delete IPTV profile: %w", err)
 	}
 	return nil
 }

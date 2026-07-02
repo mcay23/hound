@@ -2,30 +2,26 @@ package sources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/mcay23/hound/internal"
 	"github.com/sherif-fanous/xtreamcodes"
 )
 
-var iptvHost = "http://cf.cdn-90.me"
-var iptvUsername = "112ee65d0d"
-var iptvPassword = "e1af615116"
+var iptvHost = ""
+var iptvUsername = ""
+var iptvPassword = ""
 
 type IPTVLiveCategory struct {
 	CategoryID   string `json:"category_id"`
 	CategoryName string `json:"category_name"`
 	ParentID     string `json:"parent_id"`
-}
-
-var xtreamClient *xtreamcodes.Client
-
-func InitializeXtream() {
-	xtreamClient = xtreamcodes.NewClient(iptvHost, iptvUsername, iptvPassword)
 }
 
 func DownloadEPGXtream(epgFilePath string) error {
@@ -57,9 +53,33 @@ func DownloadEPGXtream(epgFilePath string) error {
 }
 
 func GetLiveCategoriesIPTV() ([]xtreamcodes.LiveCategory, error) {
-	return xtreamClient.ListLiveCategories(context.Background())
+	client := xtreamcodes.NewClient(iptvHost, iptvUsername, iptvPassword)
+	cats, err := client.ListLiveCategories(context.Background())
+	if err != nil {
+		return nil, sanitizeHTTPError(err)
+	}
+	return cats, nil
 }
 
 func GetLiveChannelsIPTV(categoryID string) ([]xtreamcodes.LiveStream, error) {
-	return xtreamClient.ListLiveStreamsInCategory(context.Background(), categoryID)
+	client := xtreamcodes.NewClient(iptvHost, iptvUsername, iptvPassword)
+	streams, err := client.ListLiveStreamsInCategory(context.Background(), categoryID)
+	if err != nil {
+		return nil, sanitizeHTTPError(err)
+	}
+	return streams, nil
+}
+
+// prevent full iptv urls being exposed, since they contain username/password
+func sanitizeHTTPError(err error) error {
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return fmt.Errorf("%s failed: %w", urlErr.Op, urlErr.Err)
+	}
+	return err
+}
+
+func GetXtreamStreamLink(streamID int) (string, error) {
+	url := fmt.Sprintf("%s/live/%s/%s/%d.m3u8", iptvHost, iptvUsername, iptvPassword, streamID)
+	return url, nil
 }

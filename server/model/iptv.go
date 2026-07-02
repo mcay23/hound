@@ -1,12 +1,15 @@
 package model
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/sources"
 	"github.com/sherif-fanous/xmltv"
@@ -16,19 +19,18 @@ var EPGFilepath = filepath.Join(internal.HoundIPTVDownloadsPath, "epg.xml")
 var epg xmltv.EPG
 
 type LiveIPTVChannel struct {
-	IPTVConfigID int       `json:"iptv_config_id"`
-	StreamID     int       `json:"stream_id"`
-	Name         string    `json:"name"`
-	StreamType   string    `json:"stream_type"`
-	ThumbnailURL string    `json:"thumbnail_url"`
-	EPGChannelID string    `json:"epg_channel_id"`
-	CategoryID   string    `json:"category_id"`
-	AddedAt      time.Time `json:"added_at"`
-	EncodedData  string    `json:"encoded_data"`
+	IPTVProfileID    int64     `json:"iptv_profile_id"`
+	StreamID         int       `json:"stream_id"`
+	Name             string    `json:"name"`
+	XtreamStreamType string    `json:"xtream_stream_type"`
+	ThumbnailURL     string    `json:"thumbnail_url"`
+	EPGChannelID     string    `json:"epg_channel_id"`
+	CategoryID       string    `json:"category_id"`
+	AddedAt          time.Time `json:"added_at"`
+	StreamURL        string    `json:"stream_url"`
 }
 
 func InitializeIPTV() {
-	sources.InitializeXtream()
 	err := os.MkdirAll(internal.HoundIPTVDownloadsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create IPTV downloads directory")
@@ -70,26 +72,82 @@ func InitializeIPTV() {
 	}
 }
 
-func GetLiveChannelsIPTV(categoryID string) []LiveIPTVChannel {
+// TODO encrypt password
+func AddIPTVProfileXtream(name string, host string, username string, password string) error {
+	if name == "" || host == "" || username == "" || password == "" {
+		return fmt.Errorf("iptv profile name, host, username and password must not be empty: %w", internal.BadRequestError)
+	}
+	profile := &database.IPTVProfile{
+		Name:              name,
+		Host:              host,
+		Username:          username,
+		EncryptedPassword: password,
+		ProxyStream:       false,
+		IPTVStreamType:    database.IPTVStreamTypeXTREAM,
+	}
+	_, err := database.AddIPTVProfile(profile)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVChannel, error) {
+	if categoryID == "" {
+		return nil, fmt.Errorf("category id must not be empty: %w", internal.BadRequestError)
+	}
+	profile, err := database.GetIPTVProfile(iptvProviderID)
+	if err != nil {
+		return nil, err
+	}
 	channels, err := sources.GetLiveChannelsIPTV(categoryID)
 	if err != nil {
-		_ = internal.LogErrorWithMessage(err, "Failed to get live channels")
-		return nil
+		return nil, err
 	}
 	var resp []LiveIPTVChannel
 	for _, channel := range channels {
 		temp := LiveIPTVChannel{
-			StreamID:     channel.StreamID,
-			Name:         channel.Name,
-			StreamType:   channel.StreamType,
-			ThumbnailURL: channel.StreamIcon,
-			CategoryID:   categoryID,
-			AddedAt:      channel.AddedOn,
+			IPTVProfileID:    iptvProviderID,
+			StreamID:         channel.StreamID,
+			Name:             channel.Name,
+			XtreamStreamType: channel.StreamType,
+			ThumbnailURL:     channel.StreamIcon,
+			CategoryID:       categoryID,
+			AddedAt:          channel.AddedOn,
 		}
 		if channel.EPGChannelID != nil {
 			temp.EPGChannelID = *channel.EPGChannelID
 		}
+		// only no-proxy for now
+		if !profile.ProxyStream {
+			streamURL, err := sources.GetXtreamStreamLink(channel.StreamID)
+			if err != nil {
+				slog.Error("Failed to get stream link", "channel", channel, "error", err.Error())
+				continue
+			}
+			temp.StreamURL = streamURL
+		}
 		resp = append(resp, temp)
 	}
-	return resp
+	return resp, nil
+}
+
+func encodeData(channel LiveIPTVChannel) (string, error) {
+	data, err := json.Marshal(channel)
+	if err != nil {
+		return "", err
+	}
+	return internal.EncryptGCM(data)
+}
+
+func DecodeXtreamChannelData(encodedData string) (LiveIPTVChannel, error) {
+	var channel LiveIPTVChannel
+	raw, err := internal.DecryptGCM(encodedData)
+	if err != nil {
+		return channel, err
+	}
+	if err := json.Unmarshal(raw, &channel); err != nil {
+		return channel, err
+	}
+	return channel, nil
 }

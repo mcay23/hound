@@ -99,6 +99,11 @@ func InstantiateDB() {
 		_ = internal.LogErrorWithMessage(err, "Failed to instantiate provider profiles table")
 		panic(err)
 	}
+	err = instantiateIPTVProfilesTable()
+	if err != nil {
+		_ = internal.LogErrorWithMessage(err, "Failed to instantiate IPTV profiles table")
+		panic(err)
+	}
 	slog.Info("DB tables initialized")
 	err = runMigrations()
 	if err != nil {

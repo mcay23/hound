@@ -115,14 +115,14 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
-
 	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
 
 	/*
 		Live TV Routes
 	*/
-	privateRoutes.GET("/live/categories", GetLiveCategoriesHandler)
-	privateRoutes.GET("/live/channels", GetLiveChannelsHandler)
+	privateRoutes.GET("/live/:id/categories", GetLiveCategoriesHandler)
+	privateRoutes.GET("/live/:id/channels", GetLiveChannelsHandler)
+	// privateRoutes.GET("/live/stream/:encodedString", StreamLiveTVHandler)
 
 	/*
 		Comments
@@ -151,6 +151,13 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.POST("/provider_profiles", CreateProviderProfileHandler)
 	adminRoutes.DELETE("/provider_profiles/:id", DeleteProviderProfileHandler)
 	adminRoutes.PUT("/provider_profiles/:id", UpdateProviderProfileHandler)
+
+	/*
+		IPTVProfiles
+	*/
+	adminRoutes.POST("/iptv_profiles", CreateIPTVProfileHandler)
+	privateRoutes.GET("/iptv_profiles", GetIPTVProfilesHandler)
+	privateRoutes.DELETE("/iptv_profiles/:id", DeleteIPTVProfileHandler)
 
 	/*
 		Query Providers Routes

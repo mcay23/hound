@@ -32,6 +32,9 @@ function Topnav() {
             <Nav.Link className="top-navbar-item" href="/activity">
               Activity
             </Nav.Link>
+            <Nav.Link className="top-navbar-item" href="/live-tv">
+              Live TV
+            </Nav.Link>
           </Nav>
           {localStorage.getItem("role") !== "admin" || isServerInfoLoading ? (
             <></>

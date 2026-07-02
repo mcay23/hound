@@ -121,12 +121,16 @@ function App() {
                 element={<ProtectedRoute component={<Settings />} />}
               />
               <Route
+                path="library"
+                element={<ProtectedRoute component={<Library />} />}
+              />
+              <Route
                 path="activity"
                 element={<ProtectedRoute component={<Activity />} />}
               />
               <Route
-                path="library"
-                element={<ProtectedRoute component={<Library />} />}
+                path="live-tv"
+                element={<ProtectedRoute component={<LiveTV />} />}
               />
               <Route
                 path="/tv/:id"

@@ -49,7 +49,7 @@ func StreamHandler(c *gin.Context) {
 		return
 	}
 	// Direct stream case, just proxy url
-	handleProxyStream(c, streamDetails)
+	handleProxyStream(c, streamDetails.URI)
 }
 
 func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
@@ -137,13 +137,12 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 	http.ServeContent(c.Writer, c.Request, file.DisplayPath(), time.Time{}, reader)
 }
 
-func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
-	videoURL := streamDetails.URI
-	if videoURL == "" {
+func handleProxyStream(c *gin.Context, url string) {
+	if url == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
 	}
-	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", videoURL, nil)
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
 		return
