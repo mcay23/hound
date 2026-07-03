@@ -20,6 +20,7 @@ var epg xmltv.EPG
 
 type LiveIPTVChannel struct {
 	IPTVProfileID    int64     `json:"iptv_profile_id"`
+	Order            int       `json:"order"`
 	StreamID         int       `json:"stream_id"`
 	Name             string    `json:"name"`
 	XtreamStreamType string    `json:"xtream_stream_type"`
@@ -108,6 +109,7 @@ func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVCha
 	for _, channel := range channels {
 		temp := LiveIPTVChannel{
 			IPTVProfileID:    iptvProviderID,
+			Order:            channel.Number,
 			StreamID:         channel.StreamID,
 			Name:             channel.Name,
 			XtreamStreamType: channel.StreamType,

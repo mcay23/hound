@@ -21,6 +21,7 @@ import Topnav from "./pages/Topnav/Topnav";
 import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
 import Settings from "./pages/Settings/Settings";
+import LiveTV from "./pages/LiveTV/LiveTV";
 
 const queryClient = new QueryClient();
 
@@ -125,12 +126,12 @@ function App() {
                 element={<ProtectedRoute component={<Library />} />}
               />
               <Route
-                path="activity"
-                element={<ProtectedRoute component={<Activity />} />}
-              />
-              <Route
                 path="live-tv"
                 element={<ProtectedRoute component={<LiveTV />} />}
+              />
+              <Route
+                path="activity"
+                element={<ProtectedRoute component={<Activity />} />}
               />
               <Route
                 path="/tv/:id"
