@@ -32,14 +32,28 @@ function LiveTV(props: any) {
 
   return (
     <>
-      <div className="d-flex">
+      <div className="d-flex" style={{ backgroundColor: "#111319" }}>
         <Drawer
           variant="permanent"
           sx={{
             zIndex: 1,
             width: 300,
             flexShrink: 0,
+            backgroundColor: "#111319",
             "& .MuiDrawer-paper": {
+              scrollbarColor: "#4f5668 #111319",
+              "&::-webkit-scrollbar-track": {
+                background: "#111319",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#4f5668",
+                borderRadius: 8,
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "#6b7280",
+              },
+              backgroundColor: "#111319",
+              color: "white",
               width: 300,
               position: "fixed",
               top: 100,
@@ -64,12 +78,13 @@ function LiveTV(props: any) {
           </List>
         </Drawer>
         <div className="live-tv-content">
-          <h2>Live TV</h2>
           <LiveVideoPlayer src={sourceURL || ""} />
           <hr className="mt-3 mb-4" />
           <EPGMenu
             iptvProfileID={selectedIPTVProvider}
             categoryID={selectedCategoryID}
+            setSourceURL={setSourceURL}
+            sourceURL={sourceURL}
           />
         </div>
       </div>

@@ -9,7 +9,6 @@ export default function LiveVideoPlayer({ src }: { src: string }) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     if (!playerRef.current) {
       const videoElement = document.createElement("video-js");
       containerRef.current.appendChild(videoElement);

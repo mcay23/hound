@@ -16,6 +16,7 @@
     "bootstrap": "^5.2.2",
     "dayjs": "^1.11.7",
     "mui-datatables": "^4.3.0",
+    "planby": "^2.0.0",
     "react": "^18.2.0",
     "react-big-calendar": "^1.19.4",
     "react-bootstrap": "^2.6.0",

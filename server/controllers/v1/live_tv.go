@@ -27,6 +27,10 @@ type AddIPTVProfileRequest struct {
 	Password string `json:"password"`
 }
 
+type GetChannelEPGsRequest struct {
+	EPGChannelIDs []string `json:"epg_channel_ids" binding:"required"`
+}
+
 func CreateIPTVProfileHandler(c *gin.Context) {
 	var req AddIPTVProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -87,18 +91,18 @@ func GetLiveChannelsHandler(c *gin.Context) {
 	internal.SuccessResponse(c, channels, 200)
 }
 
-func GetChannelEPGHandler(c *gin.Context) {
+func GetChannelEPGsHandler(c *gin.Context) {
 	ipTVProfileID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("iptv profile id must be int64: %w: %w", err, internal.BadRequestError))
 		return
 	}
-	epgChannelID := c.Query("epg_channel_id")
-	if epgChannelID == "" {
-		internal.ErrorResponse(c, fmt.Errorf("epg channel id must be defined: %w", internal.BadRequestError))
+	var req GetChannelEPGsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("request body must be defined: %w", internal.BadRequestError))
 		return
 	}
-	epg, err := model.GetChannelEPG(ipTVProfileID, epgChannelID)
+	epg, err := model.GetChannelEPGs(ipTVProfileID, req.EPGChannelIDs)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return

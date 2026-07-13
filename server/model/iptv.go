@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -32,6 +34,7 @@ type LiveIPTVChannel struct {
 }
 
 type EPGProgramme struct {
+	EPGChannelID string                 `json:"epg_channel_id"`
 	StartTime    time.Time              `json:"start_time"`
 	StopTime     time.Time              `json:"stop_time"`
 	Titles       []EPGProgrammeLanguage `json:"titles"`
@@ -146,7 +149,11 @@ func GetLiveChannelsIPTV(iptvProfileID int64, categoryID string) ([]LiveIPTVChan
 	return resp, nil
 }
 
-func GetChannelEPG(iptvProfileID int64, EPGChannelID string) ([]EPGProgramme, error) {
+func GetChannelEPGs(iptvProfileID int64, EPGChannelIDs []string) ([]EPGProgramme, error) {
+	// normalize
+	for i := range EPGChannelIDs {
+		EPGChannelIDs[i] = strings.ToLower(EPGChannelIDs[i])
+	}
 	var resp []EPGProgramme
 	for _, programme := range epg.Programmes {
 		titles := []EPGProgrammeLanguage{}
@@ -163,8 +170,9 @@ func GetChannelEPG(iptvProfileID int64, EPGChannelID string) ([]EPGProgramme, er
 				Language: description.Lang,
 			})
 		}
-		if programme.Channel == EPGChannelID {
+		if slices.Contains(EPGChannelIDs, strings.ToLower(programme.Channel)) {
 			resp = append(resp, EPGProgramme{
+				EPGChannelID: programme.Channel,
 				StartTime:    programme.Start.Time,
 				StopTime:     programme.Stop.Time,
 				Titles:       titles,

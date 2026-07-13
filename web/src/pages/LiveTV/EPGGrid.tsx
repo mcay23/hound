@@ -1,276 +1,269 @@
-import { useMemo, useRef } from "react";
-import { Box, Paper, Typography, CircularProgress } from "@mui/material";
-import { useLiveTVChannels, useChannelEPG } from "../../api/hooks/live_tv";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { useLiveTVChannels, useChannelEPGs } from "../../api/hooks/live_tv";
+import {
+  useEpg,
+  useProgram,
+  Epg,
+  Layout,
+  ChannelBox,
+  ChannelLogo,
+  ProgramBox,
+  ProgramContent,
+  ProgramFlex,
+  ProgramStack,
+  ProgramTitle,
+  ProgramText,
+  ProgramItem,
+} from "planby";
 
-const CHANNEL_WIDTH = 220;
-const ROW_HEIGHT = 70;
-const PIXELS_PER_MINUTE = 4;
-const SLOT_MINUTES = 30;
-
-function getLocalizedText(items?: { text: string; lang?: string }[]): string {
-  if (!items?.length) return "";
-
-  return (
-    items.find((x) => x.lang?.toLowerCase().startsWith("en"))?.text ??
-    items[0].text
-  );
-}
-
-function startOfHalfHour(date: Date) {
-  const d = new Date(date);
-  d.setMinutes(d.getMinutes() < 30 ? 0 : 30, 0, 0);
-  return d;
-}
-
-function addMinutes(date: Date, minutes: number) {
-  return new Date(date.getTime() + minutes * 60_000);
-}
-
-function minutesBetween(a: Date, b: Date) {
-  return (b.getTime() - a.getTime()) / 60000;
-}
-
-function EPGChannelRow({
-  iptvProfileID,
-  channel,
-  now,
-  cutoff,
-}: {
-  iptvProfileID?: number;
-  channel: any;
-  now: Date;
-  cutoff: Date;
-}) {
-  const { data: epg, isLoading } = useChannelEPG(
-    iptvProfileID,
-    channel.epg_channel_id,
-  );
-
-  const programmes =
-    epg?.filter((p: any) => {
-      const start = new Date(p.start_time);
-      const stop = new Date(p.stop_time);
-
-      return stop > now && start < cutoff;
-    }) ?? [];
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        height: ROW_HEIGHT,
-      }}
-    >
-      {/* Channel column */}
-      <Box
-        sx={{
-          width: CHANNEL_WIDTH,
-          flexShrink: 0,
-          borderRight: "1px solid",
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          px: 2,
-          bgcolor: "background.paper",
-          position: "sticky",
-          left: 0,
-          zIndex: 2,
-        }}
-      >
-        <Typography noWrap>{channel.name}</Typography>
-      </Box>
-
-      {/* Timeline */}
-      <Box
-        sx={{
-          position: "relative",
-          width: minutesBetween(now, cutoff) * PIXELS_PER_MINUTE,
-          flexShrink: 0,
-        }}
-      >
-        {isLoading ? (
-          <CircularProgress size={20} sx={{ mt: 2, ml: 2 }} />
-        ) : (
-          programmes.map((programme: any, index: number) => {
-            const start = new Date(programme.start_time);
-            const stop = new Date(programme.stop_time);
-
-            const visibleStart = start < now ? now : start;
-
-            const visibleStop = stop > cutoff ? cutoff : stop;
-
-            const left = minutesBetween(now, visibleStart) * PIXELS_PER_MINUTE;
-
-            const width =
-              minutesBetween(visibleStart, visibleStop) * PIXELS_PER_MINUTE;
-
-            return (
-              <Paper
-                key={index}
-                sx={{
-                  position: "absolute",
-                  left,
-                  top: 6,
-                  width,
-                  height: ROW_HEIGHT - 12,
-                  overflow: "hidden",
-                  px: 1,
-                  py: 0.5,
-                }}
-              >
-                <Typography variant="caption" fontWeight={600} noWrap>
-                  {getLocalizedText(programme.titles)}
-                </Typography>
-
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  noWrap
-                >
-                  {new Date(programme.start_time).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {" - "}
-                  {new Date(programme.stop_time).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Typography>
-              </Paper>
-            );
-          })
-        )}
-      </Box>
-    </Box>
-  );
-}
-
-function EPGGrid({
-  iptvProfileID,
-  categoryID,
-  hoursAhead = 12,
-}: {
+interface EPGGridProps {
   iptvProfileID?: number;
   categoryID?: number;
+  setSourceURL: (url: string) => void;
+  sourceURL: string | undefined;
   hoursAhead?: number;
-}) {
+}
+
+interface LiveTVChannel {
+  iptv_profile_id: number;
+  order: number;
+  stream_id: number;
+  name: string;
+  xtream_stream_type: string;
+  thumbnail_url: string;
+  epg_channel_id: string;
+  category_id: string;
+  added_at: string;
+  stream_url: string;
+}
+
+interface EPGProgrammeLanguage {
+  text: string;
+  lang?: string;
+}
+
+interface EPGProgramme {
+  epg_channel_id: string;
+  start_time: string;
+  stop_time: string;
+  titles: EPGProgrammeLanguage[];
+  descriptions: EPGProgrammeLanguage[];
+}
+
+// choose english or the first available language
+function pickText(items: EPGProgrammeLanguage[] | undefined): string {
+  if (!items || items.length === 0) return "";
+  const english = items.find(
+    (i) => i.lang && i.lang.toLowerCase().startsWith("en"),
+  );
+  return (english ?? items[0]).text;
+}
+
+// wrap in responsive div, planby uses React 19 but we are
+// backporting to React 18, so some functionality is broken
+function EPGGrid(props: EPGGridProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    setWidth(containerRef.current.clientWidth);
+    const handleResize = () => {
+      if (containerRef.current) {
+        setWidth(containerRef.current.clientWidth);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} style={{ height: "600px", width: "100%" }}>
+      {width !== null && (
+        <EPGGridContent {...props} width={width} key={width} />
+      )}
+    </div>
+  );
+}
+
+function EPGGridContent({
+  iptvProfileID,
+  categoryID,
+  sourceURL,
+  setSourceURL,
+  hoursAhead = 12,
+  width,
+}: EPGGridProps & { width: number }) {
   const { data: liveTVChannels } = useLiveTVChannels(iptvProfileID, categoryID);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const now = useMemo(() => new Date(), []);
+  const before = useMemo(
+    () => new Date(now.getTime() - 0.5 * 60 * 60 * 1000),
+    [now],
+  );
   const cutoff = useMemo(
     () => new Date(now.getTime() + hoursAhead * 60 * 60 * 1000),
     [hoursAhead, now],
   );
+  const renderProgram = useCallback(
+    (props: ProgramItem) => <ProgramRenderer {...props} />,
+    [],
+  );
+  const renderChannel = useCallback(
+    (props: ChannelRendererProps) => <ChannelRenderer {...props} />,
+    [],
+  );
 
-  const timelineWidth = minutesBetween(now, cutoff) * PIXELS_PER_MINUTE;
-
-  const slots = useMemo(() => {
-    const result: Date[] = [];
-
-    for (
-      let t = startOfHalfHour(now);
-      t <= cutoff;
-      t = addMinutes(t, SLOT_MINUTES)
-    ) {
-      result.push(new Date(t));
+  // set initial channel
+  useEffect(() => {
+    if (!sourceURL && liveTVChannels?.length > 0) {
+      setSourceURL(liveTVChannels?.[0]?.stream_url);
     }
+  }, [liveTVChannels]);
 
-    return result;
-  }, [now, cutoff]);
+  // Collect unique, non-empty epg_channel_ids from channels
+  const epgChannelIDs = useMemo(() => {
+    if (!liveTVChannels) return undefined;
+    const ids = liveTVChannels
+      .map((ch: LiveTVChannel) => ch.epg_channel_id)
+      .filter((id: string) => id && id.length > 0);
+    return Array.from(new Set(ids)) as string[];
+  }, [liveTVChannels]);
+
+  const { data: rawEPGData } = useChannelEPGs(iptvProfileID, epgChannelIDs);
+
+  // Convert live TV channels to planby channel format
+  // Use epg_channel_id as uuid when available,
+  // otherwise fall back to stream_id (epg data will not be available)
+  const channels = useMemo(() => {
+    if (!liveTVChannels) return [];
+    return liveTVChannels.map((ch: LiveTVChannel) => ({
+      logo: ch.thumbnail_url,
+      uuid: ch.epg_channel_id || String(ch.stream_id),
+      name: ch.name,
+      stream_url: ch.stream_url,
+    }));
+  }, [liveTVChannels]);
+
+  // Convert EPG programmes to planby program format.
+  // dates from the api already contain timezone offsets (e.g. "+02:00"),
+  // so new Date() correctly parses them to the browser's local time
+  const epg = useMemo(() => {
+    if (!rawEPGData) return [];
+    return rawEPGData.map((prog: EPGProgramme, index: number) => {
+      const since = new Date(prog.start_time);
+      const till = new Date(prog.stop_time);
+      return {
+        channelUuid: prog.epg_channel_id,
+        id: `${prog.epg_channel_id}-${prog.start_time}-${index}`,
+        title: pickText(prog.titles),
+        description: pickText(prog.descriptions),
+        since: since.toISOString(),
+        till: till.toISOString(),
+        image: "",
+      };
+    });
+  }, [rawEPGData]);
+
+  const { getEpgProps, getLayoutProps } = useEpg({
+    epg,
+    channels,
+    startDate: before,
+    endDate: cutoff.toISOString(),
+    dayWidth: 3600,
+    width,
+    height: 600,
+    sidebarWidth: 300,
+  });
 
   return (
-    <Paper sx={{ overflow: "hidden" }}>
-      <Box
-        ref={scrollRef}
-        sx={{
-          overflow: "auto",
+    <Epg {...getEpgProps()}>
+      <Layout
+        {...getLayoutProps()}
+        renderChannel={(props) =>
+          renderChannel({ ...props, sourceURL, setSourceURL })
+        }
+        renderProgram={renderProgram}
+      />
+    </Epg>
+  );
+}
+
+interface ChannelRendererProps {
+  channel: any;
+  sourceURL: string | undefined;
+  setSourceURL: (url: string) => void;
+}
+function ChannelRenderer({
+  channel,
+  sourceURL,
+  setSourceURL,
+}: ChannelRendererProps) {
+  return (
+    <ChannelBox {...channel.position}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "0 12px",
+          width: "100%",
         }}
       >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            position: "sticky",
-            top: 0,
-            bgcolor: "background.paper",
-            zIndex: 5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
+        {channel.logo && (
+          <ChannelLogo
+            src={channel.logo}
+            alt={channel.name}
+            style={{
+              maxWidth: 40,
+              maxHeight: 40,
+              objectFit: "contain",
+            }}
+          />
+        )}
+        <span
+          style={{
+            color: channel.stream_url === sourceURL ? "yellow" : "#fff",
+            fontSize: 14,
+            fontWeight: 500,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            width: "100%",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            setSourceURL(channel.stream_url);
+            console.log(channel.stream_url);
           }}
         >
-          <Box
-            sx={{
-              width: CHANNEL_WIDTH,
-              flexShrink: 0,
-              borderRight: "1px solid",
-              borderColor: "divider",
-              p: 2,
-              position: "sticky",
-              left: 0,
-              zIndex: 6,
-              bgcolor: "background.paper",
-            }}
-          >
-            <Typography fontWeight={600}>Channel</Typography>
-          </Box>
+          {channel.name}
+        </span>
+      </div>
+    </ChannelBox>
+  );
+}
 
-          <Box
-            sx={{
-              position: "relative",
-              width: timelineWidth,
-              height: 60,
-              flexShrink: 0,
-            }}
-          >
-            {slots.map((slot) => {
-              const left = minutesBetween(now, slot) * PIXELS_PER_MINUTE;
+interface ProgramRendererProps extends ProgramItem {}
+function ProgramRenderer(props: ProgramRendererProps) {
+  const { program } = props;
+  const { styles, formatTime, isLive } = useProgram(props);
+  const { title, since, till } = program.data;
 
-              return (
-                <Box
-                  key={slot.toISOString()}
-                  sx={{
-                    position: "absolute",
-                    left,
-                    top: 0,
-                    width: SLOT_MINUTES * PIXELS_PER_MINUTE,
-                    height: "100%",
-                    borderLeft: "1px solid",
-                    borderColor: "divider",
-                    px: 0.5,
-                  }}
-                >
-                  <Typography variant="caption" fontWeight={600}>
-                    {slot.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-
-        {/* Rows */}
-        {liveTVChannels
-          ?.filter((c: any) => c.epg_channel_id)
-          .map((channel: any) => (
-            <EPGChannelRow
-              key={channel.stream_id}
-              iptvProfileID={iptvProfileID}
-              channel={channel}
-              now={now}
-              cutoff={cutoff}
-            />
-          ))}
-      </Box>
-    </Paper>
+  return (
+    <ProgramBox width={styles.width} style={styles.position}>
+      <ProgramContent width={styles.width} isLive={isLive}>
+        <ProgramFlex>
+          <ProgramStack>
+            <ProgramTitle>{title}</ProgramTitle>
+            <ProgramText>
+              {formatTime(since)} - {formatTime(till)}
+            </ProgramText>
+          </ProgramStack>
+        </ProgramFlex>
+      </ProgramContent>
+    </ProgramBox>
   );
 }
 

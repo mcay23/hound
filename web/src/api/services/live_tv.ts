@@ -10,7 +10,7 @@ export const fetchLiveTVChannels = async (iptvProfileID: number, categoryID: num
   return data.sort((a: any, b: any) => a.order > b.order ? 1 : -1);
 };
 
-export const fetchChannelEPG = async (iptvProfileID: number, epgChannelID: string) => {
-  const { data } = await axios.get(`/api/v1/live/${iptvProfileID}/epg?epg_channel_id=${epgChannelID}`);
+export const fetchChannelEPGs = async (iptvProfileID: number, epgChannelIDs: string[]) => {
+  const { data } = await axios.post(`/api/v1/live/${iptvProfileID}/epg`, { epg_channel_ids: epgChannelIDs });
   return data
 };
