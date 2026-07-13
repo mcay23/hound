@@ -87,6 +87,25 @@ func GetLiveChannelsHandler(c *gin.Context) {
 	internal.SuccessResponse(c, channels, 200)
 }
 
+func GetChannelEPGHandler(c *gin.Context) {
+	ipTVProfileID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("iptv profile id must be int64: %w: %w", err, internal.BadRequestError))
+		return
+	}
+	epgChannelID := c.Query("epg_channel_id")
+	if epgChannelID == "" {
+		internal.ErrorResponse(c, fmt.Errorf("epg channel id must be defined: %w", internal.BadRequestError))
+		return
+	}
+	epg, err := model.GetChannelEPG(ipTVProfileID, epgChannelID)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, epg, 200)
+}
+
 // for proxied iptv streams in the future ?
 // func StreamLiveTVHandler(c *gin.Context) {
 // 	encodedData := c.Param("encodedString")

@@ -122,6 +122,7 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/live/:id/categories", GetLiveCategoriesHandler)
 	privateRoutes.GET("/live/:id/channels", GetLiveChannelsHandler)
+	privateRoutes.GET("/live/:id/epg", GetChannelEPGHandler)
 	// privateRoutes.GET("/live/stream/:encodedString", StreamLiveTVHandler)
 
 	/*

@@ -31,6 +31,18 @@ type LiveIPTVChannel struct {
 	StreamURL        string    `json:"stream_url"`
 }
 
+type EPGProgramme struct {
+	StartTime    time.Time              `json:"start_time"`
+	StopTime     time.Time              `json:"stop_time"`
+	Titles       []EPGProgrammeLanguage `json:"titles"`
+	Descriptions []EPGProgrammeLanguage `json:"descriptions"`
+}
+
+type EPGProgrammeLanguage struct {
+	Text     string  `json:"text"`
+	Language *string `json:"lang,omitempty"`
+}
+
 func InitializeIPTV() {
 	err := os.MkdirAll(internal.HoundIPTVDownloadsPath, 0755)
 	if err != nil {
@@ -93,11 +105,11 @@ func AddIPTVProfileXtream(name string, host string, username string, password st
 	return nil
 }
 
-func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVChannel, error) {
+func GetLiveChannelsIPTV(iptvProfileID int64, categoryID string) ([]LiveIPTVChannel, error) {
 	if categoryID == "" {
 		return nil, fmt.Errorf("category id must not be empty: %w", internal.BadRequestError)
 	}
-	profile, err := database.GetIPTVProfile(iptvProviderID)
+	profile, err := database.GetIPTVProfile(iptvProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +120,7 @@ func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVCha
 	var resp []LiveIPTVChannel
 	for _, channel := range channels {
 		temp := LiveIPTVChannel{
-			IPTVProfileID:    iptvProviderID,
+			IPTVProfileID:    iptvProfileID,
 			Order:            channel.Number,
 			StreamID:         channel.StreamID,
 			Name:             channel.Name,
@@ -130,6 +142,35 @@ func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVCha
 			temp.StreamURL = streamURL
 		}
 		resp = append(resp, temp)
+	}
+	return resp, nil
+}
+
+func GetChannelEPG(iptvProfileID int64, EPGChannelID string) ([]EPGProgramme, error) {
+	var resp []EPGProgramme
+	for _, programme := range epg.Programmes {
+		titles := []EPGProgrammeLanguage{}
+		for _, title := range programme.Titles {
+			titles = append(titles, EPGProgrammeLanguage{
+				Text:     title.Text,
+				Language: title.Lang,
+			})
+		}
+		descriptions := []EPGProgrammeLanguage{}
+		for _, description := range programme.Descriptions {
+			descriptions = append(descriptions, EPGProgrammeLanguage{
+				Text:     description.Text,
+				Language: description.Lang,
+			})
+		}
+		if programme.Channel == EPGChannelID {
+			resp = append(resp, EPGProgramme{
+				StartTime:    programme.Start.Time,
+				StopTime:     programme.Stop.Time,
+				Titles:       titles,
+				Descriptions: descriptions,
+			})
+		}
 	}
 	return resp, nil
 }
