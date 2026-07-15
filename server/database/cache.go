@@ -77,6 +77,7 @@ func ClearCache() {
 
 // Stores a key-value pair with TTL, update if key exists
 // returns whether the key exists in bool
+// set ttl = -1 for no expiry
 func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	if db == nil {
 		return false, fmt.Errorf("cache not initialized: %w", internal.InternalServerError)

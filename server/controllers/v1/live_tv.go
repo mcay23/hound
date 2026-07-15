@@ -12,7 +12,12 @@ import (
 )
 
 func GetLiveCategoriesHandler(c *gin.Context) {
-	cats, err := sources.GetLiveCategoriesIPTV()
+	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
+		return
+	}
+	cats, err := sources.GetLiveCategoriesIPTV(iptvProviderID)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -20,7 +25,7 @@ func GetLiveCategoriesHandler(c *gin.Context) {
 	internal.SuccessResponse(c, cats, 200)
 }
 
-type AddIPTVProfileRequest struct {
+type AddIPTVProviderRequest struct {
 	Name     string `json:"name"`
 	Host     string `json:"host"`
 	Username string `json:"username"`
@@ -31,13 +36,13 @@ type GetChannelEPGsRequest struct {
 	EPGChannelIDs []string `json:"epg_channel_ids" binding:"required"`
 }
 
-func CreateIPTVProfileHandler(c *gin.Context) {
-	var req AddIPTVProfileRequest
+func CreateIPTVProviderHandler(c *gin.Context) {
+	var req AddIPTVProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	err := model.AddIPTVProfileXtream(req.Name, req.Host, req.Username, req.Password)
+	err := model.AddIPTVProviderXtream(req.Name, req.Host, req.Username, req.Password)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -45,27 +50,29 @@ func CreateIPTVProfileHandler(c *gin.Context) {
 	internal.SuccessResponse(c, nil, 200)
 }
 
-func GetIPTVProfilesHandler(c *gin.Context) {
-	profiles, err := database.GetIPTVProfiles()
+func GetIPTVProvidersHandler(c *gin.Context) {
+	providers, err := database.GetIPTVProviders()
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	if len(profiles) == 0 {
-		internal.SuccessResponse(c, []database.IPTVProfile{}, 200)
+	for _, p := range providers {
+		p.EncryptedPassword = ""
+	}
+	if len(providers) == 0 {
+		internal.SuccessResponse(c, []database.IPTVProvider{}, 200)
 		return
 	}
-	internal.SuccessResponse(c, profiles, 200)
+	internal.SuccessResponse(c, providers, 200)
 }
 
-func DeleteIPTVProfileHandler(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+func DeleteIPTVProviderHandler(c *gin.Context) {
+	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("id must be int64: %w: %w", err, internal.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
 		return
 	}
-	if err := database.DeleteIPTVProfile(id); err != nil {
+	if err := database.DeleteIPTVProvider(iptvProviderID); err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
@@ -73,9 +80,9 @@ func DeleteIPTVProfileHandler(c *gin.Context) {
 }
 
 func GetLiveChannelsHandler(c *gin.Context) {
-	ipTVProfileID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("iptv profile id must be int64: %w: %w", err, internal.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
 		return
 	}
 	categoryID := c.Query("category_id")
@@ -83,7 +90,7 @@ func GetLiveChannelsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("category id must be defined: %w", internal.BadRequestError))
 		return
 	}
-	channels, err := model.GetLiveChannelsIPTV(ipTVProfileID, categoryID)
+	channels, err := model.GetLiveChannelsIPTV(iptvProviderID, categoryID)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -92,9 +99,9 @@ func GetLiveChannelsHandler(c *gin.Context) {
 }
 
 func GetChannelEPGsHandler(c *gin.Context) {
-	ipTVProfileID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("iptv profile id must be int64: %w: %w", err, internal.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
 		return
 	}
 	var req GetChannelEPGsRequest
@@ -102,7 +109,7 @@ func GetChannelEPGsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("request body must be defined: %w", internal.BadRequestError))
 		return
 	}
-	epg, err := model.GetChannelEPGs(ipTVProfileID, req.EPGChannelIDs)
+	epg, err := model.GetChannelEPGs(iptvProviderID, req.EPGChannelIDs)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return

@@ -1,8 +1,5 @@
 import "./LiveTV.css";
-import {
-  useLiveTVChannels,
-  useLiveTVCategories,
-} from "../../api/hooks/live_tv";
+import { useLiveTVCategories } from "../../api/hooks/live_tv";
 import LiveVideoPlayer from "../VideoPlayer/LiveVideoPlayer";
 import { useEffect, useState } from "react";
 import {
@@ -17,12 +14,16 @@ import EPGMenu from "./EPGGrid";
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
     number | undefined
-  >(2);
+  >(1);
   const [selectedCategoryID, setSelectedCategoryID] = useState<
     number | undefined
   >(undefined);
   const [sourceURL, setSourceURL] = useState<string | undefined>(undefined);
-  const { data: liveTVCategories } = useLiveTVCategories(2);
+  const {
+    data: liveTVCategories,
+    isLoading: liveTVCategoriesLoading,
+    error: liveTVCategoriesError,
+  } = useLiveTVCategories(selectedIPTVProvider);
 
   useEffect(() => {
     if (!selectedCategoryID) {
@@ -66,6 +67,12 @@ function LiveTV(props: any) {
             <h2>Categories</h2>
           </div>
           <List>
+            {liveTVCategoriesLoading && <div className="mt-2">Loading...</div>}
+            {liveTVCategoriesError && (
+              <div>
+                Error Fetching Categories: {liveTVCategoriesError.message}
+              </div>
+            )}
             {liveTVCategories?.map((category: any) => (
               <ListItem key={category?.category_id} disablePadding>
                 <ListItemButton
@@ -81,7 +88,7 @@ function LiveTV(props: any) {
           <LiveVideoPlayer src={sourceURL || ""} />
           <hr className="mt-3 mb-4" />
           <EPGMenu
-            iptvProfileID={selectedIPTVProvider}
+            iptvProviderID={selectedIPTVProvider}
             categoryID={selectedCategoryID}
             setSourceURL={setSourceURL}
             sourceURL={sourceURL}

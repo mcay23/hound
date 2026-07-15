@@ -2,11 +2,8 @@ package model
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -17,11 +14,8 @@ import (
 	"github.com/sherif-fanous/xmltv"
 )
 
-var EPGFilepath = filepath.Join(internal.HoundIPTVDownloadsPath, "epg.xml")
-var epg xmltv.EPG
-
 type LiveIPTVChannel struct {
-	IPTVProfileID    int64     `json:"iptv_profile_id"`
+	IPTVProviderID   int64     `json:"iptv_provider_id"`
 	Order            int       `json:"order"`
 	StreamID         int       `json:"stream_id"`
 	Name             string    `json:"name"`
@@ -46,84 +40,88 @@ type EPGProgrammeLanguage struct {
 	Language *string `json:"lang,omitempty"`
 }
 
+const (
+	ProviderEPGCacheKey = "iptv_providers|%d|epg"
+)
+
 func InitializeIPTV() {
-	err := os.MkdirAll(internal.HoundIPTVDownloadsPath, 0755)
+	// fmt.Printf("Found %d channels and %d programmes\n", len(epg.Channels), len(epg.Programmes))
+	// for i, channel := range epg.Channels {
+	// 	fmt.Printf("Channel id: %s\n", channel.ID)
+	// 	for _, displayName := range channel.DisplayNames {
+	// 		fmt.Printf("Channel name: %s\n", displayName.Text)
+	// 	}
+	// 	if i > 10 {
+	// 		break
+	// 	}
+	// }
+	// fmt.Println("--------------cats---------------")
+	// cats, err := sources.GetLiveChannelsIPTV("2352")
+	// if err != nil {
+	// 	_ = internal.LogErrorWithMessage(err, "Failed to get live categories")
+	// 	return
+	// }
+	// for i, cat := range cats {
+	// 	fmt.Printf("Channel id: %d, name: %s\n", cat.StreamID, cat.Name)
+	// 	if i == 10 {
+	// 		break
+	// 	}
+	// }
+}
+
+func GetXtreamProviderEPG(iptvProviderID int64) (xmltv.EPG, error) {
+	cacheKey := fmt.Sprintf(ProviderEPGCacheKey, iptvProviderID)
+	var epg xmltv.EPG
+	found, err := database.GetCache(cacheKey, &epg)
 	if err != nil {
-		_ = internal.LogErrorWithMessage(err, "Failed to create IPTV downloads directory")
-		panic(fmt.Errorf("fatal error creating IPTV downloads directory %w", err))
+		return xmltv.EPG{}, fmt.Errorf("failed to get epg from cache for provider %d: %w", iptvProviderID, err)
 	}
-	err = sources.DownloadEPGXtream(EPGFilepath)
-	if err != nil {
-		_ = internal.LogErrorWithMessage(err, "Failed to download EPG file")
-		panic(fmt.Errorf("fatal error downloading EPG file %w", err))
+	if !found {
+		return xmltv.EPG{}, fmt.Errorf("epg not found for provider %d (still downloading?): %w", iptvProviderID, internal.NotFoundError)
 	}
-	data, err := os.ReadFile(EPGFilepath)
-	if err != nil {
-		panic(fmt.Errorf("fatal error reading EPG file %w", err))
-	}
-	if err := xml.Unmarshal(data, &epg); err != nil {
-		panic(fmt.Errorf("fatal error parsing XMLTV %w", err))
-	}
-	fmt.Printf("Found %d channels and %d programmes\n", len(epg.Channels), len(epg.Programmes))
-	for i, channel := range epg.Channels {
-		fmt.Printf("Channel id: %s\n", channel.ID)
-		for _, displayName := range channel.DisplayNames {
-			fmt.Printf("Channel name: %s\n", displayName.Text)
-		}
-		if i > 10 {
-			break
-		}
-	}
-	fmt.Println("--------------cats---------------")
-	cats, err := sources.GetLiveChannelsIPTV("2352")
-	if err != nil {
-		_ = internal.LogErrorWithMessage(err, "Failed to get live categories")
-		return
-	}
-	for i, cat := range cats {
-		fmt.Printf("Channel id: %d, name: %s\n", cat.StreamID, cat.Name)
-		if i == 10 {
-			break
-		}
-	}
+	return epg, nil
 }
 
 // TODO encrypt password
-func AddIPTVProfileXtream(name string, host string, username string, password string) error {
+func AddIPTVProviderXtream(name string, host string, username string, password string) error {
 	if name == "" || host == "" || username == "" || password == "" {
-		return fmt.Errorf("iptv profile name, host, username and password must not be empty: %w", internal.BadRequestError)
+		return fmt.Errorf("iptv provider name, host, username and password must not be empty: %w", internal.BadRequestError)
 	}
-	profile := &database.IPTVProfile{
+	encryptedPassword, err := internal.EncryptGCM([]byte(password))
+	if err != nil {
+		return fmt.Errorf("failed to encrypt password: %w", err)
+	}
+	provider := &database.IPTVProvider{
 		Name:              name,
 		Host:              host,
 		Username:          username,
-		EncryptedPassword: password,
+		EncryptedPassword: encryptedPassword,
 		ProxyStream:       false,
 		IPTVStreamType:    database.IPTVStreamTypeXTREAM,
 	}
-	_, err := database.AddIPTVProfile(profile)
+	_, err = database.AddIPTVProvider(provider)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetLiveChannelsIPTV(iptvProfileID int64, categoryID string) ([]LiveIPTVChannel, error) {
+func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]LiveIPTVChannel, error) {
 	if categoryID == "" {
 		return nil, fmt.Errorf("category id must not be empty: %w", internal.BadRequestError)
 	}
-	profile, err := database.GetIPTVProfile(iptvProfileID)
+	provider, err := database.GetIPTVProvider(iptvProviderID)
 	if err != nil {
 		return nil, err
 	}
-	channels, err := sources.GetLiveChannelsIPTV(categoryID)
+	channels, err := sources.GetLiveChannelsIPTV(iptvProviderID, categoryID)
 	if err != nil {
 		return nil, err
 	}
 	var resp []LiveIPTVChannel
 	for _, channel := range channels {
 		temp := LiveIPTVChannel{
-			IPTVProfileID:    iptvProfileID,
+			IPTVProviderID:   iptvProviderID,
 			Order:            channel.Number,
 			StreamID:         channel.StreamID,
 			Name:             channel.Name,
@@ -136,8 +134,8 @@ func GetLiveChannelsIPTV(iptvProfileID int64, categoryID string) ([]LiveIPTVChan
 			temp.EPGChannelID = *channel.EPGChannelID
 		}
 		// only no-proxy for now
-		if !profile.ProxyStream {
-			streamURL, err := sources.GetXtreamStreamLink(channel.StreamID)
+		if !provider.ProxyStream {
+			streamURL, err := sources.GetXtreamStreamLink(iptvProviderID, channel.StreamID)
 			if err != nil {
 				slog.Error("Failed to get stream link", "channel", channel, "error", err.Error())
 				continue
@@ -149,7 +147,12 @@ func GetLiveChannelsIPTV(iptvProfileID int64, categoryID string) ([]LiveIPTVChan
 	return resp, nil
 }
 
-func GetChannelEPGs(iptvProfileID int64, EPGChannelIDs []string) ([]EPGProgramme, error) {
+func GetChannelEPGs(iptvProviderID int64, EPGChannelIDs []string) ([]EPGProgramme, error) {
+	// May return not found error if epg is not downloaded yet
+	epg, err := GetXtreamProviderEPG(iptvProviderID)
+	if err != nil {
+		return nil, err
+	}
 	// normalize
 	for i := range EPGChannelIDs {
 		EPGChannelIDs[i] = strings.ToLower(EPGChannelIDs[i])

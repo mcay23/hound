@@ -18,6 +18,7 @@ func InitializeWorkers() {
 	// external library workers has some dependencies on ingest workers, start
 	// it after ingest workers are initialized
 	InitializeExternalLibraryWorkers()
+	InitializeEPGWorkers()
 	go cleanUpDownloads()
 }
 

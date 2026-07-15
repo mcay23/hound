@@ -17,7 +17,7 @@ import {
 } from "planby";
 
 interface EPGGridProps {
-  iptvProfileID?: number;
+  iptvProviderID?: number;
   categoryID?: number;
   setSourceURL: (url: string) => void;
   sourceURL: string | undefined;
@@ -25,7 +25,7 @@ interface EPGGridProps {
 }
 
 interface LiveTVChannel {
-  iptv_profile_id: number;
+  iptv_provider_id: number;
   order: number;
   stream_id: number;
   name: string;
@@ -89,14 +89,17 @@ function EPGGrid(props: EPGGridProps) {
 }
 
 function EPGGridContent({
-  iptvProfileID,
+  iptvProviderID: iptvProviderID,
   categoryID,
   sourceURL,
   setSourceURL,
   hoursAhead = 12,
   width,
 }: EPGGridProps & { width: number }) {
-  const { data: liveTVChannels } = useLiveTVChannels(iptvProfileID, categoryID);
+  const { data: liveTVChannels } = useLiveTVChannels(
+    iptvProviderID,
+    categoryID,
+  );
   const now = useMemo(() => new Date(), []);
   const before = useMemo(
     () => new Date(now.getTime() - 0.5 * 60 * 60 * 1000),
@@ -131,7 +134,7 @@ function EPGGridContent({
     return Array.from(new Set(ids)) as string[];
   }, [liveTVChannels]);
 
-  const { data: rawEPGData } = useChannelEPGs(iptvProfileID, epgChannelIDs);
+  const { data: rawEPGData } = useChannelEPGs(iptvProviderID, epgChannelIDs);
 
   // Convert live TV channels to planby channel format
   // Use epg_channel_id as uuid when available,
