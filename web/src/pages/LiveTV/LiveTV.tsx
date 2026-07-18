@@ -1,7 +1,7 @@
 import "./LiveTV.css";
 import { useLiveTVCategories } from "../../api/hooks/live_tv";
 import LiveVideoPlayer from "../VideoPlayer/LiveVideoPlayer";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Drawer,
   List,
@@ -9,7 +9,23 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import EPGMenu from "./EPGGrid";
+import EPGMenu, { SelectedChannel, EPGProgramme, pickText } from "./EPGGrid";
+
+function findNowPlaying(epg: EPGProgramme[]): EPGProgramme | undefined {
+  const now = new Date();
+  return epg.find((prog) => {
+    const start = new Date(prog.start_time);
+    const stop = new Date(prog.stop_time);
+    return now >= start && now < stop;
+  });
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
@@ -18,7 +34,10 @@ function LiveTV(props: any) {
   const [selectedCategoryID, setSelectedCategoryID] = useState<
     number | undefined
   >(undefined);
-  const [sourceURL, setSourceURL] = useState<string | undefined>(undefined);
+  const [selectedChannel, setSelectedChannel] = useState<
+    SelectedChannel | undefined
+  >(undefined);
+
   const {
     data: liveTVCategories,
     isLoading: liveTVCategoriesLoading,
@@ -30,6 +49,13 @@ function LiveTV(props: any) {
       setSelectedCategoryID(liveTVCategories?.[0]?.category_id || null);
     }
   }, [liveTVCategories]);
+
+  const nowPlaying = useMemo(
+    () => (selectedChannel ? findNowPlaying(selectedChannel.epg) : undefined),
+    [selectedChannel],
+  );
+
+  const sourceURL = selectedChannel?.channel.stream_url;
 
   return (
     <>
@@ -85,13 +111,40 @@ function LiveTV(props: any) {
           </List>
         </Drawer>
         <div className="live-tv-content">
-          <LiveVideoPlayer src={sourceURL || ""} />
+          <div className="d-flex flex-row">
+            <div style={{ width: "70%" }}>
+              <LiveVideoPlayer src={sourceURL || ""} />
+            </div>
+            <div
+              style={{ width: "30%", marginTop: "1rem", marginLeft: "2rem" }}
+            >
+              <h1 className="text-white">
+                {selectedChannel?.channel.name || "No Channel Selected"}
+              </h1>
+              {nowPlaying ? (
+                <>
+                  <h2 className="text-white">
+                    Now Playing: {pickText(nowPlaying.titles)}
+                  </h2>
+                  <h3 className="text-white">
+                    {pickText(nowPlaying.descriptions)}
+                  </h3>
+                  <h3 className="text-white">
+                    {formatTime(nowPlaying.start_time)} -{" "}
+                    {formatTime(nowPlaying.stop_time)}
+                  </h3>
+                </>
+              ) : selectedChannel ? (
+                <h2 className="text-white">No programme info available</h2>
+              ) : null}
+            </div>
+          </div>
           <hr className="mt-3 mb-4" />
           <EPGMenu
             iptvProviderID={selectedIPTVProvider}
             categoryID={selectedCategoryID}
-            setSourceURL={setSourceURL}
-            sourceURL={sourceURL}
+            selectedChannel={selectedChannel}
+            setSelectedChannel={setSelectedChannel}
           />
         </div>
       </div>

@@ -1,6 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchLiveTVChannels, fetchLiveTVCategories, fetchChannelEPGs } from "../services/live_tv";
 
+export interface LiveTVChannel {
+  iptv_provider_id: number;
+  order: number;
+  stream_id: number;
+  name: string;
+  xtream_stream_type: string;
+  thumbnail_url: string;
+  epg_channel_id: string;
+  category_id: string;
+  added_at: string;
+  stream_url: string;
+}
+
 export const useLiveTVCategories = (iptvProviderID: number | undefined) => {
   return useQuery({
     queryKey: ["live-tv-categories", iptvProviderID],
@@ -14,7 +27,7 @@ export const useLiveTVChannels = (
   iptvProviderID: number | undefined,
   categoryID: number | undefined,
 ) => {
-  return useQuery({
+  return useQuery<LiveTVChannel[]>({
     queryKey: ["live-tv-channels", iptvProviderID, categoryID],
     queryFn: () => fetchLiveTVChannels(iptvProviderID as number, categoryID as number),
     staleTime: 30 * 60 * 1000,

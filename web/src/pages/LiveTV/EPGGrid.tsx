@@ -1,5 +1,9 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { useLiveTVChannels, useChannelEPGs } from "../../api/hooks/live_tv";
+import {
+  useLiveTVChannels,
+  useChannelEPGs,
+  LiveTVChannel,
+} from "../../api/hooks/live_tv";
 import {
   useEpg,
   useProgram,
@@ -16,33 +20,12 @@ import {
   ProgramItem,
 } from "planby";
 
-interface EPGGridProps {
-  iptvProviderID?: number;
-  categoryID?: number;
-  setSourceURL: (url: string) => void;
-  sourceURL: string | undefined;
-  hoursAhead?: number;
-}
-
-interface LiveTVChannel {
-  iptv_provider_id: number;
-  order: number;
-  stream_id: number;
-  name: string;
-  xtream_stream_type: string;
-  thumbnail_url: string;
-  epg_channel_id: string;
-  category_id: string;
-  added_at: string;
-  stream_url: string;
-}
-
-interface EPGProgrammeLanguage {
+export interface EPGProgrammeLanguage {
   text: string;
   lang?: string;
 }
 
-interface EPGProgramme {
+export interface EPGProgramme {
   epg_channel_id: string;
   start_time: string;
   stop_time: string;
@@ -50,8 +33,21 @@ interface EPGProgramme {
   descriptions: EPGProgrammeLanguage[];
 }
 
+export interface SelectedChannel {
+  channel: LiveTVChannel;
+  epg: EPGProgramme[];
+}
+
+interface EPGGridProps {
+  iptvProviderID?: number;
+  categoryID?: number;
+  selectedChannel: SelectedChannel | undefined;
+  setSelectedChannel: (channel: SelectedChannel | undefined) => void;
+  hoursAhead?: number;
+}
+
 // choose english or the first available language
-function pickText(items: EPGProgrammeLanguage[] | undefined): string {
+export function pickText(items: EPGProgrammeLanguage[] | undefined): string {
   if (!items || items.length === 0) return "";
   const english = items.find(
     (i) => i.lang && i.lang.toLowerCase().startsWith("en"),
@@ -91,8 +87,8 @@ function EPGGrid(props: EPGGridProps) {
 function EPGGridContent({
   iptvProviderID: iptvProviderID,
   categoryID,
-  sourceURL,
-  setSourceURL,
+  selectedChannel,
+  setSelectedChannel,
   hoursAhead = 12,
   width,
 }: EPGGridProps & { width: number }) {
@@ -110,20 +106,11 @@ function EPGGridContent({
     [hoursAhead, now],
   );
   const renderProgram = useCallback(
-    (props: ProgramItem) => <ProgramRenderer {...props} />,
+    (props: ProgramItem) => (
+      <ProgramRenderer key={props.program.data.id} {...props} />
+    ),
     [],
   );
-  const renderChannel = useCallback(
-    (props: ChannelRendererProps) => <ChannelRenderer {...props} />,
-    [],
-  );
-
-  // set initial channel
-  useEffect(() => {
-    if (!sourceURL && liveTVChannels?.length > 0) {
-      setSourceURL(liveTVChannels?.[0]?.stream_url);
-    }
-  }, [liveTVChannels]);
 
   // Collect unique, non-empty epg_channel_ids from channels
   const epgChannelIDs = useMemo(() => {
@@ -136,6 +123,43 @@ function EPGGridContent({
 
   const { data: rawEPGData } = useChannelEPGs(iptvProviderID, epgChannelIDs);
 
+  // map epg_channel_id to programmes
+  const epgByChannelId = useMemo(() => {
+    const map = new Map<string, EPGProgramme[]>();
+    if (!rawEPGData) return map;
+    for (const prog of rawEPGData as EPGProgramme[]) {
+      const list = map.get(prog.epg_channel_id) || [];
+      list.push(prog);
+      map.set(prog.epg_channel_id, list);
+    }
+    return map;
+  }, [rawEPGData]);
+
+  // Helper to build a SelectedChannel from a LiveTVChannel
+  const buildSelectedChannel = useCallback(
+    (ch: LiveTVChannel): SelectedChannel => ({
+      channel: ch,
+      epg: epgByChannelId.get(ch.epg_channel_id) || [],
+    }),
+    [epgByChannelId],
+  );
+
+  const renderChannel = useCallback(
+    (props: ChannelRendererProps) => (
+      <ChannelRenderer
+        key={props.channel.uuid + "|" + props.channel._liveTVChannel?.stream_id}
+        {...props}
+      />
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    if (!selectedChannel && liveTVChannels && liveTVChannels.length > 0) {
+      setSelectedChannel(buildSelectedChannel(liveTVChannels[0]));
+    }
+  }, [liveTVChannels, epgByChannelId]);
+
   // Convert live TV channels to planby channel format
   // Use epg_channel_id as uuid when available,
   // otherwise fall back to stream_id (epg data will not be available)
@@ -145,7 +169,7 @@ function EPGGridContent({
       logo: ch.thumbnail_url,
       uuid: ch.epg_channel_id || String(ch.stream_id),
       name: ch.name,
-      stream_url: ch.stream_url,
+      _liveTVChannel: ch,
     }));
   }, [liveTVChannels]);
 
@@ -154,19 +178,21 @@ function EPGGridContent({
   // so new Date() correctly parses them to the browser's local time
   const epg = useMemo(() => {
     if (!rawEPGData) return [];
-    return rawEPGData.map((prog: EPGProgramme, index: number) => {
-      const since = new Date(prog.start_time);
-      const till = new Date(prog.stop_time);
-      return {
-        channelUuid: prog.epg_channel_id,
-        id: `${prog.epg_channel_id}-${prog.start_time}-${index}`,
-        title: pickText(prog.titles),
-        description: pickText(prog.descriptions),
-        since: since.toISOString(),
-        till: till.toISOString(),
-        image: "",
-      };
-    });
+    return (rawEPGData as EPGProgramme[]).map(
+      (prog: EPGProgramme, index: number) => {
+        const since = new Date(prog.start_time);
+        const till = new Date(prog.stop_time);
+        return {
+          channelUuid: prog.epg_channel_id,
+          id: `${prog.epg_channel_id}-${prog.start_time}-${index}`,
+          title: pickText(prog.titles),
+          description: pickText(prog.descriptions),
+          since: since.toISOString(),
+          till: till.toISOString(),
+          image: "",
+        };
+      },
+    );
   }, [rawEPGData]);
 
   const { getEpgProps, getLayoutProps } = useEpg({
@@ -185,7 +211,12 @@ function EPGGridContent({
       <Layout
         {...getLayoutProps()}
         renderChannel={(props) =>
-          renderChannel({ ...props, sourceURL, setSourceURL })
+          renderChannel({
+            ...props,
+            selectedChannel,
+            setSelectedChannel: (ch: LiveTVChannel) =>
+              setSelectedChannel(buildSelectedChannel(ch)),
+          })
         }
         renderProgram={renderProgram}
       />
@@ -195,14 +226,18 @@ function EPGGridContent({
 
 interface ChannelRendererProps {
   channel: any;
-  sourceURL: string | undefined;
-  setSourceURL: (url: string) => void;
+  selectedChannel: SelectedChannel | undefined;
+  setSelectedChannel: (channel: LiveTVChannel) => void;
 }
+
 function ChannelRenderer({
   channel,
-  sourceURL,
-  setSourceURL,
+  selectedChannel,
+  setSelectedChannel,
 }: ChannelRendererProps) {
+  const isSelected =
+    selectedChannel?.channel.stream_url === channel._liveTVChannel?.stream_url;
+
   return (
     <ChannelBox {...channel.position}>
       <div
@@ -227,7 +262,7 @@ function ChannelRenderer({
         )}
         <span
           style={{
-            color: channel.stream_url === sourceURL ? "yellow" : "#fff",
+            color: isSelected ? "yellow" : "#fff",
             fontSize: 14,
             fontWeight: 500,
             overflow: "hidden",
@@ -237,8 +272,8 @@ function ChannelRenderer({
             cursor: "pointer",
           }}
           onClick={() => {
-            setSourceURL(channel.stream_url);
-            console.log(channel.stream_url);
+            const liveCh: LiveTVChannel = channel._liveTVChannel;
+            setSelectedChannel(liveCh);
           }}
         >
           {channel.name}

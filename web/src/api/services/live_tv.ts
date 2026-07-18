@@ -1,4 +1,5 @@
 import axios from "axios";
+import { LiveTVChannel } from "../hooks/live_tv";
 
 export const fetchLiveTVCategories = async (iptvProviderID: number) => {
   const { data } = await axios.get(`/api/v1/live/${iptvProviderID}/categories`);
@@ -7,7 +8,7 @@ export const fetchLiveTVCategories = async (iptvProviderID: number) => {
 
 export const fetchLiveTVChannels = async (iptvProviderID: number, categoryID: number) => {
   const { data } = await axios.get(`/api/v1/live/${iptvProviderID}/channels?category_id=${categoryID}`);
-  return data.sort((a: any, b: any) => a.order > b.order ? 1 : -1);
+  return data.sort((a: LiveTVChannel, b: LiveTVChannel) => a.order > b.order ? 1 : -1);
 };
 
 export const fetchChannelEPGs = async (iptvProviderID: number, epgChannelIDs: string[]) => {

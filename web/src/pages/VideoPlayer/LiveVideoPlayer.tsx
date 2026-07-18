@@ -6,7 +6,6 @@ import "video.js/dist/video-js.css";
 export default function LiveVideoPlayer({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<Player | null>(null);
-
   useEffect(() => {
     if (!containerRef.current) return;
     if (!playerRef.current) {

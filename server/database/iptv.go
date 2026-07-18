@@ -15,6 +15,7 @@ type IPTVProvider struct {
 	Name                 string     `xorm:"'name'" json:"name"`
 	Host                 string     `xorm:"text 'host'" json:"host"`
 	Username             string     `xorm:"'username'" json:"username"`
+	IsDefault            bool       `xorm:"'is_default'" json:"is_default"`
 	EncryptedPassword    string     `xorm:"text 'encrypted_password'" json:"encrypted_password,omitempty"`
 	LastEPGDownload      *time.Time `xorm:"timestampz 'last_epg_download'" json:"last_epg_download,omitempty"`
 	LastEPGDownloadError *string    `xorm:"text 'last_epg_download_error'" json:"last_epg_download_error,omitempty"`
