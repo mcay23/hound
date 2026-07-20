@@ -9,7 +9,6 @@ import { useIPTVProviders } from "../../api/hooks/live_tv";
 function Topnav() {
   const { data: serverInfo, isLoading: isServerInfoLoading } = useServerInfo();
   const { data: iptvProviders } = useIPTVProviders();
-  console.log(iptvProviders);
   return (
     <Navbar id="top-navbar" sticky="top" variant="dark" expand="sm">
       <Container fluid>

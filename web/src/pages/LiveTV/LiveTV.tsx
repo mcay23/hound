@@ -4,28 +4,15 @@ import LiveVideoPlayer from "../VideoPlayer/LiveVideoPlayer";
 import { useEffect, useMemo, useState } from "react";
 import {
   Drawer,
+  FormControl,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import EPGMenu, { SelectedChannel, EPGProgramme, pickText } from "./EPGGrid";
-
-function findNowPlaying(epg: EPGProgramme[]): EPGProgramme | undefined {
-  const now = new Date();
-  return epg.find((prog) => {
-    const start = new Date(prog.start_time);
-    const stop = new Date(prog.stop_time);
-    return now >= start && now < stop;
-  });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
@@ -76,7 +63,7 @@ function LiveTV(props: any) {
           variant="permanent"
           sx={{
             zIndex: 1,
-            width: 300,
+            width: 250,
             flexShrink: 0,
             backgroundColor: "#111319",
             "& .MuiDrawer-paper": {
@@ -104,6 +91,36 @@ function LiveTV(props: any) {
           <div>
             <h2>Categories</h2>
           </div>
+          {iptvProviders?.length > 0 && (
+            <FormControl sx={{ pt: 1, pr: 2, minWidth: 120 }}>
+              <Select
+                aria-describedby={`iptv-provider-helper-text`}
+                value={selectedIPTVProvider ?? ""}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedIPTVProvider(e.target.value as number);
+                  }
+                }}
+                inputProps={{ "aria-label": "IPTV Provider" }}
+                sx={{
+                  backgroundColor: "#161f39ff",
+                  color: "white",
+                  "& .MuiSvgIcon-root": {
+                    color: "white",
+                  },
+                }}
+              >
+                {iptvProviders?.map((iptvProvider: any) => (
+                  <MenuItem
+                    key={iptvProvider?.iptv_provider_id}
+                    value={iptvProvider?.iptv_provider_id}
+                  >
+                    {iptvProvider?.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           <List>
             {liveTVCategoriesLoading && <div className="mt-2">Loading...</div>}
             {liveTVCategoriesError && (
@@ -116,7 +133,15 @@ function LiveTV(props: any) {
                 <ListItemButton
                   onClick={() => setSelectedCategoryID(category?.category_id)}
                 >
-                  <ListItemText primary={category?.category_name} />
+                  <ListItemText
+                    primary={category?.category_name}
+                    sx={{
+                      color:
+                        selectedCategoryID === category?.category_id
+                          ? "yellow"
+                          : "white",
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))}
@@ -130,24 +155,26 @@ function LiveTV(props: any) {
             <div
               style={{ width: "30%", marginTop: "1rem", marginLeft: "2rem" }}
             >
-              <h2 className="text-white">
+              <h3 className="text-white live-tv-title">
                 {selectedChannel?.channel.name || "No Channel Selected"}
-              </h2>
+              </h3>
               {nowPlaying ? (
                 <>
-                  <h3 className="text-white">
-                    Now Playing: {pickText(nowPlaying.titles)}
-                  </h3>
-                  <h3 className="text-white">
-                    {pickText(nowPlaying.descriptions)}
-                  </h3>
-                  <h3 className="text-white">
+                  <h4 className="text-warning live-tv-title mt-2 mb-0">
+                    {pickText(nowPlaying.titles)}
+                  </h4>
+                  <p className="text-muted mt-2 mb-0">
                     {formatTime(nowPlaying.start_time)} -{" "}
                     {formatTime(nowPlaying.stop_time)}
-                  </h3>
+                  </p>
+                  <p className="text-white live-tv-description mt-2">
+                    {pickText(nowPlaying.descriptions)}
+                  </p>
                 </>
               ) : selectedChannel ? (
-                <h3 className="text-white">No programme info available</h3>
+                <p className="text-muted live-tv-description">
+                  No programme info available
+                </p>
               ) : null}
             </div>
           </div>
@@ -165,3 +192,19 @@ function LiveTV(props: any) {
 }
 
 export default LiveTV;
+
+function findNowPlaying(epg: EPGProgramme[]): EPGProgramme | undefined {
+  const now = new Date();
+  return epg.find((prog) => {
+    const start = new Date(prog.start_time);
+    const stop = new Date(prog.stop_time);
+    return now >= start && now < stop;
+  });
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

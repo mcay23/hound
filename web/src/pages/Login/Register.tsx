@@ -24,7 +24,7 @@ function Register() {
       alert("Password >8 chars required");
     }
     axios
-      .post("/api/v1/auth/register", data)
+      .post("/api/v1/users", data)
       .then((res) => {
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");

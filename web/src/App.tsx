@@ -109,7 +109,7 @@ function App() {
                 element={<ProtectedRoute component={<Home />} />}
               />
               <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
+              {/* <Route path="register" element={<Register />} /> */}
               <Route path="logout" element={<Logout />} />
               {localStorage.getItem("role") === "admin" && (
                 <Route
