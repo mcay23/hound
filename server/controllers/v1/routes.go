@@ -158,7 +158,7 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	adminRoutes.POST("/iptv_providers", CreateIPTVProviderHandler)
 	privateRoutes.GET("/iptv_providers", GetIPTVProvidersHandler)
-	privateRoutes.DELETE("/iptv_providers/:id", DeleteIPTVProviderHandler)
+	adminRoutes.DELETE("/iptv_providers/:id", DeleteIPTVProviderHandler)
 
 	/*
 		Query Providers Routes

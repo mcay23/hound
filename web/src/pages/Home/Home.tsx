@@ -65,7 +65,7 @@ function Home() {
           }
           return (
             <div
-              key={index}
+              key={`home-row-${index}`}
               className={index === 0 ? "home-page-primary-section" : "mt-3"}
             >
               <HorizontalSection

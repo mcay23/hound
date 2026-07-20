@@ -4,9 +4,12 @@ import ProfileButton from "./ProfileButton";
 import { useServerInfo } from "../../api/hooks/general";
 import { GitHub, InfoRounded } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
+import { useIPTVProviders } from "../../api/hooks/live_tv";
 
 function Topnav() {
   const { data: serverInfo, isLoading: isServerInfoLoading } = useServerInfo();
+  const { data: iptvProviders } = useIPTVProviders();
+  console.log(iptvProviders);
   return (
     <Navbar id="top-navbar" sticky="top" variant="dark" expand="sm">
       <Container fluid>
@@ -29,9 +32,12 @@ function Topnav() {
             <Nav.Link className="top-navbar-item" href="/library">
               Library
             </Nav.Link>
-            <Nav.Link className="top-navbar-item" href="/live-tv">
-              Live TV
-            </Nav.Link>
+            {(iptvProviders?.length > 0 ||
+              localStorage.getItem("role") === "admin") && (
+              <Nav.Link className="top-navbar-item" href="/live-tv">
+                Live TV
+              </Nav.Link>
+            )}
             <Nav.Link className="top-navbar-item" href="/activity">
               Activity
             </Nav.Link>

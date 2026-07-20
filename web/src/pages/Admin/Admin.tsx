@@ -14,6 +14,7 @@ import ProviderProfiles from "./ProviderProfiles";
 import UserList from "./Users";
 import { useServerInfo } from "../../api/hooks/general";
 import HomeRows from "./HomeRows";
+import IPTVProfiles from "./IPTVProfiles";
 
 export default function Admin(props: any) {
   const [activeTab, setActiveTab] = useState(0);
@@ -44,8 +45,9 @@ export default function Admin(props: any) {
               {[
                 "Downloads",
                 "Users",
-                "Provider Profiles",
                 "Default Home Layout",
+                "Provider Profiles",
+                "IPTV Profiles",
               ].map((text, index) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => setActiveTab(index)}>
@@ -81,8 +83,9 @@ export default function Admin(props: any) {
           <div className="d-flex admin-content">
             {activeTab === 0 && <Downloads />}
             {activeTab === 1 && <UserList />}
-            {activeTab === 2 && <ProviderProfiles />}
-            {activeTab === 3 && <HomeRows />}
+            {activeTab === 2 && <HomeRows />}
+            {activeTab === 3 && <ProviderProfiles />}
+            {activeTab === 4 && <IPTVProfiles />}
           </div>
         </div>
       </div>

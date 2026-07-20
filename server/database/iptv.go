@@ -45,7 +45,9 @@ func GetIPTVProviders() ([]*IPTVProvider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get IPTV providers: %w", err)
 	}
-	SetCache(allProvidersCacheKey, providers, time.Hour)
+	if len(providers) > 0 {
+		SetCache(allProvidersCacheKey, providers, time.Hour)
+	}
 	return providers, nil
 }
 

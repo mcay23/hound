@@ -45,6 +45,15 @@ export default function Downloads() {
       );
     });
   }, [downloads?.tasks]);
+  if (!downloads || downloads?.total_records <= 0) {
+    return (
+      <div>
+        <h2>Downloads</h2>
+        <hr />
+        <p>You haven't downloaded anything yet.</p>
+      </div>
+    );
+  }
   return (
     <div>
       <h2>Downloads</h2>

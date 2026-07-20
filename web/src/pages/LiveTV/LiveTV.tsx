@@ -1,5 +1,5 @@
 import "./LiveTV.css";
-import { useLiveTVCategories } from "../../api/hooks/live_tv";
+import { useIPTVProviders, useLiveTVCategories } from "../../api/hooks/live_tv";
 import LiveVideoPlayer from "../VideoPlayer/LiveVideoPlayer";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -30,7 +30,7 @@ function formatTime(iso: string): string {
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
     number | undefined
-  >(1);
+  >(undefined);
   const [selectedCategoryID, setSelectedCategoryID] = useState<
     number | undefined
   >(undefined);
@@ -44,11 +44,23 @@ function LiveTV(props: any) {
     error: liveTVCategoriesError,
   } = useLiveTVCategories(selectedIPTVProvider);
 
+  const {
+    data: iptvProviders,
+    isLoading: iptvProvidersLoading,
+    error: iptvProvidersError,
+  } = useIPTVProviders();
+
   useEffect(() => {
     if (!selectedCategoryID) {
       setSelectedCategoryID(liveTVCategories?.[0]?.category_id || null);
     }
   }, [liveTVCategories]);
+
+  useEffect(() => {
+    if (iptvProviders?.length > 0 && !selectedIPTVProvider) {
+      setSelectedIPTVProvider(iptvProviders[0]?.iptv_provider_id);
+    }
+  }, [iptvProviders]);
 
   const nowPlaying = useMemo(
     () => (selectedChannel ? findNowPlaying(selectedChannel.epg) : undefined),
@@ -118,14 +130,14 @@ function LiveTV(props: any) {
             <div
               style={{ width: "30%", marginTop: "1rem", marginLeft: "2rem" }}
             >
-              <h1 className="text-white">
+              <h2 className="text-white">
                 {selectedChannel?.channel.name || "No Channel Selected"}
-              </h1>
+              </h2>
               {nowPlaying ? (
                 <>
-                  <h2 className="text-white">
+                  <h3 className="text-white">
                     Now Playing: {pickText(nowPlaying.titles)}
-                  </h2>
+                  </h3>
                   <h3 className="text-white">
                     {pickText(nowPlaying.descriptions)}
                   </h3>
@@ -135,7 +147,7 @@ function LiveTV(props: any) {
                   </h3>
                 </>
               ) : selectedChannel ? (
-                <h2 className="text-white">No programme info available</h2>
+                <h3 className="text-white">No programme info available</h3>
               ) : null}
             </div>
           </div>

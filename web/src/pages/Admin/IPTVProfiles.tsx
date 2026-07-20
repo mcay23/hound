@@ -1,10 +1,6 @@
-import "./ProviderProfiles.css";
+import "./IPTVProfiles.css";
 import {
-  useCreateProviderProfileMutation,
-  useProviderProfiles,
-  useUpdateProviderProfileMutation,
-} from "../../api/hooks/providerProfiles";
-import {
+  Alert,
   Button,
   Card,
   CardContent,
@@ -14,41 +10,41 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Modal,
   TextField,
 } from "@mui/material";
-import { useDeleteProviderProfileMutation } from "../../api/hooks/providerProfiles";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import {
+  useCreateIPTVProviderMutation,
+  useDeleteIPTVProviderMutation,
+  useIPTVProviders,
+} from "../../api/hooks/live_tv";
 
-export default function ProviderProfiles() {
-  const { data: providerProfiles, isLoading: isProviderProfilesLoading } =
-    useProviderProfiles();
-  const deleteProviderProfile = useDeleteProviderProfileMutation();
+export default function IPTVProfiles() {
+  const { data: iptvProviders, isLoading: isIPTVProvidersLoading } =
+    useIPTVProviders();
+  const deleteIPTVProvider = useDeleteIPTVProviderMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false);
   const [selectedID, setSelectedID] = useState(-1);
   return (
     <>
       <div>
-        <h2>Provider Profiles</h2>
+        <h2>IPTV Profiles (Experimental)</h2>
         <hr />
         <p className="iptv-provider-text">
-          Add a provider to start streaming and downloading. Multiple profiles
-          are useful if you want different presets for streaming and downloading
-          (eg. prioritize speed/compatibility for streaming, and quality for
-          downloads).
+          You can add an Xtream provider to watch Live TV.
         </p>
-        <p className="iptv-provider-text">
-          You can also set the global default profile for all users for
-          streaming/downloading.
-        </p>
-        <p className="iptv-provider-text">
-          For help setting up a provider, visit the docs.
-        </p>
-        {providerProfiles?.length === 0 && (
+        <Alert severity="warning" className="mb-2">
+          This feature is considered experimental, and has been tested with only
+          a limited number of providers. Currently, links are not proxied
+          through Hound, and clients may be able to access your IPTV
+          credentials. Many IPTV providers have concurrent connection limits
+          which Hound does not enforce.
+        </Alert>
+        {iptvProviders?.length === 0 && (
           <div className="text-muted">
-            No provider profiles yet, add at least one to start streaming.
+            No IPTV profile yet, add at least one to start watching Live TV.
           </div>
         )}
         <Button
@@ -59,13 +55,13 @@ export default function ProviderProfiles() {
         >
           Add Provider
         </Button>
-        {isProviderProfilesLoading ? (
+        {isIPTVProvidersLoading ? (
           <div>Loading...</div>
         ) : (
-          providerProfiles?.map((profile: any) => {
+          iptvProviders?.map((profile: any) => {
             return (
-              <ProviderProfile
-                key={profile.provider_profile_id}
+              <IPTVProviderCard
+                key={profile.iptv_provider_id}
                 profile={profile}
                 setIsDeleteDialogOpen={setIsDeleteDialogOpen}
                 setSelectedID={setSelectedID}
@@ -97,13 +93,13 @@ export default function ProviderProfiles() {
           <Button
             color="error"
             onClick={() => {
-              deleteProviderProfile.mutate(selectedID, {
+              deleteIPTVProvider.mutate(selectedID, {
                 onSuccess: () => {
-                  toast.success("Provider profile deleted");
+                  toast.success("IPTV provider deleted");
                   setIsDeleteDialogOpen(false);
                 },
                 onError: () => {
-                  toast.error("Failed to delete provider profile");
+                  toast.error("Failed to delete IPTV provider");
                   setIsDeleteDialogOpen(false);
                 },
               });
@@ -117,7 +113,7 @@ export default function ProviderProfiles() {
   );
 }
 
-function ProviderProfile({
+function IPTVProviderCard({
   profile,
   setSelectedID,
   setIsDeleteDialogOpen,
@@ -126,78 +122,33 @@ function ProviderProfile({
   setSelectedID: (id: number) => void;
   setIsDeleteDialogOpen: (open: boolean) => void;
 }) {
-  const updateProviderProfile = useUpdateProviderProfileMutation();
   return (
     <Card
       variant="outlined"
-      key={profile.provider_profile_id}
+      key={profile.iptv_provider_id}
       sx={{ boxShadow: 1 }}
       className="mt-3"
     >
       <CardContent>
         <h5>{profile.name}</h5>
-        <div className="text-muted">{profile.manifest_url}</div>
+        <div className="text-muted">{profile.host}</div>
+        <Chip className="mt-2 mb-2 me-2" label={profile?.iptv_stream_type} />
         <div className="d-flex flex-row">
           <Button
             className="mt-2"
             variant="outlined"
             size="small"
             onClick={() => {
-              setSelectedID(profile.provider_profile_id);
+              setSelectedID(profile.iptv_provider_id);
               setIsDeleteDialogOpen(true);
             }}
           >
             Delete
           </Button>
-          {!profile.is_default_streaming && (
-            <Button
-              className="ms-2 mt-2"
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                updateProviderProfile.mutate({
-                  id: profile.provider_profile_id,
-                  isDefaultStreaming: true,
-                });
-              }}
-            >
-              Set as Default for Streaming
-            </Button>
-          )}
-          {!profile.is_default_downloading && (
-            <Button
-              className="ms-2 mt-2"
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                updateProviderProfile.mutate({
-                  id: profile.provider_profile_id,
-                  isDefaultDownloading: true,
-                });
-              }}
-            >
-              Set as Default for Downloading
-            </Button>
-          )}
         </div>
-        {(profile.is_default_streaming || profile.is_default_downloading) && (
-          <div className="d-flex flex-row mt-3">
-            {profile.is_default_streaming && (
-              <Chip className="me-2" label="Default for Streaming" />
-            )}
-            {profile.is_default_downloading && (
-              <Chip className="me-2" label="Default for Downloading" />
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
-}
-
-function parseManifestURL(manifestURL: string) {
-  const url = new URL(manifestURL);
-  return url.origin;
 }
 
 function AddProviderModal({
@@ -208,17 +159,21 @@ function AddProviderModal({
   setOpen: (open: boolean) => void;
 }) {
   const [name, setName] = useState("");
-  const [manifestURL, setManifestURL] = useState("");
-  const addProviderProfile = useCreateProviderProfileMutation();
+  const [hostURL, setHostURL] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const addIPTVProvider = useCreateIPTVProviderMutation();
   const handleClose = () => {
     setName("");
-    setManifestURL("");
+    setHostURL("");
+    setUsername("");
+    setPassword("");
     setOpen(false);
   };
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Add Provider</DialogTitle>
-      <DialogContent className="iptv-provider-container">
+      <DialogTitle>Add Xtream Provider</DialogTitle>
+      <DialogContent className="provider-profile-container">
         <hr />
         <TextField
           label="Profile Name"
@@ -230,43 +185,70 @@ function AddProviderModal({
           onChange={(e) => setName(e.target.value)}
         />
         <TextField
-          label="Manifest URL"
+          label="Host URL"
           variant="outlined"
           fullWidth
           required
           margin="normal"
-          value={manifestURL}
-          onChange={(e) => setManifestURL(e.target.value)}
+          value={hostURL}
+          onChange={(e) => setHostURL(e.target.value)}
+        />
+        <TextField
+          label="Username"
+          variant="outlined"
+          fullWidth
+          required
+          margin="normal"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          variant="outlined"
+          autoComplete="new-password"
+          fullWidth
+          required
+          margin="normal"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button
           onClick={() => {
-            if (name === "" || manifestURL === "") {
+            if (
+              name === "" ||
+              hostURL === "" ||
+              username === "" ||
+              password === ""
+            ) {
               toast.error("Please fill in all fields");
               return;
             }
             try {
-              new URL(manifestURL);
+              new URL(hostURL);
             } catch (error) {
               toast.error(
                 "Please enter a valid URL (including http:// and https://)",
               );
               return;
             }
-            addProviderProfile.mutate(
+            addIPTVProvider.mutate(
               {
                 name,
-                manifestURL,
+                host: hostURL,
+                username,
+                password,
               },
               {
                 onSuccess: () => {
-                  toast.success("Provider profile added");
+                  toast.success("IPTV provider added");
                   handleClose();
                 },
                 onError: () => {
-                  toast.error("Failed to add provider profile");
+                  toast.error("Failed to add IPTV provider");
                   handleClose();
                 },
               },
