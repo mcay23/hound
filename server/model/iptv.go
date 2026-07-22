@@ -10,6 +10,7 @@ import (
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/services"
 	"github.com/mcay23/hound/sources"
 	"github.com/sherif-fanous/xmltv"
 )
@@ -45,28 +46,16 @@ const (
 )
 
 func InitializeIPTV() {
-	// fmt.Printf("Found %d channels and %d programmes\n", len(epg.Channels), len(epg.Programmes))
-	// for i, channel := range epg.Channels {
-	// 	fmt.Printf("Channel id: %s\n", channel.ID)
-	// 	for _, displayName := range channel.DisplayNames {
-	// 		fmt.Printf("Channel name: %s\n", displayName.Text)
-	// 	}
-	// 	if i > 10 {
-	// 		break
-	// 	}
-	// }
-	// fmt.Println("--------------cats---------------")
-	// cats, err := sources.GetLiveChannelsIPTV("2352")
-	// if err != nil {
-	// 	_ = internal.LogErrorWithMessage(err, "Failed to get live categories")
-	// 	return
-	// }
-	// for i, cat := range cats {
-	// 	fmt.Printf("Channel id: %d, name: %s\n", cat.StreamID, cat.Name)
-	// 	if i == 10 {
-	// 		break
-	// 	}
-	// }
+	channels, err := services.ParseM3U8Channels("https://iptv-org.github.io/iptv/categories/auto.m3u")
+	if err != nil {
+		slog.Error("Failed to parse M3U8 channels", "error", err.Error())
+		return
+	}
+	for _, ch := range channels {
+		fmt.Println(ch.Name)
+		fmt.Println(ch.URL)
+		fmt.Println("-----------------")
+	}
 }
 
 func GetXtreamProviderEPG(iptvProviderID int64) (xmltv.EPG, error) {

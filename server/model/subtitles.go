@@ -55,7 +55,7 @@ func GetSubtitle(uri string, convert string) (string, string) {
 			slog.Error("error creating request", "uri", uri, "error", err)
 			return getFallbackSubtitle(uri, "remote", true)
 		}
-		setMockBrowserHeaders(req)
+		internal.SetMockBrowserHeaders(req)
 		resp, err := client.Do(req)
 		if err != nil {
 			slog.Error("http error fetching subtitle", "uri", uri, "error", err)
