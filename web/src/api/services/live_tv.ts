@@ -1,5 +1,6 @@
 import axios from "axios";
 import { LiveTVChannel } from "../hooks/live_tv";
+import { NavLinkProps } from "react-bootstrap";
 
 export const fetchLiveTVCategories = async (iptvProviderID: number) => {
   const { data } = await axios.get(`/api/v1/live/${iptvProviderID}/categories`);
@@ -38,12 +39,14 @@ export const fetchIPTVProviders = async () => {
 };
 
 export const createIPTVProvider = async (
+  iptvStreamType: string,
   name: string,
   host: string,
-  username: string,
-  password: string,
+  username: string | null,
+  password: string | null,
 ) => {
   const { data } = await axios.post<any>(`/api/v1/iptv_providers`, {
+    iptv_stream_type: iptvStreamType,
     name,
     host,
     username,

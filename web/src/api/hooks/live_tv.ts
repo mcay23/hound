@@ -72,12 +72,14 @@ export const useCreateIPTVProviderMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (profile: {
+      iptvStreamType: string;
       name: string;
       host: string;
-      username: string;
-      password: string;
+      username: string | null;
+      password: string | null;
     }) =>
       createIPTVProvider(
+        profile.iptvStreamType,
         profile.name,
         profile.host,
         profile.username,

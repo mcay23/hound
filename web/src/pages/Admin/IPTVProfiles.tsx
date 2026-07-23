@@ -11,6 +11,8 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import toast from "react-hot-toast";
 import { useState } from "react";
@@ -33,7 +35,8 @@ export default function IPTVProfiles() {
         <h2>IPTV Profiles (Experimental)</h2>
         <hr />
         <p className="iptv-provider-text">
-          You can add an Xtream provider to watch Live TV.
+          You can add IPTV providers to watch Live TV. Xtream and M3U8 playlists
+          are supported.
         </p>
         <Alert severity="warning" className="mb-2">
           This feature is considered experimental, and has been tested with only
@@ -158,6 +161,7 @@ function AddProviderModal({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
+  const [iptvStreamType, setIPTVStreamType] = useState("xtream");
   const [name, setName] = useState("");
   const [hostURL, setHostURL] = useState("");
   const [username, setUsername] = useState("");
@@ -172,9 +176,19 @@ function AddProviderModal({
   };
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Add Xtream Provider</DialogTitle>
+      <DialogTitle>Add IPTV Provider</DialogTitle>
       <DialogContent className="provider-profile-container">
         <hr />
+        <ToggleButtonGroup
+          color="primary"
+          value={iptvStreamType}
+          exclusive
+          onChange={(_, value) => setIPTVStreamType(value)}
+          aria-label="Platform"
+        >
+          <ToggleButton value="xtream">Xtream</ToggleButton>
+          <ToggleButton value="m3u8">M3U8 Playlist</ToggleButton>
+        </ToggleButtonGroup>
         <TextField
           label="Profile Name"
           variant="outlined"
@@ -193,26 +207,30 @@ function AddProviderModal({
           value={hostURL}
           onChange={(e) => setHostURL(e.target.value)}
         />
-        <TextField
-          label="Username"
-          variant="outlined"
-          fullWidth
-          required
-          margin="normal"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <TextField
-          label="Password"
-          type="password"
-          variant="outlined"
-          autoComplete="new-password"
-          fullWidth
-          required
-          margin="normal"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {iptvStreamType === "xtream" && (
+          <>
+            <TextField
+              label="Username"
+              variant="outlined"
+              fullWidth
+              required
+              margin="normal"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <TextField
+              label="Password"
+              type="password"
+              variant="outlined"
+              autoComplete="new-password"
+              fullWidth
+              required
+              margin="normal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
@@ -237,10 +255,11 @@ function AddProviderModal({
             }
             addIPTVProvider.mutate(
               {
-                name,
-                host: hostURL,
-                username,
-                password,
+                iptvStreamType,
+                name: name.trim(),
+                host: hostURL.trim(),
+                username: iptvStreamType === "xtream" ? username : null,
+                password: iptvStreamType === "xtream" ? password : null,
               },
               {
                 onSuccess: () => {

@@ -7,12 +7,12 @@ import (
 )
 
 type M3U8Channel struct {
-	Name    string
-	URL     string
-	Group   string
-	TVGID   string
-	TVGName string
-	Logo    string
+	Name    string `json:"name"`
+	URL     string `json:"url"`
+	Group   string `json:"group"`
+	TVGID   string `json:"tvg_id"`
+	TVGName string `json:"tvg_name"`
+	Logo    string `json:"logo"`
 }
 
 // this parses an m3u8 playlist that contains multiple channels
@@ -45,7 +45,10 @@ func ParseM3U8Channels(playlistURL string) ([]M3U8Channel, error) {
 			channel := parseEXTINF(line)
 			current = &channel
 			continue
+		} else if strings.HasPrefix(line, "#") {
+			continue
 		}
+		// skip directives that aren't the url
 		if strings.HasPrefix(line, "#") {
 			continue
 		}

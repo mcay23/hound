@@ -71,10 +71,13 @@ func GetXtreamProviderEPG(iptvProviderID int64) (xmltv.EPG, error) {
 	return epg, nil
 }
 
-// TODO encrypt password
 func AddIPTVProviderXtream(name string, host string, username string, password string) error {
 	if name == "" || host == "" || username == "" || password == "" {
 		return fmt.Errorf("iptv provider name, host, username and password must not be empty: %w", internal.BadRequestError)
+	}
+	valid := internal.IsValidURL(host)
+	if !valid {
+		return fmt.Errorf("invalid url: %s: %w", host, internal.BadRequestError)
 	}
 	encryptedPassword, err := internal.EncryptGCM([]byte(password))
 	if err != nil {
@@ -89,6 +92,27 @@ func AddIPTVProviderXtream(name string, host string, username string, password s
 		IPTVStreamType:    database.IPTVStreamTypeXTREAM,
 	}
 	_, err = database.AddIPTVProvider(provider)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func AddIPTVProviderM3U8(name string, host string) error {
+	if name == "" || host == "" {
+		return fmt.Errorf("iptv provider name, host, must not be empty: %w", internal.BadRequestError)
+	}
+	valid := internal.IsValidURL(host)
+	if !valid {
+		return fmt.Errorf("invalid url: %s: %w", host, internal.BadRequestError)
+	}
+	provider := &database.IPTVProvider{
+		Name:           name,
+		Host:           host,
+		ProxyStream:    false,
+		IPTVStreamType: database.IPTVStreamTypeM3U8,
+	}
+	_, err := database.AddIPTVProvider(provider)
 	if err != nil {
 		return err
 	}
