@@ -120,7 +120,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		Live TV Routes
 	*/
-	privateRoutes.GET("/live/:id/categories", GetLiveCategoriesHandler)
+	privateRoutes.GET("/live/:id/categories", GetLiveCategoriesHandler) // only for xtream
 	privateRoutes.GET("/live/:id/channels", GetLiveChannelsHandler)
 	privateRoutes.POST("/live/:id/epg", GetChannelEPGsHandler)
 	// privateRoutes.GET("/live/stream/:encodedString", StreamLiveTVHandler)

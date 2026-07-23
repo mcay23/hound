@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"net/http"
 	"strings"
+
+	"github.com/mcay23/hound/internal"
 )
 
 type M3U8Channel struct {
@@ -12,11 +14,11 @@ type M3U8Channel struct {
 	Group   string `json:"group"`
 	TVGID   string `json:"tvg_id"`
 	TVGName string `json:"tvg_name"`
-	Logo    string `json:"logo"`
+	LogoURL string `json:"logo_url"`
 }
 
 // this parses an m3u8 playlist that contains multiple channels
-func ParseM3U8Channels(playlistURL string) ([]M3U8Channel, error) {
+func FetchM3U8Channels(playlistURL string) ([]M3U8Channel, error) {
 	req, err := http.NewRequest("GET", playlistURL, nil)
 	if err != nil {
 		return nil, err
@@ -33,7 +35,7 @@ func ParseM3U8Channels(playlistURL string) ([]M3U8Channel, error) {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 
-	var channels []M3U8Channel
+	channels := []M3U8Channel{}
 	var current *M3U8Channel
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -60,6 +62,21 @@ func ParseM3U8Channels(playlistURL string) ([]M3U8Channel, error) {
 		}
 	}
 	return channels, scanner.Err()
+}
+
+// check if all channels have a valid url
+func CleanM3U8Channels(channels []M3U8Channel) []M3U8Channel {
+	resp := []M3U8Channel{}
+	for _, channel := range channels {
+		if channel.Name == "" || channel.URL == "" {
+			continue
+		}
+		if !internal.IsValidURL(channel.URL) {
+			continue
+		}
+		resp = append(resp, channel)
+	}
+	return resp
 }
 
 // this parses a channel line eg.: #EXTINF:-1 tvg-id="AutoCars.us@SD" tvg-logo="https://abc.com" group-title="Auto",The Auto Channel (720p)
@@ -125,7 +142,7 @@ func parseEXTINF(line string) M3U8Channel {
 		case "tvg-name":
 			ch.TVGName = value
 		case "tvg-logo":
-			ch.Logo = value
+			ch.LogoURL = value
 		}
 	}
 	return ch

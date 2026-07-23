@@ -17,7 +17,7 @@ func GetLiveCategoriesHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
 		return
 	}
-	cats, err := sources.GetLiveCategoriesIPTV(iptvProviderID)
+	cats, err := sources.GetLiveCategoriesXtream(iptvProviderID)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
@@ -26,11 +26,11 @@ func GetLiveCategoriesHandler(c *gin.Context) {
 }
 
 type AddIPTVProviderRequest struct {
-	IPTVStreamType string `json:"iptv_stream_type" binding:"required"`
-	Name           string `json:"name" binding:"required"`
-	Host           string `json:"host" binding:"required"`
-	Username       string `json:"username"`
-	Password       string `json:"password"`
+	IPTVProviderType string `json:"iptv_provider_type" binding:"required"`
+	Name             string `json:"name" binding:"required"`
+	Host             string `json:"host" binding:"required"`
+	Username         string `json:"username"`
+	Password         string `json:"password"`
 }
 
 type GetChannelEPGsRequest struct {
@@ -43,24 +43,33 @@ func CreateIPTVProviderHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	switch req.IPTVStreamType {
-	case database.IPTVStreamTypeXTREAM:
-		err := model.AddIPTVProviderXtream(req.Name, req.Host, req.Username, req.Password)
+	switch req.IPTVProviderType {
+	case database.IPTVProviderTypeXtream:
+		provider, err := model.AddIPTVProviderXtream(req.Name, req.Host, req.Username, req.Password)
 		if err != nil {
 			internal.ErrorResponse(c, err)
 			return
 		}
-	case database.IPTVStreamTypeM3U8:
-		err := model.AddIPTVProviderM3U8(req.Name, req.Host)
+		internal.SuccessResponse(c, gin.H{
+			"provider": provider,
+		}, 200)
+		return
+	case database.IPTVProviderTypeM3U8:
+		provider, totalChannels, cleanedChannels, err := model.AddIPTVProviderM3U8(req.Name, req.Host)
 		if err != nil {
 			internal.ErrorResponse(c, err)
 			return
 		}
+		internal.SuccessResponse(c, gin.H{
+			"provider":       provider,
+			"total_channels": totalChannels,
+			"added_channels": cleanedChannels,
+		}, 200)
+		return
 	default:
-		internal.ErrorResponse(c, fmt.Errorf("invalid iptv stream type: %s: %w", req.IPTVStreamType, internal.BadRequestError))
+		internal.ErrorResponse(c, fmt.Errorf("invalid iptv stream type: %s: %w", req.IPTVProviderType, internal.BadRequestError))
 		return
 	}
-	internal.SuccessResponse(c, nil, 200)
 }
 
 func GetIPTVProvidersHandler(c *gin.Context) {
@@ -99,16 +108,16 @@ func GetLiveChannelsHandler(c *gin.Context) {
 		return
 	}
 	categoryID := c.Query("category_id")
-	if categoryID == "" {
-		internal.ErrorResponse(c, fmt.Errorf("category id must be defined: %w", internal.BadRequestError))
-		return
-	}
-	channels, err := model.GetLiveChannelsIPTV(iptvProviderID, categoryID)
+	total, added, channels, err := model.GetLiveChannelsIPTV(iptvProviderID, categoryID)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	internal.SuccessResponse(c, channels, 200)
+	internal.SuccessResponse(c, gin.H{
+		"total":    total,
+		"added":    added,
+		"channels": channels,
+	}, 200)
 }
 
 func GetChannelEPGsHandler(c *gin.Context) {

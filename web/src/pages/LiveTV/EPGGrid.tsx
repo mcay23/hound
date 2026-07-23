@@ -39,7 +39,7 @@ export interface SelectedChannel {
 }
 
 interface EPGGridProps {
-  iptvProviderID?: number;
+  iptvProvider: any;
   categoryID?: number;
   selectedChannel: SelectedChannel | undefined;
   setSelectedChannel: (channel: SelectedChannel | undefined) => void;
@@ -85,17 +85,14 @@ function EPGGrid(props: EPGGridProps) {
 }
 
 function EPGGridContent({
-  iptvProviderID: iptvProviderID,
+  iptvProvider: iptvProvider,
   categoryID,
   selectedChannel,
   setSelectedChannel,
   hoursAhead = 12,
   width,
 }: EPGGridProps & { width: number }) {
-  const { data: liveTVChannels } = useLiveTVChannels(
-    iptvProviderID,
-    categoryID,
-  );
+  const { data: liveTVChannels } = useLiveTVChannels(iptvProvider, categoryID);
   const now = useMemo(() => new Date(), []);
   const before = useMemo(
     () => new Date(now.getTime() - 0.5 * 60 * 60 * 1000),
@@ -114,14 +111,18 @@ function EPGGridContent({
 
   // Collect unique, non-empty epg_channel_ids from channels
   const epgChannelIDs = useMemo(() => {
-    if (!liveTVChannels) return undefined;
-    const ids = liveTVChannels
+    if (!liveTVChannels?.channels) return undefined;
+    const ids = liveTVChannels.channels
       .map((ch: LiveTVChannel) => ch.epg_channel_id)
       .filter((id: string) => id && id.length > 0);
     return Array.from(new Set(ids)) as string[];
   }, [liveTVChannels]);
 
-  const { data: rawEPGData } = useChannelEPGs(iptvProviderID, epgChannelIDs);
+  const { data: rawEPGData } = useChannelEPGs(
+    iptvProvider?.iptv_provider_id,
+    iptvProvider?.iptv_provider_type,
+    epgChannelIDs,
+  );
 
   // map epg_channel_id to programmes
   const epgByChannelId = useMemo(() => {
@@ -155,8 +156,12 @@ function EPGGridContent({
   );
 
   useEffect(() => {
-    if (!selectedChannel && liveTVChannels && liveTVChannels.length > 0) {
-      setSelectedChannel(buildSelectedChannel(liveTVChannels[0]));
+    if (
+      !selectedChannel &&
+      liveTVChannels?.channels &&
+      liveTVChannels?.channels.length > 0
+    ) {
+      setSelectedChannel(buildSelectedChannel(liveTVChannels?.channels?.[0]));
     }
   }, [liveTVChannels, epgByChannelId]);
 
@@ -164,8 +169,8 @@ function EPGGridContent({
   // Use epg_channel_id as uuid when available,
   // otherwise fall back to stream_id (epg data will not be available)
   const channels = useMemo(() => {
-    if (!liveTVChannels) return [];
-    return liveTVChannels.map((ch: LiveTVChannel) => ({
+    if (!liveTVChannels?.channels) return [];
+    return liveTVChannels.channels.map((ch: LiveTVChannel) => ({
       logo: ch.thumbnail_url,
       uuid: ch.epg_channel_id || String(ch.stream_id),
       name: ch.name,

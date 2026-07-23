@@ -135,7 +135,7 @@ function IPTVProviderCard({
       <CardContent>
         <h5>{profile.name}</h5>
         <div className="text-muted">{profile.host}</div>
-        <Chip className="mt-2 mb-2 me-2" label={profile?.iptv_stream_type} />
+        <Chip className="mt-2 mb-2 me-2" label={profile?.iptv_provider_type} />
         <div className="d-flex flex-row">
           <Button
             className="mt-2"
@@ -161,7 +161,7 @@ function AddProviderModal({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
-  const [iptvStreamType, setIPTVStreamType] = useState("xtream");
+  const [iptvProviderType, setIPTVProviderType] = useState<string>("xtream");
   const [name, setName] = useState("");
   const [hostURL, setHostURL] = useState("");
   const [username, setUsername] = useState("");
@@ -181,9 +181,9 @@ function AddProviderModal({
         <hr />
         <ToggleButtonGroup
           color="primary"
-          value={iptvStreamType}
+          value={iptvProviderType}
           exclusive
-          onChange={(_, value) => setIPTVStreamType(value)}
+          onChange={(_, value) => setIPTVProviderType(value)}
           aria-label="Platform"
         >
           <ToggleButton value="xtream">Xtream</ToggleButton>
@@ -199,7 +199,9 @@ function AddProviderModal({
           onChange={(e) => setName(e.target.value)}
         />
         <TextField
-          label="Host URL"
+          label={
+            iptvProviderType === "xtream" ? "Host URL" : "M3U8 Playlist URL"
+          }
           variant="outlined"
           fullWidth
           required
@@ -207,7 +209,7 @@ function AddProviderModal({
           value={hostURL}
           onChange={(e) => setHostURL(e.target.value)}
         />
-        {iptvStreamType === "xtream" && (
+        {iptvProviderType === "xtream" && (
           <>
             <TextField
               label="Username"
@@ -239,8 +241,8 @@ function AddProviderModal({
             if (
               name === "" ||
               hostURL === "" ||
-              username === "" ||
-              password === ""
+              (iptvProviderType === "xtream" &&
+                (username === "" || password === ""))
             ) {
               toast.error("Please fill in all fields");
               return;
@@ -253,13 +255,14 @@ function AddProviderModal({
               );
               return;
             }
+
             addIPTVProvider.mutate(
               {
-                iptvStreamType,
+                iptvProviderType: iptvProviderType,
                 name: name.trim(),
                 host: hostURL.trim(),
-                username: iptvStreamType === "xtream" ? username : null,
-                password: iptvStreamType === "xtream" ? password : null,
+                username: iptvProviderType === "xtream" ? username : null,
+                password: iptvProviderType === "xtream" ? password : null,
               },
               {
                 onSuccess: () => {

@@ -16,6 +16,7 @@ var AlreadyExistsError = errors.New("alreadyExists")
 var NotFoundError = errors.New("notFound")
 var MagnetInfoTimeoutError = errors.New("magnetInfoFailed")
 var GatewayTimeoutError = errors.New("gatewayTimeout")
+var MalformedDataError = errors.New("malformedData")
 
 var (
 	InfoMsg  = Teal

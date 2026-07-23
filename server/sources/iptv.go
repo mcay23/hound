@@ -25,15 +25,18 @@ type IPTVLiveCategory struct {
 	ParentID     string `json:"parent_id"`
 }
 
-func GetLiveCategoriesIPTV(iptvProviderID int64) ([]xtreamcodes.LiveCategory, error) {
+func GetLiveCategoriesXtream(iptvProviderID int64) ([]xtreamcodes.LiveCategory, error) {
+	provider, err := database.GetIPTVProvider(int64(iptvProviderID))
+	if err != nil {
+		return nil, err
+	}
 	cacheKey := fmt.Sprintf(liveCategoriesCacheKey, iptvProviderID)
 	var cats []xtreamcodes.LiveCategory
 	if found, _ := database.GetCache(cacheKey, &cats); found {
 		return cats, nil
 	}
-	provider, err := database.GetIPTVProvider(int64(iptvProviderID))
-	if err != nil {
-		return nil, err
+	if provider.IPTVProviderType != database.IPTVProviderTypeXtream {
+		return nil, fmt.Errorf("IPTV provider type is not Xtream: %w", internal.BadRequestError)
 	}
 	password, err := internal.DecryptGCM(provider.EncryptedPassword)
 	if err != nil {
@@ -48,7 +51,7 @@ func GetLiveCategoriesIPTV(iptvProviderID int64) ([]xtreamcodes.LiveCategory, er
 	return cats, nil
 }
 
-func GetLiveChannelsIPTV(iptvProviderID int64, categoryID string) ([]xtreamcodes.LiveStream, error) {
+func GetXtreamChannelsIPTV(iptvProviderID int64, categoryID string) ([]xtreamcodes.LiveStream, error) {
 	cacheKey := fmt.Sprintf(channelsCacheKey, iptvProviderID, categoryID)
 	var chans []xtreamcodes.LiveStream
 	if found, _ := database.GetCache(cacheKey, &chans); found {
@@ -78,17 +81,4 @@ func sanitizeHTTPError(err error) error {
 		return fmt.Errorf("%s failed: %w", urlErr.Op, urlErr.Err)
 	}
 	return err
-}
-
-func GetXtreamStreamLink(iptvProviderID int64, streamID int) (string, error) {
-	provider, err := database.GetIPTVProvider(iptvProviderID)
-	if err != nil {
-		return "", err
-	}
-	password, err := internal.DecryptGCM(provider.EncryptedPassword)
-	if err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/live/%s/%s/%d.m3u8", provider.Host, provider.Username, string(password), streamID)
-	return url, nil
 }

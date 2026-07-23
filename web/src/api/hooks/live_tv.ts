@@ -1,19 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchLiveTVChannels,
-  fetchLiveTVCategories,
+  fetchXtreamCategories,
   fetchChannelEPGs,
   fetchIPTVProviders,
   createIPTVProvider,
   deleteIPTVProvider,
 } from "../services/live_tv";
 
+interface LiveTVChannelResponse {
+  total: number;
+  added: number;
+  channels: LiveTVChannel[]
+}
+
 export interface LiveTVChannel {
   iptv_provider_id: number;
   order: number;
   stream_id: number;
   name: string;
-  xtream_stream_type: string;
+  stream_type: string;
   thumbnail_url: string;
   epg_channel_id: string;
   category_id: string;
@@ -21,30 +27,41 @@ export interface LiveTVChannel {
   stream_url: string;
 }
 
-export const useLiveTVCategories = (iptvProviderID: number | undefined) => {
+export interface IPTVProvider {
+  iptv_provider_id: number;
+  iptv_provider_type: string;
+  name: string;
+  host: string;
+  username: string;
+  is_default: boolean;
+  last_refresh: string;
+}
+
+export const useXtreamCategories = (iptvProviderID: number | undefined, iptvProviderType: string | undefined) => {
   return useQuery({
-    queryKey: ["live-tv-categories", iptvProviderID],
-    queryFn: () => fetchLiveTVCategories(iptvProviderID as number),
+    queryKey: ["xtream-categories", iptvProviderID],
+    queryFn: () => fetchXtreamCategories(iptvProviderID as number),
     staleTime: 30 * 60 * 1000,
-    enabled: !!iptvProviderID,
+    enabled: !!iptvProviderID && iptvProviderType === "xtream",
   });
 };
 
 export const useLiveTVChannels = (
-  iptvProviderID: number | undefined,
+  iptvProvider: any | undefined,
   categoryID: number | undefined,
 ) => {
-  return useQuery<LiveTVChannel[]>({
-    queryKey: ["live-tv-channels", iptvProviderID, categoryID],
+  // categoryID must exist for xtream only
+  return useQuery<LiveTVChannelResponse>({
+    queryKey: ["live-tv-channels", iptvProvider?.iptv_provider_id, categoryID],
     queryFn: () =>
-      fetchLiveTVChannels(iptvProviderID as number, categoryID as number),
-    staleTime: 30 * 60 * 1000,
-    enabled: !!iptvProviderID && !!categoryID,
+      fetchLiveTVChannels(iptvProvider?.iptv_provider_id as number, categoryID),
+    enabled: !!iptvProvider && (!!categoryID || iptvProvider?.iptv_provider_type === "m3u8"),
   });
 };
 
 export const useChannelEPGs = (
   iptvProviderID: number | undefined,
+  iptvProviderType: string | undefined,
   epgChannelIDs: string[] | undefined,
 ) => {
   return useQuery({
@@ -52,7 +69,7 @@ export const useChannelEPGs = (
     queryFn: () =>
       fetchChannelEPGs(iptvProviderID as number, epgChannelIDs as string[]),
     staleTime: 30 * 60 * 1000,
-    enabled: !!iptvProviderID && !!epgChannelIDs && epgChannelIDs.length > 0,
+    enabled: !!iptvProviderID && iptvProviderType === "xtream" && !!epgChannelIDs && epgChannelIDs.length > 0,
   });
 };
 
@@ -61,7 +78,7 @@ IPTV Providers
 */
 
 export const useIPTVProviders = () => {
-  return useQuery({
+  return useQuery<IPTVProvider[]>({
     queryKey: ["iptv-providers"],
     queryFn: fetchIPTVProviders,
     staleTime: 1 * 60 * 1000,
@@ -72,14 +89,14 @@ export const useCreateIPTVProviderMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (profile: {
-      iptvStreamType: string;
+      iptvProviderType: string;
       name: string;
       host: string;
       username: string | null;
       password: string | null;
     }) =>
       createIPTVProvider(
-        profile.iptvStreamType,
+        profile.iptvProviderType,
         profile.name,
         profile.host,
         profile.username,
