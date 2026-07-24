@@ -83,44 +83,42 @@ func CleanM3U8Channels(channels []M3U8Channel) []M3U8Channel {
 func parseEXTINF(line string) M3U8Channel {
 	var ch M3U8Channel
 	line = strings.TrimPrefix(line, "#EXTINF:")
-	if comma := strings.IndexByte(line, ','); comma >= 0 {
-		ch.Name = strings.TrimSpace(line[comma+1:])
-		line = line[:comma]
-	}
 	i := 0
 	n := len(line)
+	// skip duration
+	for i < n && line[i] != ' ' && line[i] != ',' {
+		i++
+	}
 	for i < n {
 		// skip whitespace
 		for i < n && line[i] == ' ' {
 			i++
 		}
-		// skip duration
-		if i < n && (line[i] == '-' || (line[i] >= '0' && line[i] <= '9')) {
-			for i < n && line[i] != ' ' {
-				i++
-			}
-			continue
+		// comma means the remainder is the channel name.
+		if i < n && line[i] == ',' {
+			ch.Name = strings.TrimSpace(line[i+1:])
+			break
 		}
-		// read key
+		// parse key
 		keyStart := i
-		for i < n && line[i] != '=' && line[i] != ' ' {
+		for i < n && line[i] != '=' && line[i] != ' ' && line[i] != ',' {
 			i++
 		}
+		// No = means we're done with attributes.
 		if i >= n || line[i] != '=' {
-			for i < n && line[i] != ' ' {
-				i++
-			}
-			continue
+			break
 		}
 		key := line[keyStart:i]
+		// skip =
 		i++
 		var value string
-		// quoted
 		if i < n && line[i] == '"' {
 			i++
 			start := i
-
-			for i < n && line[i] != '"' {
+			for i < n {
+				if line[i] == '"' {
+					break
+				}
 				i++
 			}
 			value = line[start:i]
@@ -129,9 +127,11 @@ func parseEXTINF(line string) M3U8Channel {
 			}
 		} else {
 			start := i
-			for i < n && line[i] != ' ' {
+
+			for i < n && line[i] != ' ' && line[i] != ',' {
 				i++
 			}
+
 			value = line[start:i]
 		}
 		switch key {
