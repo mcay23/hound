@@ -3,6 +3,7 @@ import { useIPTVProviders, useXtreamCategories } from "../../api/hooks/live_tv";
 import LiveVideoPlayer from "../VideoPlayer/LiveVideoPlayer";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Button,
   Drawer,
   FormControl,
   List,
@@ -14,6 +15,8 @@ import {
 } from "@mui/material";
 import EPGMenu, { SelectedChannel, EPGProgramme, pickText } from "./EPGGrid";
 import { IPTVProvider } from "../../api/hooks/live_tv";
+import toast from "react-hot-toast";
+import { copyToClipboard } from "../../helpers/helpers";
 
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
