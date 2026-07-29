@@ -70,7 +70,7 @@ func AddIPTVProviderXtream(name string, host string, username string, password s
 		ProxyStream:       false,
 		IPTVProviderType:  database.IPTVProviderTypeXtream,
 	}
-	_, err = database.AddIPTVProvider(provider)
+	_, err = database.InsertIPTVProvider(provider)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func AddIPTVProviderM3U8(name string, host string) (*database.IPTVProvider, int,
 		IPTVProviderType: database.IPTVProviderTypeM3U8,
 		LastRefresh:      &now,
 	}
-	_, err = database.AddIPTVProvider(provider)
+	_, err = database.InsertIPTVProvider(provider)
 	if err != nil {
 		return nil, -1, -1, err
 	}

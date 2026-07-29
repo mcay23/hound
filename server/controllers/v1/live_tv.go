@@ -88,6 +88,59 @@ func GetIPTVProvidersHandler(c *gin.Context) {
 	internal.SuccessResponse(c, providers, 200)
 }
 
+type UpdateIPTVProviderRequest struct {
+	Name              *string `json:"name"`
+	Host              *string `json:"host"`
+	Username          *string `json:"username"`
+	Password          *string `json:"password"`
+	IsDefaultProvider *bool   `json:"is_default_provider"`
+}
+
+func UpdateIPTVProviderHandler(c *gin.Context) {
+	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("iptv provider id must be int64: %w: %w", err, internal.BadRequestError))
+		return
+	}
+	var req UpdateIPTVProviderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	update := database.IPTVProvider{
+		IPTVProviderID: iptvProviderID,
+	}
+	if req.Name != nil {
+		update.Name = *req.Name
+	}
+	if req.Host != nil {
+		update.Host = *req.Host
+	}
+	if req.Username != nil {
+		update.Username = *req.Username
+	}
+	if req.Password != nil {
+		encryptedPassword, err := internal.EncryptGCM([]byte(*req.Password))
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("failed to encrypt password: %w",
+				internal.InternalServerError))
+		}
+		update.EncryptedPassword = encryptedPassword
+	}
+	// will set current default to false before updating
+	if req.IsDefaultProvider != nil && *req.IsDefaultProvider {
+		if err := database.UpdateDefaultIPTVProvider(int(iptvProviderID)); err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+	}
+	if err := database.UpdateIPTVProvider(&update); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
+}
+
 func DeleteIPTVProviderHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

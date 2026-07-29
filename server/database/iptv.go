@@ -17,7 +17,7 @@ type IPTVProvider struct {
 	Host              string     `xorm:"text 'host'" json:"host"`
 	Username          string     `xorm:"'username'" json:"username"`
 	EncryptedPassword string     `xorm:"text 'encrypted_password'" json:"encrypted_password,omitempty"`
-	IsDefault         bool       `xorm:"'is_default'" json:"is_default"`
+	IsDefaultProvider bool       `xorm:"'is_default_provider'" json:"is_default_provider"`
 	LastRefresh       *time.Time `xorm:"timestampz 'last_refresh'" json:"last_refresh,omitempty"`
 	LastRefreshError  *string    `xorm:"text 'last_refresh_error'" json:"lash_refresh_error,omitempty"`
 }
@@ -85,8 +85,15 @@ func GetIPTVProvider(iptvProviderID int64) (*IPTVProvider, error) {
 	return &config, nil
 }
 
-func AddIPTVProvider(provider *IPTVProvider) (int64, error) {
-	_, err := databaseEngine.Table(iptvProvidersTable).Insert(provider)
+func InsertIPTVProvider(provider *IPTVProvider) (int64, error) {
+	providers, err := GetIPTVProviders()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get providers: %w", err)
+	}
+	if len(providers) == 0 {
+		provider.IsDefaultProvider = true
+	}
+	_, err = databaseEngine.Table(iptvProvidersTable).Insert(provider)
 	if err != nil {
 		return 0, fmt.Errorf("failed to add IPTV provider: %w", err)
 	}
@@ -103,6 +110,35 @@ func UpdateIPTVProvider(provider *IPTVProvider) error {
 		return fmt.Errorf("failed to update IPTV provider: %w", err)
 	}
 	return nil
+}
+
+func UpdateDefaultIPTVProvider(providerID int) error {
+	sess := databaseEngine.NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return err
+	}
+	_, err := sess.
+		Table(iptvProvidersTable).
+		Cols("is_default_provider").
+		Update(&IPTVProvider{IsDefaultProvider: false})
+	if err != nil {
+		sess.Rollback()
+		return fmt.Errorf("unset default iptv provider %d: %w", providerID, err)
+	}
+	update := IPTVProvider{}
+	update.IsDefaultProvider = true
+	_, err = sess.Table(iptvProvidersTable).
+		Where("iptv_provider_id = ?", providerID).
+		Cols("is_default_provider").
+		Update(&update)
+	if err != nil {
+		sess.Rollback()
+		return fmt.Errorf("update default iptv provider %d: %w", providerID, err)
+	}
+	DeleteCache(fmt.Sprintf(iptvProviderCacheKey, providerID))
+	DeleteCache(allProvidersCacheKey)
+	return sess.Commit()
 }
 
 func DeleteIPTVProvider(iptvProviderID int64) error {
