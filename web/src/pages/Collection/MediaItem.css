@@ -4,6 +4,7 @@
   margin-bottom: 20px;
   min-width: 800px;
   max-width: 1300px;
+  max-height: 300px;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   border-radius: 5px;
 }
@@ -75,4 +76,20 @@
   box-shadow:
     rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
     rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+}
+
+@media only screen and (max-width: 900px) {
+  .media-item-container {
+    max-height: 240px;
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media only screen and (max-width: 1600px) {
+  .media-item-container {
+    max-height: 240px;
+    min-width: auto;
+    width: 100%;
+  }
 }

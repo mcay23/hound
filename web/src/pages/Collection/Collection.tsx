@@ -114,7 +114,7 @@ function Collection(props: any) {
                       {collectionData.collection.collection_title}
                     </div>
                     <div className="collection-cover-date">
-                      {`by ${collectionData.collection.owner_display_name}`}
+                      {`by ${collectionData.collection.owner_display_name ? collectionData.collection.owner_display_name : collectionData.collection.owner_username}`}
                     </div>
                     <hr />
                     <div className="collection-cover-main-description">
