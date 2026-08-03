@@ -84,7 +84,7 @@ func handleXtream(provider *database.IPTVProvider) {
 		failIPTVTask(provider, err)
 		return
 	}
-	slog.Info("EPG Worker: Sccessfully downloaded EPG", "iptvProviderID", provider.IPTVProviderID)
+	slog.Info("EPG Worker: Successfully downloaded EPG", "iptvProviderID", provider.IPTVProviderID)
 	now := time.Now()
 	provider.LastRefresh = &now
 	provider.LastRefreshError = nil
