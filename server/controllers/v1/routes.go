@@ -76,6 +76,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
 	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
+	privateRoutes.PUT("/collection/:id", UpdateCollectionHandler)
 
 	/*
 		Watch History Routes
@@ -156,7 +157,7 @@ func SetupRoutes(r *gin.Engine) {
 	/*
 		IPTV Providers
 	*/
-	adminRoutes.POST("/iptv_providers", CreateIPTVProviderHandler)
+	adminRoutes.POST("/iptv_providers", AddIPTVProviderHandler)
 	privateRoutes.GET("/iptv_providers", GetIPTVProvidersHandler)
 	adminRoutes.DELETE("/iptv_providers/:id", DeleteIPTVProviderHandler)
 

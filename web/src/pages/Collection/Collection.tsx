@@ -14,9 +14,14 @@ import {
   Pagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import MediaItem from "./MediaItem";
 import CollectionCover from "../Library/CollectionCover";
+import CollectionFormDialog, {
+  CollectionFormData,
+} from "../Library/CollectionFormDialog";
 import toast from "react-hot-toast";
+import { useUpdateCollection } from "../../api/hooks/collections";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
@@ -35,6 +40,58 @@ function Collection(props: any) {
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
   const navigate = useNavigate();
+  const updateCollectionMutation = useUpdateCollection();
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleEditClickOpen = () => {
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditDialogClose = () => {
+    setIsEditDialogOpen(false);
+  };
+
+  const handleUpdateCollection = (data: CollectionFormData) => {
+    if (data.collection_title === "") {
+      toast.error("Title required");
+      return;
+    }
+    if (data.description === "") {
+      toast.error("Description required");
+      return;
+    }
+    if (!collectionID) return;
+
+    updateCollectionMutation.mutate(
+      {
+        collectionID: parseInt(collectionID, 10),
+        collection_title: data.collection_title,
+        description: data.description,
+        is_public: data.is_public,
+      },
+      {
+        onSuccess: () => {
+          setCollectionData((prev) => ({
+            ...prev,
+            collection: {
+              ...prev.collection,
+              collection_title: data.collection_title,
+              description: data.description,
+              is_public: data.is_public,
+            },
+          }));
+          toast.success("Collection updated");
+          handleEditDialogClose();
+        },
+        onError: (err) => {
+          console.log(err);
+          toast.error("Failed to update collection");
+        },
+      },
+    );
+  };
+
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
     value: number,
@@ -122,9 +179,14 @@ function Collection(props: any) {
                     </div>
                     <div className="collection-top-section-actions">
                       {showDeleteButton && (
-                        <IconButton onClick={handleDeleteClickOpen}>
-                          <DeleteIcon />
-                        </IconButton>
+                        <>
+                          <IconButton onClick={handleEditClickOpen}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton onClick={handleDeleteClickOpen}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </>
                       )}
                     </div>
                   </div>
@@ -172,6 +234,19 @@ function Collection(props: any) {
           ) : (
             ""
           )}
+          <CollectionFormDialog
+            open={isEditDialogOpen}
+            title="Edit Collection"
+            submitLabel="Save"
+            initialData={{
+              collection_title: collectionData.collection.collection_title,
+              description: collectionData.collection.description,
+              is_public: collectionData.collection.is_public,
+            }}
+            onClose={handleEditDialogClose}
+            onSubmit={handleUpdateCollection}
+          />
+
           <Dialog
             open={isDeleteDialogOpen}
             onClose={handleDeleteDialogClose}

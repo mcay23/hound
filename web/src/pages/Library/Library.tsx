@@ -2,15 +2,9 @@ import "./Library.css";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import CollectionCard from "./CollectionCover";
+import CollectionFormDialog, { CollectionFormData } from "./CollectionFormDialog";
 import HorizontalSection from "../Home/HorizontalSection";
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  FormControl,
-  LinearProgress,
-  TextField,
-} from "@mui/material";
+import { LinearProgress } from "@mui/material";
 import Footer from "../Footer";
 import {
   useCollections,
@@ -20,6 +14,12 @@ import {
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
 
+const initialCollectionState: CollectionFormData = {
+  collection_title: "",
+  description: "",
+  is_public: true,
+};
+
 function Library(props: any) {
   const { data: collections = [], isLoading: isCollectionsLoading } =
     useCollections();
@@ -28,11 +28,6 @@ function Library(props: any) {
   const createMutation = useCreateCollection();
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] =
     useState(false);
-  const [createCollectionData, setCreateCollectionData] = useState({
-    collection_title: "",
-    description: "",
-    is_public: true,
-  });
   const { data: libraryData = [] } = useCollectionContents(
     "hound-library",
     20,
@@ -40,31 +35,19 @@ function Library(props: any) {
   );
 
   const handleCollectionDialogClose = () => {
-    setCreateCollectionData({
-      collection_title: "",
-      description: "",
-      is_public: true,
-    });
     setIsCreateCollectionDialogOpen(false);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCreateCollectionData({
-      ...createCollectionData,
-      [event.target.name]: event.target.value,
-    });
-  };
-
-  const handleCreateCollection = () => {
-    if (createCollectionData.collection_title === "") {
+  const handleCreateCollection = (data: CollectionFormData) => {
+    if (data.collection_title === "") {
       toast.error("Title required");
       return;
     }
-    if (createCollectionData.description === "") {
+    if (data.description === "") {
       toast.error("Description required");
       return;
     }
-    createMutation.mutate(createCollectionData, {
+    createMutation.mutate(data, {
       onSuccess: () => {
         handleCollectionDialogClose();
         window.scrollTo(0, 0);
@@ -149,43 +132,14 @@ function Library(props: any) {
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Dialog
+      <CollectionFormDialog
         open={isCreateCollectionDialogOpen}
+        title="Create New Collection"
+        submitLabel="Create"
+        initialData={initialCollectionState}
         onClose={handleCollectionDialogClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <div className="reviews-create-dialog-header">
-          Create New Collection
-        </div>
-        <div className="reviews-create-dialog-content">
-          <FormControl fullWidth={true}>
-            <TextField
-              id="outlined-basic"
-              className="mt-3"
-              label="Title"
-              variant="outlined"
-              name="collection_title"
-              value={createCollectionData.collection_title}
-              onChange={handleChange}
-            />
-            <TextField
-              id="outlined-multiline-static"
-              className="mt-3"
-              label="Description"
-              name="description"
-              multiline
-              rows={4}
-              value={createCollectionData.description}
-              onChange={handleChange}
-            />
-          </FormControl>
-        </div>
-        <DialogActions>
-          <Button onClick={handleCollectionDialogClose}>Cancel</Button>
-          <Button onClick={handleCreateCollection}>Create</Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleCreateCollection}
+      />
       <Footer />
     </>
   );

@@ -4,6 +4,7 @@ import {
   fetchCollectionContents,
   fetchRecentCollectionItems,
   createCollection,
+  updateCollection,
 } from "../services/collections";
 
 export const useCollections = () => {
@@ -34,6 +35,16 @@ export const useCreateCollection = () => {
     mutationFn: createCollection,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections", "all"] });
+    },
+  });
+};
+
+export const useUpdateCollection = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateCollection,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["collections", variables.collectionID, "contents"] });
     },
   });
 };

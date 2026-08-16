@@ -23,3 +23,17 @@ export const createCollection = async (collectionData: {
   const { data } = await axios.post("/api/v1/collection/new", collectionData);
   return data;
 };
+
+export const updateCollection = async (collectionData: {
+  collectionID: number;
+  collection_title?: string;
+  description?: string;
+  is_public: boolean;
+}) => {
+  const { data } = await axios.put(`/api/v1/collection/${collectionData.collectionID}`, {
+    collection_title: collectionData.collection_title,
+    description: collectionData.description,
+    is_public: collectionData.is_public,
+  });
+  return data;
+};

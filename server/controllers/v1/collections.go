@@ -184,6 +184,8 @@ func GetUserCollectionsHandler(c *gin.Context) {
 // @Summary Create New Collection
 // @ID create-collection
 // @Tags Collection
+// @Param id path int true "Collection ID"
+// @Param body CreateCollectionRequest true "Create Collection Request"
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=object}
@@ -213,6 +215,46 @@ func CreateCollectionHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
+}
+
+// @Router /v1/collection/{id} [put]
+// @Summary Update Collection
+// @ID update-collection
+// @Tags Collection
+// @Param id path int true "Collection ID"
+// @Param body CreateCollectionRequest true "Update Collection Request"
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateCollectionHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	collectionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	body := CreateCollectionRequest{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	record := database.CollectionRecord{
+		CollectionTitle: body.CollectionTitle,
+		Description:     body.Description,
+		IsPublic:        body.IsPublic,
+	}
+	err = database.UpdateCollection(int64(collectionID), userID, &record)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to update collection: %w", err))
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
 }
 
 // @Router /v1/collection/{id} [get]

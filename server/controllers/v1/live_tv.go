@@ -11,6 +11,17 @@ import (
 	"github.com/mcay23/hound/sources"
 )
 
+// @Router /api/v1/{id}/categories [get]
+// @Summary Get Live TV Categories for a Provider
+// @ID get-live-tv-categories
+// @Description Get live TV categories from the specified IPTV provider
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param id path int true "IPTV Provider ID"
+// @Success 200 {object} V1SuccessResponse{data=[]xtreamcodes.LiveCategory}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetLiveCategoriesHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -37,7 +48,38 @@ type GetChannelEPGsRequest struct {
 	EPGChannelIDs []string `json:"epg_channel_ids" binding:"required"`
 }
 
-func CreateIPTVProviderHandler(c *gin.Context) {
+type AddIPTVProviderResponse struct {
+	Provider      database.IPTVProvider `json:"provider"`
+	TotalChannels int                   `json:"total_channels,omitempty"`
+	AddedChannels int                   `json:"added_channels,omitempty"`
+}
+
+type GetLiveChannelsResponse struct {
+	Total    int                        `json:"total"`
+	Added    bool                       `json:"added"`
+	Channels []database.LiveIPTVChannel `json:"channels"`
+}
+
+type UpdateIPTVProviderRequest struct {
+	Name              *string `json:"name"`
+	Host              *string `json:"host"`
+	Username          *string `json:"username"`
+	Password          *string `json:"password"`
+	IsDefaultProvider *bool   `json:"is_default_provider"`
+}
+
+// @Router /api/v1/iptv_providers [post]
+// @Summary Add IPTV Provider
+// @ID add-iptv-provider
+// @Description Add a new IPTV provider (Xtream or M3U8)
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param request body AddIPTVProviderRequest true "IPTV Provider creation details"
+// @Success 200 {object} V1SuccessResponse{data=AddIPTVProviderResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func AddIPTVProviderHandler(c *gin.Context) {
 	var req AddIPTVProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		internal.ErrorResponse(c, err)
@@ -72,6 +114,15 @@ func CreateIPTVProviderHandler(c *gin.Context) {
 	}
 }
 
+// @Router /api/v1/iptv_providers [get]
+// @Summary Get IPTV Providers
+// @ID get-iptv-providers
+// @Description Get a list of all configured IPTV providers
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=[]database.IPTVProvider}
+// @Failure 500 {object} V1ErrorResponse
 func GetIPTVProvidersHandler(c *gin.Context) {
 	providers, err := database.GetIPTVProviders()
 	if err != nil {
@@ -88,14 +139,18 @@ func GetIPTVProvidersHandler(c *gin.Context) {
 	internal.SuccessResponse(c, providers, 200)
 }
 
-type UpdateIPTVProviderRequest struct {
-	Name              *string `json:"name"`
-	Host              *string `json:"host"`
-	Username          *string `json:"username"`
-	Password          *string `json:"password"`
-	IsDefaultProvider *bool   `json:"is_default_provider"`
-}
-
+// @Router /api/v1/iptv_providers/{id} [put]
+// @Summary Update IPTV Provider
+// @ID update-iptv-provider
+// @Description Update an existing IPTV provider's details or default status
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param id path int true "IPTV Provider ID"
+// @Param request body UpdateIPTVProviderRequest true "IPTV Provider update details"
+// @Success 200 {object} V1SuccessResponse
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func UpdateIPTVProviderHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -141,6 +196,17 @@ func UpdateIPTVProviderHandler(c *gin.Context) {
 	internal.SuccessResponse(c, nil, 200)
 }
 
+// @Router /api/v1/iptv_providers/{id} [delete]
+// @Summary Delete IPTV Provider
+// @ID delete-iptv-provider
+// @Description Delete an IPTV provider by ID
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param id path int true "IPTV Provider ID"
+// @Success 200 {object} V1SuccessResponse
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func DeleteIPTVProviderHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -154,6 +220,18 @@ func DeleteIPTVProviderHandler(c *gin.Context) {
 	internal.SuccessResponse(c, nil, 200)
 }
 
+// @Router /api/v1/live/{id}/channels [get]
+// @Summary Get Live TV Channels
+// @ID get-live-tv-channels
+// @Description Get live TV channels for a specified IPTV provider, filtered by category (xtream)
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param id path int true "IPTV Provider ID"
+// @Param category_id query string false "Category ID filter"
+// @Success 200 {object} V1SuccessResponse{data=GetLiveChannelsResponse}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetLiveChannelsHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -173,6 +251,18 @@ func GetLiveChannelsHandler(c *gin.Context) {
 	}, 200)
 }
 
+// @Router /api/v1/live/{id}/epg [post]
+// @Summary Get Channel EPGs
+// @ID get-channel-epgs
+// @Description Get Electronic Program Guide (EPG) data for specified channels under an IPTV provider
+// @Tags Live TV
+// @Accept json
+// @Produce json
+// @Param id path int true "IPTV Provider ID"
+// @Param request body GetChannelEPGsRequest true "Channel EPG request details"
+// @Success 200 {object} V1SuccessResponse{data=[]model.EPGProgramme}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
 func GetChannelEPGsHandler(c *gin.Context) {
 	iptvProviderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

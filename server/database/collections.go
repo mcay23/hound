@@ -190,6 +190,27 @@ func CreateCollection(record CollectionRecord) (*int64, error) {
 	return &record.CollectionID, nil
 }
 
+func UpdateCollection(recordID int64, userID int64, record *CollectionRecord) error {
+	var existing CollectionRecord
+	has, err := databaseEngine.Table(collectionsTable).ID(recordID).Get(&existing)
+	if err != nil {
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, recordID, err)
+	}
+	if !has {
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, recordID, internal.NotFoundError)
+	}
+	if existing.OwnerUserID != userID {
+		return fmt.Errorf("update %s for owner_user_id %d, collection_id %d: %w",
+			collectionsTable, userID, recordID, internal.ForbiddenError)
+	}
+	_, err = databaseEngine.Table(collectionsTable).ID(recordID).Cols("is_public").Update(record)
+	if err != nil {
+		return fmt.Errorf("update %s for owner_user_id %d, collection_id %d: %w",
+			collectionsTable, userID, recordID, err)
+	}
+	return nil
+}
+
 func DeleteCollection(userID int64, collectionID int64) error {
 	session := databaseEngine.NewSession()
 	defer session.Close()
