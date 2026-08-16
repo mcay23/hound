@@ -442,6 +442,7 @@ func CreateMediaRecordCatalogObject(record database.MediaRecordGroup) view.Media
 		EpisodeNumber:    record.EpisodeNumber,
 		ThumbnailURI:     record.ThumbnailURI,
 		BackdropURI:      record.BackdropURI,
+		LogoURI:          record.LogoURI,
 		Genres:           record.Genres,
 		OriginalLanguage: record.OriginalLanguage,
 		OriginCountry:    record.OriginCountry,

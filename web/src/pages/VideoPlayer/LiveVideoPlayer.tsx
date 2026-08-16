@@ -4,7 +4,7 @@ import Player from "video.js/dist/types/player";
 import "video.js/dist/video-js.css";
 import { copyToClipboard } from "../../helpers/helpers";
 import toast from "react-hot-toast";
-import { Alert, Button } from "@mui/material";
+import { Button } from "@mui/material";
 
 export default function LiveVideoPlayer({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -25,7 +25,6 @@ export default function LiveVideoPlayer({ src }: { src: string }) {
         sources: [
           {
             src,
-            type: "application/x-mpegURL",
           },
         ],
       });
@@ -60,17 +59,35 @@ export default function LiveVideoPlayer({ src }: { src: string }) {
     };
   }, []);
 
+  let mixedError = "";
+  if (
+    src.toLowerCase().startsWith("http:") &&
+    window.location.protocol === "https:"
+  ) {
+    mixedError =
+      "Mixed content error (trying to open http stream from https context)";
+  }
+
   return (
     <>
       <div ref={containerRef} />
       <div className="mt-3 d-flex justify-content-between align-items-center">
         <div>
-          {errorMessage && (
+          {(errorMessage || mixedError) && (
             <>
               <p className="text-danger">
                 Error opening stream, try opening in a new tab or using an
                 external player:
                 <br /> <span className="text-muted">{errorMessage}</span>
+                {mixedError && (
+                  <>
+                    <br />
+                    <p className="text-muted">
+                      Mixed content error: insecure http source is blocked by
+                      the browser from an https context
+                    </p>
+                  </>
+                )}
               </p>
             </>
           )}
