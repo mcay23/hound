@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/mcay23/hound/database"
@@ -152,7 +153,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, -1)
+	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, 0)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
 		return
@@ -164,6 +165,59 @@ func GetUserCollectionsHandler(c *gin.Context) {
 	}
 	var collectionResponse = []view.CollectionObject{}
 	for _, record := range records {
+		temp := view.CollectionObject{
+			CollectionID:     record.CollectionID,
+			CollectionTitle:  record.CollectionTitle,
+			Description:      string(record.Description),
+			OwnerUsername:    user.Username,
+			OwnerDisplayName: user.DisplayName,
+			IsPublic:         record.IsPublic,
+			ThumbnailURI:     record.ThumbnailURI,
+			CreatedAt:        record.CreatedAt,
+			UpdatedAt:        record.UpdatedAt,
+		}
+		collectionResponse = append(collectionResponse, temp)
+	}
+	internal.SuccessResponse(c, collectionResponse, 200)
+}
+
+// @Router /v1/collection/public [get]
+// @Summary Get public collections
+// @ID get-public-collections
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} V1SuccessResponse{data=[]view.CollectionObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetPublicCollectionsHandler(c *gin.Context) {
+	limit := c.DefaultQuery("limit", "20")
+	parsedLimit, err := strconv.Atoi(limit)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert limit to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	offset := c.DefaultQuery("offset", "0")
+	parsedOffset, err := strconv.Atoi(offset)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert offset to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	records, _, err := database.FindCollection(database.CollectionRecord{IsPublic: true}, parsedLimit, parsedOffset)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
+		return
+	}
+	var collectionResponse = []view.CollectionObject{}
+	for _, record := range records {
+		// cached call, but could get expensive in reality
+		user, err := database.GetUser(record.OwnerUserID)
+		if err != nil {
+			slog.Error("Invalid collection user", "error", err, "user_id", record.OwnerUserID)
+			continue
+		}
 		temp := view.CollectionObject{
 			CollectionID:     record.CollectionID,
 			CollectionTitle:  record.CollectionTitle,

@@ -5,6 +5,11 @@ export const fetchAllCollections = async () => {
   return data;
 };
 
+export const fetchPublicCollections = async () => {
+  const { data } = await axios.get("/api/v1/collection/public");
+  return data;
+}
+
 export const fetchCollectionContents = async (id: number | string, limit = 20, offset = 0) => {
   const { data } = await axios.get(`/api/v1/collection/${id}?limit=${limit}&offset=${offset}`);
   return data;

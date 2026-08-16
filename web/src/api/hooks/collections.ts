@@ -5,6 +5,7 @@ import {
   fetchRecentCollectionItems,
   createCollection,
   updateCollection,
+  fetchPublicCollections,
 } from "../services/collections";
 
 export const useCollections = () => {
@@ -13,6 +14,13 @@ export const useCollections = () => {
     queryFn: fetchAllCollections,
   });
 };
+
+export const usePublicCollections = () => {
+  return useQuery({
+    queryKey: ["collections", "public"],
+    queryFn: fetchPublicCollections,
+  });
+}
 
 export const useCollectionContents = (id: number | string | undefined, limit?: number, offset?: number, enabled = true) => {
   return useQuery({

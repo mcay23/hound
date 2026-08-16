@@ -2,7 +2,9 @@ import "./Library.css";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import CollectionCard from "./CollectionCover";
-import CollectionFormDialog, { CollectionFormData } from "./CollectionFormDialog";
+import CollectionFormDialog, {
+  CollectionFormData,
+} from "./CollectionFormDialog";
 import HorizontalSection from "../Home/HorizontalSection";
 import { LinearProgress } from "@mui/material";
 import Footer from "../Footer";
@@ -11,6 +13,7 @@ import {
   useCollectionContents,
   useRecentCollectionItems,
   useCreateCollection,
+  usePublicCollections,
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
 
@@ -23,6 +26,10 @@ const initialCollectionState: CollectionFormData = {
 function Library(props: any) {
   const { data: collections = [], isLoading: isCollectionsLoading } =
     useCollections();
+  const {
+    data: publicCollections = [],
+    isLoading: isPublicCollectionsLoading,
+  } = usePublicCollections();
   const { data: recentItems = [], isLoading: isRecentLoading } =
     useRecentCollectionItems();
   const createMutation = useCreateCollection();
@@ -60,7 +67,8 @@ function Library(props: any) {
   };
 
   document.title = "My Collections - Hound";
-  const isLoaded = !isCollectionsLoading && !isRecentLoading;
+  const isLoaded =
+    !isCollectionsLoading && !isRecentLoading && !isPublicCollectionsLoading;
   const navigate = useNavigate();
 
   return (
@@ -124,6 +132,19 @@ function Library(props: any) {
                   data={item}
                   key={item["collection_id"]}
                   showCaption={true}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="library-public-collections-section">
+            <div className="library-collections-header">Public Collections</div>
+            <div className="library-collections-container">
+              {publicCollections?.map((item: any) => (
+                <CollectionCard
+                  data={item}
+                  key={item["collection_id"]}
+                  showCaption={true}
+                  dark
                 />
               ))}
             </div>

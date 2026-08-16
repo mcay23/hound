@@ -13,13 +13,18 @@
     color: white;
 }
 
+.library-public-collections-section {
+    margin-top: 35px;
+    padding-top: 10px;
+    padding-left: 90px;
+    padding-right: 90px;
+    padding-bottom: 50px;
+    background-color: white;
+}
+
 #library-collection-create-cover {
     background-color: white;
     color: rgba(var(--hound-primary), 1);;
-}
-
-.library-top-section-container {
-    /* background-color: #10229D; */
 }
 
 .library-collections-section .itemcard-item-caption-secondary {

@@ -75,6 +75,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
+	privateRoutes.GET("/collection/public", GetPublicCollectionsHandler)
 	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
 	privateRoutes.PUT("/collection/:id", UpdateCollectionHandler)
 

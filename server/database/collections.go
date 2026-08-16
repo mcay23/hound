@@ -43,7 +43,7 @@ type CollectionRecord struct {
 	CollectionTitle string    `xorm:"not null" json:"collection_title"` // my collection, etc.
 	Description     string    `xorm:"text 'description'" json:"description"`
 	OwnerUserID     int64     `xorm:"index 'owner_user_id'" json:"owner_user_id"`
-	IsPublic        bool      `json:"is_public"`
+	IsPublic        bool      `xorm:"'is_public'" json:"is_public"`
 	ThumbnailURI    string    `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
 	CreatedAt       time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt       time.Time `xorm:"timestampz updated" json:"updated_at"`
@@ -244,15 +244,23 @@ func FindCollection(query CollectionRecord, limit int, offset int) ([]Collection
 	if limit > 0 && offset >= 0 {
 		sess = sess.Limit(limit, offset)
 	}
+	// having issues with Find() with is_public=true, do it manually for now
+	if query.IsPublic {
+		sess = sess.Where("is_public = true")
+	}
 	err := sess.Find(&records, &query)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query %s: %w", collectionsTable, err)
 	}
 	// restart session to get total count
 	sess = databaseEngine.Table(collectionsTable)
+	if query.IsPublic {
+		sess = sess.Where("is_public = true")
+	}
 	totalRecords, err := sess.Count(&query)
 	if err != nil {
 		return nil, 0, fmt.Errorf("count %s: %w", collectionsTable, err)
 	}
+	fmt.Println("totalRecords", totalRecords)
 	return records, int(totalRecords), nil
 }
