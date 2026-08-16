@@ -34,7 +34,19 @@ const (
 )
 
 func InitializeIPTV() {
-
+	providers, err := database.GetIPTVProviders()
+	if err != nil {
+		panic("Failed to get IPTV Providers")
+	}
+	// seed iptv with a channel, can be removed later. Errors are ignored
+	if len(providers) == 0 {
+		weatherChannel := "https://iptv-org.github.io/iptv/categories/weather.m3u"
+		slog.Info("IPTV: Adding default weather channel", "host", weatherChannel)
+		_, _, _, err := AddIPTVProviderM3U8("Weather Channels", weatherChannel)
+		if err != nil {
+			slog.Error("Failed to add initial iptv provider", "error", err, "host", weatherChannel)
+		}
+	}
 }
 
 func GetXtreamProviderEPG(iptvProviderID int64) (xmltv.EPG, error) {
