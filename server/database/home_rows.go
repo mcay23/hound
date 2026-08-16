@@ -30,18 +30,19 @@ type HomeRow struct {
 }
 
 const (
-	CatalogSourceInternal  = "internal"
-	CatalogSourceTMDB      = "tmdb"
-	CatalogSourceMDBList   = "mdblist"
-	CatalogSelectionRotate = "rotate"  // one catalog is shown at a time, rotated every period
-	CatalogSelectionAll    = "all"     // all catalogs are shown
-	ItemOrderDefault       = "default" // follows order of catalog
-	ItemOrderRandom        = "random"  // randomize order of catalog
+	CatalogSourceInternal   = "internal"
+	CatalogSourceTMDB       = "tmdb"
+	CatalogSourceMDBList    = "mdblist"
+	CatalogSourceCollection = "collection"
+	CatalogSelectionRotate  = "rotate"  // one catalog is shown at a time, rotated every period
+	CatalogSelectionAll     = "all"     // all catalogs are shown
+	ItemOrderDefault        = "default" // follows order of catalog
+	ItemOrderRandom         = "random"  // randomize order of catalog
 )
 
 type Catalog struct {
 	CatalogTitle  string `json:"catalog_title"` // Prioritized if selection_type is rotate
-	CatalogSource string `json:"catalog_source" binding:"required,oneof=internal tmdb mdblist"`
+	CatalogSource string `json:"catalog_source" binding:"required,oneof=internal tmdb mdblist collection"`
 	CatalogID     string `json:"catalog_id" binding:"required,gt=0"`
 }
 

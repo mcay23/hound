@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,6 +23,7 @@ import CollectionFormDialog, {
 } from "../Library/CollectionFormDialog";
 import toast from "react-hot-toast";
 import { useUpdateCollection } from "../../api/hooks/collections";
+import { Lock, LockOpen } from "@mui/icons-material";
 
 function Collection(props: any) {
   const [collectionData, setCollectionData] = useState({
@@ -172,6 +174,13 @@ function Collection(props: any) {
                     </div>
                     <div className="collection-cover-date">
                       {`by ${collectionData.collection.owner_display_name ? collectionData.collection.owner_display_name : collectionData.collection.owner_username}`}
+                    </div>
+                    <div className="mt-2">
+                      {collectionData.collection.is_public ? (
+                        <Chip icon={<LockOpen />} label="Public Collection" />
+                      ) : (
+                        <Chip icon={<Lock />} label="Private Collection" />
+                      )}
                     </div>
                     <hr />
                     <div className="collection-cover-main-description">

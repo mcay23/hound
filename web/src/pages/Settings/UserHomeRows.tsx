@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   Button,
@@ -14,7 +14,18 @@ import {
   useUpdateUserHomeRowsMutation,
   useUserHomeRows,
 } from "../../api/hooks/home";
+import {
+  useCollections,
+  usePublicCollections,
+} from "../../api/hooks/collections";
 import { HomeRowsEditor } from "../Admin/HomeRows";
+
+type CollectionItem = {
+  collection_id: number;
+  collection_title: string;
+  owner_display_name?: string;
+  owner_username?: string;
+};
 
 export default function UserHomeRows() {
   const {
@@ -27,10 +38,28 @@ export default function UserHomeRows() {
     isLoading: isCatalogsLoading,
     error: catalogsError,
   } = useAvailableCatalogs();
+  const { data: userCollections = [] } = useCollections();
+  const { data: publicCollections = [] } = usePublicCollections();
   const updateUserHomeRows = useUpdateUserHomeRowsMutation();
   const resetUserHomeRows = useResetUserHomeRowsMutation();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+
+  // dedupe user + public collections
+  const combinedCollections = useMemo<CollectionItem[]>(() => {
+    const seen = new Set<number>();
+    const result: CollectionItem[] = [];
+    for (const c of [
+      ...(userCollections as CollectionItem[]),
+      ...(publicCollections as CollectionItem[]),
+    ]) {
+      if (!seen.has(c.collection_id)) {
+        seen.add(c.collection_id);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [userCollections, publicCollections]);
 
   const handleResetToDefaults = () => {
     resetUserHomeRows.mutate(undefined, {
@@ -64,6 +93,7 @@ export default function UserHomeRows() {
         }
         homeRowsData={userHomeRows}
         catalogDefinitionsResponse={catalogDefinitionsResponse}
+        collections={combinedCollections}
         isLoading={isUserHomeRowsLoading || isCatalogsLoading}
         error={userHomeRowsError ?? catalogsError}
         onSave={(homeRows) =>

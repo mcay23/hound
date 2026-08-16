@@ -48,6 +48,8 @@ func GetCatalog(catalogSource string, catalogID string, userID int64) ([]view.Me
 		return result, nil
 	case database.CatalogSourceInternal:
 		return GetInternalCatalog(userID, catalogID)
+	case database.CatalogSourceCollection:
+		return GetCollectionCatalog(userID, catalogID)
 	case database.CatalogSourceMDBList:
 		return GetMDBListCatalog(catalogID, MaxItemsPerHomeRow)
 	default:
@@ -92,6 +94,23 @@ func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatal
 	default:
 		return nil, fmt.Errorf("invalid catalog id: %s: %w", catalogID, internal.BadRequestError)
 	}
+}
+
+func GetCollectionCatalog(userID int64, catalogID string) ([]view.MediaRecordCatalog, error) {
+	collectionID, err := strconv.ParseInt(catalogID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid collection id: %s: %w", catalogID, internal.BadRequestError)
+	}
+	records, _, _, err := database.GetCollectionRecords(userID, collectionID, MaxItemsPerHomeRow, 0)
+	if err != nil {
+		return nil, err
+	}
+	var viewArray = []view.MediaRecordCatalog{}
+	for _, item := range records {
+		viewObject := CreateMediaRecordCatalogObject(item)
+		viewArray = append(viewArray, viewObject)
+	}
+	return viewArray, nil
 }
 
 func getTrendingTVShows() ([]view.MediaRecordCatalog, error) {

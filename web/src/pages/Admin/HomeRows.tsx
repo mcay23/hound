@@ -14,6 +14,10 @@ import {
   DialogTitle,
   FormControl,
   InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Select,
   Stack,
@@ -26,6 +30,10 @@ import {
   useDefaultHomeRows,
   useUpdateDefaultHomeRowsMutation,
 } from "../../api/hooks/home";
+import {
+  useCollections,
+  usePublicCollections,
+} from "../../api/hooks/collections";
 import "./HomeRows.css";
 
 type Catalog = {
@@ -50,6 +58,13 @@ type AvailableCatalog = {
   description: string;
 };
 
+type CollectionItem = {
+  collection_id: number;
+  collection_title: string;
+  owner_display_name?: string;
+  owner_username?: string;
+};
+
 const catalogSelectionOptions = [
   { value: "all", label: "Show All Catalogs" },
   { value: "rotate", label: "Rotate Between Catalogs" },
@@ -71,7 +86,25 @@ export default function HomeRows() {
     isLoading: isCatalogsLoading,
     error: catalogsError,
   } = useAvailableCatalogs();
+  const { data: userCollections = [] } = useCollections();
+  const { data: publicCollections = [] } = usePublicCollections();
   const updateDefaultHomeRows = useUpdateDefaultHomeRowsMutation();
+
+  // dedupe user + public collections
+  const combinedCollections = useMemo<CollectionItem[]>(() => {
+    const seen = new Set<number>();
+    const result: CollectionItem[] = [];
+    for (const c of [
+      ...(userCollections as CollectionItem[]),
+      ...(publicCollections as CollectionItem[]),
+    ]) {
+      if (!seen.has(c.collection_id)) {
+        seen.add(c.collection_id);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [userCollections, publicCollections]);
 
   return (
     <HomeRowsEditor
@@ -90,6 +123,7 @@ export default function HomeRows() {
       }
       homeRowsData={defaultHomeRows}
       catalogDefinitionsResponse={catalogDefinitionsResponse}
+      collections={combinedCollections}
       isLoading={isHomeRowsLoading || isCatalogsLoading}
       error={homeRowsError ?? catalogsError}
       onSave={(homeRows) =>
@@ -108,6 +142,7 @@ export function HomeRowsEditor({
   description,
   homeRowsData,
   catalogDefinitionsResponse,
+  collections = [],
   isLoading,
   error,
   onSave,
@@ -118,6 +153,7 @@ export function HomeRowsEditor({
   description: ReactNode;
   homeRowsData: any;
   catalogDefinitionsResponse: any;
+  collections?: CollectionItem[];
   isLoading: boolean;
   error: any;
   onSave: (homeRows: HomeRow[]) => Promise<any>;
@@ -213,19 +249,18 @@ export function HomeRowsEditor({
         )}
         <Stack spacing={2}>
           {homeRows.map((row, rowIndex) => (
-            <>
-              <HomeRowCard
-                key={rowIndex}
-                row={row}
-                rowIndex={rowIndex}
-                rows={homeRows}
-                catalogs={selectableCatalogs}
-                isMDBListConfigured={
-                  catalogDefinitionsResponse?.mdblist_configured
-                }
-                onChange={updateRows}
-              />
-            </>
+            <HomeRowCard
+              key={rowIndex}
+              row={row}
+              rowIndex={rowIndex}
+              rows={homeRows}
+              catalogs={selectableCatalogs}
+              collections={collections}
+              isMDBListConfigured={
+                catalogDefinitionsResponse?.mdblist_configured
+              }
+              onChange={updateRows}
+            />
           ))}
         </Stack>
         {isDirty && (
@@ -280,6 +315,7 @@ function HomeRowCard({
   rowIndex,
   rows,
   catalogs,
+  collections,
   isMDBListConfigured,
   onChange,
 }: {
@@ -287,10 +323,12 @@ function HomeRowCard({
   rowIndex: number;
   rows: HomeRow[];
   catalogs: AvailableCatalog[];
+  collections: CollectionItem[];
   isMDBListConfigured: boolean;
   onChange: (rows: HomeRow[]) => void;
 }) {
   const [isMDBListDialogOpen, setIsMDBListDialogOpen] = useState(false);
+  const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
 
   const updateRow = (nextRow: HomeRow) => {
     const nextRows = [...rows];
@@ -307,6 +345,21 @@ function HomeRowCard({
       ...row,
       catalogs: [...row.catalogs, createCatalogFromAvailable(catalogs[0])],
     });
+  };
+
+  const addCollectionCatalog = (collection: CollectionItem) => {
+    updateRow({
+      ...row,
+      catalogs: [
+        ...row.catalogs,
+        {
+          catalog_title: collection.collection_title,
+          catalog_source: "collection",
+          catalog_id: String(collection.collection_id),
+        },
+      ],
+    });
+    setIsCollectionDialogOpen(false);
   };
 
   const addMDBListCatalog = (catalogID: string) => {
@@ -429,6 +482,14 @@ function HomeRowCard({
               <Button
                 variant="outlined"
                 size="small"
+                onClick={() => setIsCollectionDialogOpen(true)}
+                disabled={collections.length === 0}
+              >
+                Add Collection
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
                 onClick={() => setIsMDBListDialogOpen(true)}
                 disabled={!isMDBListConfigured}
               >
@@ -445,12 +506,19 @@ function HomeRowCard({
                 catalogIndex={catalogIndex}
                 row={row}
                 availableCatalogs={catalogs}
+                collections={collections}
                 onChange={updateRow}
               />
             ))}
           </Stack>
         </Stack>
       </CardContent>
+      <AddCollectionDialog
+        open={isCollectionDialogOpen}
+        onClose={() => setIsCollectionDialogOpen(false)}
+        collections={collections}
+        onAdd={addCollectionCatalog}
+      />
       <AddMDBListCatalogDialog
         open={isMDBListDialogOpen}
         onClose={() => setIsMDBListDialogOpen(false)}
@@ -465,16 +533,19 @@ function CatalogEditor({
   catalogIndex,
   row,
   availableCatalogs,
+  collections = [],
   onChange,
 }: {
   catalog: Catalog;
   catalogIndex: number;
   row: HomeRow;
   availableCatalogs: AvailableCatalog[];
+  collections?: CollectionItem[];
   onChange: (row: HomeRow) => void;
 }) {
   const selectedCatalogKey = getCatalogKey(catalog);
   const isMDBListCatalog = catalog.catalog_source === "mdblist";
+  const isCollectionCatalog = catalog.catalog_source === "collection";
   const [mdbListURL, setMDBListURL] = useState(
     getMDBListURL(catalog.catalog_id),
   );
@@ -496,6 +567,11 @@ function CatalogEditor({
       getCatalogKey(availableCatalog) === selectedCatalogKey,
   );
   const isCatalogSelectable = Boolean(selectedAvailableCatalog);
+
+  const selectedCollection = collections.find(
+    (c) => String(c.collection_id) === catalog.catalog_id,
+  );
+  const isCollectionSelectable = Boolean(selectedCollection);
 
   return (
     <Box
@@ -600,6 +676,39 @@ function CatalogEditor({
               size="small"
               fullWidth
             />
+          ) : isCollectionCatalog ? (
+            <FormControl fullWidth size="small">
+              <InputLabel>Collection</InputLabel>
+              <Select
+                label="Collection"
+                value={catalog.catalog_id}
+                onChange={(event) => {
+                  const nextCollection = collections.find(
+                    (c) => String(c.collection_id) === event.target.value,
+                  );
+                  if (!nextCollection) return;
+                  updateCatalog({
+                    catalog_title: nextCollection.collection_title,
+                    catalog_source: "collection",
+                    catalog_id: String(nextCollection.collection_id),
+                  });
+                }}
+              >
+                {!isCollectionSelectable && (
+                  <MenuItem value={catalog.catalog_id} disabled>
+                    {catalog.catalog_title || "Unknown Collection"}
+                  </MenuItem>
+                )}
+                {collections.map((c) => (
+                  <MenuItem
+                    key={c.collection_id}
+                    value={String(c.collection_id)}
+                  >
+                    {c.collection_title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           ) : (
             <FormControl fullWidth size="small">
               <InputLabel>Catalog</InputLabel>
@@ -621,7 +730,7 @@ function CatalogEditor({
               >
                 {!isCatalogSelectable && (
                   <MenuItem value={selectedCatalogKey} disabled>
-                    {catalog.catalog_title || catalog.catalog_id}
+                    {catalog.catalog_title || "Unknown Catalog"}
                   </MenuItem>
                 )}
                 {availableCatalogs.map((availableCatalog) => (
@@ -639,16 +748,16 @@ function CatalogEditor({
 
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
           <Chip size="small" label={catalog.catalog_source} />
-          <Chip
-            size="small"
-            label={catalog.catalog_id}
-            clickable={catalog.catalog_source === "mdblist"}
-            onClick={
-              catalog.catalog_source === "mdblist"
-                ? () => window.open(getMDBListURL(catalog.catalog_id), "_blank")
-                : undefined
-            }
-          />
+          {isMDBListCatalog && (
+            <Chip
+              size="small"
+              label="MDBList Link"
+              clickable
+              onClick={() =>
+                window.open(getMDBListURL(catalog.catalog_id), "_blank")
+              }
+            />
+          )}
           {selectedAvailableCatalog?.catalog_type && (
             <Chip size="small" label={selectedAvailableCatalog.catalog_type} />
           )}
@@ -663,6 +772,67 @@ function CatalogEditor({
         )}
       </Stack>
     </Box>
+  );
+}
+
+function AddCollectionDialog({
+  open,
+  onClose,
+  collections,
+  onAdd,
+}: {
+  open: boolean;
+  onClose: () => void;
+  collections: CollectionItem[];
+  onAdd: (collection: CollectionItem) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const handleClose = () => {
+    setSearch("");
+    onClose();
+  };
+
+  const filtered = collections.filter((c) =>
+    c.collection_title.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <Dialog open={open} onClose={handleClose} fullWidth>
+      <DialogTitle>Add Collection as Catalog</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="Search collections"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          fullWidth
+          size="small"
+          margin="normal"
+          autoFocus
+        />
+        <List dense sx={{ maxHeight: 320, overflowY: "auto" }}>
+          {filtered.length === 0 && (
+            <ListItem>
+              <ListItemText primary="No collections found" />
+            </ListItem>
+          )}
+          {filtered.map((c) => {
+            const owner = c.owner_display_name || c.owner_username;
+            return (
+              <ListItemButton key={c.collection_id} onClick={() => onAdd(c)}>
+                <ListItemText
+                  primary={c.collection_title}
+                  secondary={owner ? `${owner}` : undefined}
+                />
+              </ListItemButton>
+            );
+          })}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
