@@ -45,7 +45,8 @@ Docker compose is the preferred method for installing Hound. Read the installati
 
 ### Current
 
-- Stream and download your own content from your drives, or stream content directly from P2P (torrent) and HTTP/Debrid sources through Stremio addon (AIOStreams) 
+- Stream and download your own content from your drives, or stream content directly from P2P (torrent) and HTTP/Debrid sources through Stremio addon (AIOStreams)
+- Connect and watch your IPTV sources (Xtream and M3U8 playlists)
 - Trakt-like features, all your watches are automatically tracked and easily browsable
 - Customize your home layout with built-in catalogs or MDBList lists
 - Create custom collections/lists
@@ -62,7 +63,6 @@ Docker compose is the preferred method for installing Hound. Read the installati
 - Data export
 - Third-party review score integration (eg. IMDB, Metacritic, RT)
 - View actor information (eg. movies they've played)
-- View public collections / other user's collections
 - Review individual seasons, episodes (TV Shows)
 - Add private notes for your movies, episodes
 
