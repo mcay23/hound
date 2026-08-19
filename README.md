@@ -11,9 +11,7 @@
 
 Watch and Track Movies and TV Shows. Self-hosted version of Plex/Stremio + Trakt, Simkl, etc. Hound aims to be a complete ecosystem of watching, tracking, downloading, and archiving media.
 
-Hound is a fully-featured media server, like Jellyfin or Plex, but with the additional ability to stream content through P2P (torrent), HTTP/Debrid sources and Usenet. With Hound, you get the benefits of fully controlling your media like Jellyfin, but can also stream instantly like Stremio. It's the best of both worlds.
-
-You can also watch Live TV using IPTV from Hound (xtream and m3u8). 
+Hound is a fully-featured media server, like Jellyfin or Plex, but with the additional ability to stream content through P2P (torrent), HTTP/Debrid sources and Usenet. With Hound, you get the benefits of fully controlling your media like Jellyfin, but can also stream instantly like Stremio. You can also watch Live TV using IPTV sources (xtream and m3u8). Everything comes together seamlessly, into a single, intuitive, platform. 
 
 > [!CAUTION]
 > Hound is still under heavy development and may contain bugs. Please backup your data periodically.
