@@ -222,25 +222,28 @@ function SelectStreamModal(props: {
                     <Chip label={stream.provider_profile_name} size="small" />
                     {modalType === "select-stream" ? (
                       <div className="stream-info-card-footer mt-2">
-                        {stream.provider_profile_name !== "Hound" && (
-                          <Button
-                            className="stream-info-card-footer-buttons me-2"
-                            variant="light"
-                            size="sm"
-                            onClick={() => {
-                              axios
-                                .post("/api/v1/download/" + stream.encoded_data)
-                                .then((res) => {
-                                  toast.success("Download added to queue");
-                                })
-                                .catch((err) => {
-                                  toast.error("Download Failed! " + err);
-                                });
-                            }}
-                          >
-                            Download to Hound
-                          </Button>
-                        )}
+                        {localStorage.getItem("role") === "admin" &&
+                          stream.provider_profile_name !== "Hound" && (
+                            <Button
+                              className="stream-info-card-footer-buttons me-2"
+                              variant="light"
+                              size="sm"
+                              onClick={() => {
+                                axios
+                                  .post(
+                                    "/api/v1/download/" + stream.encoded_data,
+                                  )
+                                  .then((res) => {
+                                    toast.success("Download added to queue");
+                                  })
+                                  .catch((err) => {
+                                    toast.error("Download Failed! " + err);
+                                  });
+                              }}
+                            >
+                              Download to Hound
+                            </Button>
+                          )}
                         <Button
                           className="stream-info-card-footer-buttons"
                           variant="light"

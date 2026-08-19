@@ -303,24 +303,26 @@ function SeasonModal(props: any) {
                         <VisibilityIcon />
                       </IconButton>
                     </BootstrapTooltip>
-                    <BootstrapTooltip
-                      title={
-                        <span className="media-page-tv-header-button-tooltip-title">
-                          Download Season
-                        </span>
-                      }
-                      PopperProps={offsetFix}
-                    >
-                      <IconButton
-                        onClick={() => {
-                          if (isSeasonDataLoaded) {
-                            setIsDownloadSeasonModalOpen(true);
-                          }
-                        }}
+                    {localStorage.getItem("role") === "admin" && (
+                      <BootstrapTooltip
+                        title={
+                          <span className="media-page-tv-header-button-tooltip-title">
+                            Download Season
+                          </span>
+                        }
+                        PopperProps={offsetFix}
                       >
-                        <DownloadIcon />
-                      </IconButton>
-                    </BootstrapTooltip>
+                        <IconButton
+                          onClick={() => {
+                            if (isSeasonDataLoaded) {
+                              setIsDownloadSeasonModalOpen(true);
+                            }
+                          }}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </BootstrapTooltip>
+                    )}
                   </span>
                   {/* <span className="season-modal-info-button">
                   <BootstrapTooltip

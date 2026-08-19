@@ -9,7 +9,7 @@ import (
 	"github.com/mcay23/hound/sources"
 )
 
-func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
+func GetLocalStreamsForMovie(sourceID int) ([]*StreamObjectFull, error) {
 	// set title, but if error should not block response
 	// we want to be able to serve files without a connection
 	// need to check if latency is high in this case
@@ -26,20 +26,25 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 		return nil, err
 	}
 	if !has {
-		return []*StreamObject{}, nil
+		return []*StreamObjectFull{}, nil
 	}
 	mediaFiles, err := database.GetMediaFileByRecordID(int(record.RecordID))
 	if err != nil {
 		return nil, err
 	}
-	streamObjects := []*StreamObject{}
+	streamObjects := []*StreamObjectFull{}
 	for _, file := range mediaFiles {
-		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-			slog.Debug("File not found", "filepath", file.Filepath)
+		if _, err := os.Stat(file.Filepath); err != nil {
+			if os.IsNotExist(err) {
+				slog.Debug("File not found", "filepath", file.Filepath)
+			} else {
+				slog.Error("Error statting file", "filepath", file.Filepath, "error", err)
+			}
 			continue
 		}
 		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
 		if err != nil {
+			slog.Error("Error mapping media file to stream object", "filepath", file.Filepath, "error", err)
 			continue
 		}
 		streamObjects = append(streamObjects, streamObj)
@@ -47,7 +52,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	return streamObjects, nil
 }
 
-func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObject, error) {
+func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObjectFull, error) {
 	// check notes on GetLocalStreamsForMovie
 	title := ""
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
@@ -62,7 +67,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 	if err != nil {
 		return nil, err
 	}
-	streamObjects := []*StreamObject{}
+	streamObjects := []*StreamObjectFull{}
 	for _, episodeRecordTemp := range episodeRecords {
 		episodeRecord := episodeRecordTemp
 		mediaFiles, err := database.GetMediaFileByRecordID(int(episodeRecord.RecordID))
@@ -93,7 +98,7 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 
 // we don't need to include everything in the encode, since uri is usually enough
 // re-add metadata for the json response
-func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObject, error) {
+func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObjectFull, error) {
 	fileSize := int(file.Filesize)
 	if title == "" {
 		title = file.VideoMetadata.Filename
@@ -105,7 +110,6 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		Title:               title,
 		Description:         "Local file: " + file.Filepath,
 		FileSize:            &fileSize,
-		VideoMetadata:       nil,
 	}
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,
@@ -117,8 +121,8 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		details.SeasonNumber = record.SeasonNumber
 		details.EpisodeNumber = record.EpisodeNumber
 		details.EpisodeSourceID = &record.SourceID
-		epID := strconv.Itoa(int(record.RecordID))
-		details.EpisodeSourceID = &epID
+		// epID := strconv.Itoa(int(record.RecordID))
+		// details.EpisodeSourceID = &epID
 	}
 	streamObjectFull := StreamObjectFull{
 		StreamObject:       *streamObj,
@@ -128,7 +132,7 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 	if err != nil {
 		return nil, err
 	}
-	streamObj.EncodedData = encodedData
-	streamObj.VideoMetadata = &file.VideoMetadata
-	return streamObj, nil
+	streamObjectFull.EncodedData = encodedData
+	streamObjectFull.VideoMetadata = &file.VideoMetadata
+	return &streamObjectFull, nil
 }

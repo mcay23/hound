@@ -621,7 +621,7 @@ func resolveSourceURI(task *database.IngestTask) error {
 	if err != nil {
 		return err
 	}
-	var bestStream *providers.StreamObject
+	var bestStream *providers.StreamObjectFull
 
 	if task.DownloadPreferences != nil && len(task.DownloadPreferences.PreferenceList) > 0 {
 		for _, pref := range task.DownloadPreferences.PreferenceList {

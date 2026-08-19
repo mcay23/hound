@@ -72,8 +72,8 @@ type SubtitleObject struct {
 }
 
 type ProviderStreamObject struct {
-	Provider string          `json:"provider"` // should refactor to provider_profile_name and id
-	Streams  []*StreamObject `json:"streams"`
+	Provider string              `json:"provider"` // should refactor to provider_profile_name and id
+	Streams  []*StreamObjectFull `json:"streams"`
 }
 
 type ProviderStreamsResponseObject struct {
