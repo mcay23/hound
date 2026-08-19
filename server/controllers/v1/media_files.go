@@ -21,6 +21,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "Movie ID"
+// @Param check_file query bool false "Whether or not to return stale files"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
@@ -30,7 +31,11 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get id param: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	streamObjects, err := providers.GetLocalStreamsForMovie(sourceID)
+	checkFile := false
+	if c.Query("check_file") == "true" {
+		checkFile = true
+	}
+	streamObjects, err := providers.GetLocalStreamsForMovie(sourceID, checkFile)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
@@ -60,6 +65,7 @@ func GetMovieMediaFilesHandler(c *gin.Context) {
 // @Param id path int true "TV Show ID"
 // @Param season query int false "Season Number"
 // @Param episode query int false "Episode Number"
+// @Param check_file query bool false "Whether or not to return stale files"
 // @Success 200 {object} V1SuccessResponse{data=providers.ProviderStreamsResponseObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
@@ -87,7 +93,11 @@ func GetTVShowMediaFilesHandler(c *gin.Context) {
 		}
 		episodeNumber = &e
 	}
-	streamObjects, err := providers.GetLocalStreamsForTVShow(sourceID, seasonNumber, episodeNumber)
+	checkFile := false
+	if c.Query("check_file") == "true" {
+		checkFile = true
+	}
+	streamObjects, err := providers.GetLocalStreamsForTVShow(sourceID, seasonNumber, episodeNumber, checkFile)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get local streams: %w", err))
 		return
@@ -161,6 +171,7 @@ func GetMediaFilesHandler(c *gin.Context) {
 
 // @Router /api/v1/media_files/{id} [delete]
 // @Summary Delete a media file
+// @Description Delete a media file and its record, if its a Hound-managed file, or only its record if it's an externally attached file. Note that media file records will be regenerated on every rescan if the file still exists
 // @ID delete-media-file
 // @Tags Media Files
 // @Accept json
@@ -180,6 +191,7 @@ func DeleteMediaFileHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get media file id param: %w: %w", internal.BadRequestError, err))
 		return
 	}
+	// external library files will not actually be deleted
 	err = model.DeleteMediaFile(fileID)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to delete media file: %w", err))

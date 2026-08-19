@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
@@ -40,7 +41,7 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", internal.InternalServerError)
 	}
 	insertUser := database.User{
-		Username:       user.Username,
+		Username:       strings.ToLower(user.Username),
 		DisplayName:    user.DisplayName,
 		IsAdmin:        isAdmin,
 		HashedPassword: string(hashedPassword),

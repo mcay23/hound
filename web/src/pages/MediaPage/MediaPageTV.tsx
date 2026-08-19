@@ -26,6 +26,8 @@ import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import { useMediaFiles } from "../../api/hooks/media";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
+import { MediaFilesModal } from "../Modals/MediaFilesModal";
+import { CloudDoneOutlined } from "@mui/icons-material";
 
 const offsetFix = {
   modifiers: [
@@ -58,6 +60,7 @@ function MediaPageTV(props: any) {
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
@@ -466,6 +469,24 @@ function MediaPageTV(props: any) {
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
+                {localStorage.getItem("role") === "admin" && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        Media Files
+                      </span>
+                    }
+                    PopperProps={offsetFix}
+                  >
+                    <IconButton
+                      onClick={() => {
+                        setIsMediaFilesModalOpen(true);
+                      }}
+                    >
+                      <CloudDoneOutlined id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
@@ -547,6 +568,15 @@ function MediaPageTV(props: any) {
         }}
         open={isHistoryModalOpen}
         data={props.data}
+      />
+      <MediaFilesModal
+        onClose={() => {
+          setIsMediaFilesModalOpen(false);
+        }}
+        open={isMediaFilesModalOpen}
+        mediaType={props.data?.media_type as string}
+        mediaSource={props.data?.media_source as string}
+        sourceID={props.data?.source_id as string}
       />
       <ConfirmRewatchModal
         onClose={() => {

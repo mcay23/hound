@@ -57,8 +57,10 @@ type StreamObject struct {
 	Filename            *string                 `json:"file_name,omitempty"` // might not be reliable
 	FileIdx             *int                    `json:"file_idx,omitempty"`  // file index for p2p type
 	FileSize            *int                    `json:"file_size,omitempty"` // file size in bytes
-	Sources             *[]string               `json:"sources,omitempty"`   // trackers for p2p
-	EncodedData         string                  `json:"encoded_data"`        // data encoded in AES for playing streams in hound
+	FileID              *int64                  `json:"file_id,omitempty"`
+	FileOrigin          *string                 `json:"file_origin,omitempty"` // for files, whether it's managed by hound or an external library
+	Sources             *[]string               `json:"sources,omitempty"`     // trackers for p2p
+	EncodedData         string                  `json:"encoded_data"`          // data encoded in AES for playing streams in hound
 	VideoMetadata       *database.VideoMetadata `json:"video_metadata,omitempty"`
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/mcay23/hound/sources"
 )
 
-func GetLocalStreamsForMovie(sourceID int) ([]*StreamObjectFull, error) {
+func GetLocalStreamsForMovie(sourceID int, checkFile bool) ([]*StreamObjectFull, error) {
 	// set title, but if error should not block response
 	// we want to be able to serve files without a connection
 	// need to check if latency is high in this case
@@ -34,13 +34,17 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObjectFull, error) {
 	}
 	streamObjects := []*StreamObjectFull{}
 	for _, file := range mediaFiles {
-		if _, err := os.Stat(file.Filepath); err != nil {
-			if os.IsNotExist(err) {
-				slog.Debug("File not found", "filepath", file.Filepath)
-			} else {
-				slog.Error("Error statting file", "filepath", file.Filepath, "error", err)
+		// for providers, do a final check on whether the file exists
+		// if we're just listing the files, we want to list stale + existing files
+		if checkFile {
+			if _, err := os.Stat(file.Filepath); err != nil {
+				if os.IsNotExist(err) {
+					slog.Debug("File not found", "filepath", file.Filepath)
+				} else {
+					slog.Error("Error statting file", "filepath", file.Filepath, "error", err)
+				}
+				continue
 			}
-			continue
 		}
 		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
 		if err != nil {
@@ -52,7 +56,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObjectFull, error) {
 	return streamObjects, nil
 }
 
-func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObjectFull, error) {
+func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int, checkFile bool) ([]*StreamObjectFull, error) {
 	// check notes on GetLocalStreamsForMovie
 	title := ""
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
@@ -75,10 +79,14 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 			continue
 		}
 		// TODO os.Stat() is really slow on network mounted drives if the file doesn't exist
+		// for providers, do a final check on whether the file exists
+		// if we're just listing the files, we want to list stale + existing files
 		for _, file := range mediaFiles {
-			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-				slog.Debug("File not found", "filepath", file.Filepath)
-				continue
+			if checkFile {
+				if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
+					slog.Debug("File not found", "filepath", file.Filepath)
+					continue
+				}
 			}
 			epTitle := title
 			if seasonNumber == nil || episodeNumber == nil {
@@ -110,6 +118,8 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		Title:               title,
 		Description:         "Local file: " + file.Filepath,
 		FileSize:            &fileSize,
+		FileID:              &file.FileID,
+		FileOrigin:          &file.FileOrigin,
 	}
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,

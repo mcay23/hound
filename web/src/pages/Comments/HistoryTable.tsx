@@ -74,7 +74,7 @@ function HistoryTable(props: any) {
       name: "Episode",
       options: mediaType === "tv" ? includeDisplay : excludeDisplay,
     },
-    "Watch Date",
+    "Watch Event ID",
     { name: "watch_event_id", options: excludeDisplay },
   ];
   if (!isDataLoaded || data.length === 0) {
