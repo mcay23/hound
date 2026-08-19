@@ -5,10 +5,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import {
-  useDeleteMediaFileMutation,
-  useMediaFiles,
-} from "../../api/hooks/media";
+import { useDeleteMediaFileMutation } from "../../api/hooks/media";
 import { useMemo, useState } from "react";
 import MUIDataTable, {
   MUIDataTableColumnOptions,
@@ -33,51 +30,28 @@ interface Stream {
 }
 
 interface MediaFilesModalProps {
+  streams: Stream[];
   mediaType: string;
-  mediaSource: string;
-  sourceID: string;
+  isLoading: boolean;
   onClose: () => void;
   open: boolean;
-  season?: number | null;
-  episode?: number | null;
 }
 
 export function MediaFilesModal({
+  streams,
   mediaType,
-  mediaSource,
-  sourceID,
+  isLoading,
   onClose,
   open,
-  season,
-  episode,
 }: MediaFilesModalProps) {
-  const { data: mediaFiles, isLoading } = useMediaFiles(
-    mediaType,
-    mediaSource,
-    sourceID,
-    season,
-    episode,
-  );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [filesToDelete, setFilesToDelete] = useState<number[]>([]);
   const [rowsSelected, setRowsSelected] = useState<number[]>([]);
   const deleteMediaFileMutation = useDeleteMediaFileMutation();
 
-  const streams = useMemo(() => {
-    if (mediaType === "tvshow" || mediaType === "tv") {
-      return [...(mediaFiles?.providers?.[0]?.streams ?? [])].sort(
-        (a, b) =>
-          a.season_number - b.season_number ||
-          a.episode_number - b.episode_number,
-      );
-    } else {
-      return mediaFiles?.providers?.[0]?.streams || [];
-    }
-  }, [mediaFiles, mediaType]);
-
   const rows = useMemo(
     () =>
-      streams.map((stream: Stream) => [
+      streams?.map((stream: Stream) => [
         stream?.title,
         stream?.season_number,
         stream?.episode_number,
@@ -177,8 +151,10 @@ export function MediaFilesModal({
       >
         {isLoading ? (
           <div className="history-no-data-header">Loading...</div>
-        ) : !mediaFiles || mediaFiles?.providers?.[0]?.streams?.length === 0 ? (
-          <div className="history-no-data-header">No Media Files.</div>
+        ) : !streams || streams.length === 0 ? (
+          <div className="history-no-data-header">
+            Your downloads are empty.
+          </div>
         ) : (
           <MUIDataTable
             title={"Your Media Files"}

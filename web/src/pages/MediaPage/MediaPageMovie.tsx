@@ -76,7 +76,7 @@ function MediaPageMovie(props: any) {
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
-  const { data: mediaFiles } = useMediaFiles(
+  const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "movie",
     props.data.media_source,
     props.data.source_id,
@@ -272,6 +272,7 @@ function MediaPageMovie(props: any) {
                   size="medium"
                   color="primary"
                   sx={{
+                    backgroundColor: "#015376ff",
                     color: "#fff",
                     fontSize: "14px",
                     fontWeight: 400,
@@ -406,7 +407,7 @@ function MediaPageMovie(props: any) {
                   <BootstrapTooltip
                     title={
                       <span className="media-page-tv-header-button-tooltip-title">
-                        Media Files
+                        Hound Downloads
                       </span>
                     }
                     PopperProps={offsetFix}
@@ -495,13 +496,13 @@ function MediaPageMovie(props: any) {
         sourceID={props.data.source_id}
       />
       <MediaFilesModal
+        streams={mediaFiles?.providers?.[0]?.streams}
+        mediaType="movie"
+        isLoading={isMediaFilesLoading}
         onClose={() => {
           setIsMediaFilesModalOpen(false);
         }}
         open={isMediaFilesModalOpen}
-        mediaType={props.data?.media_type as string}
-        mediaSource={props.data?.media_source as string}
-        sourceID={props.data?.source_id as string}
       />
     </>
   );

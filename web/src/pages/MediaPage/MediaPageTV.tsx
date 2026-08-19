@@ -11,7 +11,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -81,12 +81,20 @@ function MediaPageTV(props: any) {
   >(undefined);
   const [streamStartTime, setStreamStartTime] = useState(0);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
-  const { data: mediaFiles } = useMediaFiles(
+  const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "tv",
     props.data.media_source,
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
+
+  const mediaFileStreams = useMemo(() => {
+    return [...(mediaFiles?.providers?.[0]?.streams ?? [])].sort(
+      (a, b) =>
+        a.season_number - b.season_number ||
+        a.episode_number - b.episode_number,
+    );
+  }, [mediaFiles]);
 
   var styles = {
     noBackdrop: {
@@ -364,6 +372,7 @@ function MediaPageTV(props: any) {
                   size="medium"
                   color="primary"
                   sx={{
+                    backgroundColor: "#015376ff",
                     color: "#fff",
                     fontSize: "14px",
                     fontWeight: 400,
@@ -473,7 +482,7 @@ function MediaPageTV(props: any) {
                   <BootstrapTooltip
                     title={
                       <span className="media-page-tv-header-button-tooltip-title">
-                        Media Files
+                        Hound Downloads
                       </span>
                     }
                     PopperProps={offsetFix}
@@ -570,13 +579,13 @@ function MediaPageTV(props: any) {
         data={props.data}
       />
       <MediaFilesModal
+        streams={mediaFileStreams}
+        mediaType="tvshow"
+        isLoading={isMediaFilesLoading}
         onClose={() => {
           setIsMediaFilesModalOpen(false);
         }}
         open={isMediaFilesModalOpen}
-        mediaType={props.data?.media_type as string}
-        mediaSource={props.data?.media_source as string}
-        sourceID={props.data?.source_id as string}
       />
       <ConfirmRewatchModal
         onClose={() => {
