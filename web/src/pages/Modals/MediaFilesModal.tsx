@@ -55,7 +55,9 @@ export function MediaFilesModal({
         stream?.title,
         stream?.season_number,
         stream?.episode_number,
-        stream?.file_origin,
+        stream?.file_origin === "external_library"
+          ? "External Library"
+          : "Hound Managed",
         stream?.uri,
         stream?.file_id,
       ]),
@@ -174,6 +176,13 @@ export function MediaFilesModal({
           {filesToDelete.length === 1
             ? "Are you sure you want to delete this media file?"
             : `Are you sure you want to delete these ${filesToDelete.length} media files?`}
+          <br />
+          <br />
+          <p>
+            Note that external library media files won't be deleted, but their
+            records will be removed. Media files that still exist will re-appear
+            once rescanned.
+          </p>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
