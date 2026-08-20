@@ -141,11 +141,11 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	publicRoutes.GET("/subtitle/:encodedString", SubtitleHandler)
-	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
-	privateRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
-	privateRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
-	privateRoutes.GET("/ingest", GetIngestTasksHandler)
-	privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
+	adminRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
+	adminRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
+	adminRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
+	adminRoutes.GET("/ingest", GetIngestTasksHandler)
+	adminRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
 
 	/*
 		Provider Profiles

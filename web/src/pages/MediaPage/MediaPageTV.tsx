@@ -11,7 +11,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -26,6 +26,8 @@ import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import { useMediaFiles } from "../../api/hooks/media";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
+import { MediaFilesModal } from "../Modals/MediaFilesModal";
+import { CloudDoneOutlined } from "@mui/icons-material";
 
 const offsetFix = {
   modifiers: [
@@ -58,6 +60,7 @@ function MediaPageTV(props: any) {
   const [seasonModal, setSeasonModal] = useState(-1);
   const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
@@ -78,12 +81,20 @@ function MediaPageTV(props: any) {
   >(undefined);
   const [streamStartTime, setStreamStartTime] = useState(0);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
-  const { data: mediaFiles } = useMediaFiles(
+  const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "tv",
     props.data.media_source,
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
+
+  const mediaFileStreams = useMemo(() => {
+    return [...(mediaFiles?.providers?.[0]?.streams ?? [])].sort(
+      (a, b) =>
+        a.season_number - b.season_number ||
+        a.episode_number - b.episode_number,
+    );
+  }, [mediaFiles]);
 
   var styles = {
     noBackdrop: {
@@ -361,6 +372,7 @@ function MediaPageTV(props: any) {
                   size="medium"
                   color="primary"
                   sx={{
+                    backgroundColor: "#015376ff",
                     color: "#fff",
                     fontSize: "14px",
                     fontWeight: 400,
@@ -466,6 +478,24 @@ function MediaPageTV(props: any) {
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
+                {localStorage.getItem("role") === "admin" && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        Hound Downloads
+                      </span>
+                    }
+                    PopperProps={offsetFix}
+                  >
+                    <IconButton
+                      onClick={() => {
+                        setIsMediaFilesModalOpen(true);
+                      }}
+                    >
+                      <CloudDoneOutlined id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
@@ -547,6 +577,15 @@ function MediaPageTV(props: any) {
         }}
         open={isHistoryModalOpen}
         data={props.data}
+      />
+      <MediaFilesModal
+        streams={mediaFileStreams}
+        mediaType="tvshow"
+        isLoading={isMediaFilesLoading}
+        onClose={() => {
+          setIsMediaFilesModalOpen(false);
+        }}
+        open={isMediaFilesModalOpen}
       />
       <ConfirmRewatchModal
         onClose={() => {

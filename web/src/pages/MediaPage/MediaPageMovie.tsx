@@ -26,6 +26,8 @@ import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
 import { useMediaFiles } from "../../api/hooks/media";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
+import { CloudDoneOutlined } from "@mui/icons-material";
+import { MediaFilesModal } from "../Modals/MediaFilesModal";
 
 const offsetFix = {
   modifiers: [
@@ -63,6 +65,7 @@ function MediaPageMovie(props: any) {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isCreateHistoryModalOpen, setisCreateHistoryModalOpen] =
     useState(false);
+  const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
   const [mainStream, setMainStream] = useState<any>(null);
@@ -73,7 +76,7 @@ function MediaPageMovie(props: any) {
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
-  const { data: mediaFiles } = useMediaFiles(
+  const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "movie",
     props.data.media_source,
     props.data.source_id,
@@ -269,6 +272,7 @@ function MediaPageMovie(props: any) {
                   size="medium"
                   color="primary"
                   sx={{
+                    backgroundColor: "#015376ff",
                     color: "#fff",
                     fontSize: "14px",
                     fontWeight: 400,
@@ -399,6 +403,24 @@ function MediaPageMovie(props: any) {
                     <HistoryIcon id="media-page-tv-header-track-button" />
                   </IconButton>
                 </BootstrapTooltip>
+                {localStorage.getItem("role") === "admin" && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        Hound Downloads
+                      </span>
+                    }
+                    PopperProps={offsetFix}
+                  >
+                    <IconButton
+                      onClick={() => {
+                        setIsMediaFilesModalOpen(true);
+                      }}
+                    >
+                      <CloudDoneOutlined id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
               </div>
             </div>
           </div>
@@ -472,6 +494,15 @@ function MediaPageMovie(props: any) {
         type={"movie"}
         mediaSource={props.data.media_source}
         sourceID={props.data.source_id}
+      />
+      <MediaFilesModal
+        streams={mediaFiles?.providers?.[0]?.streams}
+        mediaType="movie"
+        isLoading={isMediaFilesLoading}
+        onClose={() => {
+          setIsMediaFilesModalOpen(false);
+        }}
+        open={isMediaFilesModalOpen}
       />
     </>
   );

@@ -67,7 +67,7 @@ func LoginHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	userID, err := database.GetUserIDFromUsername(userPayload.Username)
+	userID, err := database.GetUserIDFromUsername(strings.ToLower(userPayload.Username))
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return

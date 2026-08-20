@@ -45,19 +45,26 @@ func InitializeMedia() {
 	}
 }
 
+// Files managed by hound are deleted, but external files will be kept
+// Media file records will be deleted in both cases, but will be regenerated on next
+// rescan if the file still exists
 func DeleteMediaFile(fileID int) error {
 	// delete file first
 	file, err := database.GetMediaFile(fileID)
 	if err != nil {
 		return err
 	}
-	err = os.Remove(file.Filepath)
-	if err != nil {
-		// if file doesn't exist, continue to delete mediafile record
-		if !os.IsNotExist(err) {
-			return err
-		} else {
-			slog.Info("File doesn't exist in dir, deleting media_file db record", "filepath", file.Filepath)
+	// only delete if managed by hound, we don't want to touch
+	// external library files
+	if file.FileOrigin == database.FileOriginHoundManaged {
+		err = os.Remove(file.Filepath)
+		if err != nil {
+			// if file doesn't exist, continue to delete mediafile record
+			if !os.IsNotExist(err) {
+				return err
+			} else {
+				slog.Info("File doesn't exist in dir, deleting media_file db record", "filepath", file.Filepath)
+			}
 		}
 	}
 	err = database.DeleteMediaFileRecord(fileID)

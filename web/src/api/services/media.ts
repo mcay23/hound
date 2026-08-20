@@ -69,11 +69,13 @@ export const fetchMediaFiles = async (
   sourceID: string,
   season?: number | null,
   episode?: number | null,
+  checkFile = false,
 ) => {
+  mediaType = mediaType === "tvshow" ? "tv" : mediaType;
   const { data } = await axios.get<any>(
     `/api/v1/${mediaType}/${mediaSource}-${sourceID}/media_files`,
     {
-      params: mediaType === "tv" ? { season, episode } : {},
+      params: mediaType === "tv" ? { season, episode, check_file: checkFile } : {check_file: checkFile},
     },
   );
   return data;
@@ -122,3 +124,9 @@ export const downloadSeason = async ({
   );
   return data;
 };
+
+export const deleteMediaFile = async (fileID: number) => {
+  const { data } = await axios.delete(`/api/v1/media_files/${fileID}`);
+  return data;
+};
+

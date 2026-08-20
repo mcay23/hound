@@ -92,7 +92,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 		return nil, fmt.Errorf("query %s-%s error decoding stremio plugin response: %w",
 			query.MediaSource, query.SourceID, err)
 	}
-	streamResponse := []*StreamObject{}
+	streamResponse := []*StreamObjectFull{}
 	for _, stream := range stremioResp.Streams {
 		obj, err := stream.toStreamObject(details, provider.Name, int(provider.ProviderProfileID))
 		// if unexpected response in an object, skip instead of blocking
@@ -112,7 +112,7 @@ func getStremioStreams(query ProvidersQueryRequest, details StreamMediaDetails) 
 
 // convert stremio results to a generic stream object
 func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDetails,
-	providerName string, providerID int) (*StreamObject, error) {
+	providerName string, providerID int) (*StreamObjectFull, error) {
 	if stremioStream == nil {
 		return nil, fmt.Errorf("nil stremio stream: %w", internal.BadRequestError)
 	}
@@ -179,8 +179,8 @@ func (stremioStream *StremioStreamObject) toStreamObject(details StreamMediaDeta
 	if err != nil {
 		return nil, fmt.Errorf("aes encoding: %w", err)
 	}
-	streamObject.EncodedData = encodedData
-	return streamObject, nil
+	streamObjectFull.EncodedData = encodedData
+	return &streamObjectFull, nil
 }
 
 func getStremioSubtitles(query ProvidersQueryRequest) (*ProviderSubtitleObject, error) {
