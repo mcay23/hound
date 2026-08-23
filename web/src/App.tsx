@@ -65,7 +65,7 @@ axios.interceptors.response.use(
         window.location.pathname !== "/logout" &&
         window.location.pathname !== "/login"
       ) {
-        window.location.href = "/logout";
+        // window.location.href = "/logout";
       }
     }
     return Promise.reject(error);

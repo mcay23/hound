@@ -1,10 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
+// electron
 const getBaseUrl = () => {
-  if (process.env.NODE_ENV === "production") {
-    // relative url in prod
-    return "";
-  }
   return "http://localhost:2323";
 };
 

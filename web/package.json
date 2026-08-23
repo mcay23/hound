@@ -2,6 +2,7 @@
   "name": "hound-web",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.cjs",
   "dependencies": {
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
@@ -32,7 +33,9 @@
     "dev": "vite",
     "start": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
+    "electron:preview": "npm run build && electron ."
   },
   "eslintConfig": {
     "extends": [
@@ -57,9 +60,13 @@
     "@types/react-big-calendar": "^1.16.3",
     "@types/react-responsive-masonry": "^2.1.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.1",
     "react-router-dom": "^6.4.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-tsconfig-paths": "^6.0.4"
+    "vite-tsconfig-paths": "^6.0.4",
+    "wait-on": "^9.1.0"
   }
 }
