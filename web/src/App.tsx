@@ -11,7 +11,6 @@ import Library from "./pages/Library/Library";
 import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import Register from "./pages/Login/Register";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -22,8 +21,10 @@ import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
 import Settings from "./pages/Settings/Settings";
 import LiveTV from "./pages/LiveTV/LiveTV";
+import { defineMpvVideoElement } from "electron-mpv-video/renderer";
 
 const queryClient = new QueryClient();
+defineMpvVideoElement();
 
 // axios defaults
 axios.defaults.withCredentials = true;

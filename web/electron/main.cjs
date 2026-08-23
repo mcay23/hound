@@ -2,9 +2,12 @@ const { app, BrowserWindow } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { createMpvMain } = require("electron-mpv-video/main");
 
 let mainWindow;
 let server;
+
+const mpv = createMpvMain();
 
 function startStaticServer() {
   const buildPath = path.join(__dirname, "../build");
@@ -89,7 +92,15 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    webPreferences: {
+        preload: path.join(__dirname, "preload.cjs"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+    },
   });
+
+  mpv.attachWindow(mainWindow);
 
   if (process.env.ELECTRON_DEV === "true") {
     await mainWindow.loadURL("http://localhost:3000");
@@ -97,9 +108,13 @@ async function createWindow() {
     const port = await startStaticServer();
     await mainWindow.loadURL(`http://localhost:${port}`);
   }
-}
+}1
 
 app.whenReady().then(createWindow);
+
+app.on("before-quit", () => {
+  void mpv.dispose();
+});
 
 app.on("window-all-closed", () => {
   if (server) {
