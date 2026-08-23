@@ -16,7 +16,6 @@ import {
   usePublicCollections,
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
-import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
 
 const initialCollectionState: CollectionFormData = {
   collection_title: "",
@@ -90,7 +89,6 @@ function Library(props: any) {
             )}
           </div>
           <div className="library-top-section-container">
-            <MPVElectronPlayer />
             <HorizontalSection
               items={libraryData?.records}
               header="In Your Library"

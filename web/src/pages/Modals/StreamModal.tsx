@@ -8,7 +8,7 @@ import {
   IconButton,
 } from "@mui/material";
 import "./StreamModal.css";
-import { ArrowBack, InfoOutlined } from "@mui/icons-material";
+import { ArrowBack, InfoOutlined, Pause } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { SERVER_URL } from "./../../config/axios_config";
@@ -16,6 +16,8 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
+import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
+import VideoControls from "../VideoPlayer/VideoControls";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
@@ -157,7 +159,7 @@ function StreamModal(props: any) {
       >
         <InfoOutlined />
       </IconButton>
-      <VideoPlayer
+      <MPVElectronPlayer
         options={videoJsOptions}
         onVideoProgress={handleVideoProgress}
         setLoading={setLoading}

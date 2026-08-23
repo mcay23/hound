@@ -1,0 +1,44 @@
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.controls-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.controls-bottom {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  pointer-events: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.play-button {
+  color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.controls-seekbar {
+  flex: 1;
+  color: white;
+  cursor: pointer;
+}
