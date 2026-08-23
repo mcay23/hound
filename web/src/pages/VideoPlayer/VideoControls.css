@@ -37,6 +37,16 @@
   flex-shrink: 0;
 }
 
+.controls-time {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: monospace;
+  white-space: nowrap;
+  user-select: none;
+  margin-right: 8px;
+}
+
 .controls-seekbar {
   flex: 1;
   color: white;

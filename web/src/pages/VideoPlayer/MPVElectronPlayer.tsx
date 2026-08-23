@@ -14,6 +14,8 @@ const MPVElectronPlayer = React.memo(
     const lastReportTimeRef = useRef(0);
 
     const [paused, setPaused] = useState(true);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -46,6 +48,17 @@ const MPVElectronPlayer = React.memo(
         await video.play();
       } catch (error) {
         console.error("MPV play error:", error);
+      }
+    }, []);
+
+    const handleSeek = useCallback(async (time: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.seek(time);
+        setCurrentTime(time);
+      } catch (error) {
+        console.error("MPV seek error:", error);
       }
     }, []);
 
@@ -90,19 +103,25 @@ const MPVElectronPlayer = React.memo(
         const detail = (event as CustomEvent).detail;
         if (!detail) return;
         const current = detail.currentTime;
-        const duration = detail.duration;
+        const dur = detail.duration;
         if (detail.status === "Playing") {
           setPaused(false);
         } else {
           setPaused(true);
         }
+        if (typeof current === "number") {
+          setCurrentTime(current);
+        }
+        if (typeof dur === "number" && dur > 0) {
+          setDuration(dur);
+        }
         if (
           typeof current === "number" &&
-          typeof duration === "number" &&
+          typeof dur === "number" &&
           Math.abs(current - lastReportTimeRef.current) >= 5
         ) {
           lastReportTimeRef.current = current;
-          onVideoProgress?.(current, duration);
+          onVideoProgress?.(current, dur);
         }
       };
 
@@ -140,7 +159,10 @@ const MPVElectronPlayer = React.memo(
           handlePause={handlePause}
           handlePlay={handlePlay}
           handlePlayPause={handlePlayPause}
+          handleSeek={handleSeek}
           paused={paused}
+          currentTime={currentTime}
+          duration={duration}
         />
       </div>
     );
