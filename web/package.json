@@ -16,7 +16,9 @@
     "axios": "^1.1.3",
     "bootstrap": "^5.2.2",
     "dayjs": "^1.11.7",
+    "electron-libmpv": "github:hunternick87/libmpv-electron#v0.1.3",
     "mui-datatables": "^4.3.0",
+    "node-addon-api": "^8.9.2",
     "planby": "^2.0.0",
     "react": "^18.2.0",
     "react-big-calendar": "^1.19.4",
@@ -55,6 +57,7 @@
     ]
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
     "@types/mui-datatables": "^4.3.4",
     "@types/node": "^25.4.0",
     "@types/react-big-calendar": "^1.16.3",
