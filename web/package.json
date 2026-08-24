@@ -39,6 +39,8 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
     "electron:preview": "npm run build && electron .",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
     "postinstall": "patch-package && npm --prefix node_modules/electron-mpv-video run build:native"
   },
   "eslintConfig": {
@@ -68,11 +70,34 @@
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
     "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "patch-package": "^8.0.1",
     "react-router-dom": "^6.4.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.0.4",
     "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.houndmediaserver.hound",
+    "productName": "Hound Desktop",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/electron-mpv-video/**"
+    ],
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    }
   }
 }

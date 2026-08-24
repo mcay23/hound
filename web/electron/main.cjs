@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, safeStorage } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -11,6 +11,8 @@ let server;
 const store = new Store();
 
 const mpv = createMpvMain();
+
+Menu.setApplicationMenu(null);
 
 // Helper to encrypt and save the token
 function saveToken(token) {
@@ -168,7 +170,7 @@ async function createWindow() {
     const port = await startStaticServer();
     await mainWindow.loadURL(`http://localhost:${port}`);
   }
-}1
+}
 
 app.whenReady().then(createWindow);
 
