@@ -8,3 +8,7 @@ contextBridge.exposeInMainWorld('secureAuth', {
   getToken: () => ipcRenderer.invoke('get-token'),
   clearToken: () => ipcRenderer.invoke('delete-token')
 });
+
+contextBridge.exposeInMainWorld('electron', {
+  toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen')
+});

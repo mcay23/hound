@@ -62,6 +62,13 @@ ipcMain.handle('delete-token', async () => {
   return true;
 });
 
+ipcMain.on('toggle-fullscreen', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setFullScreen(!win.isFullScreen());
+  }
+});
+
 function startStaticServer() {
   const buildPath = path.join(__dirname, "../build");
 

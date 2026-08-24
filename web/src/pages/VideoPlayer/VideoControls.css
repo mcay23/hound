@@ -14,18 +14,26 @@
   height: 100%;
   box-sizing: border-box;
   z-index: 5;
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+
+.play-pause-overlay {
+  z-index: 15;
+  position: absolute;
+  top: 10%;
+  width: 100%;
+  height: 80%;
 }
 
 .controls-bottom {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 24px 16px 24px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  padding: 16px 24px 16px 24px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
   pointer-events: auto;
   width: 100%;
   box-sizing: border-box;
@@ -67,16 +75,16 @@
 }
 
 .controls-volume-slider {
-  width: 80px !important;
+  width: 90px !important;
   color: white;
   cursor: pointer;
 }
 
 .controls-time {
   color: white;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
-  font-family: monospace;
+  font-family: 'Cabin', sans-serif;
   white-space: nowrap;
   user-select: none;
   flex-shrink: 0;
@@ -99,7 +107,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  background-color: rgba(65, 65, 65, 0.5);
+  cursor: pointer;
 }
 
 .controls-lang-badge {
