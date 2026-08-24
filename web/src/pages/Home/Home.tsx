@@ -85,7 +85,6 @@ function Home() {
           );
         })}
       </div>
-      <Footer />
     </>
   );
 }

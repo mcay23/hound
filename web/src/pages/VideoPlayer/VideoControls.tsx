@@ -17,6 +17,8 @@ import {
   VolumeUp,
   VolumeDown,
   VolumeOff,
+  ArrowBack,
+  InfoOutlined,
 } from "@mui/icons-material";
 
 function formatTime(seconds: number): string {
@@ -41,6 +43,8 @@ interface IVideoControlsProps {
   handleSetSubtitleTrack?: (id: string | number) => void;
   handleSetVolume?: (val: number) => void;
   handleToggleMute?: () => void;
+  handleClose?: () => void;
+  setInfoModalOpen?: (open: boolean) => void;
   paused: boolean;
   currentTime?: number;
   duration?: number;
@@ -58,6 +62,8 @@ export default function VideoControls({
   handleSetSubtitleTrack,
   handleSetVolume,
   handleToggleMute,
+  handleClose,
+  setInfoModalOpen,
   paused,
   currentTime = 0,
   duration = 0,
@@ -99,8 +105,8 @@ export default function VideoControls({
     (activeAudioTrack?.title
       ? activeAudioTrack.title.substring(0, 3).toUpperCase()
       : activeAudioTrack
-      ? `A${activeAudioTrack.id}`
-      : "");
+        ? `A${activeAudioTrack.id}`
+        : "");
 
   const activeSubTrack =
     selectedSub !== "no"
@@ -119,8 +125,8 @@ export default function VideoControls({
         (activeSubTrack?.title
           ? activeSubTrack.title.substring(0, 3).toUpperCase()
           : activeSubTrack
-          ? `S${activeSubTrack.id}`
-          : "AUTO");
+            ? `S${activeSubTrack.id}`
+            : "AUTO");
 
   const displayTime = isDragging ? seekValue : currentTime;
 
@@ -143,6 +149,30 @@ export default function VideoControls({
   return (
     <div className="controls-overlay">
       <div className="controls-bottom">
+        <IconButton
+          onClick={handleClose}
+          sx={{
+            position: "absolute",
+            top: 16,
+            left: 16,
+            color: "white",
+            zIndex: 10,
+          }}
+        >
+          <ArrowBack />
+        </IconButton>
+        <IconButton
+          onClick={() => setInfoModalOpen?.(true)}
+          sx={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            color: "white",
+            zIndex: 10,
+          }}
+        >
+          <InfoOutlined />
+        </IconButton>
         {/* Top Row: Seekbar & Time */}
         <div className="controls-row controls-row-top">
           <Slider
@@ -211,17 +241,21 @@ export default function VideoControls({
           <div className="controls-right">
             {audioTracks.length > 0 && (
               <div className="controls-track-item">
-                <IconButton
+                <div
+                  className="controls-lang-container"
                   onClick={(e) => setAudioMenuAnchor(e.currentTarget)}
-                  sx={{ color: "#ffffff" }}
-                  size="medium"
-                  title="Audio Tracks"
                 >
-                  <Audiotrack />
-                </IconButton>
-                {audioLang && (
-                  <span className="controls-lang-badge">{audioLang}</span>
-                )}
+                  <IconButton
+                    sx={{ color: "#ffffff" }}
+                    size="medium"
+                    title="Audio Tracks"
+                  >
+                    <Audiotrack />
+                  </IconButton>
+                  {audioLang && (
+                    <span className="controls-lang-badge">{audioLang}</span>
+                  )}
+                </div>
                 <Menu
                   anchorEl={audioMenuAnchor}
                   open={Boolean(audioMenuAnchor)}
@@ -234,9 +268,7 @@ export default function VideoControls({
                     const isSelected =
                       t.selected ||
                       t.id.toString() === selectedAudio?.toString();
-                    const langStr = t.lang
-                      ? ` (${t.lang.toUpperCase()})`
-                      : "";
+                    const langStr = t.lang ? ` (${t.lang.toUpperCase()})` : "";
                     const label = `${t.title || `Audio Track ${t.id}`}${langStr}`;
                     return (
                       <MenuItem
@@ -256,7 +288,9 @@ export default function VideoControls({
                           inset={!isSelected}
                           primary={label}
                           secondary={t.codec ? `Codec: ${t.codec}` : undefined}
-                          secondaryTypographyProps={{ style: { color: "#aaa" } }}
+                          secondaryTypographyProps={{
+                            style: { color: "#aaa" },
+                          }}
                         />
                       </MenuItem>
                     );
@@ -266,15 +300,19 @@ export default function VideoControls({
             )}
             {subTracks.length > 0 && (
               <div className="controls-track-item">
-                <IconButton
+                <div
+                  className="controls-lang-container"
                   onClick={(e) => setSubMuiMenuAnchor(e.currentTarget)}
-                  sx={{ color: "#ffffff" }}
-                  size="medium"
-                  title="Subtitles"
                 >
-                  <Subtitles />
-                </IconButton>
-                <span className="controls-lang-badge">{subLang}</span>
+                  <IconButton
+                    sx={{ color: "#ffffff" }}
+                    size="medium"
+                    title="Subtitles"
+                  >
+                    <Subtitles />
+                  </IconButton>
+                  <span className="controls-lang-badge">{subLang}</span>
+                </div>
                 <Menu
                   anchorEl={subMuiMenuAnchor}
                   open={Boolean(subMuiMenuAnchor)}
@@ -301,9 +339,7 @@ export default function VideoControls({
                       selectedSub !== "no" &&
                       (t.selected ||
                         t.id.toString() === selectedSub?.toString());
-                    const langStr = t.lang
-                      ? ` (${t.lang.toUpperCase()})`
-                      : "";
+                    const langStr = t.lang ? ` (${t.lang.toUpperCase()})` : "";
                     const label = `${t.title || `Subtitle ${t.id}`}${langStr}`;
                     return (
                       <MenuItem

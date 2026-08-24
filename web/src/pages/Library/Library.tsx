@@ -7,7 +7,6 @@ import CollectionFormDialog, {
 } from "./CollectionFormDialog";
 import HorizontalSection from "../Home/HorizontalSection";
 import { LinearProgress } from "@mui/material";
-import Footer from "../Footer";
 import {
   useCollections,
   useCollectionContents,
@@ -161,7 +160,6 @@ function Library(props: any) {
         onClose={handleCollectionDialogClose}
         onSubmit={handleCreateCollection}
       />
-      <Footer />
     </>
   );
 }

@@ -10,14 +10,12 @@ import {
 import "./StreamModal.css";
 import { ArrowBack, InfoOutlined, Pause } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
-import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { SERVER_URL } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
-import VideoControls from "../VideoPlayer/VideoControls";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
@@ -126,6 +124,7 @@ function StreamModal(props: any) {
       open={open && !loading}
       disableScrollLock={false}
       fullScreen
+      disableEscapeKeyDown
       PaperProps={{
         sx: {
           margin: 0,
@@ -135,34 +134,12 @@ function StreamModal(props: any) {
         },
       }}
     >
-      <IconButton
-        onClick={handleClose}
-        sx={{
-          position: "absolute",
-          top: 16,
-          left: 16,
-          color: "white",
-          zIndex: 10,
-        }}
-      >
-        <ArrowBack />
-      </IconButton>
-      <IconButton
-        onClick={() => setInfoModalOpen(true)}
-        sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          color: "white",
-          zIndex: 10,
-        }}
-      >
-        <InfoOutlined />
-      </IconButton>
       <MPVElectronPlayer
         options={videoJsOptions}
         onVideoProgress={handleVideoProgress}
         setLoading={setLoading}
+        handleClose={handleClose}
+        setInfoModalOpen={setInfoModalOpen}
         subtitles={subtitles}
       />
       <InfoModal

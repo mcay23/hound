@@ -6,10 +6,17 @@ interface IVideoPlayerProps {
   onVideoProgress?: (current: number, total: number) => void;
   setLoading?: (loading: boolean) => void;
   subtitles?: any[];
+  handleClose?: () => void;
+  setInfoModalOpen?: (open: boolean) => void;
 }
 
 const MPVElectronPlayer = React.memo(
-  ({ options, onVideoProgress }: IVideoPlayerProps) => {
+  ({
+    options,
+    onVideoProgress,
+    handleClose,
+    setInfoModalOpen,
+  }: IVideoPlayerProps) => {
     const videoRef = useRef<any>(null);
     const lastReportTimeRef = useRef(0);
 
@@ -185,10 +192,10 @@ const MPVElectronPlayer = React.memo(
         if (!detail) return;
         const current = detail.currentTime;
         const dur = detail.duration;
-        if (detail.status === "Playing") {
-          setPaused(false);
-        } else {
+        if (detail.status === "Paused") {
           setPaused(true);
+        } else {
+          setPaused(false);
         }
         if (typeof current === "number") {
           setCurrentTime(current);
@@ -254,6 +261,8 @@ const MPVElectronPlayer = React.memo(
           handleSetSubtitleTrack={handleSetSubtitleTrack}
           handleSetVolume={handleSetVolume}
           handleToggleMute={handleToggleMute}
+          handleClose={handleClose}
+          setInfoModalOpen={setInfoModalOpen}
           paused={paused}
           currentTime={currentTime}
           duration={duration}
