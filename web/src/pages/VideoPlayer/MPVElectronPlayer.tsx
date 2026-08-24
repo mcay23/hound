@@ -29,6 +29,8 @@ const MPVElectronPlayer = React.memo(
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
+    const playingCountRef = useRef(0);
+    const seekDoneRef = useRef(false);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -161,16 +163,6 @@ const MPVElectronPlayer = React.memo(
             return;
           }
           await video.play();
-          if (startTime && startTime > 0) {
-            setTimeout(async () => {
-              if (destroyed) return;
-              try {
-                await video.seek(startTime);
-              } catch (error) {
-                console.error("MPV seek error:", error);
-              }
-            }, 500);
-          }
           try {
             const initialTracks = await video.getTrackList();
             if (initialTracks && initialTracks.length) {
@@ -190,12 +182,40 @@ const MPVElectronPlayer = React.memo(
         if (destroyed) return;
         const detail = (event as CustomEvent).detail;
         if (!detail) return;
-        const current = detail.currentTime;
+        const current = detail.time;
         const dur = detail.duration;
         if (detail.status === "Paused") {
           setPaused(true);
         } else {
           setPaused(false);
+        }
+        if (detail.status) {
+          console.log("status", detail.status);
+        }
+
+        // second Playing event seems more safe for initial seek
+        if (detail.status === "Playing") {
+          playingCountRef.current++;
+          if (playingCountRef.current >= 2 && !seekDoneRef.current) {
+            seekDoneRef.current = true;
+            if (startTime && startTime > 0) {
+              setTimeout(async () => {
+                if (destroyed) return;
+                try {
+                  await video.seek(startTime);
+                } catch (err) {
+                  console.warn("MPV initial seek notice (retrying):", err);
+                  setTimeout(async () => {
+                    if (!destroyed) {
+                      try {
+                        await video.seek(startTime);
+                      } catch (e) {}
+                    }
+                  }, 1000);
+                }
+              }, 100);
+            }
+          }
         }
         if (typeof current === "number") {
           setCurrentTime(current);

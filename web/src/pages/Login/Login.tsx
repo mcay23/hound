@@ -4,9 +4,12 @@ import "./Login.css";
 import axios from "axios";
 import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getBaseUrl, setHostUrl } from "../../config/axios_config";
+import { saveSecureToken } from "../../utils/secureStore";
 
 function Login() {
   const [data, setData] = useState({
+    host: localStorage.getItem("host") || getBaseUrl(),
     username: "",
     password: "",
   });
@@ -15,11 +18,18 @@ function Login() {
     return <Navigate to="/" />;
   }
 
-  const submitHandler = (event: React.FormEvent<HTMLButtonElement>) => {
+  const submitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
+    const targetHost = setHostUrl(data.host);
     axios
-      .post("/api/v1/auth/login", data)
-      .then((res) => {
+      .post(`${targetHost}/api/v1/auth/login`, {
+        username: data.username,
+        password: data.password,
+      })
+      .then(async (res) => {
+        if (res.data && res.data.token) {
+          await saveSecureToken(res.data.token);
+        }
         localStorage.setItem("username", res.data.username);
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("role", res.data.role);
@@ -29,6 +39,8 @@ function Login() {
       .catch((err) => {
         if (err.response?.status === 401 || err.response?.status === 404) {
           toast.error("Incorrect username/password");
+        } else {
+          toast.error("Failed to connect or login");
         }
         console.log("AXIOS ERROR: ", err);
       });
@@ -44,10 +56,19 @@ function Login() {
         <Card className="login-card shadow p-3 mb-5 bg-white rounded">
           <div className="login-card">
             <h2 className="mb-4">Login</h2>
-            <form>
-              <FormGroup controlId="username" className="mt-4">
+            <form onSubmit={submitHandler}>
+              <FormGroup controlId="host" className="mt-4">
                 <FormControl
                   autoFocus
+                  type="text"
+                  name="host"
+                  placeholder="host (e.g. http://localhost:2323)"
+                  value={data.host}
+                  onChange={handleChange}
+                />
+              </FormGroup>
+              <FormGroup controlId="username" className="mt-4">
+                <FormControl
                   type="username"
                   name="username"
                   placeholder="username"
@@ -66,7 +87,7 @@ function Login() {
               </FormGroup>
               <br />
               <div className="d-flex flex-row-reverse">
-                <Button type="submit" onClick={submitHandler}>
+                <Button type="submit">
                   Login
                 </Button>
               </div>
@@ -79,3 +100,4 @@ function Login() {
 }
 
 export default Login;
+

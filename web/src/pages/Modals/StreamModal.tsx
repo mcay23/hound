@@ -10,7 +10,7 @@ import {
 import "./StreamModal.css";
 import { ArrowBack, InfoOutlined, Pause } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
-import { SERVER_URL } from "./../../config/axios_config";
+import { getBaseUrl } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -55,7 +55,7 @@ function StreamModal(props: any) {
           .then(() => {
             toast.dismiss(fetchToast);
             setVideoURL(
-              SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
+              getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
             );
             setLoading(false);
           })
@@ -64,7 +64,7 @@ function StreamModal(props: any) {
           });
       } else {
         setVideoURL(
-          SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
+          getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
         );
         setLoading(false);
       }

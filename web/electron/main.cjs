@@ -1,13 +1,66 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain, safeStorage } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { createMpvMain } = require("electron-mpv-video/main");
+const StoreModule = require('electron-store');
+const Store = typeof StoreModule === 'function' ? StoreModule : (StoreModule.default || StoreModule);
 
 let mainWindow;
 let server;
+const store = new Store();
 
 const mpv = createMpvMain();
+
+// Helper to encrypt and save the token
+function saveToken(token) {
+  if (safeStorage && safeStorage.isEncryptionAvailable && safeStorage.isEncryptionAvailable()) {
+    const encryptedBuffer = safeStorage.encryptString(token);
+    store.set('auth_token', encryptedBuffer.toString('hex'));
+    store.set('auth_token_encrypted', true);
+  } else {
+    store.set('auth_token', token);
+    store.set('auth_token_encrypted', false);
+  }
+}
+
+function getToken() {
+  const storedVal = store.get('auth_token');
+  if (!storedVal) return null;
+  const isEncrypted = store.get('auth_token_encrypted');
+  if (isEncrypted && safeStorage && safeStorage.isEncryptionAvailable && safeStorage.isEncryptionAvailable()) {
+    try {
+      const encryptedBuffer = Buffer.from(storedVal, 'hex');
+      return safeStorage.decryptString(encryptedBuffer);
+    } catch (e) {
+      return storedVal;
+    }
+  }
+  return storedVal;
+}
+
+ipcMain.handle('store-token', async (event, token) => {
+  try {
+    saveToken(token);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-token', async () => {
+  try {
+    return getToken();
+  } catch (error) {
+    return null; 
+  }
+});
+
+ipcMain.handle('delete-token', async () => {
+  store.delete('auth_token');
+  store.delete('auth_token_encrypted');
+  return true;
+});
 
 function startStaticServer() {
   const buildPath = path.join(__dirname, "../build");
@@ -125,3 +178,4 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+

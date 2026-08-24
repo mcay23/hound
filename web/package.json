@@ -17,6 +17,7 @@
     "bootstrap": "^5.2.2",
     "dayjs": "^1.11.7",
     "electron-mpv-video": "^0.1.1",
+    "electron-store": "^11.0.2",
     "mui-datatables": "^4.3.0",
     "node-addon-api": "^8.9.2",
     "planby": "^2.0.0",
