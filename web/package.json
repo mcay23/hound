@@ -38,7 +38,7 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
     "electron:preview": "npm run build && electron .",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && npm --prefix node_modules/electron-mpv-video run build:native"
   },
   "eslintConfig": {
     "extends": [
