@@ -37,7 +37,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
-    "electron:preview": "npm run build && electron ."
+    "electron:preview": "npm run build && electron .",
+    "postinstall": "patch-package"
   },
   "eslintConfig": {
     "extends": [
@@ -66,6 +67,7 @@
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
     "electron": "^43.4.1",
+    "patch-package": "^8.0.1",
     "react-router-dom": "^6.4.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

@@ -22,19 +22,53 @@
 
 .controls-bottom {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 24px 16px 24px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
   pointer-events: auto;
   width: 100%;
   box-sizing: border-box;
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.controls-row-top {
+  gap: 16px;
+}
+
+.controls-row-bottom {
+  justify-content: space-between;
+}
+
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .play-button {
   color: white;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.controls-volume-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.controls-volume-slider {
+  width: 80px !important;
+  color: white;
+  cursor: pointer;
 }
 
 .controls-time {
@@ -44,11 +78,31 @@
   font-family: monospace;
   white-space: nowrap;
   user-select: none;
-  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .controls-seekbar {
   flex: 1;
   color: white;
   cursor: pointer;
+}
+
+.controls-track-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.controls-lang-badge {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  user-select: none;
+  font-family: sans-serif;
+  letter-spacing: 0.5px;
 }

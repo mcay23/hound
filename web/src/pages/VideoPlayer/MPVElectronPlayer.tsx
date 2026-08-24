@@ -16,6 +16,12 @@ const MPVElectronPlayer = React.memo(
     const [paused, setPaused] = useState(true);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [tracks, setTracks] = useState<any[]>([]);
+    const [selectedAudio, setSelectedAudio] = useState<string | number>("auto");
+    const [selectedSub, setSelectedSub] = useState<string | number>("auto");
+    const [volume, setVolumeState] = useState(100);
+    const [muted, setMuted] = useState(false);
+    const [prevVolume, setPrevVolume] = useState(100);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -62,6 +68,73 @@ const MPVElectronPlayer = React.memo(
       }
     }, []);
 
+    const handleSetVolume = useCallback(async (val: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setVolume(val);
+        setVolumeState(val);
+        if (val > 0) setMuted(false);
+      } catch (error) {
+        console.error("MPV set volume error:", error);
+      }
+    }, []);
+
+    const handleToggleMute = useCallback(async () => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        if (muted) {
+          const restore = prevVolume > 0 ? prevVolume : 80;
+          await video.setVolume(restore);
+          setVolumeState(restore);
+          setMuted(false);
+        } else {
+          setPrevVolume(volume);
+          await video.setVolume(0);
+          setVolumeState(0);
+          setMuted(true);
+        }
+      } catch (error) {
+        console.error("MPV mute error:", error);
+      }
+    }, [muted, volume, prevVolume]);
+
+    const handleSetAudioTrack = useCallback(async (id: string | number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setAudioTrack(id);
+        setSelectedAudio(id);
+      } catch (error) {
+        console.error("MPV set audio track error:", error);
+      }
+    }, []);
+
+    const handleSetSubtitleTrack = useCallback(async (id: string | number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setSubtitleTrack(id);
+        setSelectedSub(id);
+      } catch (error) {
+        console.error("MPV set subtitle track error:", error);
+      }
+    }, []);
+
+    const handleAddSubTrack = useCallback(
+      async (url: string, select = true) => {
+        const video = videoRef.current;
+        if (!video) return;
+        try {
+          await video.addSubTrack(url, select);
+        } catch (error) {
+          console.error("MPV add subtitle track error:", error);
+        }
+      },
+      [],
+    );
+
     useEffect(() => {
       const video = videoRef.current;
       if (!video) {
@@ -91,6 +164,14 @@ const MPVElectronPlayer = React.memo(
               }
             }, 500);
           }
+          try {
+            const initialTracks = await video.getTrackList();
+            if (initialTracks && initialTracks.length) {
+              setTracks(initialTracks);
+            }
+          } catch (e) {
+            // ignore initial track load error
+          }
         } catch (error) {
           console.error("MPV playback error:", error);
         }
@@ -114,6 +195,15 @@ const MPVElectronPlayer = React.memo(
         }
         if (typeof dur === "number" && dur > 0) {
           setDuration(dur);
+        }
+        if (Array.isArray(detail.trackList)) {
+          setTracks(detail.trackList);
+        }
+        if (detail.audioTrack !== undefined) {
+          setSelectedAudio(detail.audioTrack);
+        }
+        if (detail.subTrack !== undefined) {
+          setSelectedSub(detail.subTrack);
         }
         if (
           typeof current === "number" &&
@@ -160,9 +250,18 @@ const MPVElectronPlayer = React.memo(
           handlePlay={handlePlay}
           handlePlayPause={handlePlayPause}
           handleSeek={handleSeek}
+          handleSetAudioTrack={handleSetAudioTrack}
+          handleSetSubtitleTrack={handleSetSubtitleTrack}
+          handleSetVolume={handleSetVolume}
+          handleToggleMute={handleToggleMute}
           paused={paused}
           currentTime={currentTime}
           duration={duration}
+          volume={volume}
+          muted={muted}
+          tracks={tracks}
+          selectedAudio={selectedAudio}
+          selectedSub={selectedSub}
         />
       </div>
     );
