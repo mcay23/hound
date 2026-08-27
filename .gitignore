@@ -24,8 +24,11 @@ server/go.work
 
 # dependencies
 web/node_modules
+web/electron/node_modules
 web/.pnp
 web/.pnp.js
+
+web/dist-electron
 
 # testing
 web/coverage

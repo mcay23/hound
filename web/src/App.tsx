@@ -23,10 +23,7 @@ import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
 import Settings from "./pages/Settings/Settings";
 import LiveTV from "./pages/LiveTV/LiveTV";
-import { defineMpvVideoElement } from "electron-mpv-video/renderer";
-
 const queryClient = new QueryClient();
-defineMpvVideoElement();
 
 // axios defaults
 axios.defaults.withCredentials = true;
@@ -93,6 +90,18 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 function App() {
   useEffect(() => {
     getSecureToken();
+    if (
+      typeof window !== "undefined" &&
+      ("_electronMpvVideo" in window ||
+        "electron" in window ||
+        navigator.userAgent.includes("Electron"))
+    ) {
+      import("electron-mpv-video/renderer")
+        .then(({ defineMpvVideoElement }) => defineMpvVideoElement())
+        .catch((err) =>
+          console.warn("Electron MPV element not initialized:", err),
+        );
+    }
   }, []);
   var isAuthenticated = localStorage.getItem("isAuthenticated");
   type ProtectedRouteProps = {

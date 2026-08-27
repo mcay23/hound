@@ -16,6 +16,13 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
+import VideoPlayer from "../VideoPlayer/VideoPlayer";
+
+const isElectronMpv =
+  typeof window !== "undefined" &&
+  ("_electronMpvVideo" in window ||
+    "electron" in window ||
+    navigator.userAgent.includes("Electron"));
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
@@ -134,14 +141,23 @@ function StreamModal(props: any) {
         },
       }}
     >
-      <MPVElectronPlayer
-        options={videoJsOptions}
-        onVideoProgress={handleVideoProgress}
-        setLoading={setLoading}
-        handleClose={handleClose}
-        setInfoModalOpen={setInfoModalOpen}
-        subtitles={subtitles}
-      />
+      {isElectronMpv ? (
+        <MPVElectronPlayer
+          options={videoJsOptions}
+          onVideoProgress={handleVideoProgress}
+          setLoading={setLoading}
+          handleClose={handleClose}
+          setInfoModalOpen={setInfoModalOpen}
+          subtitles={subtitles}
+        />
+      ) : (
+        <VideoPlayer
+          options={videoJsOptions}
+          onVideoProgress={handleVideoProgress}
+          setLoading={setLoading}
+          subtitles={subtitles}
+        />
+      )}
       <InfoModal
         open={infoModalOpen}
         setOpen={setInfoModalOpen}

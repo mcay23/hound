@@ -72,7 +72,9 @@ ipcMain.on('toggle-fullscreen', (event) => {
 });
 
 function startStaticServer() {
-  const buildPath = path.join(__dirname, "../build");
+  const buildPath = app.isPackaged
+    ? path.join(process.resourcesPath, "build")
+    : path.join(__dirname, "../build");
 
   server = http.createServer((req, res) => {
     let requestPath = decodeURIComponent(req.url.split("?")[0]);
