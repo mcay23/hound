@@ -17,12 +17,7 @@ import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
-
-const isElectronMpv =
-  typeof window !== "undefined" &&
-  ("_electronMpvVideo" in window ||
-    "electron" in window ||
-    navigator.userAgent.includes("Electron"));
+import { isPlatformElectron } from "../../utils/platform";
 
 function StreamModal(props: any) {
   const { streamDetails, streams, setOpen, open, startTime } = props;
@@ -141,7 +136,7 @@ function StreamModal(props: any) {
         },
       }}
     >
-      {isElectronMpv ? (
+      {isPlatformElectron ? (
         <MPVElectronPlayer
           options={videoJsOptions}
           onVideoProgress={handleVideoProgress}

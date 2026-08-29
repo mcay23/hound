@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
-import VideoControls from "./VideoControls";
+import ElectronVideoControls from "./ElectronVideoControls";
 
 interface IVideoPlayerProps {
   options: any;
@@ -272,7 +272,7 @@ const MPVElectronPlayer = React.memo(
             display: "block",
           }}
         />
-        <VideoControls
+        <ElectronVideoControls
           handlePause={handlePause}
           handlePlay={handlePlay}
           handlePlayPause={handlePlayPause}

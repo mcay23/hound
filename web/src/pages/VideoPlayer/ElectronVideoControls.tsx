@@ -7,7 +7,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import "./VideoControls.css";
+import "./ElectronVideoControls.css";
 import {
   Pause,
   PlayArrow,
@@ -56,7 +56,7 @@ interface IVideoControlsProps {
   selectedSub?: string | number;
 }
 
-export default function VideoControls({
+export default function ElectronVideoControls({
   handlePlayPause,
   handleSeek,
   handleSetAudioTrack,
@@ -461,7 +461,7 @@ export default function VideoControls({
                 size="medium"
                 title="Toggle Fullscreen"
                 onClick={() => {
-                  window.electron.toggleFullscreen();
+                  window?.electron?.toggleFullscreen();
                 }}
               >
                 <Fullscreen />

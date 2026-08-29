@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// for electron, save auth state, etc.
 declare global {
   interface Window {
     secureAuth?: {

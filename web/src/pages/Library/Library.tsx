@@ -15,6 +15,8 @@ import {
   usePublicCollections,
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
+import Footer from "../Footer";
+import { isPlatformElectron } from "../../utils/platform";
 
 const initialCollectionState: CollectionFormData = {
   collection_title: "",
@@ -160,6 +162,7 @@ function Library(props: any) {
         onClose={handleCollectionDialogClose}
         onSubmit={handleCreateCollection}
       />
+      {!isPlatformElectron && <Footer />}
     </>
   );
 }

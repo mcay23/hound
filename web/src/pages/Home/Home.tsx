@@ -8,6 +8,8 @@ import {
   useUserHomeRows,
   useHomeRow,
 } from "../../api/hooks/home";
+import Footer from "../Footer";
+import { isPlatformElectron } from "../../utils/platform";
 
 function Home() {
   const { data: backdropsData } = useBackdrops();
@@ -84,6 +86,7 @@ function Home() {
           );
         })}
       </div>
+      {!isPlatformElectron && <Footer />}
     </>
   );
 }

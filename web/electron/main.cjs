@@ -12,7 +12,9 @@ const store = new Store();
 
 const mpv = createMpvMain();
 
-Menu.setApplicationMenu(null);
+if (process.env.ELECTRON_DEV !== "true") {
+  Menu.setApplicationMenu(null);
+}
 
 // Helper to encrypt and save the token
 function saveToken(token) {

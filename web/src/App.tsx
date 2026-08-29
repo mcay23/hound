@@ -23,6 +23,7 @@ import Admin from "./pages/Admin/Admin";
 import Activity from "./pages/Activity/Activity";
 import Settings from "./pages/Settings/Settings";
 import LiveTV from "./pages/LiveTV/LiveTV";
+import { isPlatformElectron } from "./utils/platform";
 const queryClient = new QueryClient();
 
 // axios defaults
@@ -90,12 +91,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 function App() {
   useEffect(() => {
     getSecureToken();
-    if (
-      typeof window !== "undefined" &&
-      ("_electronMpvVideo" in window ||
-        "electron" in window ||
-        navigator.userAgent.includes("Electron"))
-    ) {
+    if (isPlatformElectron) {
       import("electron-mpv-video/renderer")
         .then(({ defineMpvVideoElement }) => defineMpvVideoElement())
         .catch((err) =>
