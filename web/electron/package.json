@@ -1,6 +1,6 @@
 {
   "name": "hound-desktop",
-  "version": "0.1.0",
+  "version": "0.3.4",
   "private": true,
   "main": "main.cjs",
   "dependencies": {
@@ -20,9 +20,10 @@
   "scripts": {
     "postinstall": "patch-package && npm --prefix node_modules/electron-mpv-video run build:native",
     "dev": "concurrently -k \"npm run dev --prefix ..\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
+    "build:web": "npm run build --prefix ..",
     "preview": "electron .",
-    "dist:dir": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist:dir": "npm run build:web && electron-builder --dir",
+    "dist": "npm run build:web && electron-builder"
   },
   "build": {
     "appId": "com.houndmediaserver.hound",

@@ -3,14 +3,18 @@ import axios from 'axios';
 import { isPlatformElectron } from '../utils/platform';
 
 export const getBaseUrl = (): string => {
-  if (!isPlatformElectron) return "http://localhost:2323"
-  let host = localStorage.getItem("host");
-  if (host) {
-    host = host.trim();
-    if (!host.startsWith("http://") && !host.startsWith("https://")) {
-      host = "http://" + host;
+  if (!isPlatformElectron && process.env.NODE_ENV === "production") {
+    return "";
+  }
+  if (isPlatformElectron) {
+    let host = localStorage.getItem("host");
+    if (host) {
+      host = host.trim();
+      if (!host.startsWith("http://") && !host.startsWith("https://")) {
+        host = "http://" + host;
+      }
+      return host.replace(/\/+$/, "");
     }
-    return host.replace(/\/+$/, "");
   }
   return "http://localhost:2323";
 };
