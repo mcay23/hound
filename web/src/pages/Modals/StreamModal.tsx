@@ -20,10 +20,28 @@ import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { isPlatformElectron } from "../../utils/platform";
 
 function StreamModal(props: any) {
-  const { streamDetails, streams, setOpen, open, startTime } = props;
+  const {
+    streamDetails,
+    streams,
+    setOpen,
+    open,
+    startTime,
+    watchProgress,
+    originalAudioLang,
+  } = props;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
+
+  const isStreamsMatch = useMemo(
+    () =>
+      Boolean(
+        watchProgress &&
+          watchProgress.encoded_data &&
+          watchProgress.encoded_data === streamDetails?.encoded_data,
+      ),
+    [watchProgress, streamDetails?.encoded_data],
+  );
 
   const { data: subtitleData } = useSubtitles(
     streams?.media_type === "tvshow" ? "tv" : "movie",
@@ -89,26 +107,29 @@ function StreamModal(props: any) {
   );
 
   const handleVideoProgress = useCallback(
-    (current: number, total: number) => {
+    (current: number, total: number, playerSettings?: any) => {
       if (current < 120) return; // don't log before 2 minutes
-      const payload = {
-        stream_protocol: streamDetails.stream_protocol,
-        source_uri: streamDetails.uri,
-        encoded_data: streamDetails.encoded_data,
+      const payload: any = {
+        stream_protocol: streamDetails?.stream_protocol,
+        source_uri: streamDetails?.uri,
+        encoded_data: streamDetails?.encoded_data,
         current_progress_seconds: Math.floor(current),
         total_duration_seconds: Math.floor(total),
-        ...(streams.media_type === "tvshow"
+        ...(streams?.media_type === "tvshow"
           ? {
-              season_number: streams.season_number || 0,
-              episode_number: streams.episode_number || 0,
+              season_number: streams?.season_number || 0,
+              episode_number: streams?.episode_number || 0,
             }
           : {}),
       };
+      if (isPlatformElectron && playerSettings) {
+        payload.player_settings = playerSettings;
+      }
       axios
         .post(
-          `/api/v1/${streams.media_type === "tvshow" ? "tv" : "movie"}/${
-            streams.media_source
-          }-${streams.source_id}/playback`,
+          `/api/v1/${streams?.media_type === "tvshow" ? "tv" : "movie"}/${
+            streams?.media_source
+          }-${streams?.source_id}/playback`,
           payload,
         )
         .then((res) => {
@@ -144,6 +165,9 @@ function StreamModal(props: any) {
           handleClose={handleClose}
           setInfoModalOpen={setInfoModalOpen}
           subtitles={subtitles}
+          playerSettings={watchProgress?.player_settings}
+          isStreamsMatch={isStreamsMatch}
+          originalAudioLang={originalAudioLang}
         />
       ) : (
         <VideoPlayer

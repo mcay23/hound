@@ -459,6 +459,8 @@ function MediaPageMovie(props: any) {
         streamDetails={mainStream}
         streams={streams}
         startTime={watchProgress?.current_progress_seconds || 0}
+        watchProgress={watchProgress}
+        originalAudioLang={props.data?.original_language}
       />
       <SelectStreamModal
         modalType="select-stream"

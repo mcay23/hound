@@ -1,13 +1,21 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import ElectronVideoControls from "./ElectronVideoControls";
+import { get2LetterLangCode } from "../../helpers/locale";
 
 interface IVideoPlayerProps {
   options: any;
-  onVideoProgress?: (current: number, total: number) => void;
+  onVideoProgress?: (
+    current: number,
+    total: number,
+    playerSettings?: any,
+  ) => void;
   setLoading?: (loading: boolean) => void;
   subtitles?: any[];
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
+  playerSettings?: any;
+  isStreamsMatch?: boolean;
+  originalAudioLang?: string;
 }
 
 const MPVElectronPlayer = React.memo(
@@ -16,6 +24,9 @@ const MPVElectronPlayer = React.memo(
     onVideoProgress,
     handleClose,
     setInfoModalOpen,
+    playerSettings,
+    isStreamsMatch,
+    originalAudioLang,
   }: IVideoPlayerProps) => {
     const videoRef = useRef<any>(null);
     const lastReportTimeRef = useRef(0);
@@ -26,13 +37,28 @@ const MPVElectronPlayer = React.memo(
     const [tracks, setTracks] = useState<any[]>([]);
     const [selectedAudioIdx, setSelectedAudioIdx] = useState<
       number | undefined
-    >(0);
-    const [selectedSubIdx, setSelectedSubIdx] = useState<number | undefined>(0);
+    >(undefined);
+    const [selectedSubIdx, setSelectedSubIdx] = useState<number | undefined>(
+      undefined,
+    );
+    const selectedAudioIdxRef = useRef<number | undefined>(undefined);
+    const selectedSubIdxRef = useRef<number | undefined>(undefined);
+
+    const playerSettingsRef = useRef(playerSettings);
+    playerSettingsRef.current = playerSettings;
+    const isStreamsMatchRef = useRef(isStreamsMatch);
+    isStreamsMatchRef.current = isStreamsMatch;
+    const originalAudioLangRef = useRef(originalAudioLang);
+    originalAudioLangRef.current = originalAudioLang;
+    const onVideoProgressRef = useRef(onVideoProgress);
+    onVideoProgressRef.current = onVideoProgress;
+
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
     const playingCountRef = useRef(0);
     const seekDoneRef = useRef(false);
+    const tracksInitializedRef = useRef(false);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -117,6 +143,7 @@ const MPVElectronPlayer = React.memo(
       try {
         await video.setAudioTrack(id);
         setSelectedAudioIdx(id);
+        selectedAudioIdxRef.current = id;
       } catch (error) {
         console.error("MPV set audio track error:", error);
       }
@@ -128,23 +155,109 @@ const MPVElectronPlayer = React.memo(
       try {
         await video.setSubtitleTrack(id);
         setSelectedSubIdx(id);
+        selectedSubIdxRef.current = id;
       } catch (error) {
         console.error("MPV set subtitle track error:", error);
       }
     }, []);
 
-    const handleAddSubTrack = useCallback(
-      async (url: string, select = true) => {
-        const video = videoRef.current;
-        if (!video) return;
-        try {
-          await video.addSubTrack(url, select);
-        } catch (error) {
-          console.error("MPV add subtitle track error:", error);
-        }
-      },
-      [],
+    const audioTracks = (tracks || []).filter(
+      (t) => t.type === "audio" || t.type === "a",
     );
+    const subTracks = (tracks || []).filter(
+      (t) => t.type === "sub" || t.type === "s",
+    );
+
+    const initializeTracks = useCallback(async (trackList: any[]) => {
+      const video = videoRef.current;
+      if (!video || tracksInitializedRef.current) return;
+      tracksInitializedRef.current = true;
+
+      const availAudio = trackList.filter(
+        (t) => t.type === "audio" || t.type === "a",
+      );
+      const availSub = trackList.filter(
+        (t) => t.type === "sub" || t.type === "s",
+      );
+
+      const curSettings = playerSettingsRef.current;
+      const isMatch = isStreamsMatchRef.current;
+      const origAudio = originalAudioLangRef.current;
+
+      // Audio Track Restoration
+      let targetAudio: number | undefined = undefined;
+      if (
+        isMatch &&
+        curSettings?.audio_idx !== undefined &&
+        curSettings?.audio_idx !== null
+      ) {
+        const exists = availAudio.find(
+          (t) => Number(t.id) === Number(curSettings.audio_idx),
+        );
+        if (exists) {
+          targetAudio = Number(curSettings.audio_idx);
+        }
+      }
+      if (targetAudio === undefined) {
+        const targetLang =
+          get2LetterLangCode(curSettings?.audio_lang) ||
+          get2LetterLangCode(origAudio);
+        if (targetLang) {
+          const match = availAudio.find(
+            (t) => get2LetterLangCode(t.lang) === targetLang,
+          );
+          if (match) {
+            targetAudio = Number(match.id);
+          }
+        }
+      }
+      if (targetAudio !== undefined) {
+        try {
+          await video.setAudioTrack(targetAudio);
+          setSelectedAudioIdx(targetAudio);
+          selectedAudioIdxRef.current = targetAudio;
+        } catch (e) {
+          console.error("Failed to restore audio track:", e);
+        }
+      }
+
+      // Subtitle Track Restoration
+      let targetSub: number | undefined = undefined;
+      if (
+        isMatch &&
+        curSettings?.subtitle_idx !== undefined &&
+        curSettings?.subtitle_idx !== null
+      ) {
+        const subIdxNum = Number(curSettings.subtitle_idx);
+        if (subIdxNum === 0) {
+          targetSub = 0;
+        } else {
+          const exists = availSub.find((t) => Number(t.id) === subIdxNum);
+          if (exists) {
+            targetSub = subIdxNum;
+          }
+        }
+      }
+      if (targetSub === undefined) {
+        const targetLang =
+          get2LetterLangCode(curSettings?.subtitle_lang) || "en";
+        const match = availSub.find(
+          (t) => get2LetterLangCode(t.lang) === targetLang,
+        );
+        if (match) {
+          targetSub = Number(match.id);
+        }
+      }
+      if (targetSub !== undefined) {
+        try {
+          await video.setSubtitleTrack(targetSub);
+          setSelectedSubIdx(targetSub);
+          selectedSubIdxRef.current = targetSub;
+        } catch (e) {
+          console.error("Failed to restore subtitle track:", e);
+        }
+      }
+    }, []);
 
     useEffect(() => {
       const video = videoRef.current;
@@ -169,7 +282,6 @@ const MPVElectronPlayer = React.memo(
           console.error("MPV playback error:", error);
         }
       };
-      console.log(tracks);
 
       load();
 
@@ -217,12 +329,25 @@ const MPVElectronPlayer = React.memo(
         }
         if (Array.isArray(detail.trackList)) {
           setTracks(detail.trackList);
+          if (!tracksInitializedRef.current && detail.trackList.length > 0) {
+            initializeTracks(detail.trackList);
+          }
         }
-        if (!selectedAudioIdx && detail.audioTrack !== undefined) {
-          setSelectedAudioIdx(Number(detail.audioTrack));
+        if (
+          selectedAudioIdxRef.current === undefined &&
+          detail.audioTrack !== undefined
+        ) {
+          const aIdx = Number(detail.audioTrack);
+          setSelectedAudioIdx(aIdx);
+          selectedAudioIdxRef.current = aIdx;
         }
-        if (!selectedSubIdx && detail.subTrack !== undefined) {
-          setSelectedSubIdx(Number(detail.subTrack));
+        if (
+          selectedSubIdxRef.current === undefined &&
+          detail.subTrack !== undefined
+        ) {
+          const sIdx = Number(detail.subTrack);
+          setSelectedSubIdx(sIdx);
+          selectedSubIdxRef.current = sIdx;
         }
         if (
           typeof current === "number" &&
@@ -230,7 +355,31 @@ const MPVElectronPlayer = React.memo(
           Math.abs(current - lastReportTimeRef.current) >= 5
         ) {
           lastReportTimeRef.current = current;
-          onVideoProgress?.(current, dur);
+          const currentAudio =
+            detail.audioTrack ?? selectedAudioIdxRef.current ?? 0;
+          const currentSub = detail.subTrack ?? selectedSubIdxRef.current ?? 0;
+
+          const currentAudioTrack = (detail.trackList || []).find(
+            (t: any) =>
+              (t.type === "audio" || t.type === "a") &&
+              Number(t.id) === Number(currentAudio),
+          );
+          const currentSubTrack = (detail.trackList || []).find(
+            (t: any) =>
+              (t.type === "sub" || t.type === "s") &&
+              Number(t.id) === Number(currentSub),
+          );
+
+          const playerSettingsPayload = {
+            player: "desktop",
+            resize_mode: "contain",
+            audio_idx: Number(currentAudio),
+            audio_lang: get2LetterLangCode(currentAudioTrack?.lang),
+            subtitle_idx: Number(currentSub),
+            subtitle_lang: get2LetterLangCode(currentSubTrack?.lang),
+          };
+
+          onVideoProgressRef.current?.(current, dur, playerSettingsPayload);
         }
       };
 
@@ -250,25 +399,10 @@ const MPVElectronPlayer = React.memo(
           console.warn("MPV destroy failed:", error);
         }
       };
-    }, [options?.sources?.[0]?.src, options?.startTime, onVideoProgress]);
+    }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
 
-    const audioTracks = (tracks || []).filter(
-      (t) => t.type === "audio" || t.type === "a",
-    );
-    const subTracks = (tracks || []).filter(
-      (t) => t.type === "sub" || t.type === "s",
-    );
     const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
     const activeSubTrack = subTracks.find((t) => t.id === selectedSubIdx);
-
-    const playerSettings = {
-      player: "desktop",
-      resize_mode: "contain",
-      audio_idx: selectedAudioIdx,
-      audio_lang: activeAudioTrack?.lang?.toLowerCase() || "",
-      subtitle_idx: selectedSubIdx,
-      subtitle_lang: activeSubTrack?.lang?.toLowerCase() || "",
-    };
 
     return (
       <div className="video-container">

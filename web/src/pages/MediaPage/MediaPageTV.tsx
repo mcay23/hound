@@ -80,6 +80,7 @@ function MediaPageTV(props: any) {
     | undefined
   >(undefined);
   const [streamStartTime, setStreamStartTime] = useState(0);
+  const [activeWatchProgress, setActiveWatchProgress] = useState<any>(null);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
   const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "tv",
@@ -187,7 +188,13 @@ function MediaPageTV(props: any) {
     episodeID: number,
     overrideStartTime?: number,
     overrideEncodedData?: string,
+    overrideWatchProgress?: any,
   ) => {
+    if (overrideWatchProgress !== undefined) {
+      setActiveWatchProgress(overrideWatchProgress);
+    } else {
+      setActiveWatchProgress(null);
+    }
     if (mode === "direct") {
       setIsStreamButtonLoading(true);
     } else if (mode === "select") {
@@ -267,6 +274,7 @@ function MediaPageTV(props: any) {
           if (episodeProgress) {
             startTime = episodeProgress.current_progress_seconds || 0;
             encodedData = episodeProgress.encoded_data;
+            setActiveWatchProgress(episodeProgress);
           }
         }
         return requestProviderStream(startTime, encodedData);
@@ -302,6 +310,7 @@ function MediaPageTV(props: any) {
         parseInt(watch_progress.episode_source_id, 10),
         watch_progress.current_progress_seconds,
         watch_progress.encoded_data,
+        watch_progress,
       );
     } else if (watch_action_type === "next_episode" && next_episode) {
       handleStreamButtonClick(
@@ -601,6 +610,8 @@ function MediaPageTV(props: any) {
         streamDetails={mainStream}
         startTime={streamStartTime}
         streams={streams}
+        watchProgress={activeWatchProgress}
+        originalAudioLang={props.data?.original_language}
       />
       <SelectStreamModal
         modalType="select-stream"
