@@ -73,6 +73,14 @@ ipcMain.on('toggle-fullscreen', (event) => {
   }
 });
 
+ipcMain.handle('is-fullscreen', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    return win.isFullScreen();
+  }
+  return false;
+});
+
 function startStaticServer() {
   const buildPath = app.isPackaged
     ? path.join(process.resourcesPath, "build")

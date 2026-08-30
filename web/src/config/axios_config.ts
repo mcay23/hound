@@ -42,7 +42,7 @@ export const AXIOS_CONFIG = {
   "headers": {
     "Content-Type": "application/json;charset=UTF-8",
     "X-Client-Id": "hound-web",
-    "X-Client-Platform": "web",
+    "X-Client-Platform": isPlatformElectron ? "electron-desktop" : "web",
     "X-Device-Id": getDeviceID()
   }
 }

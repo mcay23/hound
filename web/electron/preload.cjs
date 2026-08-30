@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld('secureAuth', {
 });
 
 contextBridge.exposeInMainWorld('electron', {
-  toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen')
+  toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen'),
+  isFullscreen: () => ipcRenderer.invoke('is-fullscreen')
 });

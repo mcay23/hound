@@ -44,6 +44,7 @@ const MPVElectronPlayer = React.memo(
     );
     const selectedAudioIdxRef = useRef<number | undefined>(undefined);
     const selectedSubIdxRef = useRef<number | undefined>(undefined);
+    const originalFullscreen = useRef<boolean | undefined>(undefined);
 
     const playerSettingsRef = useRef(playerSettings);
     playerSettingsRef.current = playerSettings;
@@ -402,8 +403,25 @@ const MPVElectronPlayer = React.memo(
       };
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
 
-    const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
-    const activeSubTrack = subTracks.find((t) => t.id === selectedSubIdx);
+    // if fullscreen state was changed by the player, revert back to original
+    useEffect(() => {
+      async function updateFullscreen() {
+        const isFullscreen = await window?.electron?.isFullscreen();
+        originalFullscreen.current = isFullscreen;
+      }
+      if (originalFullscreen.current === undefined) {
+        updateFullscreen();
+      }
+      async function handleExit() {
+        const isFullscreen = await window?.electron?.isFullscreen();
+        if (originalFullscreen.current !== isFullscreen) {
+          window?.electron?.toggleFullscreen();
+        }
+      }
+      return () => {
+        handleExit();
+      };
+    }, []);
 
     return (
       <div className="video-container">

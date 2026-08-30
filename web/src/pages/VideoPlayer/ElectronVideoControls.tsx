@@ -154,13 +154,15 @@ export default function ElectronVideoControls({
         className="controls-overlay"
         onMouseMove={resetInactivityTimer}
         onMouseEnter={resetInactivityTimer}
-        style={{ cursor: controlsVisible ? "default" : "none" }}
+        style={{
+          transition: "opacity 0.6s ease",
+          cursor: controlsVisible ? "default" : "none",
+          opacity: controlsVisible ? 1 : 0,
+        }}
       >
         <div
           className="controls-bottom"
           style={{
-            opacity: controlsVisible ? 1 : 0,
-            transition: "opacity 0.6s ease",
             pointerEvents: controlsVisible ? "auto" : "none",
           }}
         >
