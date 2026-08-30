@@ -21,7 +21,7 @@ const (
 	ClientPlatformDesktop       = "electron-desktop"
 )
 
-var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb, ClientPlatformDesktop}
 var SupportedClientIDs = []string{"", ClientIDWeb, ClientIDApp}
 
 type RegistrationUser struct {
