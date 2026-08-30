@@ -10,7 +10,7 @@ interface IVideoPlayerProps {
     playerSettings?: any,
   ) => void;
   setLoading?: (loading: boolean) => void;
-  subtitles?: any[];
+  externalSubtitles?: any[];
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
   playerSettings?: any;
@@ -22,6 +22,7 @@ const MPVElectronPlayer = React.memo(
   ({
     options,
     onVideoProgress,
+    externalSubtitles,
     handleClose,
     setInfoModalOpen,
     playerSettings,

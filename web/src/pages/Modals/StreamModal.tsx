@@ -18,6 +18,7 @@ import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
 import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { isPlatformElectron } from "../../utils/platform";
+import { get2LetterLangCode } from "../../helpers/locale";
 
 function StreamModal(props: any) {
   const {
@@ -56,6 +57,13 @@ function StreamModal(props: any) {
     () => subtitleData?.subtitles?.flatMap((p: any) => p.subtitles || []) || [],
     [subtitleData],
   );
+  const externalSubtitles = useMemo(() => {
+    return subtitles.map((sub: any) => ({
+      title: sub.title,
+      lang: get2LetterLangCode(sub.lang),
+      url: `${getBaseUrl()}/api/v1/subtitle/${sub.encoded_data}`,
+    }));
+  }, [subtitles]);
   const handleClose = () => {
     setLoading(false);
     setOpen(false);
@@ -164,7 +172,7 @@ function StreamModal(props: any) {
           setLoading={setLoading}
           handleClose={handleClose}
           setInfoModalOpen={setInfoModalOpen}
-          subtitles={subtitles}
+          externalSubtitles={externalSubtitles}
           playerSettings={watchProgress?.player_settings}
           isStreamsMatch={isStreamsMatch}
           originalAudioLang={originalAudioLang}

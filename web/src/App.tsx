@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import Login from "./pages/Login/Login";
+import ServerUnreachableScreen from "./pages/ServerUnreachable/ServerUnreachableScreen";
+import { checkServerReachable } from "./utils/serverHealth";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./pages/Home/Home";
@@ -24,6 +26,7 @@ import Activity from "./pages/Activity/Activity";
 import Settings from "./pages/Settings/Settings";
 import LiveTV from "./pages/LiveTV/LiveTV";
 import { isPlatformElectron } from "./utils/platform";
+import { Spinner } from "react-bootstrap";
 const queryClient = new QueryClient();
 
 // axios defaults
@@ -56,6 +59,7 @@ axios.interceptors.request.use(
     return Promise.reject(error);
   },
 );
+
 axios.interceptors.response.use(
   function (response) {
     if (
@@ -89,6 +93,18 @@ axios.interceptors.response.use(
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 function App() {
+  const [serverStatus, setServerStatus] = useState<
+    "checking" | "ok" | "unreachable"
+  >(
+    isPlatformElectron &&
+      !!localStorage.getItem("isAuthenticated") &&
+      !sessionStorage.getItem("server_reachable")
+      ? "checking"
+      : "ok",
+  );
+
+  const isAuthenticated = localStorage.getItem("isAuthenticated");
+
   useEffect(() => {
     getSecureToken();
     if (isPlatformElectron) {
@@ -97,9 +113,20 @@ function App() {
         .catch((err) =>
           console.warn("Electron MPV element not initialized:", err),
         );
+      if (
+        localStorage.getItem("isAuthenticated") &&
+        !sessionStorage.getItem("server_reachable")
+      ) {
+        getSecureToken().then((token) => {
+          checkServerReachable(token ?? undefined).then((ok) => {
+            if (ok) sessionStorage.setItem("server_reachable", "true");
+            setServerStatus(ok ? "ok" : "unreachable");
+          });
+        });
+      }
     }
   }, []);
-  var isAuthenticated = localStorage.getItem("isAuthenticated");
+
   type ProtectedRouteProps = {
     component: JSX.Element;
   };
@@ -115,6 +142,15 @@ function App() {
       fontFamily: '"Cabin", "Roboto", "Helvetica", "Arial", sans-serif',
     },
   });
+
+  if (serverStatus === "checking")
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner />
+      </div>
+    );
+  if (serverStatus === "unreachable")
+    return <ServerUnreachableScreen onResolved={() => setServerStatus("ok")} />;
 
   return (
     <ThemeProvider theme={theme}>

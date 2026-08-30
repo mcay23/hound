@@ -6,10 +6,11 @@ import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getBaseUrl, setHostUrl } from "../../config/axios_config";
 import { saveSecureToken } from "../../utils/secureStore";
+import { isPlatformElectron } from "../../utils/platform";
 
 function Login() {
   const [data, setData] = useState({
-    host: localStorage.getItem("host") || getBaseUrl(),
+    host: getBaseUrl(),
     username: "",
     password: "",
   });
@@ -57,16 +58,18 @@ function Login() {
           <div className="login-card">
             <h2 className="mb-4">Login</h2>
             <form onSubmit={submitHandler}>
-              <FormGroup controlId="host" className="mt-4">
-                <FormControl
-                  autoFocus
-                  type="text"
-                  name="host"
-                  placeholder="host (e.g. http://localhost:2323)"
-                  value={data.host}
-                  onChange={handleChange}
-                />
-              </FormGroup>
+              {isPlatformElectron && (
+                <FormGroup controlId="host" className="mt-4">
+                  <FormControl
+                    autoFocus
+                    type="text"
+                    name="host"
+                    placeholder="host (e.g. http://localhost:2323)"
+                    value={data.host}
+                    onChange={handleChange}
+                  />
+                </FormGroup>
+              )}
               <FormGroup controlId="username" className="mt-4">
                 <FormControl
                   type="username"
@@ -87,9 +90,7 @@ function Login() {
               </FormGroup>
               <br />
               <div className="d-flex flex-row-reverse">
-                <Button type="submit">
-                  Login
-                </Button>
+                <Button type="submit">Login</Button>
               </div>
             </form>
           </div>
@@ -100,4 +101,3 @@ function Login() {
 }
 
 export default Login;
-

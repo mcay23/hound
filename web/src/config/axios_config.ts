@@ -1,7 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { isPlatformElectron } from '../utils/platform';
 
 export const getBaseUrl = (): string => {
+  if (!isPlatformElectron) return "http://localhost:2323"
   let host = localStorage.getItem("host");
   if (host) {
     host = host.trim();

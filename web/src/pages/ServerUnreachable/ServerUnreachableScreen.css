@@ -1,0 +1,27 @@
+.srv-unreach {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.srv-unreach-card {
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-family: "Cabin", sans-serif;
+}
+
+.srv-unreach-title {
+  font-size: 1.5rem;
+}
+
+.srv-unreach-subtitle {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.srv-unreach-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
