@@ -24,8 +24,10 @@ const MPVElectronPlayer = React.memo(
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [tracks, setTracks] = useState<any[]>([]);
-    const [selectedAudio, setSelectedAudio] = useState<string | number>("auto");
-    const [selectedSub, setSelectedSub] = useState<string | number>("auto");
+    const [selectedAudioIdx, setSelectedAudioIdx] = useState<
+      number | undefined
+    >(0);
+    const [selectedSubIdx, setSelectedSubIdx] = useState<number | undefined>(0);
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
@@ -109,23 +111,23 @@ const MPVElectronPlayer = React.memo(
       }
     }, [muted, volume, prevVolume]);
 
-    const handleSetAudioTrack = useCallback(async (id: string | number) => {
+    const handleSetAudioTrack = useCallback(async (id: number) => {
       const video = videoRef.current;
       if (!video) return;
       try {
         await video.setAudioTrack(id);
-        setSelectedAudio(id);
+        setSelectedAudioIdx(id);
       } catch (error) {
         console.error("MPV set audio track error:", error);
       }
     }, []);
 
-    const handleSetSubtitleTrack = useCallback(async (id: string | number) => {
+    const handleSetSubtitleTrack = useCallback(async (id: number) => {
       const video = videoRef.current;
       if (!video) return;
       try {
         await video.setSubtitleTrack(id);
-        setSelectedSub(id);
+        setSelectedSubIdx(id);
       } catch (error) {
         console.error("MPV set subtitle track error:", error);
       }
@@ -163,18 +165,11 @@ const MPVElectronPlayer = React.memo(
             return;
           }
           await video.play();
-          try {
-            const initialTracks = await video.getTrackList();
-            if (initialTracks && initialTracks.length) {
-              setTracks(initialTracks);
-            }
-          } catch (e) {
-            // ignore initial track load error
-          }
         } catch (error) {
           console.error("MPV playback error:", error);
         }
       };
+      console.log(tracks);
 
       load();
 
@@ -188,9 +183,6 @@ const MPVElectronPlayer = React.memo(
           setPaused(true);
         } else {
           setPaused(false);
-        }
-        if (detail.status) {
-          console.log("status", detail.status);
         }
 
         // second Playing event seems more safe for initial seek
@@ -226,11 +218,11 @@ const MPVElectronPlayer = React.memo(
         if (Array.isArray(detail.trackList)) {
           setTracks(detail.trackList);
         }
-        if (detail.audioTrack !== undefined) {
-          setSelectedAudio(detail.audioTrack);
+        if (!selectedAudioIdx && detail.audioTrack !== undefined) {
+          setSelectedAudioIdx(Number(detail.audioTrack));
         }
-        if (detail.subTrack !== undefined) {
-          setSelectedSub(detail.subTrack);
+        if (!selectedSubIdx && detail.subTrack !== undefined) {
+          setSelectedSubIdx(Number(detail.subTrack));
         }
         if (
           typeof current === "number" &&
@@ -260,6 +252,24 @@ const MPVElectronPlayer = React.memo(
       };
     }, [options?.sources?.[0]?.src, options?.startTime, onVideoProgress]);
 
+    const audioTracks = (tracks || []).filter(
+      (t) => t.type === "audio" || t.type === "a",
+    );
+    const subTracks = (tracks || []).filter(
+      (t) => t.type === "sub" || t.type === "s",
+    );
+    const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
+    const activeSubTrack = subTracks.find((t) => t.id === selectedSubIdx);
+
+    const playerSettings = {
+      player: "desktop",
+      resize_mode: "contain",
+      audio_idx: selectedAudioIdx,
+      audio_lang: activeAudioTrack?.lang?.toLowerCase() || "",
+      subtitle_idx: selectedSubIdx,
+      subtitle_lang: activeSubTrack?.lang?.toLowerCase() || "",
+    };
+
     return (
       <div className="video-container">
         <mpv-video
@@ -288,9 +298,10 @@ const MPVElectronPlayer = React.memo(
           duration={duration}
           volume={volume}
           muted={muted}
-          tracks={tracks}
-          selectedAudio={selectedAudio}
-          selectedSub={selectedSub}
+          audioTracks={audioTracks}
+          subTracks={subTracks}
+          selectedAudioIdx={selectedAudioIdx}
+          selectedSubIdx={selectedSubIdx}
         />
       </div>
     );

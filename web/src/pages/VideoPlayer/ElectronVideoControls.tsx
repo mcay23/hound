@@ -40,8 +40,8 @@ interface IVideoControlsProps {
   handlePause?: () => void;
   handlePlay?: () => void;
   handleSeek?: (time: number) => void;
-  handleSetAudioTrack?: (id: string | number) => void;
-  handleSetSubtitleTrack?: (id: string | number) => void;
+  handleSetAudioTrack: (id: number) => void;
+  handleSetSubtitleTrack: (id: number) => void;
   handleSetVolume?: (val: number) => void;
   handleToggleMute?: () => void;
   handleClose?: () => void;
@@ -51,9 +51,10 @@ interface IVideoControlsProps {
   duration?: number;
   volume?: number;
   muted?: boolean;
-  tracks?: any[];
-  selectedAudio?: string | number;
-  selectedSub?: string | number;
+  audioTracks: any[];
+  subTracks: any[];
+  selectedAudioIdx: number | undefined;
+  selectedSubIdx: number | undefined;
 }
 
 export default function ElectronVideoControls({
@@ -70,9 +71,10 @@ export default function ElectronVideoControls({
   duration = 0,
   volume = 100,
   muted = false,
-  tracks = [],
-  selectedAudio = "auto",
-  selectedSub = "auto",
+  audioTracks = [],
+  subTracks = [],
+  selectedAudioIdx,
+  selectedSubIdx,
 }: IVideoControlsProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
@@ -103,23 +105,7 @@ export default function ElectronVideoControls({
     null,
   );
 
-  const audioTracks = (tracks || []).filter(
-    (t) => t.type === "audio" || t.type === "a",
-  );
-  const subTracks = (tracks || []).filter(
-    (t) => t.type === "sub" || t.type === "s",
-  );
-
-  const activeAudioTrack =
-    audioTracks.find(
-      (t) =>
-        t.selected ||
-        (selectedAudio !== "auto" &&
-          t.id.toString() === selectedAudio?.toString()),
-    ) ||
-    audioTracks.find((t) => t.selected) ||
-    audioTracks[0];
-
+  const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
   const audioLang =
     activeAudioTrack?.lang?.toUpperCase() ||
     (activeAudioTrack?.title
@@ -128,18 +114,9 @@ export default function ElectronVideoControls({
         ? `A${activeAudioTrack.id}`
         : "");
 
-  const activeSubTrack =
-    selectedSub !== "no"
-      ? subTracks.find(
-          (t) =>
-            t.selected ||
-            (selectedSub !== "auto" &&
-              t.id.toString() === selectedSub?.toString()),
-        ) || subTracks.find((t) => t.selected)
-      : null;
-
+  const activeSubTrack = subTracks.find((t) => t.id === selectedSubIdx);
   const subLang =
-    selectedSub === "no"
+    selectedSubIdx === 0
       ? "OFF"
       : activeSubTrack?.lang?.toUpperCase() ||
         (activeSubTrack?.title
@@ -149,7 +126,6 @@ export default function ElectronVideoControls({
             : "AUTO");
 
   const displayTime = isDragging ? seekValue : currentTime;
-
   const handleSliderChange = (
     _event: Event | React.SyntheticEvent,
     newValue: number | number[],
@@ -348,7 +324,7 @@ export default function ElectronVideoControls({
                     {audioTracks.map((t) => {
                       const isSelected =
                         t.selected ||
-                        t.id.toString() === selectedAudio?.toString();
+                        t.id.toString() === selectedAudioIdx?.toString();
                       const langStr = t.lang
                         ? ` (${t.lang.toUpperCase()})`
                         : "";
@@ -410,25 +386,25 @@ export default function ElectronVideoControls({
                   >
                     <MenuItem
                       onClick={() => {
-                        handleSetSubtitleTrack?.("no");
+                        handleSetSubtitleTrack?.(0);
                         setSubMuiMenuAnchor(null);
                       }}
                     >
-                      {selectedSub === "no" && (
+                      {selectedSubIdx === 0 && (
                         <ListItemIcon sx={{ color: "#ffffff", minWidth: 32 }}>
                           <Check fontSize="small" />
                         </ListItemIcon>
                       )}
                       <ListItemText
-                        inset={selectedSub !== "no"}
+                        inset={selectedSubIdx !== 0}
                         primary="Off"
                       />
                     </MenuItem>
                     {subTracks.map((t) => {
                       const isSelected =
-                        selectedSub !== "no" &&
+                        selectedSubIdx !== 0 &&
                         (t.selected ||
-                          t.id.toString() === selectedSub?.toString());
+                          t.id.toString() === selectedSubIdx?.toString());
                       const langStr = t.lang
                         ? ` (${t.lang.toUpperCase()})`
                         : "";
