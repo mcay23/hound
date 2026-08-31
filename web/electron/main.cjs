@@ -149,10 +149,8 @@ function startStaticServer() {
 
   return new Promise((resolve, reject) => {
     server.once("error", reject);
-
-    server.listen(0, "localhost", () => {
+    server.listen(2028, "localhost", () => {
       const address = server.address();
-
       if (typeof address === "object" && address !== null) {
         resolve(address.port);
       } else {

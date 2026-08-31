@@ -23,7 +23,8 @@
     "build:web": "npm run build --prefix ..",
     "preview": "electron .",
     "dist:dir": "npm run build:web && electron-builder --dir",
-    "dist": "npm run build:web && electron-builder"
+    "dist": "npm run build:web && electron-builder",
+    "dist:quick": "electron-builder --dir"
   },
   "build": {
     "appId": "com.houndmediaserver.hound",
