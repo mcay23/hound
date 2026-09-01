@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mcay23/hound/internal"
@@ -58,6 +59,7 @@ func GetUser(userID int64) (*User, error) {
 
 // should be used sparingly, userID is preferred internally
 func GetUserIDFromUsername(username string) (int64, error) {
+	username = strings.TrimSpace(strings.ToLower(username))
 	var user User
 	found, err := databaseEngine.Table(usersTable).Where("username = ?", username).Get(&user)
 	if !found {
