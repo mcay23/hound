@@ -42,8 +42,8 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", internal.InternalServerError)
 	}
 	insertUser := database.User{
-		Username:       strings.ToLower(user.Username),
-		DisplayName:    user.DisplayName,
+		Username:       strings.TrimSpace(strings.ToLower(user.Username)),
+		DisplayName:    strings.TrimSpace(user.DisplayName),
 		IsAdmin:        isAdmin,
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},
