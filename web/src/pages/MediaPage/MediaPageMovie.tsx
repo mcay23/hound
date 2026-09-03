@@ -11,7 +11,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -25,7 +25,10 @@ import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
 import { useMediaFiles } from "../../api/hooks/media";
-import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
+import {
+  useDirectStreamMutation,
+  useUnifiedStreamsMutation,
+} from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 
@@ -82,6 +85,8 @@ function MediaPageMovie(props: any) {
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
+  const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
+  const directStreamRequestId = useRef(0);
   useEffect(() => {
     axios
       .get(
@@ -163,6 +168,49 @@ function MediaPageMovie(props: any) {
     } else if (mode === "select") {
       setIsStreamSelectButtonLoading(true);
     }
+    if (mode === "direct") {
+      const requestId = directStreamRequestId.current + 1;
+      directStreamRequestId.current = requestId;
+      const searchProvidersToast = toast.loading("Searching streams...");
+
+      searchDirectStream({
+        mediaType: "movie",
+        mediaSource: props.data.media_source,
+        sourceId: props.data.source_id,
+        encodedData: watchProgress?.encoded_data,
+        onImmediateStream: (stream: any) => {
+          if (directStreamRequestId.current !== requestId) return;
+          toast.dismiss(searchProvidersToast);
+          setMainStream(stream);
+          setIsStreamModalOpen(true);
+          setIsStreamButtonLoading(false);
+        },
+      })
+        .then((data) => {
+          if (directStreamRequestId.current !== requestId) return;
+          toast.dismiss(searchProvidersToast);
+          setStreams(data);
+          if (data?.streams?.length > 0) {
+            if (!data.startedImmediately) {
+              setMainStream(data.selectedStream);
+              setIsStreamModalOpen(true);
+            }
+          } else {
+            toast.error("No streams found");
+          }
+        })
+        .catch((err) => {
+          if (directStreamRequestId.current !== requestId) return;
+          toast.error("Failed to search streams " + err, {
+            id: searchProvidersToast,
+          });
+        })
+        .finally(() => {
+          if (directStreamRequestId.current !== requestId) return;
+          setIsStreamButtonLoading(false);
+        });
+      return;
+    }
     if (!streams) {
       const searchProvidersToast = toast.loading("Searching providers...");
       searchProviders({
@@ -186,14 +234,13 @@ function MediaPageMovie(props: any) {
               }
             }
             setMainStream(selectedStream);
+            if (mode === "direct") {
+              setIsStreamModalOpen(true);
+            } else {
+              setIsSelectStreamModalOpen(true);
+            }
           } else {
             toast.error("No streams found");
-          }
-          // open stream select modal if only few streams
-          if (numStreams > 5 && mode === "direct") {
-            setIsStreamModalOpen(true);
-          } else {
-            setIsSelectStreamModalOpen(true);
           }
         })
         .catch((err) => {
@@ -210,6 +257,11 @@ function MediaPageMovie(props: any) {
         });
     } else if (streams?.streams?.length > 0) {
       if (mode === "direct") {
+        const selectedStream =
+          streams.streams.find(
+            (stream: any) => stream.encoded_data === watchProgress?.encoded_data,
+          ) ?? streams.streams[0];
+        setMainStream(selectedStream);
         setIsStreamModalOpen(true);
         setIsStreamButtonLoading(false);
       } else if (mode === "select") {

@@ -11,7 +11,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -25,7 +25,10 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import { useMediaFiles } from "../../api/hooks/media";
-import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
+import {
+  useDirectStreamMutation,
+  useUnifiedStreamsMutation,
+} from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
 
@@ -88,6 +91,8 @@ function MediaPageTV(props: any) {
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
+  const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
+  const directStreamRequestId = useRef(0);
 
   const mediaFileStreams = useMemo(() => {
     return [...(mediaFiles?.providers?.[0]?.streams ?? [])].sort(
@@ -161,6 +166,8 @@ function MediaPageTV(props: any) {
     setIsSeasonModalOpen(true);
   };
 
+  console.log(continueWatchingData);
+
   useEffect(() => {
     if (props.data) {
       const mediaSource = props.data.media_source;
@@ -202,7 +209,9 @@ function MediaPageTV(props: any) {
     }
     const mediaSource = props.data.media_source;
     const sourceID = props.data.source_id;
-    const searchProvidersToast = toast.loading("Searching providers...");
+    const searchProvidersToast = toast.loading(
+      mode === "direct" ? "Searching streams..." : "Searching providers...",
+    );
     // if we have current watch data, use encodedData to match a stream
     const fetchParams = {
       mediaType: "tv",
@@ -213,6 +222,41 @@ function MediaPageTV(props: any) {
     };
     const requestProviderStream = (startTime: number, encodedData: string) => {
       setStreamStartTime(startTime);
+      if (mode === "direct") {
+        const requestId = directStreamRequestId.current + 1;
+        directStreamRequestId.current = requestId;
+
+        return searchDirectStream({
+          ...fetchParams,
+          encodedData,
+          onImmediateStream: (stream: any) => {
+            if (directStreamRequestId.current !== requestId) return;
+            toast.dismiss(searchProvidersToast);
+            setMainStream(stream);
+            setIsStreamModalOpen(true);
+            setIsStreamButtonLoading(false);
+          },
+        })
+          .then((data) => {
+            if (directStreamRequestId.current !== requestId) return;
+            toast.dismiss(searchProvidersToast);
+            setStreams(data);
+            if (data?.streams?.length > 0) {
+              if (!data.startedImmediately) {
+                setMainStream(data.selectedStream);
+                setIsStreamModalOpen(true);
+              }
+            } else {
+              toast.error("No streams found");
+            }
+          })
+          .catch((err) => {
+            if (directStreamRequestId.current !== requestId) return;
+            toast.dismiss(searchProvidersToast);
+            console.error("Failed to fetch streams", err);
+            toast.error("Failed to fetch streams");
+          });
+      }
       return searchProviders(fetchParams)
         .then((data) => {
           toast.dismiss(searchProvidersToast);
