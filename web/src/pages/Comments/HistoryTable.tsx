@@ -5,6 +5,13 @@ import MUIDataTable, {
 } from "mui-datatables";
 import React, { useEffect, useState } from "react";
 import "./HistoryTable.css";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 
 function HistoryTable(props: any) {
   const arr: any[] = [];
@@ -81,12 +88,14 @@ function HistoryTable(props: any) {
     return <div className="history-no-data-header">No watch data.</div>;
   }
   return (
-    <MUIDataTable
-      title={"Your Watch History"}
-      data={data}
-      columns={columns}
-      options={options}
-    />
+    <>
+      <MUIDataTable
+        title={"Your Watch History"}
+        data={data}
+        columns={columns}
+        options={options}
+      />
+    </>
   );
 }
 

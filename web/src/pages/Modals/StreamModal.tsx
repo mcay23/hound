@@ -8,20 +8,41 @@ import {
   IconButton,
 } from "@mui/material";
 import "./StreamModal.css";
-import { ArrowBack, InfoOutlined } from "@mui/icons-material";
+import { ArrowBack, InfoOutlined, Pause } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
-import VideoPlayer from "../VideoPlayer/VideoPlayer";
-import { SERVER_URL } from "./../../config/axios_config";
+import { getBaseUrl } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
+import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
+import VideoPlayer from "../VideoPlayer/VideoPlayer";
+import { isPlatformElectron } from "../../utils/platform";
+import { get2LetterLangCode } from "../../helpers/locale";
 
 function StreamModal(props: any) {
-  const { streamDetails, streams, setOpen, open, startTime } = props;
+  const {
+    streamDetails,
+    streams,
+    setOpen,
+    open,
+    startTime,
+    watchProgress,
+    originalAudioLang,
+  } = props;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
+
+  const isStreamsMatch = useMemo(
+    () =>
+      Boolean(
+        watchProgress &&
+          watchProgress.encoded_data &&
+          watchProgress.encoded_data === streamDetails?.encoded_data,
+      ),
+    [watchProgress, streamDetails?.encoded_data],
+  );
 
   const { data: subtitleData } = useSubtitles(
     streams?.media_type === "tvshow" ? "tv" : "movie",
@@ -36,6 +57,13 @@ function StreamModal(props: any) {
     () => subtitleData?.subtitles?.flatMap((p: any) => p.subtitles || []) || [],
     [subtitleData],
   );
+  const externalSubtitles = useMemo(() => {
+    return subtitles.map((sub: any) => ({
+      title: sub.title,
+      lang: get2LetterLangCode(sub.lang),
+      url: `${getBaseUrl()}/api/v1/subtitle/${sub.encoded_data}`,
+    }));
+  }, [subtitles]);
   const handleClose = () => {
     setLoading(false);
     setOpen(false);
@@ -55,7 +83,7 @@ function StreamModal(props: any) {
           .then(() => {
             toast.dismiss(fetchToast);
             setVideoURL(
-              SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
+              getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
             );
             setLoading(false);
           })
@@ -64,7 +92,7 @@ function StreamModal(props: any) {
           });
       } else {
         setVideoURL(
-          SERVER_URL + "/api/v1/stream/" + streamDetails.encoded_data,
+          getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
         );
         setLoading(false);
       }
@@ -87,26 +115,29 @@ function StreamModal(props: any) {
   );
 
   const handleVideoProgress = useCallback(
-    (current: number, total: number) => {
+    (current: number, total: number, playerSettings?: any) => {
       if (current < 120) return; // don't log before 2 minutes
-      const payload = {
-        stream_protocol: streamDetails.stream_protocol,
-        source_uri: streamDetails.uri,
-        encoded_data: streamDetails.encoded_data,
+      const payload: any = {
+        stream_protocol: streamDetails?.stream_protocol,
+        source_uri: streamDetails?.uri,
+        encoded_data: streamDetails?.encoded_data,
         current_progress_seconds: Math.floor(current),
         total_duration_seconds: Math.floor(total),
-        ...(streams.media_type === "tvshow"
+        ...(streams?.media_type === "tvshow"
           ? {
-              season_number: streams.season_number || 0,
-              episode_number: streams.episode_number || 0,
+              season_number: streams?.season_number || 0,
+              episode_number: streams?.episode_number || 0,
             }
           : {}),
       };
+      if (isPlatformElectron && playerSettings) {
+        payload.player_settings = playerSettings;
+      }
       axios
         .post(
-          `/api/v1/${streams.media_type === "tvshow" ? "tv" : "movie"}/${
-            streams.media_source
-          }-${streams.source_id}/playback`,
+          `/api/v1/${streams?.media_type === "tvshow" ? "tv" : "movie"}/${
+            streams?.media_source
+          }-${streams?.source_id}/playback`,
           payload,
         )
         .then((res) => {
@@ -124,6 +155,7 @@ function StreamModal(props: any) {
       open={open && !loading}
       disableScrollLock={false}
       fullScreen
+      disableEscapeKeyDown
       PaperProps={{
         sx: {
           margin: 0,
@@ -133,36 +165,26 @@ function StreamModal(props: any) {
         },
       }}
     >
-      <IconButton
-        onClick={handleClose}
-        sx={{
-          position: "absolute",
-          top: 16,
-          left: 16,
-          color: "white",
-          zIndex: 10,
-        }}
-      >
-        <ArrowBack />
-      </IconButton>
-      <IconButton
-        onClick={() => setInfoModalOpen(true)}
-        sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          color: "white",
-          zIndex: 10,
-        }}
-      >
-        <InfoOutlined />
-      </IconButton>
-      <VideoPlayer
-        options={videoJsOptions}
-        onVideoProgress={handleVideoProgress}
-        setLoading={setLoading}
-        subtitles={subtitles}
-      />
+      {isPlatformElectron ? (
+        <MPVElectronPlayer
+          options={videoJsOptions}
+          onVideoProgress={handleVideoProgress}
+          setLoading={setLoading}
+          handleClose={handleClose}
+          setInfoModalOpen={setInfoModalOpen}
+          externalSubtitles={externalSubtitles}
+          playerSettings={watchProgress?.player_settings}
+          isStreamsMatch={isStreamsMatch}
+          originalAudioLang={originalAudioLang}
+        />
+      ) : (
+        <VideoPlayer
+          options={videoJsOptions}
+          onVideoProgress={handleVideoProgress}
+          setLoading={setLoading}
+          subtitles={subtitles}
+        />
+      )}
       <InfoModal
         open={infoModalOpen}
         setOpen={setInfoModalOpen}

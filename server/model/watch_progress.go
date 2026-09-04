@@ -21,9 +21,10 @@ const (
 	PlayerWeb       = "web"
 	PlayerExoplayer = "exoplayer"
 	PlayerMPV       = "mpv"
+	PlayerDesktop   = "desktop" // mpv
 )
 
-var SupportedPlayers = []string{PlayerWeb, PlayerExoplayer, PlayerMPV}
+var SupportedPlayers = []string{PlayerWeb, PlayerExoplayer, PlayerMPV, PlayerDesktop}
 
 /*
 Watch progress is not stored in the db because it's not deemed as critical

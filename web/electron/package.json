@@ -1,0 +1,60 @@
+{
+  "name": "hound-desktop",
+  "version": "0.3.4",
+  "private": true,
+  "main": "main.cjs",
+  "dependencies": {
+    "electron-mpv-video": "^0.1.1",
+    "electron-store": "^11.0.2",
+    "node-addon-api": "^8.9.2"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "patch-package": "^8.0.1",
+    "wait-on": "^9.1.0"
+  },
+  "scripts": {
+    "postinstall": "patch-package && npm --prefix node_modules/electron-mpv-video run build:native",
+    "dev": "concurrently -k \"npm run dev --prefix ..\" \"wait-on http://localhost:3000 && cross-env ELECTRON_DEV=true electron .\"",
+    "build:web": "npm run build --prefix ..",
+    "preview": "electron .",
+    "dist:dir": "npm run build:web && electron-builder --dir",
+    "dist": "npm run build:web && electron-builder",
+    "dist:quick": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.houndmediaserver.hound",
+    "productName": "Hound Desktop",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/electron-mpv-video/**"
+    ],
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "patches/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../build",
+        "to": "build"
+      }
+    ],
+    "directories": {
+      "output": "../dist-electron"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "../build/android-chrome-512x512.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "../build/android-chrome-512x512.png"
+    }
+  }
+}

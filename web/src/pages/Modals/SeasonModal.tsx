@@ -52,6 +52,7 @@ type WatchProgressItem = {
   current_progress_seconds: number;
   total_duration_seconds: number;
   encoded_data: string;
+  player_settings?: any;
 };
 
 import {
@@ -212,6 +213,7 @@ function SeasonModal(props: any) {
                 current_progress_seconds: item.current_progress_seconds,
                 total_duration_seconds: item.total_duration_seconds,
                 encoded_data: item.encoded_data,
+                player_settings: item.player_settings,
               });
             });
             setWatchProgress(progressMap);
@@ -421,6 +423,7 @@ function EpisodeCard(
             episode.source_id,
             watchProgress?.current_progress_seconds,
             watchProgress?.encoded_data,
+            watchProgress,
           );
         }}
       >
@@ -504,6 +507,7 @@ function EpisodeCard(
                   episode.source_id,
                   watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
+            watchProgress,
                 );
               }}
             >
@@ -531,6 +535,7 @@ function EpisodeCard(
                   episode.source_id,
                   watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
+            watchProgress,
                 );
               }}
             >

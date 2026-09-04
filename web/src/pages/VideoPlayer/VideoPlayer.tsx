@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import videojs from "video.js";
 import Player from "video.js/dist/types/player";
 import "video.js/dist/video-js.css";
-import { SERVER_URL } from "./../../config/axios_config";
+import { getBaseUrl } from "./../../config/axios_config";
 
 interface IVideoPlayerProps {
   options: any;
@@ -93,7 +93,7 @@ const VideoPlayer = React.memo(
           }
           subtitles.forEach((sub) => {
             const url =
-              SERVER_URL +
+              getBaseUrl() +
               "/api/v1/subtitle/" +
               sub.encoded_data +
               "?convert=vtt";

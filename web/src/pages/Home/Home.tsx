@@ -2,13 +2,14 @@ import { useEffect, useState, useMemo } from "react";
 import HorizontalSection from "./HorizontalSection";
 import SearchBar from "./SearchBar";
 import "./Home.css";
-import Footer from "../Footer";
 import {
   useBackdrops,
   useContinueWatching,
   useUserHomeRows,
   useHomeRow,
 } from "../../api/hooks/home";
+import Footer from "../Footer";
+import { isPlatformElectron } from "../../utils/platform";
 
 function Home() {
   const { data: backdropsData } = useBackdrops();
@@ -85,7 +86,7 @@ function Home() {
           );
         })}
       </div>
-      <Footer />
+      {!isPlatformElectron && <Footer />}
     </>
   );
 }

@@ -7,7 +7,6 @@ import CollectionFormDialog, {
 } from "./CollectionFormDialog";
 import HorizontalSection from "../Home/HorizontalSection";
 import { LinearProgress } from "@mui/material";
-import Footer from "../Footer";
 import {
   useCollections,
   useCollectionContents,
@@ -16,6 +15,8 @@ import {
   usePublicCollections,
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
+import Footer from "../Footer";
+import { isPlatformElectron } from "../../utils/platform";
 
 const initialCollectionState: CollectionFormData = {
   collection_title: "",
@@ -161,7 +162,7 @@ function Library(props: any) {
         onClose={handleCollectionDialogClose}
         onSubmit={handleCreateCollection}
       />
-      <Footer />
+      {!isPlatformElectron && <Footer />}
     </>
   );
 }

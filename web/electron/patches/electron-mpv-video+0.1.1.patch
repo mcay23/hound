@@ -1,0 +1,227 @@
+diff --git a/node_modules/electron-mpv-video/dist/main/mpv-service.js b/node_modules/electron-mpv-video/dist/main/mpv-service.js
+index 7b27f7f..6574742 100644
+--- a/node_modules/electron-mpv-video/dist/main/mpv-service.js
++++ b/node_modules/electron-mpv-video/dist/main/mpv-service.js
+@@ -12,6 +12,9 @@ const IPC_CHANNELS = [
+     'player:stop',
+     'player:seek',
+     'player:set-volume',
++    'player:set-property',
++    'player:get-property',
++    'player:command',
+     'player:set-render-size',
+     'player:set-render-pipeline',
+     'player:destroy',
+@@ -134,6 +137,18 @@ class PlayerSession {
+         this.player.setVolume(nextVolume);
+         this.volume = nextVolume;
+     }
++    setProperty(name, value) {
++        this.assertAlive();
++        this.player.setProperty(name, String(value));
++    }
++    getProperty(name) {
++        this.assertAlive();
++        return this.player.getProperty(name);
++    }
++    command(args) {
++        this.assertAlive();
++        this.player.command(args);
++    }
+     setRenderSize(size) {
+         this.assertAlive();
+         this.renderSize = size;
+@@ -463,6 +478,9 @@ class MpvMainService {
+         electron.ipcMain.handle(channel('player:stop'), async (event, id) => this.getOwnedSession(event, id).stop());
+         electron.ipcMain.handle(channel('player:seek'), async (event, id, seconds) => this.getOwnedSession(event, id).seek(finiteNumber(seconds, 'seconds')));
+         electron.ipcMain.handle(channel('player:set-volume'), async (event, id, value) => this.getOwnedSession(event, id).setVolume(finiteNumber(value, 'volume')));
++        electron.ipcMain.handle(channel('player:set-property'), async (event, id, name, value) => this.getOwnedSession(event, id).setProperty(name, value));
++        electron.ipcMain.handle(channel('player:get-property'), async (event, id, name) => this.getOwnedSession(event, id).getProperty(name));
++        electron.ipcMain.handle(channel('player:command'), async (event, id, args) => this.getOwnedSession(event, id).command(args));
+         electron.ipcMain.handle(channel('player:set-render-size'), async (event, id, size) => this.getOwnedSession(event, id).setRenderSize(normalizeRenderSize(size)));
+         electron.ipcMain.handle(channel('player:set-render-pipeline'), async (event, id, pipeline) => this.getOwnedSession(event, id).setRenderPipeline(normalizePipeline(pipeline)));
+         electron.ipcMain.handle(channel('player:destroy'), async (event, id) => this.getOwnedSession(event, id).destroy());
+diff --git a/node_modules/electron-mpv-video/dist/preload/index.cjs b/node_modules/electron-mpv-video/dist/preload/index.cjs
+index d1d823b..bfebf43 100644
+--- a/node_modules/electron-mpv-video/dist/preload/index.cjs
++++ b/node_modules/electron-mpv-video/dist/preload/index.cjs
+@@ -84,6 +84,9 @@ function createPlayerSession(id) {
+         stop: () => electron.ipcRenderer.invoke(channel('player:stop'), id),
+         seek: (seconds) => electron.ipcRenderer.invoke(channel('player:seek'), id, seconds),
+         setVolume: (value) => electron.ipcRenderer.invoke(channel('player:set-volume'), id, value),
++        setProperty: (name, value) => electron.ipcRenderer.invoke(channel('player:set-property'), id, name, value),
++        getProperty: (name) => electron.ipcRenderer.invoke(channel('player:get-property'), id, name),
++        command: (args) => electron.ipcRenderer.invoke(channel('player:command'), id, args),
+         setRenderSize: (width, height) => electron.ipcRenderer.invoke(channel('player:set-render-size'), id, { width, height }),
+         setRenderMode: (mode) => electron.ipcRenderer.invoke(channel('player:set-render-pipeline'), id, pipelineForRenderMode(mode)),
+         destroy: async () => {
+diff --git a/node_modules/electron-mpv-video/dist/renderer/mpv-video.d.ts b/node_modules/electron-mpv-video/dist/renderer/mpv-video.d.ts
+index 6dc9221..e028de6 100644
+--- a/node_modules/electron-mpv-video/dist/renderer/mpv-video.d.ts
++++ b/node_modules/electron-mpv-video/dist/renderer/mpv-video.d.ts
+@@ -41,6 +41,13 @@ export declare class MpvVideoElement extends HTMLElement {
+     stop(): Promise<void>;
+     seek(seconds: number): Promise<void>;
+     setVolume(value: number): Promise<void>;
++    setProperty(name: string, value: string): Promise<void>;
++    getProperty(name: string): Promise<string | null>;
++    command(args: string[]): Promise<void>;
++    getTrackList(): Promise<any[]>;
++    setAudioTrack(id: string | number): Promise<void>;
++    setSubtitleTrack(id: string | number): Promise<void>;
++    addSubTrack(url: string, select?: boolean): Promise<void>;
+     setRenderMode(mode: RenderMode): Promise<void>;
+     destroy(): Promise<void>;
+     private destroyInternal;
+diff --git a/node_modules/electron-mpv-video/dist/renderer/mpv-video.js b/node_modules/electron-mpv-video/dist/renderer/mpv-video.js
+index 355f95b..680b0a4 100644
+--- a/node_modules/electron-mpv-video/dist/renderer/mpv-video.js
++++ b/node_modules/electron-mpv-video/dist/renderer/mpv-video.js
+@@ -409,6 +409,36 @@ export class MpvVideoElement extends HTMLElement {
+         }
+         await this.player?.setVolume(volume);
+     }
++    async setProperty(name, value) {
++        await this.ensureReady();
++        await this.player?.setProperty(name, value);
++    }
++    async getProperty(name) {
++        await this.ensureReady();
++        return (await this.player?.getProperty(name)) ?? null;
++    }
++    async command(args) {
++        await this.ensureReady();
++        await this.player?.command(args);
++    }
++    async getTrackList() {
++        const raw = await this.getProperty('track-list');
++        if (!raw) return [];
++        try {
++            return JSON.parse(raw);
++        } catch (e) {
++            return [];
++        }
++    }
++    async setAudioTrack(id) {
++        await this.setProperty('aid', String(id));
++    }
++    async setSubtitleTrack(id) {
++        await this.setProperty('sid', String(id));
++    }
++    async addSubTrack(url, select = true) {
++        await this.command(['sub-add', url, select ? 'select' : 'auto']);
++    }
+     async setRenderMode(mode) {
+         await this.ensureReady();
+         const nextMode = this.resolveRenderMode(mode);
+@@ -600,6 +630,19 @@ export class MpvVideoElement extends HTMLElement {
+             case 'container-fps':
+                 this.state.fps = typeof event.data === 'number' ? event.data : 0;
+                 break;
++            case 'track-list':
++                try {
++                    this.state.trackList = typeof event.data === 'string' ? JSON.parse(event.data) : [];
++                } catch (e) {
++                    this.state.trackList = [];
++                }
++                break;
++            case 'aid':
++                this.state.audioTrack = typeof event.data === 'string' ? event.data : String(event.data ?? 'auto');
++                break;
++            case 'sid':
++                this.state.subTrack = typeof event.data === 'string' ? event.data : String(event.data ?? 'auto');
++                break;
+             case 'pause':
+                 this.status = event.data ? 'Paused' : 'Playing';
+                 break;
+diff --git a/node_modules/electron-mpv-video/dist/shared/types.d.ts b/node_modules/electron-mpv-video/dist/shared/types.d.ts
+index 1da1aa4..55bbe5d 100644
+--- a/node_modules/electron-mpv-video/dist/shared/types.d.ts
++++ b/node_modules/electron-mpv-video/dist/shared/types.d.ts
+@@ -27,6 +27,9 @@ export type MpvPlayerSession = {
+     stop(): Promise<void>;
+     seek(seconds: number): Promise<void>;
+     setVolume(value: number): Promise<void>;
++    setProperty(name: string, value: string): Promise<void>;
++    getProperty(name: string): Promise<string | null>;
++    command(args: string[]): Promise<void>;
+     setRenderSize(width: number, height: number): Promise<void>;
+     setRenderMode(mode: RenderMode): Promise<void>;
+     destroy(): Promise<void>;
+diff --git a/node_modules/electron-mpv-video/native/mpv-addon/src/mpv_addon.cc b/node_modules/electron-mpv-video/native/mpv-addon/src/mpv_addon.cc
+index 46deaa6..fecb5ae 100644
+--- a/node_modules/electron-mpv-video/native/mpv-addon/src/mpv_addon.cc
++++ b/node_modules/electron-mpv-video/native/mpv-addon/src/mpv_addon.cc
+@@ -132,6 +132,9 @@ class MpvPlayer : public Napi::ObjectWrap<MpvPlayer> {
+       InstanceMethod("stop", &MpvPlayer::Stop),
+       InstanceMethod("seek", &MpvPlayer::Seek),
+       InstanceMethod("setVolume", &MpvPlayer::SetVolume),
++      InstanceMethod("setProperty", &MpvPlayer::SetProperty),
++      InstanceMethod("getProperty", &MpvPlayer::GetProperty),
++      InstanceMethod("command", &MpvPlayer::Command),
+       InstanceMethod("setUpdateCallback", &MpvPlayer::SetUpdateCallback),
+       InstanceMethod("setEventCallback", &MpvPlayer::SetEventCallback),
+       InstanceMethod("renderFrame", &MpvPlayer::RenderFrame),
+@@ -189,6 +192,9 @@ class MpvPlayer : public Napi::ObjectWrap<MpvPlayer> {
+     observe("height", MPV_FORMAT_INT64);
+     observe("video-codec", MPV_FORMAT_STRING);
+     observe("container-fps", MPV_FORMAT_DOUBLE);
++    observe("track-list", MPV_FORMAT_STRING);
++    observe("aid", MPV_FORMAT_STRING);
++    observe("sid", MPV_FORMAT_STRING);
+ 
+     if (mode_ == "shared-texture") {
+ #if defined(__APPLE__)
+@@ -359,6 +365,52 @@ class MpvPlayer : public Napi::ObjectWrap<MpvPlayer> {
+     return env.Undefined();
+   }
+ 
++  Napi::Value SetProperty(const Napi::CallbackInfo& info) {
++    Napi::Env env = info.Env();
++    if (info.Length() < 2 || !info[0].IsString() || !info[1].IsString()) {
++      Napi::TypeError::New(env, "setProperty(name, value) requires string arguments").ThrowAsJavaScriptException();
++      return env.Undefined();
++    }
++    std::string name = info[0].As<Napi::String>().Utf8Value();
++    std::string value = info[1].As<Napi::String>().Utf8Value();
++    int ret = mpv_set_property_string(handle_, name.c_str(), value.c_str());
++    if (ret < 0) throw_mpv_error(env, "setProperty", ret);
++    return env.Undefined();
++  }
++
++  Napi::Value GetProperty(const Napi::CallbackInfo& info) {
++    Napi::Env env = info.Env();
++    if (info.Length() < 1 || !info[0].IsString()) {
++      Napi::TypeError::New(env, "getProperty(name) requires a string argument").ThrowAsJavaScriptException();
++      return env.Null();
++    }
++    std::string name = info[0].As<Napi::String>().Utf8Value();
++    char* val = mpv_get_property_string(handle_, name.c_str());
++    if (!val) return env.Null();
++    std::string result(val);
++    mpv_free(val);
++    return Napi::String::New(env, result);
++  }
++
++  Napi::Value Command(const Napi::CallbackInfo& info) {
++    Napi::Env env = info.Env();
++    if (info.Length() < 1 || !info[0].IsArray()) {
++      Napi::TypeError::New(env, "command(args) requires an array of strings").ThrowAsJavaScriptException();
++      return env.Undefined();
++    }
++    Napi::Array arr = info[0].As<Napi::Array>();
++    std::vector<std::string> args;
++    for (uint32_t i = 0; i < arr.Length(); i++) {
++      Napi::Value item = arr.Get(i);
++      if (item.IsString()) {
++        args.push_back(item.As<Napi::String>().Utf8Value());
++      }
++    }
++    int ret = command(args);
++    if (ret < 0) throw_mpv_error(env, "command", ret);
++    return env.Undefined();
++  }
++
+   Napi::Value SetUpdateCallback(const Napi::CallbackInfo& info) {
+     Napi::Env env = info.Env();
+     if (update_callback_) {

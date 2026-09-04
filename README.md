@@ -11,7 +11,7 @@
 
 Watch and Track Movies and TV Shows. Self-hosted version of Plex/Stremio + Trakt, Simkl, etc. Hound aims to be a complete ecosystem of watching, tracking, downloading, and archiving media.
 
-Hound is a fully-featured media server, like Jellyfin or Plex, but with the additional ability to stream content through P2P (torrent), HTTP/Debrid sources and Usenet. With Hound, you get the benefits of fully controlling your media like Jellyfin, but can also stream instantly like Stremio. You can also watch Live TV using IPTV sources (xtream and m3u8). Everything comes together seamlessly, into a single, intuitive, platform. 
+Hound is a fully-featured media server, like Jellyfin or Plex, but with the additional ability to stream content through P2P (torrent), HTTP/Debrid sources and Usenet. With Hound, you get the benefits of fully controlling your media like Jellyfin, but can also stream instantly like Stremio. You can also watch Live TV using IPTV sources (xtream and m3u8). Everything comes together seamlessly, into a single, intuitive, platform.
 
 > [!CAUTION]
 > Hound is still under heavy development and may contain bugs. Please backup your data periodically.
@@ -28,14 +28,17 @@ Hound is a fully-featured media server, like Jellyfin or Plex, but with the addi
 - [API Docs](https://hound-media-server.github.io/hound-site/operations/authentication.html)
 
 # Demo
+
 Access the demo [here](https://hound-demo.yuwono.xyz)
+
 ```
 username: github
 password: password
 ```
 
 # Platforms
-You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode. Stay tuned. 
+
+The desktop clients for Windows, MacOS (arm) are available in the releases section. You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode. Stay tuned.
 
 # Installation
 
@@ -70,6 +73,8 @@ Docker compose is the preferred method for installing Hound. Read the installati
 
 Make sure postgres is running on your machine. Copy `server/dev.env.example` to `server/dev.env`, then customize for your dev environment — at minimum, set `HOUND_SECRET` to a unique random value (e.g. `openssl rand -base64 48`); the server panics on startup if it's empty. Build and run both the frontend and backend separately. By default, the frontend runs on `http://localhost:3000` and the backend runs on `http://localhost:2323`.
 
+Hound uses vite and electron for the web apps and desktop clients. Devs should develop frontend features for both at the same time. The desktop version uses [electron-mpv-video](https://www.npmjs.com/package/electron-mpv-video) for media playback. In order to build for electron, follow the instructions [here](https://www.npmjs.com/package/electron-mpv-video), in the 'Native build requirements' section.
+
 ### Backend
 
 ```
@@ -80,9 +85,9 @@ go run main.go
 ### Frontend
 
 ```bash
-cd web
+cd web/electron
 npm install
-npm run start
+npm run dev
 ```
 
 # Screenshots
