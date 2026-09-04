@@ -49,10 +49,12 @@
       "output": "../dist-electron"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "../build/android-chrome-512x512.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "../build/android-chrome-512x512.png"
     }
   }
 }
