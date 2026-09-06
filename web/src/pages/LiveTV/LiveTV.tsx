@@ -15,8 +15,8 @@ import {
 } from "@mui/material";
 import EPGMenu, { SelectedChannel, EPGProgramme, pickText } from "./EPGGrid";
 import { IPTVProvider } from "../../api/hooks/live_tv";
-import toast from "react-hot-toast";
-import { copyToClipboard } from "../../helpers/helpers";
+import { isPlatformElectron } from "../../utils/platform";
+import LiveVideoPlayerElectron from "../VideoPlayer/LiveVideoPlayerElectron";
 
 function LiveTV(props: any) {
   const [selectedIPTVProvider, setSelectedIPTVProvider] = useState<
@@ -176,8 +176,12 @@ function LiveTV(props: any) {
         </Drawer>
         <div className="live-tv-content">
           <div className="d-flex flex-row">
-            <div style={{ width: "70%" }}>
-              <LiveVideoPlayer src={sourceURL || ""} />
+            <div style={{ width: "70%", aspectRatio: "16 / 9" }}>
+              {isPlatformElectron ? (
+                <LiveVideoPlayerElectron src={sourceURL || ""} />
+              ) : (
+                <LiveVideoPlayer src={sourceURL || ""} />
+              )}
             </div>
             <div
               style={{ width: "30%", marginTop: "1rem", marginLeft: "2rem" }}

@@ -44,7 +44,6 @@ const MPVElectronPlayer = React.memo(
     );
     const selectedAudioIdxRef = useRef<number | undefined>(undefined);
     const selectedSubIdxRef = useRef<number | undefined>(undefined);
-    const originalFullscreen = useRef<boolean | undefined>(undefined);
 
     const playerSettingsRef = useRef(playerSettings);
     playerSettingsRef.current = playerSettings;
@@ -61,6 +60,7 @@ const MPVElectronPlayer = React.memo(
     const playingCountRef = useRef(0);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
+    const divRef = useRef<HTMLDivElement>(null);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -380,51 +380,29 @@ const MPVElectronPlayer = React.memo(
             subtitle_idx: Number(currentSub),
             subtitle_lang: get2LetterLangCode(currentSubTrack?.lang),
           };
-
           onVideoProgressRef.current?.(current, dur, playerSettingsPayload);
         }
       };
 
       video.addEventListener("mpv-state", handleState);
-
-      return () => {
-        destroyed = true;
-        video.removeEventListener("mpv-state", handleState);
-        try {
-          video.stop?.();
-        } catch (error) {
-          console.warn("MPV stop failed:", error);
-        }
-        try {
-          video.destroy?.();
-        } catch (error) {
-          console.warn("MPV destroy failed:", error);
-        }
-      };
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
 
-    // if fullscreen state was changed by the player, revert back to original
-    useEffect(() => {
-      async function updateFullscreen() {
-        const isFullscreen = await window?.electron?.isFullscreen();
-        originalFullscreen.current = isFullscreen;
-      }
-      if (originalFullscreen.current === undefined) {
-        updateFullscreen();
-      }
-      async function handleExit() {
-        const isFullscreen = await window?.electron?.isFullscreen();
-        if (originalFullscreen.current !== isFullscreen) {
-          window?.electron?.toggleFullscreen();
+    const handleFullscreen = () => {
+      if (divRef.current) {
+        if (!document.fullscreenElement) {
+          divRef.current.requestFullscreen().catch((err) => {
+            console.error(
+              `Error attempting to enable fullscreen: ${err.message}`,
+            );
+          });
+        } else {
+          document.exitFullscreen();
         }
       }
-      return () => {
-        handleExit();
-      };
-    }, []);
+    };
 
     return (
-      <div className="video-container">
+      <div className="video-container" ref={divRef}>
         <mpv-video
           ref={videoRef}
           render-mode="shared-texture"
@@ -444,6 +422,7 @@ const MPVElectronPlayer = React.memo(
           handleSetSubtitleTrack={handleSetSubtitleTrack}
           handleSetVolume={handleSetVolume}
           handleToggleMute={handleToggleMute}
+          handleFullscreen={handleFullscreen}
           handleClose={handleClose}
           setInfoModalOpen={setInfoModalOpen}
           paused={paused}
@@ -455,6 +434,7 @@ const MPVElectronPlayer = React.memo(
           subTracks={subTracks}
           selectedAudioIdx={selectedAudioIdx}
           selectedSubIdx={selectedSubIdx}
+          streamType="vod"
         />
       </div>
     );

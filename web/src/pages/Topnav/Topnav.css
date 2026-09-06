@@ -32,6 +32,10 @@
     color: white;
     margin-left: 0.2em;
     margin-right: 0.2em;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .top-navbar-button {
@@ -40,4 +44,8 @@
 
 .top-navbar-item:hover {
     color: gold;
+}
+
+.top-navbar-item.active {
+  color: yellow
 }
