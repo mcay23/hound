@@ -1,6 +1,6 @@
 {
   "name": "hound-web",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "dependencies": {
     "@cospired/i18n-iso-languages": "^4.2.0",
