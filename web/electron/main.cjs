@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, safeStorage } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, safeStorage, powerSaveBlocker } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -183,6 +183,9 @@ async function createWindow() {
 }
 
 app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  powerSaveBlocker.start('prevent-display-sleep');
+})
 
 app.on("before-quit", () => {
   void mpv.dispose();

@@ -5,6 +5,7 @@ import { useServerInfo } from "../../api/hooks/general";
 import { GitHub, InfoRounded } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import { useIPTVProviders } from "../../api/hooks/live_tv";
+import { Link, NavLink } from "react-router-dom";
 
 function Topnav() {
   const { data: serverInfo, isLoading: isServerInfoLoading } = useServerInfo();
@@ -25,21 +26,42 @@ function Topnav() {
         />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto my-2 my-lg-0 text-light">
-            <Nav.Link className="top-navbar-item" href="/">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `top-navbar-item ${isActive ? "active" : ""}`
+              }
+            >
               Home
-            </Nav.Link>
-            <Nav.Link className="top-navbar-item" href="/library">
+            </NavLink>
+            <NavLink
+              to="/library"
+              className={({ isActive }) =>
+                `top-navbar-item ${isActive ? "active" : ""}`
+              }
+            >
               Library
-            </Nav.Link>
-            {(iptvProviders?.length > 0 ||
+            </NavLink>
+            {((iptvProviders?.length && iptvProviders.length > 0) ||
               localStorage.getItem("role") === "admin") && (
-              <Nav.Link className="top-navbar-item" href="/live-tv">
+              <NavLink
+                to="/live-tv"
+                className={({ isActive }) =>
+                  `top-navbar-item ${isActive ? "active" : ""}`
+                }
+              >
                 Live TV
-              </Nav.Link>
+              </NavLink>
             )}
-            <Nav.Link className="top-navbar-item" href="/activity">
+            <NavLink
+              to="/activity"
+              className={({ isActive }) =>
+                `top-navbar-item ${isActive ? "active" : ""}`
+              }
+            >
               Activity
-            </Nav.Link>
+            </NavLink>
           </Nav>
           {localStorage.getItem("role") !== "admin" || isServerInfoLoading ? (
             <></>

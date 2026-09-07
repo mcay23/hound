@@ -6,6 +6,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Chip,
 } from "@mui/material";
 import "./ElectronVideoControls.css";
 import {
@@ -44,6 +45,7 @@ interface IVideoControlsProps {
   handleSetSubtitleTrack: (id: number) => void;
   handleSetVolume?: (val: number) => void;
   handleToggleMute?: () => void;
+  handleFullscreen?: () => void;
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
   paused: boolean;
@@ -55,6 +57,7 @@ interface IVideoControlsProps {
   subTracks: any[];
   selectedAudioIdx: number | undefined;
   selectedSubIdx: number | undefined;
+  streamType: "vod" | "live";
 }
 
 export default function ElectronVideoControls({
@@ -64,6 +67,7 @@ export default function ElectronVideoControls({
   handleSetSubtitleTrack,
   handleSetVolume,
   handleToggleMute,
+  handleFullscreen,
   handleClose,
   setInfoModalOpen,
   paused,
@@ -75,6 +79,7 @@ export default function ElectronVideoControls({
   subTracks = [],
   selectedAudioIdx,
   selectedSubIdx,
+  streamType,
 }: IVideoControlsProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
@@ -166,32 +171,56 @@ export default function ElectronVideoControls({
             pointerEvents: controlsVisible ? "auto" : "none",
           }}
         >
-          <IconButton
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              color: "white",
-              zIndex: 10,
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <IconButton
-            onClick={() => setInfoModalOpen?.(true)}
-            sx={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              color: "white",
-              zIndex: 10,
-            }}
-          >
-            <InfoOutlined />
-          </IconButton>
+          {streamType === "vod" && (
+            <>
+              <IconButton
+                onClick={handleClose}
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  color: "white",
+                  zIndex: 10,
+                }}
+              >
+                <ArrowBack />
+              </IconButton>
+              <IconButton
+                onClick={() => setInfoModalOpen?.(true)}
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  color: "white",
+                  zIndex: 10,
+                }}
+              >
+                <InfoOutlined />
+              </IconButton>
+            </>
+          )}
+          {streamType === "live" && (
+            <Chip
+              color="error"
+              label="LIVE"
+              size="medium"
+              sx={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                color: "white",
+                zIndex: 10,
+                fontFamily: '"Cabin", sans-serif',
+                fontWeight: 500,
+                borderRadius: 3.5,
+              }}
+            />
+          )}
           {/* Top Row: Seekbar & Time */}
-          <div className="controls-row controls-row-top">
+          <div
+            className="controls-row controls-row-top"
+            style={{ display: streamType === "live" ? "none" : "" }}
+          >
             <span className="controls-time">{formatTime(displayTime)}</span>
             <Slider
               className="controls-seekbar"
@@ -438,9 +467,7 @@ export default function ElectronVideoControls({
                 sx={{ color: "#ffffff" }}
                 size="medium"
                 title="Toggle Fullscreen"
-                onClick={() => {
-                  window?.electron?.toggleFullscreen();
-                }}
+                onClick={handleFullscreen}
               >
                 <Fullscreen />
               </IconButton>
