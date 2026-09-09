@@ -19,7 +19,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "IPTV Provider ID"
-// @Success 200 {object} V1SuccessResponse{data=[]xtreamcodes.LiveCategory}
+// @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func GetLiveCategoriesHandler(c *gin.Context) {

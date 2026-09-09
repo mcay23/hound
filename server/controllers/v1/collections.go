@@ -239,7 +239,7 @@ func GetPublicCollectionsHandler(c *gin.Context) {
 // @ID create-collection
 // @Tags Collection
 // @Param id path int true "Collection ID"
-// @Param body CreateCollectionRequest true "Create Collection Request"
+// @Param body body CreateCollectionRequest true "Create Collection Request"
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=object}
@@ -276,7 +276,7 @@ func CreateCollectionHandler(c *gin.Context) {
 // @ID update-collection
 // @Tags Collection
 // @Param id path int true "Collection ID"
-// @Param body CreateCollectionRequest true "Update Collection Request"
+// @Param body body CreateCollectionRequest true "Update Collection Request"
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=object}
